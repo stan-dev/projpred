@@ -207,6 +207,13 @@ test_that(paste(
     stats::runif(1)
   })
   expect_identical(res_local$next_draw, next_draw)
+  # The sequential loop with streams gives the same results:
+  res_seq <- withr::with_seed(seed_tst, {
+    res <- projpred:::seq_lapply_rng(7L, function(i) c(i + 10, stats::runif(1)))
+    list(res = res, next_draw = stats::runif(1))
+  })
+  expect_identical(res_seq$res, res_first)
+  expect_identical(res_seq$next_draw, next_draw)
 })
 
 test_that(paste(
@@ -760,12 +767,14 @@ test_that(paste(
       }
     }
   }
-  # The parallel LOO results are the sequential ones (the LOO folds of these
-  # settings draw no random numbers):
+  # The sequential folds get the same RNG streams, so the sequential results
+  # are the parallel ones:
   for (tstsetup_ref in tstsetups_ref) {
-    expect_same_cvvs(cvvss_first[[paste(tstsetup_ref, "LOO")]],
-                     cvvs_par(tstsetup_ref, "LOO", parallel = FALSE),
-                     paste(tstsetup_ref, "LOO sequential"))
+    for (cv_meth in c("LOO", "kfold")) {
+      setting <- paste(tstsetup_ref, cv_meth)
+      expect_same_cvvs(cvvs_par(tstsetup_ref, cv_meth, parallel = FALSE),
+                       cvvss_first[[setting]], paste("sequential", setting))
+    }
   }
   # The fits of setup.R have a formula object in their calls. Usually, the
   # call has the formula as an expression. rstanarm::kfold() then evaluates

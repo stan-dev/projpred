@@ -152,13 +152,10 @@
 #'   e.g., `mirai::daemons(4)`) or of the \pkg{future} package (set up with,
 #'   e.g., `future::plan(future::multisession, workers = 4)`), see section
 #'   "Parallelization" in [projpred-package]. Without such workers, the CV
-#'   runs sequentially, with a warning. With `parallel = TRUE`, each CV fold
-#'   has its own random number stream, so for a given seed, the results do
-#'   not depend on the number of workers (also not on whether there are
-#'   workers). With `parallel = FALSE`, the folds use the random number
-#'   generator of the R session one after the other, so the results of
-#'   folds that draw random numbers can differ from those with
-#'   `parallel = TRUE`. For GLMs, this CV parallelization should work
+#'   runs sequentially, with a warning. Each CV fold has its own random
+#'   number stream (also with `parallel = FALSE`), so for a given seed, the
+#'   results depend neither on argument `parallel` nor on the number of
+#'   workers. For GLMs, this CV parallelization should work
 #'   reliably, but for other models (such as GLMMs), it may lead to
 #'   excessive memory usage
 #'   which in turn may crash the R session (on Unix systems, setting an
@@ -1200,12 +1197,13 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
       "search_out_rks_was_null", "search_terms", "verbose"
     ))
     if (!parallel) {
-      # Sequential case.
+      # Sequential case. Each fold gets its own RNG stream, as in the
+      # parallel case:
       if (verbose == 1L) {
         pb <- utils::txtProgressBar(min = 0, max = nloo, style = 3, initial = 0,
                                     file = stderr())
       }
-      res_cv <- lapply(seq_along(inds), function(run_index) {
+      res_cv <- seq_lapply_rng(length(inds), function(run_index) {
         if (verbose == 1L) {
           on.exit(utils::setTxtProgressBar(pb, run_index))
         }
@@ -1559,17 +1557,9 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws, nclusters,
       verbose_txt_add = vtxt_fold_k, ...
     )
 
-    # Performance evaluation for the reference model of the current fold:
-    # In the parallel case, `fold$eta_test` holds these predictions:
-    eta_test <- fold$eta_test
-    if (is.null(eta_test)) {
-      eta_test <- fold$refmodel$ref_predfun(
-        fold$refmodel$fit,
-        newdata = refmodel$fetch_data(obs = fold$omitted),
-        excl_offs = FALSE
-      )
-    }
-    mu_test <- fold$refmodel$family$linkinv(eta_test)
+    # Performance evaluation for the reference model of the current fold
+    # (`fold$eta_test` holds its predictions for the left-out observations):
+    mu_test <- fold$refmodel$family$linkinv(fold$eta_test)
     summaries_ref <- weighted_summary_means(
       y_wobs_test = y_wobs_test[fold$omitted, , drop = FALSE],
       data_aux_test = refmodel$fetch_data(obs = fold$omitted),
@@ -1594,34 +1584,39 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws, nclusters,
     "search_out_rks_was_null", "search_path_fulldata", "search_terms",
     "validate_search", "verbose", "y_wobs_test"
   ))
-  if (parallel) {
-    # The folds need the reference model fits only for the predictions of the
-    # fold reference models for the left-out observations, so compute these
-    # here. Then the workers get the fold reference models and the full-data
-    # reference model without their fits (see refmodel_for_folds()), and the
-    # formulas of the fold reference models without the other objects of
-    # their environments (see formula_for_folds()):
-    list_cv <- lapply(list_cv, function(fold) {
-      fold$eta_test <- fold$refmodel$ref_predfun(
-        fold$refmodel$fit,
-        newdata = refmodel$fetch_data(obs = fold$omitted),
-        excl_offs = FALSE
-      )
+  # The folds need the reference model fits only for the predictions of the
+  # fold reference models for the left-out observations, so compute these
+  # here (also in the sequential case, so that both cases use the random
+  # numbers in the same way). In the parallel case, the workers then get the
+  # fold reference models and the full-data reference model without their
+  # fits (see refmodel_for_folds()), and the formulas of the fold reference
+  # models without the other objects of their environments (see
+  # formula_for_folds()):
+  list_cv <- lapply(list_cv, function(fold) {
+    fold$eta_test <- fold$refmodel$ref_predfun(
+      fold$refmodel$fit,
+      newdata = refmodel$fetch_data(obs = fold$omitted),
+      excl_offs = FALSE
+    )
+    if (parallel) {
       fold$refmodel <- refmodel_for_folds(
         fold$refmodel, formula_env = environment(refmodel$formula)
       )
-      return(fold)
-    })
+    }
+    return(fold)
+  })
+  if (parallel) {
     assign("refmodel", refmodel_for_folds(refmodel),
            envir = environment(one_fold))
   }
   if (!parallel) {
-    # Sequential case.
+    # Sequential case. Each fold gets its own RNG stream, as in the parallel
+    # case:
     if (verbose == 1L) {
       pb <- utils::txtProgressBar(min = 0, max = K, style = 3, initial = 0,
                                   file = stderr())
     }
-    res_cv <- lapply(seq_len(K), function(k) {
+    res_cv <- seq_lapply_rng(K, function(k) {
       if (verbose == 1L) {
         on.exit(utils::setTxtProgressBar(pb, k))
       }

@@ -155,10 +155,12 @@ is also a \emph{CV} parallelization (i.e., a parallelization of \pkg{projpred}'s
 cross-validation) which can be activated via argument \code{parallel} (which in
 turn can be controlled via global option \code{projpred.parallel_cv}).
 
-In the CV parallelization, each CV fold has its own random number stream
-(L'Ecuyer-CMRG), which \pkg{projpred} derives from the random number
-generator of the main R session. So for a given seed, the results depend
-neither on the number of workers nor on the package that provides them.
+In the fold-wise computations of \code{\link[=cv_varsel]{cv_varsel()}}, each CV fold has its own
+random number stream (L'Ecuyer-CMRG), which \pkg{projpred} derives from the
+random number generator of the main R session, with and without the CV
+parallelization. So for a given seed, the results depend neither on
+argument \code{parallel}, nor on the number of workers, nor on the package that
+provides them.
 
 Global option \code{projpred.export_to_workers} may be set to a character vector
 of names of objects to export from the global environment to the parallel

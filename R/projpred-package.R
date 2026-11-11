@@ -157,10 +157,12 @@
 #' cross-validation) which can be activated via argument `parallel` (which in
 #' turn can be controlled via global option `projpred.parallel_cv`).
 #'
-#' In the CV parallelization, each CV fold has its own random number stream
-#' (L'Ecuyer-CMRG), which \pkg{projpred} derives from the random number
-#' generator of the main R session. So for a given seed, the results depend
-#' neither on the number of workers nor on the package that provides them.
+#' In the fold-wise computations of [cv_varsel()], each CV fold has its own
+#' random number stream (L'Ecuyer-CMRG), which \pkg{projpred} derives from the
+#' random number generator of the main R session, with and without the CV
+#' parallelization. So for a given seed, the results depend neither on
+#' argument `parallel`, nor on the number of workers, nor on the package that
+#' provides them.
 #'
 #' Global option `projpred.export_to_workers` may be set to a character vector
 #' of names of objects to export from the global environment to the parallel

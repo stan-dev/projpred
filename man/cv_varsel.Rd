@@ -367,13 +367,10 @@ parallelization uses the workers of the \pkg{mirai} package (set up with,
 e.g., \code{mirai::daemons(4)}) or of the \pkg{future} package (set up with,
 e.g., \code{future::plan(future::multisession, workers = 4)}), see section
 "Parallelization" in \link{projpred-package}. Without such workers, the CV
-runs sequentially, with a warning. With \code{parallel = TRUE}, each CV fold
-has its own random number stream, so for a given seed, the results do
-not depend on the number of workers (also not on whether there are
-workers). With \code{parallel = FALSE}, the folds use the random number
-generator of the R session one after the other, so the results of
-folds that draw random numbers can differ from those with
-\code{parallel = TRUE}. For GLMs, this CV parallelization should work
+runs sequentially, with a warning. Each CV fold has its own random
+number stream (also with \code{parallel = FALSE}), so for a given seed, the
+results depend neither on argument \code{parallel} nor on the number of
+workers. For GLMs, this CV parallelization should work
 reliably, but for other models (such as GLMMs), it may lead to
 excessive memory usage
 which in turn may crash the R session (on Unix systems, setting an

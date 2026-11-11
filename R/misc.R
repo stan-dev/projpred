@@ -1482,6 +1482,21 @@ par_rng_streams <- function(n) {
   return(seeds)
 }
 
+# lapply() over `seq_len(n)` in this R session, with the RNG streams that
+# par_lapply() gives to its elements with `.rng = TRUE` (so a sequential loop
+# gives the results of the parallel one). Afterwards, the RNG state is the one
+# after the draw for the streams.
+seq_lapply_rng <- function(n, fun) {
+  seeds <- par_rng_streams(n)
+  genv <- globalenv()
+  seed_old <- get(".Random.seed", envir = genv, inherits = FALSE)
+  on.exit(assign(".Random.seed", seed_old, envir = genv))
+  lapply(seq_len(n), function(i) {
+    assign(".Random.seed", seeds[[i]], envir = genv)
+    fun(i)
+  })
+}
+
 # Calls `.fun` with the arguments in the list `.args` and in `...` (for
 # par_lapply() over a list of argument lists):
 call_with_args <- function(.args, .fun, ...) {
