@@ -344,11 +344,11 @@ test_that(paste(
   refmod <- refmods[[tstsetups[1]]]
   expect_message(
     prj_dup <- project(refmod, predictor_terms = c("s.1", "s(s.1)"),
-                       nclusters = 2, seed = seed_tst, verbose = 0),
+                       ndraws = 3, seed = seed_tst, verbose = 0),
     "drops the linear term(s) `s.1` from a submodel that also has the smooth term(s) `s(s.1)`",
     fixed = TRUE
   )
-  prj <- project(refmod, predictor_terms = "s(s.1)", nclusters = 2,
+  prj <- project(refmod, predictor_terms = "s(s.1)", ndraws = 3,
                  seed = seed_tst, verbose = 0)
   expect_identical(prj_dup$predictor_terms, c("s.1", "s(s.1)"))
   for (j in seq_along(prj$outdmin)) {
@@ -359,7 +359,7 @@ test_that(paste(
                proj_linpred(prj, .seed = seed2_tst))
   # Without the smooth term, the linear term stays (no message):
   expect_no_message(
-    prj_lin <- project(refmod, predictor_terms = "s.1", nclusters = 2,
+    prj_lin <- project(refmod, predictor_terms = "s.1", ndraws = 3,
                        seed = seed_tst, verbose = 0)
   )
   expect_true("s.1" %in% names(coef(prj_lin$outdmin[[1]])))
