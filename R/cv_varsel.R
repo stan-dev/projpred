@@ -1099,7 +1099,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
       "cl_pred", "cl_sel", "inds", "lw", "method", "n", "nclusters",
       "nclusters_pred", "ndraws", "ndraws_pred", "nloo", "nterms_max",
       "penalty", "refit_prj", "refmodel", "search_control", "search_out_rks",
-      "search_out_rks_was_null", "search_terms", "verbose"
+      "search_out_rks_was_null", "search_screen", "search_terms", "verbose"
     ))
     if (!parallel) {
       # Sequential case. Actually, we could simply use ``%do_projpred%` <-
@@ -1517,8 +1517,8 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws, nclusters,
   one_fold <- fun_with_objs(one_fold, c(
     "K", "method", "nclusters", "nclusters_pred", "ndraws", "ndraws_pred",
     "nterms_max", "penalty", "refit_prj", "refmodel", "search_control",
-    "search_out_rks_was_null", "search_path_fulldata", "search_terms",
-    "validate_search", "verbose", "y_wobs_test"
+    "search_out_rks_was_null", "search_path_fulldata", "search_screen",
+    "search_terms", "validate_search", "verbose", "y_wobs_test"
   ))
   if (!parallel) {
     # Sequential case. Actually, we could simply use ``%do_projpred%` <-
