@@ -1077,14 +1077,13 @@ fit_gamm_callback <- function(formula, projpred_formula_no_random,
   # gamm4::gamm4() has no `nAGQ = 0`: after stage 1 (as `nAGQ = 0` in
   # lme4::glmer()), it always runs stage 2, which optimizes the fixed effects
   # with the Laplace objective. lme4 < 2.1-1 rounds non-integer binomial data
-  # in this objective (see glmer_rounds_binomial()). gamm4 >= 0.3-0 uses
+  # in this objective (see glmer_rounds_binomial()). gamm4::gamm4() uses
   # `control$optimizer[[1]]` in both stages, so gamm_stage1_optimizer() can
   # skip stage 2. The error handler below reads `control`, so the changed
   # control is a copy. gamm4::gamm4() does not call lme4::checkConv(), so the
   # derivatives are not used:
   control_gamm <- control
   if (inherits(control, "glmerControl") &&
-      utils::packageVersion("gamm4") >= "0.3.0" &&
       glmer_rounds_binomial(projpred_formula_no_random, family = family,
                             data = data, weights = dot_args[["weights"]])) {
     opt_stage1 <- gamm_stage1_optimizer(control$optimizer[[1]],

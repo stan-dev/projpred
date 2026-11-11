@@ -512,8 +512,7 @@ test_that(paste(
 # Whether fit_gamm_callback() skips stage 2 of gamm4::gamm4() for binomial
 # submodels with non-integer data.
 gamm_skips_stage2 <- function() {
-  utils::packageVersion("lme4") < "2.1.1" &&
-    utils::packageVersion("gamm4") >= "0.3.0"
+  utils::packageVersion("lme4") < "2.1.1"
 }
 
 test_that(paste(
@@ -571,7 +570,7 @@ test_that(paste(
   "data with lme4 < 2.1-1"
 ), {
   skip_if_not(gamm_skips_stage2(),
-              "only lme4 < 2.1-1 with gamm4 >= 0.3-0 skips stage 2")
+              "only lme4 < 2.1-1 rounds the data")
   d <- dat_fitters()
   fit <- divmin_tst("s(z) + x + (1 | g)", d, extend_family(binomial()),
                     plogis(d$eta))[[1]]
@@ -596,7 +595,7 @@ test_that(paste(
   "equals the glmer() fit with `nAGQ = 0` with lme4 < 2.1-1"
 ), {
   skip_if_not(gamm_skips_stage2(),
-              "only lme4 < 2.1-1 with gamm4 >= 0.3-0 skips stage 2")
+              "only lme4 < 2.1-1 rounds the data")
   d <- dat_fitters()
   d$y <- plogis(d$eta)
   fam <- extend_family(binomial())

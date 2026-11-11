@@ -52,7 +52,7 @@ If you read this from a place other than <https://mc-stan.org/projpred/news/inde
 * Fixed the error "'gam.fit' is not an exported object from 'namespace:mgcv'" in projections onto additive submodels with mgcv 1.9-5. (GitHub: #598, #602)
 * Fixed the log-likelihood of binomial (logit) and Poisson (log) reference model draws with a large linear predictor, where the inverse link clamped the mean. (GitHub: #614)
 * With lme4 versions before 2.1-1, binomial submodels with multilevel terms (and no additive terms) now use `nAGQ = 0` in `lme4::glmer()` for non-integer responses or weights, unless `nAGQ` is set via `...`. Their coefficients were fitted to rounded data before. (GitHub: #616)
-* With lme4 versions before 2.1-1 and gamm4 0.3-0 or later, binomial submodels with multilevel and additive terms and non-integer data now skip the second optimization stage of `gamm4::gamm4()` (as `nAGQ = 0`). Their coefficients were fitted to rounded data before. (GitHub: #???)
+* With lme4 versions before 2.1-1, binomial submodels with multilevel and additive terms and non-integer data now skip the second optimization stage of `gamm4::gamm4()` (as `nAGQ = 0`). Their coefficients were fitted to rounded data before. (GitHub: #???)
 
 
 # projpred 2.11.0

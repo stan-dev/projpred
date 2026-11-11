@@ -94,8 +94,8 @@ argument \code{method} or \code{control} in \code{...} replaces this default.
 object inherits from class \code{gam}).
 \item Submodel with multilevel and additive terms: \code{\link[gamm4:gamm4]{gamm4::gamm4()}} (within
 \pkg{projpred}, the returned object inherits from class \code{gamm4}). For the
-\code{\link[=binomial]{binomial()}} family with non-integer responses or weights, \pkg{lme4}
-versions before 2.1-1, and \pkg{gamm4} 0.3-0 or later, \pkg{projpred} gives
+\code{\link[=binomial]{binomial()}} family with non-integer responses or weights and \pkg{lme4}
+versions before 2.1-1, \pkg{projpred} gives
 \code{\link[gamm4:gamm4]{gamm4::gamm4()}} an optimizer that skips its second optimization stage, so
 the fit is that of \code{nAGQ = 0} in \code{\link[lme4:glmer]{lme4::glmer()}} (see the paragraph on
 \code{\link[lme4:glmer]{lme4::glmer()}} above), up to the optimizer. The first stage uses the
