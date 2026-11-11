@@ -10,7 +10,19 @@ name: R-CMD-check.yaml
 permissions: read-all
 
 jobs:
+  min-r:
+      runs-on: ubuntu-latest
+      outputs:
+        version: ${{ steps.get.outputs.version }}
+      steps:
+        - uses: actions/checkout@v4
+        - id: get
+          run: |
+            v=$(grep -oP 'R \(>= \K[0-9.]+' DESCRIPTION)
+            echo "version=$v" >> "$GITHUB_OUTPUT"
+
   R-CMD-check:
+    needs: min-r
     runs-on: ${{ matrix.config.os }}
 
     name: ${{ matrix.config.os }} (${{ matrix.config.r }})
@@ -25,7 +37,7 @@ jobs:
           - {os: ubuntu-latest,   r: 'release'}
           - {os: ubuntu-latest,   r: 'oldrel-1'}
           # The lowest R version in DESCRIPTION:
-          - {os: ubuntu-latest,   r: '4.4'}
+          - {os: ubuntu-latest,   r: '${{ needs.min-r.outputs.version }}'}
 
     env:
       GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
