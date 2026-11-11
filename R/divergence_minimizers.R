@@ -154,11 +154,12 @@ divmin <- function(
   } else {
     prll_prj_trigger <- getOption("projpred.parallel_proj_trigger", Inf)
   }
-  if (length(formulas) < prll_prj_trigger) {
-    # Sequential case. Actually, we could simply use ``%do_projpred%` <-
-    # foreach::`%do%`` here and then proceed as in the parallel case, but that
-    # would require adding more "hard" dependencies (because packages 'foreach'
-    # and 'iterators' would have to be moved from `Suggests:` to `Imports:`).
+  # The backend of the parallel case (`NULL` without parallel workers):
+  backend <- if (length(formulas) >= prll_prj_trigger) {
+    par_backend(warn_once = TRUE)
+  }
+  if (is.null(backend)) {
+    # Sequential case.
     if (verbose_divmin) {
       pb <- utils::txtProgressBar(min = 0, max = length(formulas), style = 3,
                                   initial = 0, file = stderr())
@@ -180,20 +181,9 @@ divmin <- function(
       return(nlist(soutdmin, mssgs_warns_capt))
     })
   } else {
-    # Parallel case.
-    if (!requireNamespace("foreach", quietly = TRUE)) {
-      stop("Please install the 'foreach' package.")
-    }
-    if (!requireNamespace("iterators", quietly = TRUE)) {
-      stop("Please install the 'iterators' package.")
-    }
-    if (verbose_divmin && use_progressr()) {
-      progressor_obj <- progressr::progressor(length(formulas))
-    } else {
-      progressor_obj <- NULL
-    }
-    # The projection of one draw, in an environment with only the objects that
-    # it uses (see fun_with_objs()) and the projpred namespace as parent:
+    # Parallel case. The projection of one draw, in an environment with only
+    # the objects that it uses (see fun_with_objs()) and the projpred
+    # namespace as parent:
     one_draw <- fun_with_objs(function(formula_s, projpred_var_s,
                                        projpred_formula_no_random_s) {
       mssgs_warns_capt <- capt_fun(
@@ -208,30 +198,13 @@ divmin <- function(
       )
       return(nlist(soutdmin, mssgs_warns_capt))
     }, c("sdivmin", "projpred_random", "dot_args", "capt_fun"))
-    `%do_projpred%` <- foreach::`%dopar%`
-    # The loop body uses only `.export` objects and base functions, so doFuture
-    # can skip its search for further globals (see loo_varsel()):
-    opts_old <- options(doFuture.foreach.export = ".export")
-    on.exit(options(opts_old), add = TRUE)
-    outdmin <- foreach::foreach(
-      formula_s = formulas,
-      projpred_var_s = iterators::iter(projpred_var, by = "column"),
-      projpred_formula_no_random_s = projpred_formulas_no_random,
-      .packages = c("projpred"),
-      .export = c("one_draw", "progressor_obj"),
-      .noexport = c(
-        "object", "p_sel", "search_path", "p_ref", "refmodel", "formulas",
-        "projpred_var", "projpred_ws_aug", "projpred_formulas_no_random"
-      ),
-      .errorhandling = getOption("projpred.foreach_errorhandling", "stop"),
-      .verbose = getOption("projpred.foreach_verbose", FALSE)
-    ) %do_projpred% {
-      out_one_draw <- one_draw(formula_s, projpred_var_s,
-                               projpred_formula_no_random_s)
-      if (!is.null(progressor_obj)) progressor_obj()
-      return(out_one_draw)
-    }
-    options(opts_old)
+    args_draws <- lapply(seq_along(formulas), function(s) {
+      list(formula_s = formulas[[s]],
+           projpred_var_s = projpred_var[, s, drop = FALSE],
+           projpred_formula_no_random_s = projpred_formulas_no_random[[s]])
+    })
+    outdmin <- par_lapply(args_draws, call_with_args, .fun = one_draw,
+                          .backend = backend, .progress = verbose_divmin)
   }
   mssgs_warns_capts <- lapply(outdmin, "[[", "mssgs_warns_capt")
   outdmin <- lapply(outdmin, "[[", "soutdmin")
@@ -1569,11 +1542,12 @@ divmin_augdat <- function(
   } else {
     prll_prj_trigger <- getOption("projpred.parallel_proj_trigger", Inf)
   }
-  if (ncol(projpred_ws_aug) < prll_prj_trigger) {
-    # Sequential case. Actually, we could simply use ``%do_projpred%` <-
-    # foreach::`%do%`` here and then proceed as in the parallel case, but that
-    # would require adding more "hard" dependencies (because packages 'foreach'
-    # and 'iterators' would have to be moved from `Suggests:` to `Imports:`).
+  # The backend of the parallel case (`NULL` without parallel workers):
+  backend <- if (ncol(projpred_ws_aug) >= prll_prj_trigger) {
+    par_backend(warn_once = TRUE)
+  }
+  if (is.null(backend)) {
+    # Sequential case.
     if (verbose_divmin) {
       pb <- utils::txtProgressBar(min = 0, max = ncol(projpred_ws_aug),
                                   style = 3, initial = 0, file = stderr())
@@ -1597,21 +1571,10 @@ divmin_augdat <- function(
       return(nlist(soutdmin, mssgs_warns_capt))
     })
   } else {
-    # Parallel case.
-    if (!requireNamespace("foreach", quietly = TRUE)) {
-      stop("Please install the 'foreach' package.")
-    }
-    if (!requireNamespace("iterators", quietly = TRUE)) {
-      stop("Please install the 'iterators' package.")
-    }
-    if (verbose_divmin && use_progressr()) {
-      progressor_obj <- progressr::progressor(ncol(projpred_ws_aug))
-    } else {
-      progressor_obj <- NULL
-    }
+    # Parallel case. The projection of one draw, in an environment with only
+    # the objects that it uses (see fun_with_objs()) and the projpred
+    # namespace as parent:
     dot_args <- list(...)
-    # The projection of one draw, in an environment with only the objects that
-    # it uses (see fun_with_objs()) and the projpred namespace as parent:
     one_draw <- fun_with_objs(function(projpred_w_aug_s) {
       mssgs_warns_capt <- capt_mssgs_warns(
         soutdmin <- do.call(
@@ -1628,27 +1591,11 @@ divmin_augdat <- function(
       return(nlist(soutdmin, mssgs_warns_capt))
     }, c("sdivmin", "formula", "data", "family", "projpred_formula_no_random",
          "projpred_random", "dot_args"))
-    `%do_projpred%` <- foreach::`%dopar%`
-    # The loop body uses only `.export` objects and base functions, so doFuture
-    # can skip its search for further globals (see loo_varsel()):
-    opts_old <- options(doFuture.foreach.export = ".export")
-    on.exit(options(opts_old), add = TRUE)
-    outdmin <- foreach::foreach(
-      projpred_w_aug_s = iterators::iter(projpred_ws_aug, by = "column"),
-      .packages = c("projpred"),
-      .export = c("one_draw", "progressor_obj"),
-      .noexport = c(
-        "object", "p_sel", "search_path", "p_ref", "refmodel", "projpred_var",
-        "projpred_ws_aug", "linkobjs"
-      ),
-      .errorhandling = getOption("projpred.foreach_errorhandling", "stop"),
-      .verbose = getOption("projpred.foreach_verbose", FALSE)
-    ) %do_projpred% {
-      out_one_draw <- one_draw(projpred_w_aug_s)
-      if (!is.null(progressor_obj)) progressor_obj()
-      return(out_one_draw)
-    }
-    options(opts_old)
+    ws_draws <- lapply(seq_len(ncol(projpred_ws_aug)), function(s) {
+      projpred_ws_aug[, s]
+    })
+    outdmin <- par_lapply(ws_draws, one_draw, .backend = backend,
+                          .progress = verbose_divmin)
   }
   mssgs_warns_capts <- lapply(outdmin, "[[", "mssgs_warns_capt")
   outdmin <- lapply(outdmin, "[[", "soutdmin")

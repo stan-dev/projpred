@@ -562,7 +562,7 @@ Run `cv_varsel()`:
 # Note: Parallel processing is disabled during package building to avoid issues
 use_parallel <- FALSE  # Set to TRUE for actual parallel processing
 if (use_parallel) {
-  doParallel::registerDoParallel(ncores)
+  future::plan(future::multisession, workers = ncores)
 }
 cvvs_weib <- cv_varsel(
   refm_weib,
@@ -579,8 +579,7 @@ cvvs_weib <- cv_varsel(
 )
 # Tear down the CV parallelization setup:
 if (use_parallel) {
-  doParallel::stopImplicitCluster()
-  foreach::registerDoSEQ()
+  future::plan(future::sequential)
 }
 ```
 In this case, we will ignore the warnings about high Pareto-$\hat{k}$ values because we chose quite rough settings (e.g., only 2 MCMC chains) in this vignette (for technical reasons).
@@ -705,7 +704,7 @@ Run `cv_varsel()`:
 # Note: Parallel processing is disabled during package building to avoid issues
 use_parallel <- FALSE  # Set to TRUE for actual parallel processing
 if (use_parallel) {
-  doParallel::registerDoParallel(ncores)
+  future::plan(future::multisession, workers = ncores)
 }
 cvvs_lnorm <- cv_varsel(
   refm_lnorm,
@@ -722,8 +721,7 @@ cvvs_lnorm <- cv_varsel(
 )
 # Tear down the CV parallelization setup:
 if (use_parallel) {
-  doParallel::stopImplicitCluster()
-  foreach::registerDoSEQ()
+  future::plan(future::sequential)
 }
 ```
 In this case, we will ignore the warnings about high Pareto-$\hat{k}$ values because we chose quite rough settings (e.g., only 2 MCMC chains) in this vignette (for technical reasons).

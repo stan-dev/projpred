@@ -68,9 +68,6 @@ Suggests:
     optimx,
     ucminf,
     parallel,
-    foreach,
-    iterators,
-    doRNG,
     unix,
     testthat (>= 3.1.7),
     withr (>= 3.0.3),
@@ -82,10 +79,9 @@ Suggests:
     rlang,
     bayesplot (>= 1.5.0),
     posterior,
-    doParallel,
-    future,
-    future.callr,
-    doFuture,
+    future (>= 1.49.0),
+    mirai (>= 2.5.1),
+    cli,
     progressr,
     codetools
 LinkingTo: Rcpp, RcppArmadillo

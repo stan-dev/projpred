@@ -1306,9 +1306,236 @@ not_in_folds <- function(...) {
 
 use_progressr <- function() {
   getOption("projpred.use_progressr",
-            requireNamespace("progressr", quietly = TRUE) &&
-              interactive() &&
-              identical(foreach::getDoParName(), "doFuture"))
+            requireNamespace("progressr", quietly = TRUE) && interactive())
+}
+
+# State of the parallelization within this R session: whether par_backend()
+# has warned (`warned`), and the workers that par_check_workers() checked last
+# (`key_checked`).
+par_state <- new.env(parent = emptyenv())
+
+# The backend of the parallel loops (CV folds, projected draws): "mirai" if
+# mirai daemons are set, otherwise "future" if the future plan is not
+# sequential, otherwise `NULL` with a warning (the caller then runs
+# sequentially). With `warn_once = TRUE`, the warning comes only once per R
+# session (for the loops over the projected draws, which run many times).
+par_backend <- function(warn_once = FALSE) {
+  if (requireNamespace("mirai", quietly = TRUE) && mirai::daemons_set()) {
+    return("mirai")
+  }
+  if (requireNamespace("future", quietly = TRUE) &&
+      !inherits(future::plan(), "sequential")) {
+    return("future")
+  }
+  if (!warn_once || !isTRUE(par_state$warned)) {
+    if (warn_once) {
+      par_state$warned <- TRUE
+    }
+    warning(
+      "A parallel run was requested, but there are no parallel workers, so ",
+      "running sequentially. Set up workers with, e.g., ",
+      "`future::plan(future::multisession, workers = 4)` or ",
+      "`mirai::daemons(4)` (see section \"Parallelization\" in `?projpred`)."
+    )
+  }
+  return(NULL)
+}
+
+# Applies `.FUN` to the elements of `.X` on the workers of `.backend` (see
+# par_backend()) and returns the results in a list, as lapply(). The arguments
+# in `...` go to each call of `.FUN`.
+#
+# The elements are split into consecutive chunks (by default one per worker;
+# global option `projpred.parallel_chunks_per_worker`), and each chunk is one
+# task (see par_chunk()). A task gets `.FUN`, the arguments in `...`, and the
+# elements of its chunk, but no other object of the calling functions. `.FUN`
+# goes to the workers with its enclosing environment, so keep that environment
+# small (see fun_with_objs()).
+#
+# With `.rng = TRUE`, each element gets its own L'Ecuyer-CMRG stream, made
+# here from the RNG of this R session. So the results depend neither on the
+# backend nor on the number of workers or chunks.
+#
+# The workers get the global options of projpred, except those of the
+# parallelization (so the workers run their loops sequentially), the global
+# options `contrasts` and `na.action`, which the submodel fits use, and the
+# objects of the global environment that global option
+# `projpred.export_to_workers` names.
+#
+# With `.progress = TRUE`, the future backend signals one progressr update per
+# element (if use_progressr()), and the mirai backend shows the progress of
+# mirai::mirai_map() per chunk (in interactive sessions). An error in a task
+# stops the call; the tasks that did not finish are canceled.
+par_lapply <- function(.X, .FUN, ..., .backend, .rng = FALSE,
+                       .progress = FALSE) {
+  n <- length(.X)
+  if (n == 0L) {
+    return(list())
+  }
+  par_check_workers(.backend)
+  opts <- options()
+  opts <- opts[grepl("^projpred\\.", names(opts)) |
+                 names(opts) %in% c("contrasts", "na.action")]
+  opts_prll <- c("projpred.parallel_proj_trigger", "projpred.prll_prj_trigger",
+                 "projpred.parallel_cv", "projpred.prll_cv")
+  opts[opts_prll] <- list(NULL)
+  globs <- mget(getOption("projpred.export_to_workers", character()),
+                envir = globalenv())
+  seeds <- if (.rng) par_rng_streams(n)
+  n_workers <- if (.backend == "mirai") {
+    mirai::status()$connections
+  } else {
+    future::nbrOfWorkers()
+  }
+  n_chunks <- max(1, min(
+    n, n_workers * getOption("projpred.parallel_chunks_per_worker", 1L)
+  ))
+  chunks <- lapply(parallel::splitIndices(n, n_chunks), function(idxs) {
+    list(xs = .X[idxs], seeds = seeds[idxs])
+  })
+  task <- list(fun = .FUN, args = list(...), opts = opts, globs = globs)
+  if (.backend == "mirai") {
+    map <- mirai::mirai_map(chunks, par_chunk, .args = list(.task = task))
+    done <- FALSE
+    on.exit(if (!done) mirai::stop_mirai(map))
+    res <- mirai::collect_mirai(map, options = c(
+      ".stop", if (.progress && interactive()) ".progress"
+    ))
+    done <- TRUE
+  } else {
+    if (.progress && use_progressr()) {
+      task$progress <- progressr::progressor(n)
+    }
+    # The globals are given by name, so future does not search for them (and
+    # the futures do not hold the frames of the calling functions). The
+    # workers load projpred when they get par_chunk():
+    futs <- lapply(chunks, function(chunk) {
+      future::future(
+        par_chunk(chunk, task),
+        globals = list(par_chunk = par_chunk, chunk = chunk, task = task),
+        seed = NULL, envir = baseenv()
+      )
+    })
+    done <- FALSE
+    on.exit(if (!done) future::cancel(futs))
+    res <- future::value(futs)
+    done <- TRUE
+  }
+  return(do.call(c, unname(res)))
+}
+
+# One task of par_lapply(): applies `.task$fun` to the elements `.chunk$xs`,
+# with the arguments `.task$args`, the global options `.task$opts`, the
+# objects `.task$globs` in the global environment, and the RNG stream
+# `.chunk$seeds[[j]]` for element `j` (if there are streams). Afterwards, the
+# options, the global environment and the RNG state of the worker are as
+# before.
+par_chunk <- function(.chunk, .task) {
+  opts_old <- options(.task$opts)
+  on.exit(options(opts_old))
+  genv <- globalenv()
+  if (length(.task$globs) > 0) {
+    nms <- names(.task$globs)
+    nms_new <- setdiff(nms, ls(genv, all.names = TRUE))
+    globs_old <- mget(setdiff(nms, nms_new), envir = genv, inherits = FALSE)
+    list2env(.task$globs, envir = genv)
+    on.exit({
+      rm(list = nms_new, envir = genv)
+      list2env(globs_old, envir = genv)
+    }, add = TRUE)
+  }
+  if (!is.null(.chunk$seeds)) {
+    seed_old <- get0(".Random.seed", envir = genv, inherits = FALSE)
+    on.exit({
+      if (is.null(seed_old)) {
+        rm(list = ".Random.seed", envir = genv)
+      } else {
+        assign(".Random.seed", seed_old, envir = genv)
+      }
+    }, add = TRUE)
+  }
+  lapply(seq_along(.chunk$xs), function(j) {
+    if (!is.null(.chunk$seeds)) {
+      assign(".Random.seed", .chunk$seeds[[j]], envir = genv)
+    }
+    out <- do_call(.task$fun, c(list(.chunk$xs[[j]]), .task$args))
+    if (!is.null(.task$progress)) {
+      .task$progress()
+    }
+    out
+  })
+}
+
+# `n` consecutive L'Ecuyer-CMRG streams (see parallel::nextRNGStream()). The
+# first one starts at a seed drawn from the RNG of this R session:
+par_rng_streams <- function(n) {
+  seed <- c(10407L, sample.int(.Machine$integer.max, 6L))
+  seeds <- vector("list", n)
+  for (i in seq_len(n)) {
+    seeds[[i]] <- seed
+    seed <- parallel::nextRNGStream(seed)
+  }
+  return(seeds)
+}
+
+# Calls `.fun` with the arguments in the list `.args` and in `...` (for
+# par_lapply() over a list of argument lists):
+call_with_args <- function(.args, .fun, ...) {
+  do_call(.fun, c(.args, list(...)))
+}
+
+# Stops if a worker of `backend` does not load the projpred of this R session
+# (same version, same path). The functions of the tasks have the projpred
+# namespace as an ancestor of their environments, so a worker uses the
+# functions of the projpred that it loads. By default, this is the installed
+# projpred, also if this R session uses pkgload::load_all(). One task does the
+# check, on one worker, and only if the workers or the projpred of this R
+# session changed since the last check.
+par_check_workers <- function(backend) {
+  info_fun <- function() {
+    tryCatch(
+      c(as.character(getNamespaceVersion("projpred")),
+        normalizePath(getNamespaceInfo("projpred", "path"), mustWork = FALSE)),
+      error = function(e) c(NA_character_, conditionMessage(e))
+    )
+  }
+  info_main <- unname(info_fun())
+  key <- if (backend == "mirai") {
+    list(backend, mirai::status()$daemons, info_main)
+  } else {
+    list(backend, class(future::plan()), future::nbrOfWorkers(), info_main)
+  }
+  if (identical(par_state$key_checked, key)) {
+    return(invisible(TRUE))
+  }
+  par_state$key_checked <- NULL
+  environment(info_fun) <- baseenv()
+  if (backend == "mirai") {
+    info_wrk <- mirai::collect_mirai(
+      mirai::mirai(info_fun(), .args = list(info_fun = info_fun))
+    )
+    if (mirai::is_error_value(info_wrk)) {
+      stop("The check of the parallel workers failed: ",
+           paste(format(info_wrk), collapse = " "))
+    }
+  } else {
+    info_wrk <- future::value(future::future(
+      info_fun(), globals = list(info_fun = info_fun), seed = NULL,
+      envir = baseenv()
+    ))
+  }
+  info_wrk <- unname(info_wrk)
+  if (is.na(info_wrk[1])) {
+    stop("The parallel workers cannot load projpred: ", info_wrk[2])
+  }
+  if (!identical(info_wrk, info_main)) {
+    stop("The parallel workers load projpred ", info_wrk[1], " from '",
+         info_wrk[2], "', but this R session uses projpred ", info_main[1],
+         " from '", info_main[2], "'. Set up the workers so that they load ",
+         "the same projpred (see section \"Parallelization\" in `?projpred`).")
+  }
+  par_state$key_checked <- key
+  return(invisible(TRUE))
 }
 
 sqrt_cut0 <- function(x) {

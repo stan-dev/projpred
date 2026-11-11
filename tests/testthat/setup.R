@@ -111,53 +111,6 @@ if (run_prll) {
   if (identical(Sys.getenv("_R_CHECK_LIMIT_CORES_"), "TRUE")) {
     ncores <- min(ncores, 2L)
   }
-  # Use the 'doParallel' package on all platforms except Windows. For Windows,
-  # the 'doFuture' package provides a faster alternative via the 'future.callr'
-  # package (which is still slower than a sequential run, though):
-  if (!identical(.Platform$OS.type, "windows")) {
-    if (!requireNamespace("doParallel", quietly = TRUE)) {
-      warning("Package 'doParallel' is needed for the parallel tests, but ",
-              "could not be found. Deactivating the parallel tests now.")
-      run_prll <- FALSE
-    } else {
-      dopar_backend <- "doParallel"
-    }
-  } else {
-    # This case (which should not be possible by default) is only included
-    # here to demonstrate how parallelization should be used on Windows (but
-    # currently, this makes no sense, as explained above).
-    if (!requireNamespace("doFuture", quietly = TRUE)) {
-      warning("Package 'doFuture' is needed for the parallel tests, but ",
-              "could not be found. Deactivating the parallel tests now.")
-      run_prll <- FALSE
-    } else {
-      dopar_backend <- "doFuture"
-    }
-    if (!requireNamespace("future", quietly = TRUE)) {
-      warning("Package 'future' is needed for the parallel tests, but ",
-              "could not be found. Deactivating the parallel tests now.")
-      run_prll <- FALSE
-    }
-    if (!identical(.Platform$OS.type, "windows")) {
-      # This case (which should not be possible by default) is only included
-      # here to demonstrate how other systems should be used with the 'doFuture'
-      # package.
-      future_plan <- "multicore"
-    } else {
-      ### Not used in this case because the 'future.callr' package provides a
-      ### faster alternative on Windows (which is still slower than a sequential
-      ### run, though):
-      # future_plan <- "multisession"
-      ###
-      if (!requireNamespace("future.callr", quietly = TRUE)) {
-        warning("Package 'future.callr' is needed for the parallel tests, but ",
-                "could not be found. Deactivating the parallel tests now.")
-        run_prll <- FALSE
-      } else {
-        future_plan <- "callr"
-      }
-    }
-  }
 }
 # Run all test scripts (following this setup script) in a completely random RNG
 # state? (The tests should still pass then, because in all situations where RNG

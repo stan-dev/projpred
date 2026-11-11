@@ -206,12 +206,13 @@ test_that("weight perturbation works with `nloo < n`", {
 test_that("weight perturbation gives the same result in parallel", {
   skip_on_cran()
   skip_on_os("windows")
-  skip_if_not_installed("doParallel")
-  skip_if_not_installed("doRNG")
+  skip_if_not_installed("future")
+  skip_if_not(future::supportsMulticore())
   r <- cre_ref_wp()
   cvvs <- run_cv_wp(r$ref)
-  doParallel::registerDoParallel(2)
-  withr::defer(doParallel::stopImplicitCluster())
+  # Forked workers use the projpred of this R session:
+  plan_old <- future::plan(future::multicore, workers = 2)
+  withr::defer(future::plan(plan_old))
   cvvs_prll <- run_cv_wp(r$ref, parallel = TRUE)
   expect_identical(ranking(cvvs_prll)[["foldwise"]],
                    ranking(cvvs)[["foldwise"]])
