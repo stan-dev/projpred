@@ -1,4 +1,4 @@
-context("latent-screened forward search (experimental)")
+context("latent-screened forward search (argument `search_screen`)")
 
 # Reference models with simulated draws of the parameters (no model fit is
 # necessary; the draws are the simulation values plus noise, so they are not a
@@ -108,10 +108,8 @@ muffle_lat <- function(expr) {
   })
 }
 
-# varsel() with the latent screens turned on (`latent_opt = TRUE`).
-vs_lat <- function(refm, search_screen, nterms_max = 4, latent_opt = TRUE,
-                   verbose = FALSE, ...) {
-  withr::local_options(projpred.search_screen_latent = latent_opt)
+# varsel() with the argument `search_screen`.
+vs_lat <- function(refm, search_screen, nterms_max = 4, verbose = FALSE, ...) {
   muffle_lat(varsel(refm, search_screen = search_screen, nclusters = 2,
                     ndraws_pred = 10, nterms_max = nterms_max, seed = 5521,
                     verbose = verbose, ...))
@@ -250,10 +248,10 @@ test_that("the cumulative screen projects `search_screen` candidates per step", 
   expect_identical(n_prj(NULL), 1L + 8L + 7L + 6L)
 })
 
-test_that("the latent screens are off without the global option", {
+test_that("the latent screens do not run with `search_screen = NULL`", {
   skip_on_cran()
   refm <- refm_latcum()
-  res <- count_calls_lat(vs_lat(refm, 2, nterms_max = 2, latent_opt = FALSE),
+  res <- count_calls_lat(vs_lat(refm, NULL, nterms_max = 2),
                          fun = "search_forward_latent")
   expect_identical(res$ok + res$null, 0L)
 })
@@ -290,7 +288,6 @@ test_that("cv_varsel() with validated search runs the cumulative screen", {
   skip_on_cran()
   refm <- refm_latcum(n = 40)
   cvvs_lat <- function(search_screen) {
-    withr::local_options(projpred.search_screen_latent = TRUE)
     muffle_lat(cv_varsel(refm, cv_method = "LOO", validate_search = TRUE,
                          search_screen = search_screen, nclusters = 2,
                          ndraws_pred = 10, nterms_max = 2, seed = 5521,
@@ -477,7 +474,6 @@ test_that("cv_varsel() with validated search runs the multilevel screen", {
   skip_on_cran()
   refm <- refm_latml(n = 48)
   cvvs_lat <- function(search_screen) {
-    withr::local_options(projpred.search_screen_latent = TRUE)
     muffle_lat(cv_varsel(refm, cv_method = "LOO", validate_search = TRUE,
                          search_screen = search_screen, nclusters = 2,
                          ndraws_pred = 10, nterms_max = 2, seed = 5521,

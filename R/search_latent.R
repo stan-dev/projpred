@@ -1,5 +1,5 @@
-# Latent screens (experimental; global option `projpred.search_screen_latent`,
-# with argument `search_screen` = m) for models without a score screen. As in
+# Latent screens (argument `search_screen` = m) for models without a score
+# screen. As in
 # search_forward_screen(), a cheap criterion ranks the candidates of a step,
 # only the m best get an exact projection, and the exact projections choose
 # the term. Returns the result of the first screen whose conditions hold, or

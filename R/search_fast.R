@@ -1,9 +1,10 @@
-# Score-screened forward search (argument `search_screen` of varsel() and
-# cv_varsel(), integer m, `NULL` = off). In each step, the score statistic at
-# the current submodel ranks the candidates, and only the m best get an exact
-# projection. Returns `NULL` if `search_screen` is `NULL` or a condition does
-# not hold; then search_forward() continues with its own search (with a
-# message in verbose mode).
+# Screened forward search (argument `search_screen` of varsel() and
+# cv_varsel(), integer m, `NULL` = off). In each step, a cheap criterion ranks
+# the candidates, and only the m best get an exact projection: the score
+# statistic at the current submodel (search_forward_screen()), or for models
+# without it, a latent screen (search_forward_latent()). Returns `NULL` if
+# `search_screen` is `NULL` or no screen applies; then search_forward()
+# continues with its own search (with a message in verbose mode).
 search_forward_fast <- function(p_ref, refmodel, nterms_max, verbose,
                                 search_terms, search_screen = NULL, ...) {
   if (is.null(search_screen)) {
@@ -14,8 +15,7 @@ search_forward_fast <- function(p_ref, refmodel, nterms_max, verbose,
     verbose = verbose, search_terms = search_terms,
     screen_m = as.integer(search_screen), ...
   )
-  # Experimental: latent screens (see search_forward_latent()):
-  if (is.null(out) && getOption("projpred.search_screen_latent", FALSE)) {
+  if (is.null(out)) {
     out <- search_forward_latent(
       p_ref = p_ref, refmodel = refmodel, nterms_max = nterms_max,
       verbose = verbose, search_terms = search_terms,
