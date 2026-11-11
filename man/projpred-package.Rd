@@ -93,7 +93,13 @@ for the \code{\link[brms:categorical]{brms::categorical()}} family.
 \item Submodel without multilevel but additive terms: \code{\link[mgcv:gam]{mgcv::gam()}} (the returned
 object inherits from class \code{gam}).
 \item Submodel with multilevel and additive terms: \code{\link[gamm4:gamm4]{gamm4::gamm4()}} (within
-\pkg{projpred}, the returned object inherits from class \code{gamm4}).
+\pkg{projpred}, the returned object inherits from class \code{gamm4}). For the
+\code{\link[=binomial]{binomial()}} family with non-integer responses or weights, \pkg{lme4}
+versions before 2.1-1, and \pkg{gamm4} 0.3-0 or later, \pkg{projpred} gives
+\code{\link[gamm4:gamm4]{gamm4::gamm4()}} an optimizer that skips its second optimization stage, so
+the fit is that of \code{nAGQ = 0} in \code{\link[lme4:glmer]{lme4::glmer()}} (see above). The first
+stage uses the optimizer of \code{control}, with the BOBYQA of
+\code{\link[lme4:nloptwrap]{lme4::nloptwrap()}} for \code{"bobyqa"}.
 }
 }
 

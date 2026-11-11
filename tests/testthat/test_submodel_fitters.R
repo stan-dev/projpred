@@ -509,6 +509,113 @@ test_that(paste(
                lme4::getME(fit_trad$mer, "theta"), tolerance = 1e-3)
 })
 
+# Whether fit_gamm_callback() skips stage 2 of gamm4::gamm4() for binomial
+# submodels with non-integer data.
+gamm_skips_stage2 <- function() {
+  utils::packageVersion("lme4") < "2.1.1" &&
+    utils::packageVersion("gamm4") >= "0.3.0"
+}
+
+test_that(paste(
+  "gamm_stage1_optimizer() runs the optimizer in stage 1 and returns the",
+  "start values in stage 2"
+), {
+  # Stage 1 has 2 parameters (optimum c(1, 2)), stage 2 has 4:
+  fn <- function(p) sum((p - c(1, 2, 3, 4)[seq_along(p)])^2)
+  optims <- list(
+    bobyqa = gamm_stage1_optimizer("bobyqa"),
+    nloptwrap = gamm_stage1_optimizer("nloptwrap"),
+    Nelder_Mead = gamm_stage1_optimizer("Nelder_Mead"),
+    nlminbwrap = gamm_stage1_optimizer("nlminbwrap"),
+    optimx_nlminb = gamm_stage1_optimizer("optimx",
+                                          opt_ctrl = list(method = "nlminb")),
+    fun = gamm_stage1_optimizer(lme4::nlminbwrap)
+  )
+  for (nm in names(optims)) {
+    opt <- optims[[nm]]
+    expect_true(is.function(opt), info = nm)
+    res1 <- opt(par = c(0.5, 0.5), fn = fn, lower = c(0, 0),
+                upper = c(Inf, Inf), control = list())
+    expect_equal(res1$par, c(1, 2), tolerance = 1e-4, info = nm)
+    par2 <- c(res1$par, 0, 0)
+    res2 <- opt(par = par2, fn = fn, lower = c(0, 0, -Inf, -Inf),
+                upper = rep(Inf, 4), control = list())
+    expect_identical(res2$par, par2, info = nm)
+    expect_identical(res2$fval, fn(par2), info = nm)
+    expect_identical(res2$conv, 0L, info = nm)
+  }
+  # Other optimizers:
+  expect_null(gamm_stage1_optimizer("optimx",
+                                    opt_ctrl = list(method = "L-BFGS-B")))
+  expect_null(gamm_stage1_optimizer("an_optimizer"))
+  expect_null(gamm_stage1_optimizer(c("bobyqa", "Nelder_Mead")))
+})
+
+test_that(paste(
+  "a binomial gamm4() submodel with non-integer data is not fitted to rounded",
+  "data with lme4 < 2.1-1"
+), {
+  skip_if_not(gamm_skips_stage2(),
+              "only lme4 < 2.1-1 with gamm4 >= 0.3-0 skips stage 2")
+  d <- dat_fitters()
+  fit <- divmin_tst("s(z) + x + (1 | g)", d, extend_family(binomial()),
+                    plogis(d$eta))[[1]]
+  expect_s3_class(fit, "gamm4")
+  # The fixed effects and the group-level effects (including the penalized
+  # parts of the smooth) solve the penalized likelihood equations of the
+  # non-integer data (the PIRLS solution for the group-level parameters):
+  mer <- fit$mer
+  resid_w <- stats::weights(mer, type = "prior") *
+    (lme4::getME(mer, "y") - stats::fitted(mer))
+  grad_beta <- drop(as.matrix(Matrix::crossprod(lme4::getME(mer, "X"),
+                                                resid_w)))
+  grad_u <- drop(as.matrix(Matrix::crossprod(
+    lme4::getME(mer, "Lambda"),
+    Matrix::crossprod(lme4::getME(mer, "Z"), resid_w)
+  ))) - lme4::getME(mer, "u")
+  expect_lt(max(abs(c(grad_beta, grad_u))), 1e-4)
+})
+
+test_that(paste(
+  "fit_gamm_callback() passes the stage-1 optimizer to gamm4() only for",
+  "binomial submodels with non-integer data"
+), {
+  ctrl_used <- NULL
+  testthat::local_mocked_bindings(
+    gamm4 = function(...) {
+      ctrl_used <<- list(...)$control
+      stop("mocked gamm4()")
+    },
+    .package = "gamm4"
+  )
+  d <- dat_fitters()
+  fit_gamm_mocked <- function(family, y) {
+    d$y <- y
+    expect_error(fit_gamm_callback(
+      formula = y ~ s(z) + x + (1 | g),
+      projpred_formula_no_random = y ~ s(z) + x,
+      projpred_random = ~ (1 | g), data = d, family = family,
+      weights = rep(1, nrow(d))
+    ), "mocked gamm4")
+    return(ctrl_used)
+  }
+  fam_binom <- extend_family(binomial())
+  # Non-integer data:
+  ctrl <- fit_gamm_mocked(fam_binom, plogis(d$eta))
+  if (gamm_skips_stage2()) {
+    expect_true(is.function(ctrl$optimizer[[1]]))
+    expect_identical(ctrl$optimizer[[1]], ctrl$optimizer[[2]])
+    expect_false(ctrl$calc.derivs)
+  } else {
+    expect_identical(ctrl$optimizer, c("bobyqa", "bobyqa"))
+  }
+  # Integer data and other families:
+  ctrl <- fit_gamm_mocked(fam_binom, as.numeric(d$eta > 0))
+  expect_identical(ctrl$optimizer, c("bobyqa", "bobyqa"))
+  ctrl <- fit_gamm_mocked(extend_family(poisson()), plogis(d$eta))
+  expect_identical(ctrl$optimizer, c("bobyqa", "bobyqa"))
+})
+
 # ordinal::clmm() ---------------------------------------------------------
 
 cats_ord <- c("1", "2", "3", "4")

@@ -1074,6 +1074,23 @@ fit_gamm_callback <- function(formula, projpred_formula_no_random,
       methods::formalArgs(lme4::lFormula),
       methods::formalArgs(lme4::glFormula))
   )]
+  # gamm4::gamm4() has no `nAGQ = 0`: after stage 1 (as `nAGQ = 0` in
+  # lme4::glmer()), it always runs stage 2, which optimizes the fixed effects
+  # with the Laplace objective. lme4 < 2.1-1 rounds non-integer binomial data
+  # in this objective (see glmer_rounds_binomial()). gamm4 >= 0.3-0 uses
+  # `control$optimizer[[1]]` in both stages, so gamm_stage1_optimizer() can
+  # skip stage 2:
+  if (inherits(control, "glmerControl") &&
+      utils::packageVersion("gamm4") >= "0.3.0" &&
+      glmer_rounds_binomial(projpred_formula_no_random, family = family,
+                            data = data, weights = dot_args$weights)) {
+    opt_stage1 <- gamm_stage1_optimizer(control$optimizer[[1]],
+                                        opt_ctrl = control$optCtrl)
+    if (!is.null(opt_stage1)) {
+      control$optimizer <- list(opt_stage1, opt_stage1)
+      control$calc.derivs <- FALSE
+    }
+  }
   # Call the submodel fitter:
   fit <- tryCatch({
     do.call(gamm4::gamm4, c(
@@ -1430,6 +1447,48 @@ glmer_rounds_binomial <- function(formula, family, data, weights) {
     }
   }, error = function(e) TRUE)
   return(!isFALSE(out))
+}
+
+# An optimizer function (see the `optimizer` argument of lme4::glmerControl())
+# for both stages of gamm4::gamm4(). Its first call (stage 1: the group-level
+# parameters, with the fixed effects from the PIRLS step) runs the optimizer
+# `optimizer`. A later call with more parameters (stage 2: the group-level
+# parameters and the fixed effects, from the stage-1 solution) returns the
+# start values, so the fit is that of `nAGQ = 0` in lme4::glmer().
+# `optimizer` is a function or the name of an optimizer of lme4 ("bobyqa" uses
+# the BOBYQA of lme4::nloptwrap()); "optimx" works only with the method
+# "nlminb" in `opt_ctrl`. Returns `NULL` for other optimizers.
+gamm_stage1_optimizer <- function(optimizer, opt_ctrl = list()) {
+  opt_ctrl <- opt_ctrl %||% list()
+  ctrl_stage1 <- list()
+  if (is.function(optimizer)) {
+    optfun <- optimizer
+    ctrl_stage1 <- opt_ctrl
+  } else if (!is.character(optimizer) || length(optimizer) != 1) {
+    return(NULL)
+  } else if (optimizer %in% c("bobyqa", "nloptwrap")) {
+    optfun <- lme4::nloptwrap
+    if (optimizer == "nloptwrap") ctrl_stage1 <- opt_ctrl
+  } else if (optimizer == "Nelder_Mead") {
+    optfun <- lme4::Nelder_Mead
+    ctrl_stage1 <- opt_ctrl
+  } else if (optimizer == "nlminbwrap" ||
+             (optimizer == "optimx" && identical(opt_ctrl$method, "nlminb"))) {
+    optfun <- lme4::nlminbwrap
+    ctrl_stage1 <- opt_ctrl[setdiff(names(opt_ctrl), "method")]
+  } else {
+    return(NULL)
+  }
+  n_par_stage1 <- NULL
+  return(function(par, fn, lower, upper, control = list()) {
+    if (is.null(n_par_stage1) || length(par) <= n_par_stage1) {
+      n_par_stage1 <<- length(par)
+      return(optfun(par = par, fn = fn, lower = lower, upper = upper,
+                    control = ctrl_stage1))
+    }
+    return(list(par = par, fval = fn(par), conv = 0L,
+                message = "projpred: stage 2 of gamm4::gamm4() skipped"))
+  })
 }
 
 # Helper function for fit_glmer_callback() and fit_gamm_callback() to get the

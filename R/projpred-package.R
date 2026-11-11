@@ -96,7 +96,13 @@
 #' * Submodel without multilevel but additive terms: [mgcv::gam()] (the returned
 #' object inherits from class `gam`).
 #' * Submodel with multilevel and additive terms: [gamm4::gamm4()] (within
-#' \pkg{projpred}, the returned object inherits from class `gamm4`).
+#' \pkg{projpred}, the returned object inherits from class `gamm4`). For the
+#' [binomial()] family with non-integer responses or weights, \pkg{lme4}
+#' versions before 2.1-1, and \pkg{gamm4} 0.3-0 or later, \pkg{projpred} gives
+#' [gamm4::gamm4()] an optimizer that skips its second optimization stage, so
+#' the fit is that of `nAGQ = 0` in [lme4::glmer()] (see above). The first
+#' stage uses the optimizer of `control`, with the BOBYQA of
+#' [lme4::nloptwrap()] for `"bobyqa"`.
 #'
 #' # Verbosity, messages, warnings, errors
 #'
