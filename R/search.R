@@ -524,7 +524,11 @@ search_L1 <- function(p_ref, refmodel, nterms_max, penalty, search_control) {
          "full-model formula or `nterms_max = 0`.")
   }
   # Preparations:
-  fr <- model.frame(refmodel$formula, data = refmodel$fetch_data(),
+  # The model frame keeps the contrasts of the reference model, so the
+  # model.matrix() calls below use them:
+  fr <- model.frame(refmodel$formula,
+                    data = set_contrasts(refmodel$fetch_data(),
+                                         refmodel$contrasts),
                     drop.unused.levels = TRUE)
   da_classes <- attr(attr(fr, "terms"), "dataClasses")
   nms_chr_fac <- names(da_classes)[da_classes %in% c("character", "factor")]
@@ -537,12 +541,8 @@ search_L1 <- function(p_ref, refmodel, nterms_max, penalty, search_control) {
   } else {
     xlvls <- NULL
   }
-  # TODO: In the following model.matrix() call, allow user-specified contrasts
-  # to be passed to argument `contrasts.arg`. The `contrasts.arg` default
-  # (`NULL`) uses `options("contrasts")` internally, but it might be more
-  # convenient to let users specify contrasts directly. At that occasion,
-  # contrasts should also be tested thoroughly (not done until now).
   x <- model.matrix(refmodel$formula, data = fr)
+  contrasts_x <- attr(x, "contrasts")
   x <- x[, colnames(x) != "(Intercept)", drop = FALSE]
   ## it's important to keep the original order because that's the order
   ## in which lasso will estimate the parameters
@@ -605,12 +605,6 @@ search_L1 <- function(p_ref, refmodel, nterms_max, penalty, search_control) {
       variables <- unlist(lapply(
         predictor_ranking[seq_len(nterms)],
         function(term) {
-          # TODO: In the following model.matrix() call, allow user-specified
-          # contrasts to be passed to argument `contrasts.arg`. The
-          # `contrasts.arg` default (`NULL`) uses `options("contrasts")`
-          # internally, but it might be more convenient to let users specify
-          # contrasts directly. At that occasion, contrasts should also be
-          # tested thoroughly (not done until now).
           mm <- model.matrix(as.formula(paste("~ 1 +", term)), data = fr)
           return(setdiff(colnames(mm), "(Intercept)"))
         }
@@ -636,7 +630,7 @@ search_L1 <- function(p_ref, refmodel, nterms_max, penalty, search_control) {
 
     sub <- nlist(alpha = search_path$alpha[nterms + 1], beta,
                  w = search_path$w[, nterms + 1], formula, x, xlvls,
-                 terms = attr(fr, "terms"))
+                 terms = attr(fr, "terms"), contrasts = contrasts_x)
     class(sub) <- "subfit"
     return(list(sub))
   })

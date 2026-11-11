@@ -592,6 +592,8 @@ filter_mssgs_warns <- function(mssgs_warns_capt) {
 # * The reference level: the prediction is the mean of the predictions for the
 #   other levels, with weights p (1 - p), where p is the weighted share of a
 #   level. For two other levels, this is their midpoint.
+# With other contrasts (for example, sum contrasts), the prediction for a lost
+# level comes from the ridge solution of glm_ridge().
 lost_levels <- function(data, keep, formula) {
   fml_fixed <- reformulas::nobars(formula)
   rhs_fixed <- fml_fixed[[length(fml_fixed)]]
@@ -677,7 +679,11 @@ recode_lost_levels <- function(newdata, lost_lvls) {
 
 # Drops the levels that lost_levels() recorded from the factors in `data` (the
 # data without the removed rows), so that fitters which keep unused levels in
-# the model matrix do not get a column of zeros.
+# the model matrix do not get a column of zeros. factor() removes the
+# `contrasts` attribute, so the fit uses the default contrasts for such a
+# factor. A contrast matrix cannot in general be reduced to fewer levels, and
+# the predictions of these (multilevel, additive and augmented-data) fitters do
+# not depend on the contrasts.
 drop_lost_levels <- function(data, lost_lvls) {
   for (x_nm in intersect(names(lost_lvls), names(data))) {
     x <- data[[x_nm]]
@@ -702,6 +708,7 @@ fit_glm_ridge_callback <- function(formula, data,
     # differs between the draws:
     x <- projpred_shared_x$x
     xlvls <- projpred_shared_x$xlvls
+    ctrs <- projpred_shared_x$contrasts
     # These terms come from the first draw-wise formula. The predictions for
     # new data use only their predictor variables:
     terms_train <- projpred_shared_x$terms
@@ -711,6 +718,7 @@ fit_glm_ridge_callback <- function(formula, data,
     xy <- glm_model_matrix(formula, data = data)
     x <- xy$x
     xlvls <- xy$xlvls
+    ctrs <- xy$contrasts
     terms_train <- xy$terms
     y <- xy$y
   }
@@ -736,7 +744,7 @@ fit_glm_ridge_callback <- function(formula, data,
   # `terms` keeps the data-dependent bases of the training data (attribute
   # "predvars"), for predictions for new data:
   sub <- nlist(alpha = fit$beta0, beta = fit$beta, w = fit$w, formula, x, y,
-               xlvls, terms = terms_train)
+               xlvls, terms = terms_train, contrasts = ctrs)
   class(sub) <- "subfit"
   return(sub)
 }
@@ -757,15 +765,13 @@ glm_model_matrix <- function(formula, data) {
   } else {
     xlvls <- NULL
   }
-  # TODO: In the following model.matrix() call, allow user-specified contrasts
-  # to be passed to argument `contrasts.arg`. The `contrasts.arg` default
-  # (`NULL`) uses `options("contrasts")` internally, but it might be more
-  # convenient to let users specify contrasts directly. At that occasion,
-  # contrasts should also be tested thoroughly (not done until now).
+  # The model frame keeps the `contrasts` attributes of `data` (see
+  # set_contrasts()), and model.matrix() uses them:
   x <- model.matrix(formula, data = fr)
+  ctrs <- attr(x, "contrasts")
   x <- x[, colnames(x) != "(Intercept)", drop = FALSE]
   return(list(x = x, xlvls = xlvls, y = model.response(fr), n_fr = nrow(fr),
-              terms = attr(fr, "terms")))
+              terms = attr(fr, "terms"), contrasts = ctrs))
 }
 
 # Model matrix shared by the draw-wise formulas `formulas` (which have to differ
@@ -796,7 +802,7 @@ shared_model_matrix <- function(formulas, data) {
   # The response names (as from model.response()) are also shared, so the
   # draw-wise responses do not each get their own copy:
   return(list(x = xy$x, xlvls = xy$xlvls, y_names = names(xy$y),
-              terms = xy$terms))
+              terms = xy$terms, contrasts = xy$contrasts))
 }
 
 # fit_glm_ridge_callback() with a fixed shared model matrix. The enclosing
@@ -930,7 +936,8 @@ glm_ridge_gauss_multi <- function(formulas, shared_x, dot_args, y = NULL) {
     # variables.
     structure(list(alpha = unname(beta0[s]), beta = beta_s, w = w,
                    formula = formulas[[s]], x = x, y = y_s,
-                   xlvls = shared_x$xlvls, terms = shared_x$terms),
+                   xlvls = shared_x$xlvls, terms = shared_x$terms,
+                   contrasts = shared_x$contrasts),
               class = "subfit")
   }))
 }
@@ -1006,7 +1013,7 @@ glm_ridge_native_multi <- function(formulas, shared_x, dot_args, y = NULL) {
     structure(list(alpha = beta0[s], beta = beta_s,
                    w = out$w[, s, drop = FALSE], formula = formulas[[s]],
                    x = x, y = y_s, xlvls = shared_x$xlvls,
-                   terms = shared_x$terms),
+                   terms = shared_x$terms, contrasts = shared_x$contrasts),
               class = "subfit")
   })
   # As fit_glm_ridge_callback() turns the messages into one warning and
@@ -2673,14 +2680,23 @@ predict.subfit <- function(object, newdata = NULL, ...) {
 # Model matrix (with intercept column) of a `subfit` object for new data, with
 # the columns in the order of the coefficients.
 subfit_newdata_x <- function(object, newdata) {
-  # TODO: In the following model.matrix() call, allow user-specified
-  # contrasts to be passed to argument `contrasts.arg`. The `contrasts.arg`
-  # default (`NULL`) uses `options("contrasts")` internally, but it might be
-  # more convenient to let users specify contrasts directly. At that
-  # occasion, contrasts should also be tested thoroughly (not done until
-  # now).
-  x <- model.matrix(subfit_terms_newdata(object), data = newdata,
-                    xlev = object$xlvls)
+  tt <- subfit_terms_newdata(object)
+  # The contrasts of the fit, not the `contrasts` attributes of `newdata` (with
+  # them, model.matrix() would warn "contrasts dropped from factor"). Also,
+  # model.matrix() warns about contrasts of variables that the terms do not
+  # have:
+  newdata <- strip_contrasts(newdata)
+  ctrs <- object$contrasts
+  if (length(ctrs) > 0) {
+    vars <- vapply(as.list(attr(tt, "variables"))[-1], deparse_combine,
+                   character(1))
+    ctrs <- ctrs[intersect(names(ctrs), vars)]
+    if (length(ctrs) == 0) {
+      ctrs <- NULL
+    }
+  }
+  x <- model.matrix(tt, data = newdata, xlev = object$xlvls,
+                    contrasts.arg = ctrs)
   # Need to ensure that the columns of `x` match the coefficients (note that
   # `rownames(beta)` is the same as `colnames(object$x)`, see the tests):
   nms_to_use <- c("(Intercept)", colnames(object$x))
@@ -2720,6 +2736,7 @@ subprd_subfit_shared <- function(fits, newdata) {
     inherits(fit, "subfit") && identical(fit$formula[[3]], rhs_1) &&
       identical(rownames(fit$beta), nms_1) &&
       identical(fit$xlvls, fit_1$xlvls) &&
+      identical(fit$contrasts, fit_1$contrasts) &&
       identical(predvars_predictors(fit$terms), pv_1)
   }, logical(1)))
   if (!is_shared) {

@@ -37,6 +37,7 @@ proj_to_submodl <- function(predictor_terms, p_ref, refmodel,
       formula = refmodel$formula, terms_ = terms_,
       data = refmodel$fetch_data(), y = p_ref$mu, y_unqs = y_unqs_aug
     )
+    subset$data <- set_contrasts(subset$data, refmodel$contrasts)
     fml_divmin <- flatten_formula(subset$formula)
     prep <- if (use_fast) divmin_prepare(fml_divmin, subset$data) else NULL
     if (!is.null(store)) {
@@ -74,6 +75,7 @@ proj_to_submodl <- function(predictor_terms, p_ref, refmodel,
         formula = refmodel$formula, terms_ = terms_,
         data = refmodel$fetch_data(), y = p_ref$mu, y_unqs = y_unqs_aug
       )
+      subset$data <- set_contrasts(subset$data, refmodel$contrasts)
     }
     projpred_ws_aug <- p_ref$mu
     if (refmodel$family$for_augdat && any(refmodel$wobs != 1)) {
