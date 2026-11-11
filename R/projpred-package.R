@@ -7,6 +7,7 @@
 #' @import ggplot2
 #' @importFrom rstantools posterior_linpred
 #' @importFrom loo kfold
+#' @importFrom posterior as_draws as_draws_matrix
 #'
 #' @description
 #'
@@ -146,7 +147,7 @@
 #' but for all other types of submodels, the fitted submodel objects are quite
 #' big, which---when running in parallel---may lead to excessive memory usage
 #' which in turn may crash the R session (on Unix systems, setting an
-#' appropriate memory limit via [unix::rlimit_as()] may avoid crashing the whole
+#' appropriate memory limit via `unix::rlimit_as()` may avoid crashing the whole
 #' machine). Thus, we currently cannot recommend parallelizing projections onto
 #' submodels which are GLMs (in this context, the latent projection onto a
 #' submodel without multilevel and without additive terms may be regarded as a

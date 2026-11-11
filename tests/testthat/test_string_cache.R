@@ -1,7 +1,6 @@
 context("cache of results that depend only on strings")
 
 test_that("cached_by_strings() returns the cached value and empties the cache", {
-  skip_if(getRversion() < "4.2.0", "the cache needs R >= 4.2.0")
   n_calls <- 0
   compute <- function() {
     n_calls <<- n_calls + 1
@@ -76,7 +75,6 @@ test_that("the cached functions give the results of the uncached ones", {
 })
 
 test_that("the cached functions store their results under their keys", {
-  skip_if(getRversion() < "4.2.0", "the cache needs R >= 4.2.0")
   cached_by_strings("test", "init", function() NULL)
   tab <- string_cache$tab
   utils::clrhash(tab)
@@ -109,28 +107,4 @@ test_that("the cached functions store their results under their keys", {
     expect_identical(calls[[k]]$fun(), value, info = as.character(k))
     expect_identical(utils::numhash(tab), n_entries, info = as.character(k))
   }
-})
-
-test_that("without the cache (R < 4.2.0), the values are computed each time", {
-  tab_old <- string_cache$tab
-  available_old <- string_cache$available
-  on.exit({
-    string_cache$tab <- tab_old
-    string_cache$available <- available_old
-  }, add = TRUE)
-  string_cache$tab <- NULL
-  string_cache$available <- FALSE
-  n_calls <- 0
-  compute <- function() {
-    n_calls <<- n_calls + 1
-    "value"
-  }
-  for (k in 1:2) {
-    expect_identical(cached_by_strings("test", "key", compute), "value")
-  }
-  expect_identical(n_calls, 2)
-  expect_null(string_cache$tab)
-  expect_identical(norm_term_labels("x2:x1"), "x1:x2")
-  expect_identical(extract_terms_response(y ~ x1 + x2),
-                   extract_terms_response_uncached(y ~ x1 + x2))
 })

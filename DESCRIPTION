@@ -38,20 +38,20 @@ License: GPL-3 | file LICENSE
 URL: https://mc-stan.org/projpred/, https://discourse.mc-stan.org
 BugReports: https://github.com/stan-dev/projpred/issues/
 Depends:
-    R (>= 3.6.0)
+    R (>= 4.4.0)
 Imports:
     methods,
     utils,
     Rcpp,
-    gtools,
     ggplot2,
     scales,
     rstantools (>= 2.0.0),
-    loo (>= 2.0.0),
+    loo (>= 2.10.1),
+    posterior (>= 1.7.0),
     lme4 (>= 1.1-28),
     mvtnorm,
     mgcv,
-    gamm4,
+    gamm4 (>= 0.3-0),
     abind,
     MASS,
     ordinal,
@@ -71,7 +71,6 @@ Suggests:
     foreach,
     iterators,
     doRNG,
-    unix,
     testthat (>= 3.1.7),
     withr (>= 3.0.3),
     vdiffr,
@@ -81,12 +80,12 @@ Suggests:
     cmdstanr,
     rlang,
     bayesplot (>= 1.5.0),
-    posterior,
     doParallel,
     future,
     future.callr,
     doFuture,
-    progressr
+    progressr,
+    codetools
 LinkingTo: Rcpp, RcppArmadillo
 Additional_repositories:
     https://stan-dev.r-universe.dev/

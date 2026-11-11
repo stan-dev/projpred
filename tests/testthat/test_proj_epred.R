@@ -213,7 +213,6 @@ test_that(paste(
   "pe: `return_draws_matrix` causes a conversion of the output type"
 ), {
   skip_if_not(run_prj)
-  skip_if_not_installed("posterior")
   for (tstsetup in names(prjs)) {
     ndr_ncl <- ndr_ncl_dtls(args_prj[[tstsetup]])
     pe_orig <- pes[[tstsetup]]

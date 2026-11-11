@@ -453,3 +453,30 @@ test_that(".auc() propagates input `NA`s to its output", {
                   "`wobs` column only `NA`s")
   )
 })
+
+test_that("all_ia_perms() gives all orders of an interaction term", {
+  expect_identical(all_ia_perms("a"), "a")
+  expect_identical(all_ia_perms("b:a"), c("b:a", "a:b"))
+  expect_identical(
+    all_ia_perms("x2:x1:s(x3)"),
+    c("x2:x1:s(x3)", "x2:s(x3):x1", "x1:x2:s(x3)", "x1:s(x3):x2",
+      "s(x3):x2:x1", "s(x3):x1:x2")
+  )
+  expect_identical(all_ia_perms(c("b", "a"), is_split = TRUE),
+                   all_ia_perms("b:a"))
+  expect_identical(all_ia_perms(c("a", "a"), is_split = TRUE),
+                   c("a:a", "a:a"))
+  expect_identical(perm_idxs(0L), matrix(integer(0), nrow = 1L, ncol = 0L))
+  expect_identical(perm_idxs(1L), matrix(1L))
+  expect_identical(perm_idxs(3L),
+                   rbind(c(1L, 2L, 3L), c(1L, 3L, 2L), c(2L, 1L, 3L),
+                         c(2L, 3L, 1L), c(3L, 1L, 2L), c(3L, 2L, 1L)))
+  perms4 <- all_ia_perms("d:c:b:a")
+  expect_identical(perms4[c(1:3, 24)],
+                   c("d:c:b:a", "d:c:a:b", "d:b:c:a", "a:b:c:d"))
+  expect_length(perms4, 24)
+  expect_identical(anyDuplicated(perms4), 0L)
+  expect_identical(unique(vapply(strsplit(perms4, ":"), function(trms) {
+    paste(sort(trms), collapse = ":")
+  }, character(1))), "a:b:c:d")
+})

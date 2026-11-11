@@ -8,7 +8,7 @@ If you read this from a place other than <https://mc-stan.org/projpred/news/inde
 ## Major changes
 
 * Faster forward search and LOO CV with validated search for Gaussian submodels with the identity link and for the latent projection, computed from cross-products of the model matrix. For example, `cv_varsel()` with `validate_search = TRUE` for a Gaussian model with 40 observations and 15 predictor terms is about 8 times faster. (GitHub: #579)
-* Faster repeated forward searches, as in `cv_varsel()` with `validate_search = TRUE`: the results of the term-label and formula code are cached within the R session (R >= 4.2.0). For example, LOO CV with validated search is about 12-18 % faster. (GitHub: #599)
+* Faster repeated forward searches, as in `cv_varsel()` with `validate_search = TRUE`: the results of the term-label and formula code are cached within the R session. For example, LOO CV with validated search is about 12-18 % faster. (GitHub: #599)
 * Less formula and model-matrix work in the forward search and in the projections: the candidate submodels are selected from precomputed term labels, and the predictions for the training data use the stored submodel model matrices. For example, `varsel()` with forward search for a Gaussian model with 50 observations and 200 predictor terms is about 1.5 times faster. (GitHub: #578)
 * Faster clustering of the reference model draws for a large number of observations: `kmeans()` runs on the coordinates of the draws in their low-dimensional span, which gives the same clusters. For example, `varsel()` with 50 000 observations, 4 000 draws and 20 clusters is about 4.5 times faster. (GitHub: #576)
 * Faster projections onto submodels without group-level or additive terms: the projected draws (or clusters) share one model matrix, and for the Gaussian family with the identity link, one linear solve gives the submodel fits for all draws. For example, `varsel()` with forward search for a Gaussian model with 50 observations and 200 predictor terms is about 7 times faster. (GitHub: #574)
@@ -27,9 +27,13 @@ If you read this from a place other than <https://mc-stan.org/projpred/news/inde
 
 ## Minor changes
 
+* projpred now requires R >= 4.4.0 (previously R >= 3.6.0). (GitHub: #605)
+* **posterior** is now a required package (previously suggested), so the `as_draws()` and `as_draws_matrix()` methods for projections work without an extra installation. (GitHub: #605)
+* **loo** >= 2.10.1, **posterior** >= 1.7.0 and **gamm4** >= 0.3-0 are now required, and **gtools** is no longer needed. (GitHub: #605)
 * `get_refmodel.stanreg()` has new arguments `cvfun` and `cvrefbuilder` for K-fold CV. For example, a custom `cvrefbuilder` lets custom latent-projection functions use the draws of the fold-wise refits. (GitHub: #604)
 * New function `custom_stat()` defines a user-defined performance statistic for argument `stats` of `summary.vsel()`, `plot.vsel()` and `performances()`, and argument `stat` of `suggest_size()`. (GitHub: #566, #590)
 * Faster `cl_agg()` and conversion of arrays to augmented-rows matrices. For example, LOO CV with validated search for the latent projection with 4000 projected draws is about 3-4 times faster. (GitHub: #600)
+* The parallel `cv_varsel()` with `validate_search = TRUE` sends less data to the workers. (GitHub: #611)
 
 ## Bug fixes and maintenance
 
