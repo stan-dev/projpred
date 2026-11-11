@@ -10,8 +10,9 @@ test_that("as.matrix.projection() works", {
       next
     }
     if (args_prj[[tstsetup]]$mod_nm == "gamm") {
-      # as.matrix() stops for GAMM submodels (issue #131). The other
-      # submodels of GAMM reference models stay skipped.
+      # as.matrix() stops for GAMM submodels. The other submodels of GAMM
+      # reference models stay skipped.
+      # TODO (GAMMs): Fix this.
       if (inherits(prjs[[tstsetup]]$outdmin[[1]], "gamm4")) {
         expect_error(
           as.matrix(prjs[[tstsetup]], allow_nonconst_wdraws_prj = TRUE),
@@ -258,8 +259,9 @@ test_that(paste(
   skip_if_not_installed("posterior")
   for (tstsetup in names(prjs)) {
     if (args_prj[[tstsetup]]$mod_nm == "gamm") {
-      # as_draws_matrix() stops for GAMM submodels (issue #131). The other
-      # submodels of GAMM reference models stay skipped.
+      # as_draws_matrix() stops for GAMM submodels. The other submodels of
+      # GAMM reference models stay skipped.
+      # TODO (GAMMs): Fix this.
       if (inherits(prjs[[tstsetup]]$outdmin[[1]], "gamm4")) {
         expect_error(
           posterior::as_draws_matrix(prjs[[tstsetup]]),

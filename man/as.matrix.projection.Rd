@@ -51,8 +51,8 @@ For a submodel with smooth terms (an additive submodel fitted with
 basis of \code{\link[mgcv:gam]{mgcv::gam()}}. The reference model fit can use another basis (for
 example, \code{\link[rstanarm:stan_gamm4]{rstanarm::stan_gamm4()}} and \pkg{brms} do for \code{s()} terms), so
 in general, these columns cannot be compared with the reference model
-parameters. For a submodel with smooth and group-level
-terms (GAMM), \code{\link[=as.matrix.projection]{as.matrix.projection()}} stops with an error.
+parameters. For a submodel with smooth and group-level terms (GAMM), the
+conversion stops with an error.
 }
 \examples{
 \dontshow{if (requireNamespace("rstanarm", quietly = TRUE)) withAutoprint(\{ # examplesIf}

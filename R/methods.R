@@ -2373,7 +2373,8 @@ get_subparams.gamm4 <- function(x, ...) {
   # coef() of a gamm4 fit is `NULL`, so get_subparams.lm() would return no
   # parameters:
   stop("as.matrix.projection() and as_draws_matrix.projection() do not ",
-       "support submodels with smooth and group-level terms (GAMMs) yet.")
+       "support submodels with smooth and group-level terms (GAMMs) yet.",
+       call. = FALSE)
 }
 
 #' @noRd
@@ -2492,8 +2493,8 @@ get_subparams.mmblogit <- function(x, ...) {
 #'   basis of [mgcv::gam()]. The reference model fit can use another basis (for
 #'   example, [rstanarm::stan_gamm4()] and \pkg{brms} do for `s()` terms), so
 #'   in general, these columns cannot be compared with the reference model
-#'   parameters. For a submodel with smooth and group-level
-#'   terms (GAMM), [as.matrix.projection()] stops with an error.
+#'   parameters. For a submodel with smooth and group-level terms (GAMM), the
+#'   conversion stops with an error.
 #'
 #' @return An \eqn{S_{\mathrm{prj}} \times Q}{S_prj x Q} matrix of projected
 #'   draws, with \eqn{S_{\mathrm{prj}}}{S_prj} denoting the number of projected
