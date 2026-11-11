@@ -61,12 +61,7 @@ coefficients; default: vector of \code{0}s).
 \item For the augmented-data projection: \code{\link[MASS:polr]{MASS::polr()}} (the returned object
 inherits from class \code{polr}) for the \code{\link[brms:cumulative]{brms::cumulative()}} family or
 \code{\link[rstanarm:stan_polr]{rstanarm::stan_polr()}} fits, \code{\link[nnet:multinom]{nnet::multinom()}} (the returned object
-inherits from class \code{multinom}) for the \code{\link[brms:categorical]{brms::categorical()}} family. For \code{\link[ordinal:clmm]{ordinal::clmm()}} with a single
-group-level term \code{(1 | <group>)}, \pkg{projpred} uses
-\code{method = "ucminf"} and \code{grad = "forward"} (see
-\code{\link[ordinal:clmm.control]{ordinal::clmm.control()}}). If this fit fails or does not converge,
-\pkg{projpred} refits with the default settings of \code{\link[ordinal:clmm]{ordinal::clmm()}}. An
-argument \code{method} or \code{control} in \code{...} replaces this default.
+inherits from class \code{multinom}) for the \code{\link[brms:categorical]{brms::categorical()}} family.
 }
 \item Submodel with multilevel but no additive terms:
 \itemize{
@@ -82,7 +77,12 @@ replaces this default in the first fit. After some \pkg{lme4} errors,
 \item For the augmented-data projection: \code{\link[ordinal:clmm]{ordinal::clmm()}} (the returned
 object inherits from class \code{clmm}) for the \code{\link[brms:cumulative]{brms::cumulative()}} family,
 \code{\link[mclogit:mblogit]{mclogit::mblogit()}} (the returned object inherits from class \code{mmblogit})
-for the \code{\link[brms:categorical]{brms::categorical()}} family.
+for the \code{\link[brms:categorical]{brms::categorical()}} family. For \code{\link[ordinal:clmm]{ordinal::clmm()}} with a single
+group-level term \verb{(1 | <group>)}, \pkg{projpred} uses
+\code{method = "ucminf"} and \code{grad = "forward"} (see
+\code{\link[ordinal:clmm.control]{ordinal::clmm.control()}}). If this fit fails or does not converge,
+\pkg{projpred} refits with the default settings of \code{\link[ordinal:clmm]{ordinal::clmm()}}. An
+argument \code{method} or \code{control} in \code{...} replaces this default.
 }
 \item Submodel without multilevel but additive terms: \code{\link[mgcv:gam]{mgcv::gam()}} (the returned
 object inherits from class \code{gam}).
