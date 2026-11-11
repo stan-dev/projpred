@@ -48,7 +48,7 @@ If you read this from a place other than <https://mc-stan.org/projpred/news/inde
 * Tests: Leave the options, the random seed and the global environment of the R session unchanged after the tests, also when a test fails, and remove the manual cleanup of the test workspace. (GitHub: #586)
 * Fixed the error "'gam.fit' is not an exported object from 'namespace:mgcv'" in projections onto additive submodels with mgcv 1.9-5. (GitHub: #598, #602)
 * Fixed the log-likelihood of binomial (logit) and Poisson (log) reference model draws with a large linear predictor, where the inverse link clamped the mean. (GitHub: #614)
-* Fixed the log-likelihood of reference model draws with small response category probabilities in the augmented-data projection (cumulative, categorical and binomial families). This changes the LOO CV results for such draws. (GitHub: #PR)
+* Fixed the log-likelihood of reference model draws with small response category probabilities in the augmented-data projection (cumulative, categorical and binomial families). K-fold CV now also uses the exact reference model log-likelihood of #614. (GitHub: #PR)
 
 
 # projpred 2.11.0

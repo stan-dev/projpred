@@ -168,6 +168,22 @@ test_that("augdat ll_fun() keeps ll_cats() for `NA` and other cases", {
   expect_identical(ll_na[1, 2], ll_mu[1, 2])
   expect_true(is.na(ll_mu[1, 2]))
   expect_equal(ll_na[-3], ll_of(fam, eta_arr, y)[-3], tolerance = 1e-14)
+  # p = 0 (equal thresholds) and p below the smallest double (cloglog upper
+  # tail): the finite ll_cats() value, without a warning. The cloglog lower
+  # tail is finite where exp(eta) underflows.
+  ll_1c <- function(fam, eta_vec, cat, use_eta = TRUE) {
+    ll_of(fam, array(eta_vec, c(1, length(eta_vec), 1)),
+          factor(cat, levels = fam$cats), use_eta = use_eta)[1, 1]
+  }
+  ll_bound <- log(.Machine$double.eps)
+  expect_no_warning(ll_eq <- ll_1c(fam, c(0, 0), "c2"))
+  expect_identical(ll_eq, ll_bound)
+  fam_c <- fam_augdat("cumulative", "cloglog", 3)
+  expect_no_warning(ll_up <- ll_1c(fam_c, c(800, 900), "c2"))
+  expect_identical(ll_up, ll_bound)
+  expect_equal(ll_1c(fam_c, c(-800, -790), "c2"), -790 + log1p(-exp(-10)),
+               tolerance = 1e-14)
+  expect_equal(ll_1c(fam_c, c(-800, -790), "c1"), -800, tolerance = 1e-14)
   # No formula (family `sratio`): ll_cats().
   fam_s <- extend_family(
     structure(list(family = "sratio", link = "logit"), class = "family"),
@@ -224,24 +240,22 @@ refm_augdat_extreme <- function(link = "logit", offset = FALSE, n = 40,
                 resp_form = if (extract_y) ~ y else NULL)
   }
   fit <- list(beta = beta, thr = thr_draws, data = dat)
-  refm <- withCallingHandlers(
-    init_refmodel(fit, data = dat, formula = fml,
+  # For K-fold CV, each fold gets the full-data draws:
+  make_refm <- function(fit_k) {
+    init_refmodel(fit_k, data = dat, formula = fml,
                   family = structure(list(family = "cumulative_rstanarm",
                                           link = link), class = "family"),
                   ref_predfun = ref_predfun,
                   extract_model_data = extract_model_data,
+                  cvfun = function(folds) rep(list(fit), max(folds)),
+                  cvrefbuilder = make_refm,
                   augdat_y_unqs = paste0("c", 1:4),
                   augdat_link = augdat_link_cumul,
                   augdat_ilink = augdat_ilink_cumul,
                   augdat_args_link = list(link = link),
-                  augdat_args_ilink = list(link = link)),
-    warning = function(w) {
-      if (grepl("`cvrefbuilder` was `NULL`", conditionMessage(w),
-                fixed = TRUE)) {
-        invokeRestart("muffleWarning")
-      }
-    }
-  )
+                  augdat_args_ilink = list(link = link))
+  }
+  refm <- make_refm(fit)
   # The exact N x S log-likelihood (logit link), from the draws (not from
   # `refm`), with the thresholds -Inf and Inf for the first and last category:
   stopifnot(link == "logit")
@@ -262,27 +276,48 @@ refm_augdat_extreme <- function(link = "logit", offset = FALSE, n = 40,
   list(refm = refm, ll_exact = ll_exact)
 }
 
-test_that("augmented-data reference model LOO and predict() are exact", {
-  skip_if_not_installed("MASS")
+test_that("augdat reference model LOO, K-fold and predict() are exact", {
+  # Collect the warnings of cv_varsel() (Pareto k, submodel fits); the warning
+  # of ll_eta_augdat() must not be among them:
+  cv_varsel_warns <- function(...) {
+    warns <- character()
+    out <- withCallingHandlers(cv_varsel(...), warning = function(w) {
+      warns <<- c(warns, conditionMessage(w))
+      invokeRestart("muffleWarning")
+    })
+    list(out = out, warns = warns)
+  }
   for (offset in c(FALSE, TRUE)) {
     info <- paste("offset:", offset)
     # predict.refmodel() with `ynew`, all draws with a large |eta|:
     obj_all <- refm_augdat_extreme(offset = offset, n_extreme = 60)
     refm_all <- obj_all$refm
     expect_identical(any(refm_all$offset != 0), offset, info = info)
-    lpd <- predict(refm_all, newdata = refm_all$fetch_data(),
-                   ynew = refm_all$y)
+    expect_no_warning(lpd <- predict(refm_all,
+                                     newdata = refm_all$fetch_data(),
+                                     ynew = refm_all$y))
     lpd_exact <- apply(obj_all$ll_exact, 1, log_sum_exp) -
       log(ncol(obj_all$ll_exact))
     expect_lt(min(lpd_exact), log(.Machine$double.eps))
     expect_equal(lpd, lpd_exact, tolerance = 1e-10, info = info)
+    # K-fold CV: each fold has the full-data draws (see `cvfun` of
+    # refm_augdat_extreme()), so the reference model values are `lpd_exact`:
+    cv_k <- cv_varsel_warns(
+      refm_all, cv_method = "kfold", K = 2, nterms_max = 1,
+      method = "forward", verbose = FALSE
+    )
+    expect_false(any(grepl("standard inverse link", cv_k$warns)), info = info)
+    expect_equal(cv_k$out$summaries$ref$lppd, lpd_exact, tolerance = 1e-10,
+                 info = info)
     # The PSIS-LOO values of the reference model in cv_varsel():
     obj <- refm_augdat_extreme(offset = offset)
     expect_lt(min(obj$ll_exact), log(.Machine$double.eps))
-    cvvs <- suppressWarnings(cv_varsel(
+    cv_l <- cv_varsel_warns(
       obj$refm, cv_method = "LOO", validate_search = FALSE, nterms_max = 1,
       method = "forward", verbose = FALSE
-    ))
+    )
+    expect_false(any(grepl("standard inverse link", cv_l$warns)), info = info)
+    cvvs <- cv_l$out
     psis_exact <- suppressWarnings(loo::psis(-t(obj$ll_exact), cores = 1,
                                              r_eff = NA))
     lppd_exact <- apply(t(obj$ll_exact) + weights(psis_exact), 2,

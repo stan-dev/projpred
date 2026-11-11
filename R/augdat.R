@@ -245,7 +245,7 @@ ll_cats <- function(mu_arr, margin_draws = 3, y, wobs = 1) {
 # @return An N x S matrix. This is `ll` if augdat_log_prbs() has no formula
 #   for `fam_nm` and `link_nm`, or (with a warning) if the probabilities from
 #   `eta` do not match `mu_arr` (for example, for a custom `augdat_ilink`).
-#   Where `eta` is `NA`, the entries of `ll` are kept.
+#   Where `eta` is `NA` or log(p) is not finite, the entries of `ll` are kept.
 ll_eta_augdat <- function(ll, mu_arr, eta, y, wobs, fam_nm, link_nm) {
   dim_arr <- dim(mu_arr)
   n_obs <- dim_arr[1]
@@ -262,13 +262,16 @@ ll_eta_augdat <- function(ll, mu_arr, eta, y, wobs, fam_nm, link_nm) {
     return(ll)
   }
   # Observations and draws with an `NA` in `eta`:
-  na_os <- apply(is.na(eta_arr), c(1, 3), any)
+  na_os <- matrix(FALSE, nrow = n_obs, ncol = n_draws)
+  for (k in seq_len(dim_arr[2] - 1L)) {
+    na_os <- na_os | is.na(matrix(eta_arr[, k, ], nrow = n_obs))
+  }
   na_arr <- aperm(array(na_os, dim = c(n_obs, n_draws, dim_arr[2])),
                   c(1, 3, 2))
-  # The probabilities from `eta` must be valid and equal to `mu_arr` where these
-  # are not small (the relative error of `mu_arr` is about 1.1e-16 / mu_arr):
+  # The probabilities from `eta` must be equal to `mu_arr` where these are not
+  # small (the absolute rounding error of `mu_arr` is about 2e-16):
   chk <- which(!na_arr & mu_arr > 1e-6)
-  if (anyNA(lp_arr[!na_arr]) ||
+  if (any(!is.finite(lp_arr[chk])) ||
       any(abs(exp(lp_arr[chk]) - mu_arr[chk]) > 1e-8 * mu_arr[chk])) {
     warning("The response probabilities of the augmented-data projection ",
             "differ from those of the standard inverse link of family '",
@@ -290,7 +293,11 @@ ll_eta_augdat <- function(ll, mu_arr, eta, y, wobs, fam_nm, link_nm) {
                    rep(seq_len(n_draws), each = n_obs))
   lp_obs <- matrix(lp_arr[idx_obs], nrow = n_obs, ncol = n_draws)
   ll_out <- ll_xlogp(as.vector(wobs), lp_obs)
-  ll_out[na_os] <- ll[na_os]
+  # Keep `ll` where `eta` is `NA` and where log(p) is not finite: p is 0 (equal
+  # thresholds), below the smallest double, or `NaN` (thresholds not ordered).
+  # loo::psis() needs finite values, and `ll` is finite there.
+  keep <- na_os | !is.finite(ll_out)
+  ll_out[keep] <- ll[keep]
   dimnames(ll_out) <- dimnames(ll)
   return(ll_out)
 }
@@ -313,16 +320,20 @@ augdat_log_prbs <- function(eta_arr, fam_nm, link_nm) {
     if (link_nm != "logit") {
       return(NULL)
     }
-    # Softmax with the latent predictor 0 for the reference category:
-    eta_full <- array(0, dim = dim_out)
-    eta_full[, -1, ] <- eta_arr
-    eta_max <- apply(eta_full, c(1, 3), max)
-    lse <- eta_max + log(apply(eta_full, c(1, 3), function(x) {
-      sum(exp(x - max(x)))
-    }))
-    lse_arr <- aperm(array(lse, dim = c(dim_out[1], dim_out[3], dim_out[2])),
-                     c(1, 3, 2))
-    return(eta_full - lse_arr)
+    # Log-softmax with the latent predictor 0 for the reference category (N x
+    # S matrices per category):
+    eta_k <- c(list(matrix(0, nrow = dim_out[1], ncol = dim_out[3])),
+               lapply(seq_len(n_lat), function(k) {
+                 matrix(eta_arr[, k, ], nrow = dim_out[1])
+               }))
+    eta_max <- do.call(pmax, eta_k)
+    sum_exp <- Reduce(`+`, lapply(eta_k, function(e) exp(e - eta_max)))
+    lse <- eta_max + log(sum_exp)
+    lp_arr <- array(NA_real_, dim = dim_out)
+    for (k in seq_along(eta_k)) {
+      lp_arr[, k, ] <- eta_k[[k]] - lse
+    }
+    return(lp_arr)
   }
   if (!link_nm %in% c("logit", "probit", "cauchit", "cloglog")) {
     return(NULL)
@@ -357,8 +368,13 @@ log_cdf_link <- function(x, link_nm, lower = TRUE) {
     logit = plogis(x, lower.tail = lower, log.p = TRUE),
     probit = pnorm(x, lower.tail = lower, log.p = TRUE),
     cauchit = pcauchy(x, lower.tail = lower, log.p = TRUE),
-    # F(x) = 1 - exp(-exp(x)):
-    cloglog = if (lower) log1mexp(exp(x)) else -exp(x),
+    # F(x) = 1 - exp(-exp(x)); for x < -20, log(F(x)) = x - exp(x) / 2 up to
+    # exp(2 * x) / 24 (exp(x) underflows for x < -745):
+    cloglog = if (lower) {
+      ifelse(x < -20, x - exp(x) / 2, log1mexp(exp(x)))
+    } else {
+      -exp(x)
+    },
     stop("Unexpected link '", link_nm, "'. Please notify the package ",
          "maintainer.")
   )
@@ -366,16 +382,20 @@ log_cdf_link <- function(x, link_nm, lower = TRUE) {
 
 # log(F(b) - F(a)) for a <= b (elementwise). The lower-tail form is used if
 # F(a) <= 0.5, the upper-tail form otherwise, so the difference does not lose
-# digits. The result is `NaN` for a > b.
+# digits. The result is `-Inf` if F(b) (lower tail) or 1 - F(a) (upper tail)
+# underflows, and `NaN` for a > b.
 log_diff_cdf <- function(a, b, link_nm) {
   lFa <- log_cdf_link(a, link_nm, lower = TRUE)
   lFb <- log_cdf_link(b, link_nm, lower = TRUE)
   out <- lFb + log1mexp(lFb - lFa)
+  out[lFb == -Inf] <- -Inf
   up <- which(lFa > log(0.5))
   if (length(up) > 0) {
     lSa <- log_cdf_link(a[up], link_nm, lower = FALSE)
     lSb <- log_cdf_link(b[up], link_nm, lower = FALSE)
-    out[up] <- lSa + log1mexp(lSa - lSb)
+    out_up <- lSa + log1mexp(lSa - lSb)
+    out_up[lSa == -Inf] <- -Inf
+    out[up] <- out_up
   }
   return(out)
 }

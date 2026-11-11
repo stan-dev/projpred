@@ -1496,7 +1496,10 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws, nclusters,
       wdraws = fold$refmodel$wdraws_ref,
       mu = mu_test,
       dis = fold$refmodel$dis,
-      cl_ref = seq_along(fold$refmodel$wdraws_ref)
+      cl_ref = seq_along(fold$refmodel$wdraws_ref),
+      # The linear predictor gives the exact log-likelihood where the inverse
+      # link clamps `mu_test` (as in `loglik_forPSIS` of loo_varsel()):
+      eta = if (!fold$refmodel$family$for_latent) eta_test
     )
 
     return(nlist(predictor_ranking = search_path[["predictor_ranking"]],
