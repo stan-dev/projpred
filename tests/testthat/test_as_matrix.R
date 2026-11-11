@@ -217,6 +217,33 @@ test_that("as.matrix.projection() works", {
     expect_true(setequal(colnames(m), colnms_prjmat_expect),
                 info = tstsetup)
     ###
+    if (pkg_crr == "rstanarm" &&
+        any(c("(1 | z.1)", "(xco.1 | z.1)") %in% prd_trms)) {
+      # The `Sigma[...]` columns hold the variances and covariances, in the
+      # order of rstanarm (lower triangle of the covariance matrix in
+      # column-major order):
+      sigma_nms <- grep("^Sigma\\[z\\.1:", colnames(m), value = TRUE)
+      if ("(xco.1 | z.1)" %in% prd_trms) {
+        sigma_nms_expect <- c("Sigma[z.1:(Intercept),(Intercept)]",
+                              "Sigma[z.1:xco.1,(Intercept)]",
+                              "Sigma[z.1:xco.1,xco.1]")
+      } else {
+        sigma_nms_expect <- "Sigma[z.1:(Intercept),(Intercept)]"
+      }
+      expect_identical(sigma_nms, sigma_nms_expect, info = tstsetup)
+      outdmin_crr <- prjs[[tstsetup]]$outdmin
+      sigma_expect <- do.call(rbind, lapply(outdmin_crr, function(fit_j) {
+        if (inherits(fit_j, "clmm")) {
+          vc_j <- ordinal::VarCorr(fit_j)$z.1
+        } else {
+          vc_j <- lme4::VarCorr(fit_j)$z.1
+        }
+        vc_j <- matrix(as.vector(unclass(vc_j)), nrow = nrow(vc_j))
+        vc_j[lower.tri(vc_j, diag = TRUE)]
+      }))
+      expect_equal(unname(m[, sigma_nms, drop = FALSE]), sigma_expect,
+                   tolerance = 1e-12, info = tstsetup)
+    }
     if (run_snaps) {
       if (testthat_ed_max2) local_edition(3)
       withr::with_options(list(width = 145), {

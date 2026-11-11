@@ -2223,9 +2223,30 @@ coef.subfit <- function(object, ...) {
   )))
 }
 
-# To process the multilevel variance components (from a submodel fit):
-proc_VarCorr <- function(group_vc_raw, nms_lats = NULL, ...) {
+# To process the multilevel variance components (from a submodel fit). With
+# `nm_scheme = "brms"`, the output holds the standard deviations and the
+# correlations. With `nm_scheme = "rstanarm"`, it holds the variances and the
+# covariances, as rstanarm does: per group, the lower triangle of the
+# covariance matrix (diagonal included) in column-major order.
+proc_VarCorr <- function(group_vc_raw, nms_lats = NULL, nm_scheme, ...) {
   group_vc <- unlist(lapply(group_vc_raw, function(vc_obj) {
+    if (nm_scheme == "rstanarm" && is.null(nms_lats)) {
+      cov_mat <- matrix(as.vector(unclass(vc_obj)), nrow = nrow(vc_obj),
+                        ncol = ncol(vc_obj))
+      coef_nms_vc <- rownames(vc_obj)
+      # Note: which() returns the indices in column-major order.
+      idxs <- which(lower.tri(cov_mat, diag = TRUE), arr.ind = TRUE)
+      # The names use the keys "sd" (diagonal) and "cor" (off-diagonal) that
+      # mknms_VarCorr() expects, although the values are the variances and the
+      # covariances:
+      nms_vc <- ifelse(
+        idxs[, "row"] == idxs[, "col"],
+        paste0("sd.", coef_nms_vc[idxs[, "row"]]),
+        paste0("cor.", coef_nms_vc[idxs[, "col"]], ".",
+               coef_nms_vc[idxs[, "row"]])
+      )
+      return(setNames(cov_mat[idxs], nms_vc))
+    }
     # The vector of standard deviations:
     if (is.null(nms_lats)) {
       vc_out <- c("sd" = attr(vc_obj, "stddev"))
@@ -2264,7 +2285,8 @@ proc_VarCorr <- function(group_vc_raw, nms_lats = NULL, ...) {
     }
     return(vc_out)
   }))
-  names(group_vc) <- mknms_VarCorr(names(group_vc), nms_lats = nms_lats, ...)
+  names(group_vc) <- mknms_VarCorr(names(group_vc), nms_lats = nms_lats,
+                                   nm_scheme = nm_scheme, ...)
   return(group_vc)
 }
 
@@ -2478,7 +2500,16 @@ get_subparams.mmblogit <- function(x, ...) {
 #'   the returned matrix).
 #' @param ... Currently ignored.
 #'
-#' @details In case of the augmented-data projection for a multilevel submodel
+#' @details For a multilevel submodel, the group-level variance components
+#'   follow the naming scheme and the parametrization of the corresponding
+#'   package: With `nm_scheme = "rstanarm"`, the columns
+#'   `Sigma[<group>:<a>,<a>]` and `Sigma[<group>:<b>,<a>]` contain the
+#'   group-level variances and covariances (per group, the lower triangle of
+#'   the covariance matrix in column-major order). With `nm_scheme = "brms"`,
+#'   the columns `sd_<group>__<a>` and `cor_<group>__<a>__<b>` contain the
+#'   group-level standard deviations and correlations.
+#'
+#'   In case of the augmented-data projection for a multilevel submodel
 #'   of a [brms::categorical()] reference model, the multilevel parameters (and
 #'   therefore also their names) slightly differ from those in the \pkg{brms}
 #'   reference model fit (see section "Augmented-data projection" in
