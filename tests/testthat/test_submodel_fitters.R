@@ -371,6 +371,9 @@ test_that(paste(
                tolerance = 1e-5)
   expect_equal(coef(fit_gamm$gam)[["x"]], coef(fit_gam)[["x"]],
                tolerance = 1e-5)
+  # as.matrix.projection() does not support gamm4() submodels:
+  expect_error(get_subparams(fit_gamm, nm_scheme = "rstanarm"),
+               "do not support submodels with smooth and group-level terms")
 })
 
 test_that(paste(

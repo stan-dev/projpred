@@ -2370,7 +2370,10 @@ get_subparams.glmerMod <- function(x, ...) {
 #' @noRd
 #' @export
 get_subparams.gamm4 <- function(x, ...) {
-  return(get_subparams.lm(x, ...))
+  # coef() of a gamm4 fit is `NULL`, so get_subparams.lm() would return no
+  # parameters:
+  stop("as.matrix.projection() and as_draws_matrix.projection() do not ",
+       "support submodels with smooth and group-level terms (GAMMs) yet.")
 }
 
 #' @noRd
@@ -2483,6 +2486,14 @@ get_subparams.mmblogit <- function(x, ...) {
 #'   therefore also their names) slightly differ from those in the \pkg{brms}
 #'   reference model fit (see section "Augmented-data projection" in
 #'   [extend_family()]'s documentation).
+#'
+#'   For a submodel with smooth terms (an additive submodel fitted with
+#'   [mgcv::gam()]), the columns of the smooth terms are the coefficients in the
+#'   basis of [mgcv::gam()]. The reference model fit can use another basis (for
+#'   example, [rstanarm::stan_gamm4()] and \pkg{brms} do for `s()` terms), so
+#'   in general, these columns cannot be compared with the reference model
+#'   parameters. For a submodel with smooth and group-level
+#'   terms (GAMM), [as.matrix.projection()] stops with an error.
 #'
 #' @return An \eqn{S_{\mathrm{prj}} \times Q}{S_prj x Q} matrix of projected
 #'   draws, with \eqn{S_{\mathrm{prj}}}{S_prj} denoting the number of projected
