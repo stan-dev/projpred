@@ -60,16 +60,16 @@ expand_formula <- function(formula, data) {
   return(formula(terms(formula, data = data)))
 }
 
-# The arguments of a smooth term (a character string such as "s(x, z)"), as
-# character strings ("x", "z"). projpred does not allow other arguments of
-# s() and t2() (see parse_additive_terms()).
+# Returns the arguments of a smooth term, for example c("x", "z") for
+# "s(x, z)". projpred does not allow other arguments of s() and t2() (see
+# parse_additive_terms()).
 smooth_args <- function(smooth) {
   cl <- str2lang(smooth)
   return(unname(vapply(as.list(cl)[-1], deparse_combine, character(1))))
 }
 
-# The linear terms of `formula` that are also an argument of a smooth term, for
-# example `x` next to `s(x)`. With the default bases of mgcv, the smooth term
+# Returns the linear terms of `formula` that are also an argument of a smooth
+# term, for example `x` next to `s(x)`. With the default bases of mgcv, the smooth term
 # contains the linear term, so the coefficient of the linear term is not
 # identifiable. Interaction terms (such as `x:z` next to `t2(x, z)`) are not
 # checked.
@@ -1042,9 +1042,9 @@ formula.gamm4 <- function(x, ...) {
     paste0("(", t, ")")
   }))
   ref <- paste(ref, collapse = " + ")
-  # As for a model without group-level terms, the formula has the terms of the
-  # model (the search adds the linear terms of the smooth variables as
-  # candidates):
+  # Keep only the terms of the model, as for a model without group-level
+  # terms. The search adds the linear terms of the smooth variables as
+  # candidates.
   form <- flatten_formula(update(formula, paste(". ~ . + ", ref)))
   # TODO (GAMMs): Once rstanarm issue #253 has been resolved, we probably need
   # to include offset terms here (in the output of formula.gamm4()) as well.

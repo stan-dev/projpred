@@ -21,10 +21,10 @@
 #' @param predictor_terms If not `NULL`, then this needs to be a character
 #'   vector of predictor terms for the submodel onto which the projection will
 #'   be performed. Argument `nterms` is ignored in that case. For an `object`
-#'   which is not of class `vsel`, `predictor_terms` must not be `NULL`. If the
+#'   which is not of class `vsel`, `predictor_terms` must not be `NULL`. If a
 #'   submodel has a linear term and a smooth term of the same variable (for
-#'   example, `x` and `s(x)`), the projection drops the linear term (with a
-#'   message), because its coefficient is not identifiable.
+#'   example, `x` and `s(x)`), the projection drops the linear term and gives a
+#'   message. The coefficient of this linear term is not identifiable.
 #' @param refit_prj A single logical value indicating whether to fit the
 #'   submodels (again) (`TRUE`) or---if `object` is of class `vsel`---to re-use
 #'   the submodel fits from the full-data search that was run when creating
@@ -299,8 +299,8 @@ project <- function(
   ## Warnings ---------------------------------------------------------------
 
   nterms_max <- max(nterms)
-  # proj_to_submodl() drops a linear term next to a smooth term of the same
-  # variable:
+  # Message about the linear terms that proj_to_submodl() drops (a linear term
+  # next to a smooth term of the same variable).
   fml_max <- make_formula(predictor_terms[seq_len(nterms_max)])
   dups_smooth <- smooth_covered_terms(fml_max)
   if (length(dups_smooth) > 0 &&
@@ -312,7 +312,7 @@ project <- function(
     message("The projection drops the linear term(s) `",
             paste(dups_smooth, collapse = "`, `"), "` from a submodel that ",
             "also has the smooth term(s) `", paste(smooths, collapse = "`, `"),
-            "` (the coefficient of such a linear term is not identifiable).")
+            "`. The coefficient of such a linear term is not identifiable.")
   }
   nterms_all <- count_terms_in_formula(refmodel$formula) - 1L
   if (nterms_max == nterms_all &&
