@@ -40,6 +40,112 @@ log_sum_exp <- function(x) {
   max_x + log(sum(exp(x - max_x)))
 }
 
+# Evaluate `expr` and then restore the RNG state (and the RNG kind if `expr`
+# changed it).
+with_preserved_seed <- function(expr) {
+  old_kind <- RNGkind()
+  had_seed <- exists(".Random.seed", envir = globalenv(), inherits = FALSE)
+  if (had_seed) {
+    old_seed <- get(".Random.seed", envir = globalenv(), inherits = FALSE)
+  }
+  on.exit({
+    if (!identical(RNGkind(), old_kind)) {
+      suppressWarnings(RNGkind(old_kind[1], old_kind[2], old_kind[3]))
+    }
+    if (had_seed) {
+      assign(".Random.seed", old_seed, envir = globalenv())
+    } else if (exists(".Random.seed", envir = globalenv(), inherits = FALSE)) {
+      rm(".Random.seed", envir = globalenv())
+    }
+  })
+  expr
+}
+
+# Base seed for the weights of the weight perturbation, drawn from the current
+# RNG stream without advancing it.
+perturb_base_seed <- function() {
+  with_preserved_seed(sample.int(.Machine$integer.max, 1))
+}
+
+# Observation weights n * Dirichlet(alpha, ..., alpha). They use their own seed
+# and generator, so sequential and parallel runs give the same weights.
+perturb_weights <- function(n, alpha, seed) {
+  g <- with_preserved_seed({
+    set.seed(seed, kind = "Mersenne-Twister", normal.kind = "Inversion",
+             sample.kind = "Rejection")
+    stats::rgamma(n, alpha)
+  })
+  w <- n * g / sum(g)
+  if (!all(is.finite(w))) {
+    stop("Argument `loo_perturb_alpha` is too small: the perturbation ",
+         "weights are not finite.")
+  }
+  w
+}
+
+# `TRUE` if all values of the numeric array `x` are finite. min() and max() do
+# not copy `x`. They return NA, NaN or +-Inf if a value of `x` is not finite:
+all_finite <- function(x) {
+  length(x) == 0 || (is.finite(min(x)) && is.finite(max(x)))
+}
+
+# Reference model for the search of LOO fold i with weight perturbation. It
+# multiplies `wobs` by w = n * Dirichlet(alpha, ..., alpha), with w_i set to 0.
+# Each draw of the linear predictor of observation k moves by the first-order
+# change of its posterior mean under these weights:
+#   c_s = sum_{j != i} (w_j - 1) log p(y_j | theta_s),
+#   cbar = sum_s omega_s c_s,
+#   delta_k = sum_s omega_s (c_s - cbar) eta_ks,
+# where omega are the PSIS-LOO weights of fold i (`lw_i`, log scale). The log
+# of the dispersion moves in the same way. `ll` is the S x n log-likelihood
+# matrix of the reference draws. Returns `NULL` if the shifted linear
+# predictors, means (with and without offsets) or dispersions are not finite.
+perturb_refmodel <- function(refmodel, i, ll, lw_i, alpha, seed) {
+  n <- ncol(ll)
+  w <- perturb_weights(n, alpha, seed)
+  w[i] <- 0
+  dw <- w - 1
+  dw[i] <- 0
+  om <- exp(lw_i - log_sum_exp(lw_i))
+  cc <- drop(ll %*% dw)
+  cd <- om * (cc - sum(om * cc))
+  if (!all(is.finite(cd))) {
+    return(NULL)
+  }
+  refmodel$eta <- refmodel$eta + drop(refmodel$eta %*% cd)
+  # With a bounded inverse link (logit, probit), an infinite `eta` gives a
+  # finite `mu`, so check `eta` itself:
+  if (!all_finite(refmodel$eta)) {
+    return(NULL)
+  }
+  refmodel$mu <- refmodel$family$linkinv(refmodel$eta)
+  if (!all_finite(refmodel$mu)) {
+    return(NULL)
+  }
+  if (!all(refmodel$offset == 0)) {
+    if (refmodel$family$family %in% fams_neg_linpred()) {
+      eta_offs <- refmodel$eta - refmodel$offset
+    } else {
+      eta_offs <- refmodel$eta + refmodel$offset
+    }
+    refmodel$mu_offs <- refmodel$family$linkinv(eta_offs)
+    if (!all_finite(refmodel$mu_offs)) {
+      return(NULL)
+    }
+  } else {
+    refmodel$mu_offs <- refmodel$mu
+  }
+  if (!any(is.na(refmodel$dis)) && all(refmodel$dis > 0)) {
+    ldis <- log(refmodel$dis)
+    refmodel$dis <- exp(ldis + sum(ldis * cd))
+  }
+  if (!any(is.na(refmodel$dis)) && !all(is.finite(refmodel$dis))) {
+    return(NULL)
+  }
+  refmodel$wobs <- refmodel$wobs * w
+  refmodel
+}
+
 linkfun_raw <- function(x, link_nm) {
   if (link_nm %in% c("logistic")) {
     link_nm <- "logit"
@@ -142,7 +248,8 @@ validate_num_folds <- function(k, n) {
   }
 }
 
-validate_vsel_object_stats <- function(object, stats, resp_oscale = TRUE) {
+validate_vsel_object_stats <- function(object, stats, resp_oscale = TRUE,
+                                       custom_stats = list()) {
   if (!inherits(object, c("vsel"))) {
     stop("The object is not a variable selection object. Run variable ",
          "selection first")
@@ -153,8 +260,7 @@ validate_vsel_object_stats <- function(object, stats, resp_oscale = TRUE) {
   }
   resp_oscale <- object$refmodel$family$for_latent && resp_oscale
 
-  trad_stats <- c("elpd", "mlpd", "gmpd", "mse", "rmse", "R2",
-                  "acc", "pctcorr", "auc")
+  trad_stats <- builtin_stats()
   trad_stats_binom_only <- c("acc", "pctcorr", "auc")
   augdat_stats <- c("elpd", "mlpd", "gmpd", "acc", "pctcorr")
   resp_oscale_stats_fac <- augdat_stats
@@ -168,7 +274,17 @@ validate_vsel_object_stats <- function(object, stats, resp_oscale = TRUE) {
     fam_ch <- object$refmodel$family$family
   }
   for (stat in stats) {
-    if (object$refmodel$family$for_augdat) {
+    if (stat %in% names(custom_stats)) {
+      if (object$refmodel$family$for_augdat) {
+        stop("Currently, the augmented-data projection may not be combined ",
+             "with a custom performance statistic.")
+      }
+      if (resp_oscale && !is.null(object$refmodel$family$cats)) {
+        stop("Currently, the latent projection with `resp_oscale = TRUE` and ",
+             "a non-`NULL` element `family$cats` may not be combined with a ",
+             "custom performance statistic.")
+      }
+    } else if (object$refmodel$family$for_augdat) {
       if (!stat %in% augdat_stats) {
         stop("Currently, the augmented-data projection may not be combined ",
              "with performance statistic `\"", stat, "\"`.")
@@ -444,37 +560,108 @@ get_p_clust <- function(family, eta, mu, mu_offs, dis, nclusters = 10,
   }
 
   # (Re)compute the cluster centers, because they may be different from the ones
-  # returned by kmeans() if the draws have differing weights.
+  # returned by kmeans() if the draws have differing weights. `cl` has one
+  # element per draw (column of `mu`).
   # Number of clusters (assumes labeling "1, ..., nclusters"):
   nclusters <- max(cl, na.rm = TRUE)
-  # Cluster centers:
-  centers <- matrix(0, nrow = dim(mu)[1], ncol = nclusters)
-  # The same centers, but taking offsets into account:
-  centers_offs <- matrix(0, nrow = dim(mu_offs)[1], ncol = nclusters)
-  # Cluster weights:
-  wcluster <- rep(0, nclusters)
-  # Dispersion parameter draws aggregated within each cluster:
-  dis_agg <- rep(NA_real_, nclusters)
-  # Predictive variances:
-  predvar <- matrix(nrow = dim(mu)[1], ncol = nclusters)
+  # Draw indices of each cluster (one pass over `cl`; draws with `cl` `NA` are
+  # in no cluster). match() compares numbers, as `cl == j` does:
+  cl_ind <- match(cl, seq_len(nclusters))
+  ind_by_cl <- split(seq_along(cl),
+                     factor(cl_ind, levels = seq_len(nclusters)))
   eps <- 1e-10
-  for (j in 1:nclusters) {
-    ind <- which(cl == j)
+  nobs <- dim(mu)[1]
+  # Use `family$predvar_mix` only if `family$predvar` is the function that it
+  # belongs to (a user can replace `family$predvar`):
+  use_mix <- !is.null(family$predvar_mix) &&
+    identical(family$predvar, attr(family$predvar_mix, "predvar"))
+  # The weighted mean of `dis^2` and the weighted variance of `mu_offs` within
+  # the clusters are needed only if `family$predvar_mix` uses them:
+  need_var <- use_mix && !isFALSE(attr(family$predvar_mix, "uses_moments"))
+  if (all(lengths(ind_by_cl) == 1L)) {
+    # One draw per cluster (thinned draws, or as many clusters as draws). This
+    # gives the same results as the cluster loop at the end, for all clusters
+    # at once.
+    idx <- unlist(ind_by_cl, use.names = FALSE)
+    wcluster <- unname(as.numeric(wdraws[idx]))
+    ws <- wcluster / wcluster * (1 - eps)
+    # Usually, all draws are used in their order, and `w / w` is exactly 1
+    # (for a finite nonzero weight), so that `ws` is `1 - eps`. Then one
+    # product with a scalar gives the centers, without copies of the draws:
+    all_draws <- identical(idx, seq_len(ncol(mu)))
+    ws_mult <- if (!anyNA(ws)) 1 - eps else rep(ws, each = nobs)
+    scale_draws <- function(m) {
+      if (!all_draws) {
+        m <- unclass(m)[, idx, drop = FALSE]
+      }
+      out <- m * ws_mult
+      attributes(out) <- list(dim = dim(out))
+      out
+    }
+    centers <- scale_draws(mu)
+    centers_offs <- scale_draws(mu_offs)
+    dis_agg <- unname(as.numeric(dis[idx]) * ws)
+    if (use_mix) {
+      # The variance across one draw is 0 (NaN for a non-finite `mu_offs`, as
+      # in rowvar_wdraws()):
+      mu_var <- 0
+      if (need_var) {
+        mu_offs_idx <- unclass(mu_offs)
+        if (!all_draws) {
+          mu_offs_idx <- mu_offs_idx[, idx, drop = FALSE]
+        }
+        if (length(mu_offs_idx) > 0 && !all(is.finite(range(mu_offs_idx)))) {
+          mu_var <- (mu_offs_idx - mu_offs_idx)^2
+          attributes(mu_var) <- list(dim = dim(mu_var))
+        }
+      }
+      predvar <- family$predvar_mix(as.numeric(dis[idx])^2, mu_var, nobs)
+    }
+  } else {
+    # Several draws in a cluster: weighted moments of the draws in compiled
+    # code. The results differ from the cluster loop only by rounding.
+    wcluster <- vapply(ind_by_cl, function(ind) sum(wdraws[ind]), numeric(1),
+                       USE.NAMES = FALSE)
+    wn <- as.numeric(wdraws) / wcluster[cl_ind]
+    wn[is.na(cl_ind)] <- 0
+    mom <- clust_moments_c(
+      mu, mu_offs, as.numeric(dis)[seq_along(cl)], wn,
+      ifelse(is.na(cl_ind), -1L, cl_ind - 1L), nclusters, need_var
+    )
+    centers <- mom$mu * (1 - eps)
+    centers_offs <- mom$mu_offs * (1 - eps)
+    dis_agg <- mom$dis * (1 - eps)
+    if (use_mix) {
+      predvar <- family$predvar_mix(mom$dis2, mom$var_offs, nobs)
+    }
+  }
+  # The cluster loop: for the predictive variances without
+  # `family$predvar_mix`, and for the clusters with a weight sum of 0, Inf or
+  # NaN, or without draws (so that NA and NaN propagate as in the loop):
+  ind_loop <- which(!is.finite(wcluster) | wcluster == 0)
+  if (!use_mix) {
+    predvar <- matrix(nrow = nobs, ncol = nclusters)
+    ind_loop <- seq_len(nclusters)
+  }
+  for (j in ind_loop) {
+    ind <- ind_by_cl[[j]]
     # Compute normalized weights within the j-th cluster; `1 - eps` is for
     # numerical stability:
-    ws <- wdraws[ind] / sum(wdraws[ind]) * (1 - eps)
-
-    # Center of the j-th cluster:
-    centers[, j] <- mu[, ind, drop = FALSE] %*% ws
-    # The same centers, but taking offsets into account:
-    centers_offs[, j] <- mu_offs[, ind, drop = FALSE] %*% ws
-    # Unnormalized weight for the j-th cluster:
-    wcluster[j] <- sum(wdraws[ind])
-    # Aggregated dispersion parameter for the j-th cluster:
-    dis_agg[j] <- crossprod(dis[ind], ws)
+    ws_j <- wdraws[ind] / sum(wdraws[ind]) * (1 - eps)
     # Predictive variance for the j-th cluster:
-    predvar[, j] <- family$predvar(mu_offs[, ind, drop = FALSE], dis[ind], ws)
+    predvar[, j] <- family$predvar(mu_offs[, ind, drop = FALSE], dis[ind],
+                                   ws_j)
+    if (is.finite(wcluster[j]) && wcluster[j] != 0) {
+      next
+    }
+    # Center of the j-th cluster:
+    centers[, j] <- mu[, ind, drop = FALSE] %*% ws_j
+    # The same centers, but taking offsets into account:
+    centers_offs[, j] <- mu_offs[, ind, drop = FALSE] %*% ws_j
+    # Aggregated dispersion parameter for the j-th cluster:
+    dis_agg[j] <- crossprod(dis[ind], ws_j)
   }
+  predvar <- unname(predvar)
   wcluster <- wcluster / sum(wcluster)
 
   # combine the results
@@ -784,8 +971,18 @@ proj_cache_exit <- function() {
   return(invisible())
 }
 
+# Whether `key` can be the name of an entry. `[[` and assign() make a symbol
+# from the key, and a symbol has a limit of 10000 bytes, so long keys are not
+# cached:
+proj_cache_key_ok <- function(key) {
+  nchar(key, type = "bytes") < 10000L
+}
+
 # The entry `key` of store `store`, or `NULL` if there is none:
 proj_cache_get <- function(store, key) {
+  if (!proj_cache_key_ok(key)) {
+    return(NULL)
+  }
   ent <- store$cur[[key]]
   if (!is.null(ent)) {
     return(ent$value)
@@ -801,6 +998,9 @@ proj_cache_get <- function(store, key) {
 
 # Stores `value` as entry `key` of store `store`:
 proj_cache_put <- function(store, key, value) {
+  if (!proj_cache_key_ok(key)) {
+    return(invisible())
+  }
   proj_cache_add(store, key, list(value = value,
                                   bytes = as.numeric(utils::object.size(value))))
   return(invisible())
