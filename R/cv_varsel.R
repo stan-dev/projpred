@@ -662,15 +662,11 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
   } else {
     # The linear predictor gives the exact log-likelihood where the inverse
     # link clamps `mu_offs` (binomial and Poisson families, augmented-data
-    # projection). The offset is applied as in init_refmodel():
+    # projection):
     eta_offs <- NULL
     if (refmodel$family$for_augdat ||
         refmodel$family$family %in% c("binomial", "poisson")) {
-      if (refmodel$family$family %in% fams_neg_linpred()) {
-        eta_offs <- refmodel$eta - refmodel$offset
-      } else {
-        eta_offs <- refmodel$eta + refmodel$offset
-      }
+      eta_offs <- ref_eta_offs(refmodel)
     }
     loglik_forPSIS <- t(refmodel$family$ll_fun(
       refmodel$mu_offs, refmodel$dis, refmodel$y, refmodel$wobs,

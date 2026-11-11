@@ -276,7 +276,7 @@ refm_augdat_extreme <- function(link = "logit", offset = FALSE, n = 40,
   list(refm = refm, ll_exact = ll_exact)
 }
 
-test_that("augdat reference model LOO, K-fold and predict() are exact", {
+test_that("augdat reference model lppd is exact (predict, varsel, CV)", {
   # Collect the warnings of cv_varsel() (Pareto k, submodel fits); the warning
   # of ll_eta_augdat() must not be among them:
   cv_varsel_warns <- function(...) {
@@ -300,6 +300,11 @@ test_that("augdat reference model LOO, K-fold and predict() are exact", {
       log(ncol(obj_all$ll_exact))
     expect_lt(min(lpd_exact), log(.Machine$double.eps))
     expect_equal(lpd, lpd_exact, tolerance = 1e-10, info = info)
+    # varsel() with the training data:
+    vs <- suppressWarnings(varsel(refm_all, nterms_max = 1, method = "forward",
+                                  verbose = FALSE))
+    expect_equal(vs$summaries$ref$lppd, lpd_exact, tolerance = 1e-10,
+                 info = info)
     # K-fold CV: each fold has the full-data draws (see `cvfun` of
     # refm_augdat_extreme()), so the reference model values are `lpd_exact`:
     cv_k <- cv_varsel_warns(

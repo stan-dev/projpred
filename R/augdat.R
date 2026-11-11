@@ -294,8 +294,9 @@ ll_eta_augdat <- function(ll, mu_arr, eta, y, wobs, fam_nm, link_nm) {
   lp_obs <- matrix(lp_arr[idx_obs], nrow = n_obs, ncol = n_draws)
   ll_out <- ll_xlogp(as.vector(wobs), lp_obs)
   # Keep `ll` where `eta` is `NA` and where log(p) is not finite: p is 0 (equal
-  # thresholds), below the smallest double, or `NaN` (thresholds not ordered).
-  # loo::psis() needs finite values, and `ll` is finite there.
+  # thresholds) or below the smallest double, where `ll` has the finite lower
+  # bound (loo::psis() needs finite values). For thresholds that are not
+  # ordered, both are `NaN`.
   keep <- na_os | !is.finite(ll_out)
   ll_out[keep] <- ll[keep]
   dimnames(ll_out) <- dimnames(ll)
@@ -388,13 +389,13 @@ log_diff_cdf <- function(a, b, link_nm) {
   lFa <- log_cdf_link(a, link_nm, lower = TRUE)
   lFb <- log_cdf_link(b, link_nm, lower = TRUE)
   out <- lFb + log1mexp(lFb - lFa)
-  out[lFb == -Inf] <- -Inf
+  out[which(lFb == -Inf)] <- -Inf
   up <- which(lFa > log(0.5))
   if (length(up) > 0) {
     lSa <- log_cdf_link(a[up], link_nm, lower = FALSE)
     lSb <- log_cdf_link(b[up], link_nm, lower = FALSE)
     out_up <- lSa + log1mexp(lSa - lSb)
-    out_up[lSa == -Inf] <- -Inf
+    out_up[which(lSa == -Inf)] <- -Inf
     out[up] <- out_up
   }
   return(out)

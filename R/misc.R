@@ -64,6 +64,17 @@ ilinkfun_raw <- function(x, link_nm) {
   return(basic_ilink(x))
 }
 
+# The linear predictor of the reference model draws with the offsets, which
+# gives `refmodel$mu_offs` (as in init_refmodel()). `family$ll_fun()` uses it
+# where the inverse link clamps `mu_offs`.
+ref_eta_offs <- function(refmodel) {
+  if (refmodel$family$family %in% fams_neg_linpred()) {
+    return(refmodel$eta - refmodel$offset)
+  } else {
+    return(refmodel$eta + refmodel$offset)
+  }
+}
+
 .auc <- function(x) {
   resp <- x[, 1]
   pred <- x[, 2]
