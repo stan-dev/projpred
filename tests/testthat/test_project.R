@@ -329,6 +329,38 @@ test_that("invalid `nterms` fails", {
 
 # seed --------------------------------------------------------------------
 
+test_that(paste(
+  "a linear term next to a smooth term of the same variable is dropped, with",
+  "a message"
+), {
+  skip_if_no_setups(refmods)
+  tstsetups <- grep("^rstanarm\\.gam\\.gauss\\.stdformul\\..*\\.trad$",
+                    names(refmods), value = TRUE)
+  skip_if(length(tstsetups) == 0, "no rstanarm GAM")
+  refmod <- refmods[[tstsetups[1]]]
+  expect_message(
+    prj_dup <- project(refmod, predictor_terms = c("s.1", "s(s.1)"),
+                       nclusters = 2, seed = seed_tst, verbose = 0),
+    "drops the linear term(s) `s.1` from a submodel that also has the smooth term(s) `s(s.1)`",
+    fixed = TRUE
+  )
+  prj <- project(refmod, predictor_terms = "s(s.1)", nclusters = 2,
+                 seed = seed_tst, verbose = 0)
+  expect_identical(prj_dup$predictor_terms, c("s.1", "s(s.1)"))
+  for (j in seq_along(prj$outdmin)) {
+    expect_false("s.1" %in% names(coef(prj_dup$outdmin[[j]])))
+    expect_equal(coef(prj_dup$outdmin[[j]]), coef(prj$outdmin[[j]]))
+  }
+  expect_equal(proj_linpred(prj_dup, .seed = seed2_tst),
+               proj_linpred(prj, .seed = seed2_tst))
+  # Without the smooth term, the linear term stays (no message):
+  expect_no_message(
+    prj_lin <- project(refmod, predictor_terms = "s.1", nclusters = 2,
+                       seed = seed_tst, verbose = 0)
+  )
+  expect_true("s.1" %in% names(coef(prj_lin$outdmin[[1]])))
+})
+
 test_that("non-clustered projection does not require a seed", {
   skip_if_not(run_prj)
   # This test is important to ensure that we don't have to set a seed where we

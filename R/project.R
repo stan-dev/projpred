@@ -296,6 +296,20 @@ project <- function(
   ## Warnings ---------------------------------------------------------------
 
   nterms_max <- max(nterms)
+  # proj_to_submodl() drops a linear term next to a smooth term of the same
+  # variable:
+  fml_max <- make_formula(predictor_terms[seq_len(nterms_max)])
+  dups_smooth <- smooth_covered_terms(fml_max)
+  if (length(dups_smooth) > 0) {
+    smooths <- extract_terms_response(fml_max)$additive_terms
+    smooths <- smooths[vapply(smooths, function(smooth) {
+      any(all.vars(str2lang(smooth)) %in% dups_smooth)
+    }, logical(1))]
+    message("The projection drops the linear term(s) `",
+            paste(dups_smooth, collapse = "`, `"), "` from a submodel that ",
+            "also has the smooth term(s) `", paste(smooths, collapse = "`, `"),
+            "`.")
+  }
   nterms_all <- count_terms_in_formula(refmodel$formula) - 1L
   if (nterms_max == nterms_all &&
       formula_contains_group_terms(refmodel$formula) &&

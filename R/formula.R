@@ -60,7 +60,11 @@ expand_formula <- function(formula, data) {
   return(formula(terms(formula, data = data)))
 }
 
-remove_duplicates <- function(formula) {
+# The linear terms of `formula` whose variable is also a variable of a smooth
+# term, for example `x` next to `s(x)`. With the default bases of mgcv, the
+# smooth term contains the linear term, so the coefficient of the linear term
+# is not identifiable.
+smooth_covered_terms <- function(formula) {
   terms <- extract_terms_response(formula)
   linear <- terms$individual_terms
   additive <- unlist(regmatches(
@@ -72,7 +76,11 @@ remove_duplicates <- function(formula) {
   additive <- trimws(unique(unlist(
     strsplit(paste0(additive, collapse = ","), ",")
   )))
-  dups <- linear[!is.na(match(linear, additive))]
+  return(linear[!is.na(match(linear, additive))])
+}
+
+remove_duplicates <- function(formula) {
+  dups <- smooth_covered_terms(formula)
   if (length(dups) > 0) {
     update(formula, as.formula(paste0(
       ". ~ . - ",
@@ -1033,14 +1041,10 @@ formula.gamm4 <- function(x, ...) {
     paste0("(", t, ")")
   }))
   ref <- paste(ref, collapse = " + ")
-  updated <- update(formula, paste(". ~ . + ", ref))
-  form <- flatten_formula(update(
-    updated,
-    paste(
-      ". ~",
-      paste(split_formula(updated), collapse = " + ")
-    )
-  ))
+  # As for a model without group-level terms, the formula has the terms of the
+  # model (the search adds the linear terms of the smooth variables as
+  # candidates):
+  form <- flatten_formula(update(formula, paste(". ~ . + ", ref)))
   # TODO (GAMMs): Once rstanarm issue #253 has been resolved, we probably need
   # to include offset terms here (in the output of formula.gamm4()) as well.
   return(form)

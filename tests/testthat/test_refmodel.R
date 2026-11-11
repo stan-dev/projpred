@@ -197,6 +197,23 @@ test_that("extra arguments in s() or t2() terms fail", {
   )
 })
 
+test_that(paste(
+  "the formula of an rstanarm GAMM reference model has the population-level",
+  "terms of the corresponding GAM"
+), {
+  skip_if_no_setups(refmods)
+  tstsetups <- grep("^rstanarm\\.gamm\\.", names(refmods), value = TRUE)
+  tstsetups_gam <- sub("^rstanarm\\.gamm\\.", "rstanarm.gam.", tstsetups)
+  has_gam <- tstsetups_gam %in% names(refmods)
+  skip_if(!any(has_gam), "no rstanarm GAMM with a corresponding GAM")
+  for (i in which(has_gam)) {
+    lbls <- labels(terms(refmods[[tstsetups[i]]]$formula))
+    lbls_gam <- labels(terms(refmods[[tstsetups_gam[i]]]$formula))
+    expect_setequal(lbls[!grepl("\\|", lbls)], lbls_gam)
+    expect_true(any(grepl("\\|", lbls)), info = tstsetups[i])
+  }
+})
+
 test_that("get_refmodel() is idempotent", {
   skip_if_no_setups(refmods)
   for (tstsetup in names(refmods)) {
