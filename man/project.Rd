@@ -64,8 +64,8 @@ results can be obtained again if needed. Passed to argument \code{seed} of
 \code{\link[=project]{project()}}) upon exiting \code{\link[=project]{project()}}. Here, \code{seed} is used for clustering
 the reference model's posterior draws (if \code{!is.null(nclusters)}) and for
 drawing new group-level effects when predicting from a multilevel submodel
-and having global option \code{projpred.mlvl_pred_new} set to \code{TRUE}. (Such a prediction takes place when
-calculating output elements \code{dis} and \code{ce}.)}
+and having global option \code{projpred.mlvl_pred_new} set to \code{TRUE}. (Such a
+prediction takes place when calculating output elements \code{dis} and \code{ce}.)}
 
 \item{verbose}{A single integer value from the set \eqn{\{0, 1, 2\}}{{0, 1,
 2}} (if \code{!is.null(predictor_terms)}, \eqn{1} and \eqn{2} have the same
