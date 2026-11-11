@@ -542,9 +542,18 @@ varsel.refmodel <- function(
                     verbose_line_length = 5, verbose_txt_add = "",
                     search_control, return_outdmins = TRUE, ...) {
   if (is.null(reweighting_args)) {
+    if (!is.null(refmodel$draws_shift)) {
+      # The shifted draws of perturb_refmodel(), which checked that they are
+      # finite:
+      refmodel <- perturb_draws(refmodel, refmodel$draws_shift)
+      stopifnot(!is.null(refmodel))
+      refmodel$draws_shift <- NULL
+    }
     p_sel <- get_refdist(refmodel, ndraws = ndraws, nclusters = nclusters)
   } else {
-    # Reweight the clusters (or thinned draws) according to the PSIS weights:
+    # Reweight the clusters (or thinned draws) according to the PSIS weights.
+    # With `draws_shift` (see perturb_refmodel()), get_p_clust() shifts the
+    # draws:
     p_sel <- get_p_clust(
       family = refmodel$family, eta = refmodel$eta, mu = refmodel$mu,
       mu_offs = refmodel$mu_offs, dis = refmodel$dis,
@@ -553,7 +562,8 @@ varsel.refmodel <- function(
         ndraws = ndraws,
         nclusters = nclusters,
         S = length(refmodel$wdraws_ref)
-      )[["clust_used"]]
+      )[["clust_used"]],
+      draws_shift = refmodel$draws_shift
     )
   }
 
