@@ -499,6 +499,7 @@ varsel.refmodel <- function(
               loo_inds = NULL,
               K = NULL,
               validate_search = NULL,
+              loo_perturb_alpha = NULL,
               ### Not set to `NULL` because in K-fold CV (relevant when using
               ### cv_varsel.vsel() based on this `vsel` object), `cvfits = NULL`
               ### would mean to use `cvfun`; instead, the default should be
