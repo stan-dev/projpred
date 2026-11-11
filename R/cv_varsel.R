@@ -785,6 +785,9 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
   if (!validate_search || !refit_prj || !is.null(search_out_rks)) {
     perturb_alpha <- Inf
   }
+  # one_obs() gets these objects through fun_with_objs(), so they must exist:
+  perturb_seed <- NULL
+  perturb_ll <- NULL
   if (is.finite(perturb_alpha)) {
     perturb_seed <- perturb_base_seed()
     # The parallel loop below has `loglik_forPSIS` in `.noexport`, so workers
@@ -1185,7 +1188,8 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
     one_obs <- fun_with_objs(one_obs, c(
       "cl_pred", "cl_sel", "inds", "lw", "method", "n", "nclusters",
       "nclusters_pred", "ndraws", "ndraws_pred", "nloo", "nterms_max",
-      "penalty", "refit_prj", "refmodel", "search_control", "search_out_rks",
+      "penalty", "perturb_alpha", "perturb_ll", "perturb_seed", "refit_prj",
+      "refmodel", "search_control", "search_out_rks",
       "search_out_rks_was_null", "search_terms", "verbose"
     ))
     if (!parallel) {
