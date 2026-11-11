@@ -8,6 +8,15 @@ par_backends_tst <- if (run_prll) {
   character()
 }
 
+# The numbers of workers of the parallel tests. R CMD check permits only 2
+# processes (see `_R_CHECK_LIMIT_CORES_`):
+n_wrks_tst <- if (tolower(Sys.getenv("_R_CHECK_LIMIT_CORES_")) %in%
+                  c("", "false")) {
+  2:3
+} else {
+  2L
+}
+
 # Sets up `n` workers of `backend` ("future": a PSOCK cluster as the plan;
 # "mirai": daemons) until `frame` exits. The workers stay alive between the
 # parallel loops and do not get the loaded namespaces of this R session (as
@@ -113,7 +122,7 @@ test_that(paste(
   }
   res_first <- NULL
   for (backend in par_backends_tst) {
-    for (n_wrk in 2:3) {
+    for (n_wrk in n_wrks_tst) {
       local({
         local_par_workers(backend, n_wrk)
         info_i <- paste(backend, n_wrk)
@@ -735,7 +744,7 @@ test_that(paste(
   # The first parallel result of each setting:
   cvvss_first <- list()
   for (backend in par_backends_tst) {
-    for (n_wrk in 2:3) {
+    for (n_wrk in n_wrks_tst) {
       local({
         ns_fun <- local_par_workers(backend, n_wrk)
         # The check comes after each run, so that it names the first CV
