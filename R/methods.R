@@ -86,7 +86,7 @@
 #'   [proj_linpred()], [proj_epred()], or [proj_predict()]) upon exiting
 #'   [proj_linpred()], [proj_epred()], or [proj_predict()]. Here, `.seed` is
 #'   used for drawing new group-level effects
-#'   in case of a multilevel submodel (however, not yet in case of a GAMM) and
+#'   in case of a multilevel submodel and
 #'   for drawing from the predictive distributions of the submodel(s) in case of
 #'   [proj_predict()]. If a clustered projection was performed, then in
 #'   [proj_predict()], `.seed` is also used for drawing from the set of

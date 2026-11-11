@@ -49,6 +49,7 @@ If you read this from a place other than <https://mc-stan.org/projpred/news/inde
 * Tests: Leave the options, the random seed and the global environment of the R session unchanged after the tests, also when a test fails, and remove the manual cleanup of the test workspace. (GitHub: #586)
 * Fixed the error "'gam.fit' is not an exported object from 'namespace:mgcv'" in projections onto additive submodels with mgcv 1.9-5. (GitHub: #598, #602)
 * Fixed the log-likelihood of binomial (logit) and Poisson (log) reference model draws with a large linear predictor, where the inverse link clamped the mean. (GitHub: #614)
+* Fixed wrong predictions of additive multilevel submodels (`gamm4::gamm4()`): the smooth terms used a basis computed from the new data instead of the basis of the training data, and group-level slopes were combined with the wrong group-level effects (also for the training data). This affected `proj_linpred()` and `proj_predict()` with `newdata`, `varsel()` with `d_test`, K-fold CV and LOO CV with `validate_search = TRUE`, and caused errors such as "Not enough (non-NA) data to do anything meaningful". New group levels now get group-level effects drawn from their estimated distribution, as for the other multilevel submodels, and global option `projpred.mlvl_pred_new` now also applies to these submodels. (GitHub: #239)
 
 
 # projpred 2.11.0

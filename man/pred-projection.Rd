@@ -108,7 +108,7 @@ results can be obtained again if needed. Passed to argument \code{seed} of
 \code{\link[=proj_linpred]{proj_linpred()}}, \code{\link[=proj_epred]{proj_epred()}}, or \code{\link[=proj_predict]{proj_predict()}}) upon exiting
 \code{\link[=proj_linpred]{proj_linpred()}}, \code{\link[=proj_epred]{proj_epred()}}, or \code{\link[=proj_predict]{proj_predict()}}. Here, \code{.seed} is
 used for drawing new group-level effects
-in case of a multilevel submodel (however, not yet in case of a GAMM) and
+in case of a multilevel submodel and
 for drawing from the predictive distributions of the submodel(s) in case of
 \code{\link[=proj_predict]{proj_predict()}}. If a clustered projection was performed, then in
 \code{\link[=proj_predict]{proj_predict()}}, \code{.seed} is also used for drawing from the set of

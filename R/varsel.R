@@ -102,7 +102,7 @@
 #'   upon exiting [varsel()]. Here, `seed` is used for clustering the reference
 #'   model's posterior draws (if `!is.null(nclusters)` or
 #'   `!is.null(nclusters_pred)`) and for drawing new group-level effects when
-#'   predicting from a multilevel submodel (however, not yet in case of a GAMM).
+#'   predicting from a multilevel submodel.
 #' @param ... For [varsel.default()]: Arguments passed to [get_refmodel()] as
 #'   well as to [varsel.refmodel()]. For [varsel.vsel()]: Arguments passed to
 #'   [varsel.refmodel()]. For [varsel.refmodel()]: Arguments passed to the

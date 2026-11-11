@@ -44,8 +44,7 @@
 #'   [project()]) upon exiting [project()]. Here, `seed` is used for clustering
 #'   the reference model's posterior draws (if `!is.null(nclusters)`) and for
 #'   drawing new group-level effects when predicting from a multilevel submodel
-#'   (however, not yet in case of a GAMM) and having global option
-#'   `projpred.mlvl_pred_new` set to `TRUE`. (Such a prediction takes place when
+#'   and having global option `projpred.mlvl_pred_new` set to `TRUE`. (Such a prediction takes place when
 #'   calculating output elements `dis` and `ce`.)
 #' @param verbose A single integer value from the set \eqn{\{0, 1, 2\}}{{0, 1,
 #'   2}} (if `!is.null(predictor_terms)`, \eqn{1} and \eqn{2} have the same

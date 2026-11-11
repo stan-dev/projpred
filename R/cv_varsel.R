@@ -67,7 +67,7 @@
 #'   `nloo` is smaller than the number of observations), for sampling the folds
 #'   in \eqn{K}-fold CV, for the weights of the weight perturbation (see section
 #'   "Note"), and for drawing new group-level effects when predicting from a
-#'   multilevel submodel (however, not yet in case of a GAMM).
+#'   multilevel submodel.
 #' @param parallel A single logical value indicating whether to run costly parts
 #'   of the CV in parallel (`TRUE`) or not (`FALSE`). See also section "Note"
 #'   below as well as section "Parallelization" in [projpred-package].
