@@ -60,23 +60,24 @@ expand_formula <- function(formula, data) {
   return(formula(terms(formula, data = data)))
 }
 
-# The linear terms of `formula` whose variable is also a variable of a smooth
-# term, for example `x` next to `s(x)`. With the default bases of mgcv, the
-# smooth term contains the linear term, so the coefficient of the linear term
-# is not identifiable.
+# The arguments of a smooth term (a character string such as "s(x, z)"), as
+# character strings ("x", "z"). projpred does not allow other arguments of
+# s() and t2() (see parse_additive_terms()).
+smooth_args <- function(smooth) {
+  cl <- str2lang(smooth)
+  return(unname(vapply(as.list(cl)[-1], deparse_combine, character(1))))
+}
+
+# The linear terms of `formula` that are also an argument of a smooth term, for
+# example `x` next to `s(x)`. With the default bases of mgcv, the smooth term
+# contains the linear term, so the coefficient of the linear term is not
+# identifiable. Interaction terms (such as `x:z` next to `t2(x, z)`) are not
+# checked.
 smooth_covered_terms <- function(formula) {
   terms <- extract_terms_response(formula)
   linear <- terms$individual_terms
-  additive <- unlist(regmatches(
-    terms$additive_terms,
-    gregexpr("(?<=\\().*?(?=\\))",
-             terms$additive_terms,
-             perl = TRUE)
-  ))
-  additive <- trimws(unique(unlist(
-    strsplit(paste0(additive, collapse = ","), ",")
-  )))
-  return(linear[!is.na(match(linear, additive))])
+  covered <- unique(unlist(lapply(terms$additive_terms, smooth_args)))
+  return(linear[linear %in% covered])
 }
 
 remove_duplicates <- function(formula) {

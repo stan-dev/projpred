@@ -198,19 +198,20 @@ test_that("extra arguments in s() or t2() terms fail", {
 })
 
 test_that(paste(
-  "the formula of an rstanarm GAMM reference model has the population-level",
-  "terms of the corresponding GAM"
+  "the formula of an rstanarm GAMM reference model has no linear terms for",
+  "the variables of the smooth terms, as for an rstanarm GAM"
 ), {
   skip_if_no_setups(refmods)
-  tstsetups <- grep("^rstanarm\\.gamm\\.", names(refmods), value = TRUE)
-  tstsetups_gam <- sub("^rstanarm\\.gamm\\.", "rstanarm.gam.", tstsetups)
-  has_gam <- tstsetups_gam %in% names(refmods)
-  skip_if(!any(has_gam), "no rstanarm GAMM with a corresponding GAM")
-  for (i in which(has_gam)) {
-    lbls <- labels(terms(refmods[[tstsetups[i]]]$formula))
-    lbls_gam <- labels(terms(refmods[[tstsetups_gam[i]]]$formula))
-    expect_setequal(lbls[!grepl("\\|", lbls)], lbls_gam)
-    expect_true(any(grepl("\\|", lbls)), info = tstsetups[i])
+  skip_if_not(run_additive)
+  tstsetups <- grep("^rstanarm\\.gam{1,2}\\.", names(refmods), value = TRUE)
+  expect_true(any(grepl("^rstanarm\\.gamm\\.", tstsetups)))
+  for (tstsetup in tstsetups) {
+    fml <- refmods[[tstsetup]]$formula
+    expect_identical(smooth_covered_terms(fml), character(0), info = tstsetup)
+    expect_true(formula_contains_additive_terms(fml), info = tstsetup)
+    if (grepl("^rstanarm\\.gamm\\.", tstsetup)) {
+      expect_true(formula_contains_group_terms(fml), info = tstsetup)
+    }
   }
 })
 

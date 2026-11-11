@@ -344,6 +344,7 @@ test_that(paste(
 ), {
   expect_identical(smooth_covered_terms(y ~ x + s(x) + z), "x")
   expect_identical(smooth_covered_terms(y ~ x + z + t2(x, z)), c("x", "z"))
+  expect_identical(smooth_covered_terms(y ~ x + s(log(z), x)), "x")
   expect_identical(smooth_covered_terms(y ~ x + s(z)), character(0))
   expect_identical(smooth_covered_terms(y ~ x + z), character(0))
   expect_identical(

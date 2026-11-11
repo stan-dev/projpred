@@ -329,14 +329,18 @@ test_that("invalid `nterms` fails", {
 
 # seed --------------------------------------------------------------------
 
+# Smooth terms ------------------------------------------------------------
+
 test_that(paste(
   "a linear term next to a smooth term of the same variable is dropped, with",
   "a message"
 ), {
   skip_if_no_setups(refmods)
-  tstsetups <- grep("^rstanarm\\.gam\\.gauss\\.stdformul\\..*\\.trad$",
-                    names(refmods), value = TRUE)
-  skip_if(length(tstsetups) == 0, "no rstanarm GAM")
+  skip_if_not(run_additive)
+  withr::local_options(projpred.mssg_smooth_linear = TRUE)
+  tstsetups <- grep("^rstanarm\\.gam\\..*\\.trad$", names(refmods),
+                    value = TRUE)
+  expect_gt(length(tstsetups), 0)
   refmod <- refmods[[tstsetups[1]]]
   expect_message(
     prj_dup <- project(refmod, predictor_terms = c("s.1", "s(s.1)"),

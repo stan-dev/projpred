@@ -253,7 +253,7 @@
 #'
 #' The following global options are for internal use:
 #' * `projpred.mssg_ndraws`, `projpred.mssg_cut_search`, `projpred.mssg_time`,
-#' `projpred.warn_wobs_ppd`, `projpred.warn_additive_experimental`,
+#' `projpred.mssg_smooth_linear`, `projpred.warn_wobs_ppd`, `projpred.warn_additive_experimental`,
 #' `projpred.warn_allrandom_dis`, `projpred.warn_instable_projections`,
 #' `projpred.warn_cvrefbuilder_NULL`, `projpred.warn_kfold_refits`: A single
 #' logical value indicating whether to throw certain messages or warnings

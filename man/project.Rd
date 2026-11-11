@@ -37,7 +37,10 @@ instead.}
 \item{predictor_terms}{If not \code{NULL}, then this needs to be a character
 vector of predictor terms for the submodel onto which the projection will
 be performed. Argument \code{nterms} is ignored in that case. For an \code{object}
-which is not of class \code{vsel}, \code{predictor_terms} must not be \code{NULL}.}
+which is not of class \code{vsel}, \code{predictor_terms} must not be \code{NULL}. If the
+submodel has a linear term and a smooth term of the same variable (for
+example, \code{x} and \code{s(x)}), the projection drops the linear term (with a
+message), because its coefficient is not identifiable.}
 
 \item{refit_prj}{A single logical value indicating whether to fit the
 submodels (again) (\code{TRUE}) or---if \code{object} is of class \code{vsel}---to re-use
