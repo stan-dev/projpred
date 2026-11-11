@@ -148,9 +148,9 @@
 #'   evaluations in case of `validate_search = TRUE`. (Note that in case of
 #'   \eqn{K}-fold CV, the \eqn{K} reference model refits are not affected by
 #'   argument `parallel`; only \pkg{projpred}'s CV is affected.) The
-#'   parallelization uses the workers of the \pkg{mirai} package (set up with,
-#'   e.g., `mirai::daemons(4)`) or of the \pkg{future} package (set up with,
-#'   e.g., `future::plan(future::multisession, workers = 4)`), see section
+#'   parallelization uses the workers of the current plan of the
+#'   \pkg{future} package (set up with, e.g.,
+#'   `future::plan(future::multisession, workers = 4)`), see section
 #'   "Parallelization" in [projpred-package]. Without such workers, the CV
 #'   runs sequentially, with a warning. Each CV fold has its own random
 #'   number stream (also with `parallel = FALSE`), so for a given seed, the

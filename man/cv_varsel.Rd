@@ -363,9 +363,9 @@ parallel. Costly parts are the fold-wise searches and performance
 evaluations in case of \code{validate_search = TRUE}. (Note that in case of
 \eqn{K}-fold CV, the \eqn{K} reference model refits are not affected by
 argument \code{parallel}; only \pkg{projpred}'s CV is affected.) The
-parallelization uses the workers of the \pkg{mirai} package (set up with,
-e.g., \code{mirai::daemons(4)}) or of the \pkg{future} package (set up with,
-e.g., \code{future::plan(future::multisession, workers = 4)}), see section
+parallelization uses the workers of the current plan of the
+\pkg{future} package (set up with, e.g.,
+\code{future::plan(future::multisession, workers = 4)}), see section
 "Parallelization" in \link{projpred-package}. Without such workers, the CV
 runs sequentially, with a warning. Each CV fold has its own random
 number stream (also with \code{parallel = FALSE}), so for a given seed, the

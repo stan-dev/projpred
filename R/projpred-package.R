@@ -115,54 +115,59 @@
 #'
 #' # Parallelization
 #'
-#' The projection of the reference model onto a submodel can be run in parallel
-#' (across the projected draws). The parallel workers come from the \pkg{mirai}
-#' package or from the \pkg{future} package: If \pkg{mirai} daemons are set
-#' (e.g., by `mirai::daemons(4)`), \pkg{projpred} uses them. Otherwise, it uses
-#' the current plan of the \pkg{future} package (e.g.,
-#' `future::plan(future::multisession, workers = 4)`), which includes the
-#' backends of other packages for \pkg{future} (e.g., \pkg{future.callr} or
-#' \pkg{future.mirai}). Without \pkg{mirai} daemons and with the sequential
-#' plan of \pkg{future}, a parallel run is not possible, so \pkg{projpred}
-#' then runs sequentially and throws a warning. The workers must be able to
-#' load the same \pkg{projpred} installation as the main R session;
-#' \pkg{projpred} checks this. (If the main R session uses \pkg{projpred}
-#' via `pkgload::load_all()` or `devtools::load_all()`, the workers need to
-#' load the same source directory in the same way.) With workers from the
-#' \pkg{future} package, messages and warnings from the workers are shown in
-#' the main R session. With \pkg{mirai} daemons, they are not.
+#' \pkg{projpred} can run two kinds of computations in parallel: the fold-wise
+#' computations of [cv_varsel()] (the *CV* parallelization, activated via
+#' argument `parallel` of [cv_varsel()], which in turn can be controlled via
+#' global option `projpred.parallel_cv`) and the projections of the single
+#' draws (or clusters) of the reference model onto a submodel (the
+#' *projection* parallelization, see below).
 #'
-#' Using the global option `projpred.parallel_proj_trigger`, the
-#' number of projected draws below which no parallelization is applied (even if
-#' parallel workers are set up) can be modified. Such a "trigger" threshold
-#' exists because of the computational overhead of a parallelization which makes
-#' the projection parallelization only useful for a sufficiently large number of
-#' projected draws. By default, the projection parallelization is turned off,
-#' which can also be achieved by supplying `Inf` (or `NULL`) to option
-#' `projpred.parallel_proj_trigger`. Note that we cannot recommend the
-#' projection parallelization on Windows because in our experience, the
-#' parallelization overhead is larger there, causing a parallel run to take
-#' longer than a sequential run. Also note that the projection parallelization
-#' works well for submodels which are GLMs (and hence also for the latent
-#' projection if the submodel has no multilevel or additive predictor terms),
-#' but for all other types of submodels, the fitted submodel objects are quite
-#' big, which---when running in parallel---may lead to excessive memory usage
+#' Both use the parallel workers of the current plan of the \pkg{future}
+#' package, e.g., `future::plan(future::multisession, workers = 4)`. Plans
+#' from other packages for \pkg{future} can be used as well, e.g.,
+#' `future::plan(future.mirai::mirai_multisession, workers = 4)` from the
+#' \pkg{future.mirai} package. In our experiments, the workers of
+#' \pkg{future.mirai} started faster than those of `future::multisession`
+#' and returned big results faster (see the projection parallelization
+#' below). With the sequential plan of \pkg{future} (the default), a
+#' parallel run is not possible, so \pkg{projpred} then runs sequentially and
+#' throws a warning. The workers must be able to load the same
+#' \pkg{projpred} installation as the main R session; \pkg{projpred} checks
+#' this. (If the main R session uses \pkg{projpred} via
+#' `pkgload::load_all()` or `devtools::load_all()`, the workers need to load
+#' the same source directory in the same way.) The parallelization is not
+#' tested on Windows.
+#'
+#' The projection parallelization is controlled by global option
+#' `projpred.parallel_proj_trigger`: the number of projected draws below which
+#' the projections of the draws are not run in parallel (even if parallel
+#' workers are set up). Such a "trigger" threshold exists because of the
+#' computational overhead of a parallelization. By default, the projection
+#' parallelization is turned off, which can also be achieved by supplying
+#' `Inf` (or `NULL`) to option `projpred.parallel_proj_trigger`. The
+#' projection parallelization only affects submodels with multilevel or
+#' additive terms: for other submodels, \pkg{projpred} usually fits all
+#' projected draws in a single call, which does not run in parallel. It is
+#' useful for [varsel()], [project()], and [cv_varsel()] without fold-wise
+#' computations; with the CV parallelization, the workers do not run the
+#' projections of their folds in parallel. Note that the fitted submodel
+#' objects of multilevel and additive submodels are quite big,
+#' which---when running in parallel---may lead to excessive memory usage
 #' which in turn may crash the R session (on Unix systems, setting an
-#' appropriate memory limit via [unix::rlimit_as()] may avoid crashing the whole
-#' machine). Thus, we currently cannot recommend parallelizing projections onto
-#' submodels which are GLMs (in this context, the latent projection onto a
-#' submodel without multilevel and without additive terms may be regarded as a
-#' projection onto a submodel which is a GLM). However, for [cv_varsel()], there
-#' is also a *CV* parallelization (i.e., a parallelization of \pkg{projpred}'s
-#' cross-validation) which can be activated via argument `parallel` (which in
-#' turn can be controlled via global option `projpred.parallel_cv`).
+#' appropriate memory limit via [unix::rlimit_as()] may avoid crashing the
+#' whole machine). The workers also need time to return these objects to the
+#' main R session: in our experiments with 16 workers of
+#' `future::multisession`, this took longer than a sequential run, whereas
+#' 16 workers of \pkg{future.mirai} gave a clear speedup. So for the
+#' projection parallelization, we recommend the workers of
+#' \pkg{future.mirai}.
 #'
 #' In the fold-wise computations of [cv_varsel()], each CV fold has its own
 #' random number stream (L'Ecuyer-CMRG), which \pkg{projpred} derives from the
 #' random number generator of the main R session, with and without the CV
 #' parallelization. So for a given seed, the results depend neither on
-#' argument `parallel`, nor on the number of workers, nor on the package that
-#' provides them.
+#' argument `parallel`, nor on the number of workers, nor on the plan of the
+#' \pkg{future} package.
 #'
 #' A function goes to a parallel worker with its enclosing environments up
 #' to, but not including, the global environment. So if a function of a
@@ -177,18 +182,14 @@
 #' export of objects of the global environment.
 #'
 #' During parallelization (either of the projection or the CV), progression
-#' updates can be received. With workers from the \pkg{future} package, this
-#' works via the \pkg{progressr} package, e.g., by calling
+#' updates can be received via the \pkg{progressr} package, e.g., by calling
 #' `progressr::handlers(global = TRUE)` before running the projection or the
 #' CV in parallel. The \pkg{projpred} package also offers the global option
 #' `projpred.use_progressr` for controlling whether to use the \pkg{progressr}
 #' package (`TRUE` or `FALSE`), but since that global option defaults to
 #' `requireNamespace("progressr", quietly = TRUE) && interactive()`, it usually
-#' does not need to be set by the user. With \pkg{mirai} daemons, an
-#' interactive R session shows the progress indicator of
-#' [mirai::mirai_map()] (a progress bar if the \pkg{cli} package is
-#' installed), which advances once per task (a task is a group of CV folds or
-#' projected draws for one worker).
+#' does not need to be set by the user. Messages and warnings from the workers
+#' are shown in the main R session.
 #'
 #' # Multilevel models: "Integrating out" group-level effects
 #'

@@ -1314,15 +1314,12 @@ use_progressr <- function() {
 # (`key_checked`).
 par_state <- new.env(parent = emptyenv())
 
-# The backend of the parallel loops (CV folds, projected draws): "mirai" if
-# mirai daemons are set, otherwise "future" if the future plan is not
-# sequential, otherwise `NULL` with a warning (the caller then runs
-# sequentially). With `warn_once = TRUE`, the warning comes only once per R
-# session (for the loops over the projected draws, which run many times).
+# The backend of the parallel loops (CV folds, projected draws): "future" if
+# the plan of the future package is not sequential, otherwise `NULL` with a
+# warning (the caller then runs sequentially). With `warn_once = TRUE`, the
+# warning comes only once per R session (for the loops over the projected
+# draws, which run many times).
 par_backend <- function(warn_once = FALSE) {
-  if (requireNamespace("mirai", quietly = TRUE) && mirai::daemons_set()) {
-    return("mirai")
-  }
   if (requireNamespace("future", quietly = TRUE) &&
       !inherits(future::plan(), "sequential")) {
     return("future")
@@ -1334,8 +1331,8 @@ par_backend <- function(warn_once = FALSE) {
     warning(
       "A parallel run was requested, but there are no parallel workers, so ",
       "running sequentially. Set up workers with, e.g., ",
-      "`future::plan(future::multisession, workers = 4)` or ",
-      "`mirai::daemons(4)` (see section \"Parallelization\" in `?projpred`)."
+      "`future::plan(future::multisession, workers = 4)` (see section ",
+      "\"Parallelization\" in `?projpred`)."
     )
   }
   return(NULL)
@@ -1354,19 +1351,19 @@ par_backend <- function(warn_once = FALSE) {
 #
 # With `.rng = TRUE`, each element gets its own L'Ecuyer-CMRG stream, made
 # here from the RNG of this R session. So the results depend neither on the
-# backend nor on the number of workers or chunks. Without a backend
-# (`.backend = NULL`), the elements run as one task in this R session, which
-# gives the same results as the workers.
+# plan of the future package nor on the number of workers or chunks. Without
+# a backend
+# (`.backend = NULL`), the elements run as one task in this R session,
+# which gives the same results as the workers.
 #
 # The workers get the global options of projpred, except those of the
 # parallelization (so the workers run their loops sequentially), the global
 # options `contrasts` and `na.action`, which the submodel fits use, and the
 # objects of the global environment that the tasks need (see par_globals()).
 #
-# With `.progress = TRUE`, the future backend signals one progressr update per
-# element (if use_progressr()), and the mirai backend shows the progress of
-# mirai::mirai_map() per chunk (in interactive sessions). An error in a task
-# stops the call; the tasks that did not finish are canceled.
+# With `.progress = TRUE`, the tasks signal one progressr update per element
+# (if use_progressr()). An error in a task stops the call; the tasks that did
+# not finish are canceled.
 par_lapply <- function(.X, .FUN, ..., .backend, .rng = FALSE,
                        .progress = FALSE) {
   n <- length(.X)
@@ -1386,43 +1383,34 @@ par_lapply <- function(.X, .FUN, ..., .backend, .rng = FALSE,
     return(par_chunk(list(xs = .X, seeds = seeds), task))
   }
   task$globs <- par_globals(list(.FUN, list(...), .X))
-  par_check_workers(.backend)
-  n_workers <- if (.backend == "mirai") {
-    mirai::status()$connections
-  } else {
-    future::nbrOfWorkers()
-  }
+  par_check_workers()
   n_chunks <- as.integer(max(1, min(
-    n, n_workers * getOption("projpred.parallel_chunks_per_worker", 1L)
+    n, future::nbrOfWorkers() *
+      getOption("projpred.parallel_chunks_per_worker", 1L)
   )))
   chunks <- lapply(parallel::splitIndices(n, n_chunks), function(idxs) {
     list(xs = .X[idxs], seeds = seeds[idxs])
   })
-  done <- FALSE
-  if (.backend == "mirai") {
-    map <- mirai::mirai_map(chunks, par_chunk, .args = list(.task = task))
-    on.exit(if (!done) mirai::stop_mirai(map))
-    res <- mirai::collect_mirai(map, options = c(
-      ".stop", if (.progress && interactive()) ".progress"
-    ))
-  } else {
-    if (.progress && use_progressr()) {
-      task$progress <- progressr::progressor(n)
-    }
-    futs <- list()
-    on.exit(if (!done) future::cancel(futs))
-    # The globals are given by name, so future does not search for them (and
-    # the futures do not hold the frames of the calling functions). The
-    # workers load projpred when they get par_chunk():
-    for (chunk in chunks) {
-      futs <- c(futs, list(future::future(
-        par_chunk(chunk, task),
-        globals = list(par_chunk = par_chunk, chunk = chunk, task = task),
-        seed = NULL, envir = baseenv()
-      )))
-    }
-    res <- future::value(futs)
+  if (.progress && use_progressr()) {
+    task$progress <- progressr::progressor(n)
   }
+  done <- FALSE
+  futs <- list()
+  on.exit(if (!done) future::cancel(futs))
+  # The globals are given by name, so future does not search for them (and
+  # the futures do not hold the frames of the calling functions). The workers
+  # load projpred when they get par_chunk(). It goes inside `task`: as a
+  # global of its own, future does not send it if it finds it on the search
+  # path (as with pkgload::load_all()), and then the workers need it there.
+  task$run <- par_chunk
+  for (chunk in chunks) {
+    futs <- c(futs, list(future::future(
+      task$run(chunk, task),
+      globals = list(chunk = chunk, task = task),
+      seed = NULL, envir = baseenv()
+    )))
+  }
+  res <- future::value(futs)
   done <- TRUE
   return(do.call(c, unname(res)))
 }
@@ -1593,14 +1581,14 @@ call_with_args <- function(.args, .fun, ...) {
   do_call(.fun, c(.args, list(...)))
 }
 
-# Stops if a worker of `backend` does not load the projpred of this R session
-# (same version, same path). The functions of the tasks have the projpred
+# Stops if a worker of the future plan does not load the projpred of this R
+# session (same version, same path). The functions of the tasks have the projpred
 # namespace as an ancestor of their environments, so a worker uses the
 # functions of the projpred that it loads. By default, this is the installed
 # projpred, also if this R session uses pkgload::load_all(). One task does the
 # check, on one worker, and only if the workers or the projpred of this R
 # session changed since the last check.
-par_check_workers <- function(backend) {
+par_check_workers <- function() {
   info_fun <- function() {
     tryCatch(
       c(as.character(getNamespaceVersion("projpred")),
@@ -1609,31 +1597,16 @@ par_check_workers <- function(backend) {
     )
   }
   info_main <- unname(info_fun())
-  key <- if (backend == "mirai") {
-    list(backend, mirai::status()$daemons, info_main)
-  } else {
-    list(backend, class(future::plan()), future::nbrOfWorkers(), info_main)
-  }
+  key <- list(class(future::plan()), future::nbrOfWorkers(), info_main)
   if (identical(par_state$key_checked, key)) {
     return(invisible(TRUE))
   }
   par_state$key_checked <- NULL
   environment(info_fun) <- baseenv()
-  if (backend == "mirai") {
-    info_wrk <- mirai::collect_mirai(
-      mirai::mirai(info_fun(), .args = list(info_fun = info_fun))
-    )
-    if (mirai::is_error_value(info_wrk)) {
-      stop("The check of the parallel workers failed: ",
-           paste(format(info_wrk), collapse = " "))
-    }
-  } else {
-    info_wrk <- future::value(future::future(
-      info_fun(), globals = list(info_fun = info_fun), seed = NULL,
-      envir = baseenv()
-    ))
-  }
-  info_wrk <- unname(info_wrk)
+  info_wrk <- unname(future::value(future::future(
+    info_fun(), globals = list(info_fun = info_fun), seed = NULL,
+    envir = baseenv()
+  )))
   if (is.na(info_wrk[1])) {
     stop("The parallel workers cannot load projpred: ", info_wrk[2])
   }

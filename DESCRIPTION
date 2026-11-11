@@ -80,9 +80,8 @@ Suggests:
     bayesplot (>= 1.5.0),
     posterior,
     future (>= 1.49.0),
-    mirai (>= 2.5.1),
+    future.mirai,
     globals,
-    cli,
     progressr,
     codetools
 LinkingTo: Rcpp, RcppArmadillo

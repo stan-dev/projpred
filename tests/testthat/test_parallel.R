@@ -1,9 +1,11 @@
 # Setup -------------------------------------------------------------------
 
-# The backends of the parallel tests (see par_backend()):
-par_backends_tst <- if (run_prll) {
-  Filter(function(pkg) requireNamespace(pkg, quietly = TRUE),
-         c("future", "mirai"))
+# The plans of the future package for the parallel tests: a PSOCK cluster
+# ("psock") and, if installed, the workers of the future.mirai package:
+par_backends_tst <- if (run_prll &&
+                        requireNamespace("future", quietly = TRUE)) {
+  c("psock",
+    if (requireNamespace("future.mirai", quietly = TRUE)) "future.mirai")
 } else {
   character()
 }
@@ -17,16 +19,17 @@ n_wrks_tst <- if (tolower(Sys.getenv("_R_CHECK_LIMIT_CORES_")) %in%
   2L
 }
 
-# Sets up `n` workers of `backend` ("future": a PSOCK cluster as the plan;
-# "mirai": daemons) until `frame` exits. The workers stay alive between the
-# parallel loops and do not get the loaded namespaces of this R session (as
-# forked workers do). With pkgload::load_all() (e.g., in devtools::test()),
-# each worker loads the same projpred source, not an installed projpred.
-# Returns a function that gives the loaded namespaces of each worker.
+# Sets up `n` workers of the plan `backend` (see `par_backends_tst`) until
+# `frame` exits. The workers stay alive between the parallel loops and do not
+# get the loaded namespaces of this R session (as forked workers do). With
+# pkgload::load_all() (e.g., in devtools::test()), each worker loads the same
+# projpred source, not an installed projpred. Returns a function that gives
+# the loaded namespaces of each worker.
 local_par_workers <- function(backend, n = 2L, frame = parent.frame()) {
   init_wrk <- function(libs, path) {
     .libPaths(libs)
-    if (file.exists(file.path(path, "R", "projpred-package.R"))) {
+    if (file.exists(file.path(path, "R", "projpred-package.R")) &&
+        !"projpred" %in% loadedNamespaces()) {
       # (pkgload is installed if this R session uses it, so it is not in
       # `Suggests:`.)
       load_all <- get("load_all", envir = asNamespace("pkgload"))
@@ -35,28 +38,39 @@ local_par_workers <- function(backend, n = 2L, frame = parent.frame()) {
     invisible()
   }
   environment(init_wrk) <- baseenv()
-  libs <- .libPaths()
-  path <- getNamespaceInfo("projpred", "path")
-  if (backend == "future") {
+  args_init <- list(libs = .libPaths(),
+                    path = getNamespaceInfo("projpred", "path"))
+  if (backend == "psock") {
     cl <- parallel::makePSOCKcluster(n)
     withr::defer(parallel::stopCluster(cl), envir = frame)
-    parallel::clusterCall(cl, init_wrk, libs = libs, path = path)
+    parallel::clusterCall(cl, init_wrk, libs = args_init$libs,
+                          path = args_init$path)
     plan_old <- future::plan(future::cluster, workers = cl)
     withr::defer(future::plan(plan_old), envir = frame)
     ns_fun <- function() parallel::clusterCall(cl, loadedNamespaces)
-  } else if (backend == "mirai") {
-    # Do not replace daemons that are already set:
-    skip_if(mirai::daemons_set())
-    mirai::daemons(n)
-    withr::defer(mirai::daemons(0), envir = frame)
-    init_res <- mirai::collect_mirai(mirai::everywhere(
-      init_wrk(libs, path),
-      .args = list(init_wrk = init_wrk, libs = libs, path = path)
-    ))
-    stopifnot(!any(vapply(init_res, mirai::is_error_value, logical(1))))
-    ns_fun <- function() {
-      mirai::collect_mirai(mirai::everywhere(loadedNamespaces()))
+  } else if (backend == "future.mirai") {
+    plan_old <- future::plan(future.mirai::mirai_multisession, workers = n)
+    withr::defer(future::plan(plan_old), envir = frame)
+    # future cannot address a single worker, so run `fun` in more futures
+    # than there are workers, with a pause that makes all workers take
+    # one. Gives one result per worker:
+    on_workers <- function(fun, args = list()) {
+      one <- function(fun, args) {
+        Sys.sleep(0.3)
+        list(pid = Sys.getpid(), out = do.call(fun, args))
+      }
+      environment(one) <- baseenv()
+      res <- future::value(lapply(seq_len(4L * n), function(i) {
+        future::future(one(fun, args),
+                       globals = list(one = one, fun = fun, args = args),
+                       seed = NULL, envir = baseenv())
+      }))
+      res <- res[!duplicated(vapply(res, "[[", integer(1), "pid"))]
+      skip_if_not(length(res) == n, "The futures did not reach all workers.")
+      lapply(res, "[[", "out")
     }
+    on_workers(init_wrk, args_init)
+    ns_fun <- function() on_workers(loadedNamespaces)
   } else {
     stop("Unrecognized `backend`.")
   }
@@ -134,9 +148,9 @@ test_that(paste(
       local({
         local_par_workers(backend, n_wrk)
         info_i <- paste(backend, n_wrk)
-        expect_identical(projpred:::par_backend(), backend, info = info_i)
+        expect_identical(projpred:::par_backend(), "future", info = info_i)
         res <- withr::with_seed(seed_tst, projpred:::par_lapply(
-          1:7, fun_rng, a = 10, .backend = backend, .rng = TRUE
+          1:7, fun_rng, a = 10, .backend = "future", .rng = TRUE
         ))
         expect_identical(vapply(res, "[", numeric(1), 1), 11:17 + 0,
                          info = info_i)
@@ -152,26 +166,26 @@ test_that(paste(
         withr::with_options(
           list(projpred.parallel_chunks_per_worker = 2L),
           res_chunks <- withr::with_seed(seed_tst, projpred:::par_lapply(
-            1:7, fun_rng, a = 10, .backend = backend, .rng = TRUE
+            1:7, fun_rng, a = 10, .backend = "future", .rng = TRUE
           ))
         )
         expect_identical(res_chunks, res_first, info = info_i)
         # No elements, and fewer elements than workers:
         expect_identical(
-          projpred:::par_lapply(list(), fun_err, .backend = backend), list(),
+          projpred:::par_lapply(list(), fun_err, .backend = "future"), list(),
           info = info_i
         )
         expect_identical(
-          projpred:::par_lapply(1L, fun_err, .backend = backend), list(1L),
+          projpred:::par_lapply(1L, fun_err, .backend = "future"), list(1L),
           info = info_i
         )
         # An error in a task stops the call, and the next call works:
         opts_before <- opts_tst()
-        expect_error(projpred:::par_lapply(1:4, fun_err, .backend = backend),
+        expect_error(projpred:::par_lapply(1:4, fun_err, .backend = "future"),
                      "fold error", info = info_i)
         expect_identical(opts_tst(), opts_before, info = info_i)
         expect_identical(
-          projpred:::par_lapply(1:2, fun_err, .backend = backend),
+          projpred:::par_lapply(1:2, fun_err, .backend = "future"),
           list(1L, 2L), info = info_i
         )
         # The workers get the projpred options, except those of the
@@ -179,12 +193,12 @@ test_that(paste(
         withr::with_options(
           list(projpred.tst_opt = "a", projpred.parallel_proj_trigger = 0L,
                projpred.parallel_cv = TRUE),
-          res_opt <- projpred:::par_lapply(1:2, fun_opt, .backend = backend)
+          res_opt <- projpred:::par_lapply(1:2, fun_opt, .backend = "future")
         )
         expect_identical(res_opt, rep(list(list("a", NULL, NULL)), 2),
                          info = info_i)
         expect_identical(
-          projpred:::par_lapply(1:2, fun_opt, .backend = backend),
+          projpred:::par_lapply(1:2, fun_opt, .backend = "future"),
           rep(list(list(NULL, NULL, NULL)), 2), info = info_i
         )
         # The workers get the objects of the global environment that a
@@ -192,41 +206,35 @@ test_that(paste(
         # only for the call:
         if (requireNamespace("globals", quietly = TRUE)) {
           expect_identical(
-            projpred:::par_lapply(1:2, fun_glob, .backend = backend),
+            projpred:::par_lapply(1:2, fun_glob, .backend = "future"),
             list(6, 7), info = info_i
           )
           expect_identical(
-            projpred:::par_lapply(1:2, fun_fact, .backend = backend),
+            projpred:::par_lapply(1:2, fun_fact, .backend = "future"),
             list(6, 7), info = info_i
           )
         }
         expect_identical(
-          projpred:::par_lapply(1:2, fun_has_glob, .backend = backend),
+          projpred:::par_lapply(1:2, fun_has_glob, .backend = "future"),
           list(FALSE, FALSE), info = info_i
         )
         # A name that the code creates at run time needs global option
         # `projpred.export_to_workers`:
-        expect_error(projpred:::par_lapply(1:2, fun_get, .backend = backend),
+        expect_error(projpred:::par_lapply(1:2, fun_get, .backend = "future"),
                      "projpred_tst_glob", info = info_i)
         withr::with_options(
           list(projpred.export_to_workers = "projpred_tst_glob"),
-          res_get <- projpred:::par_lapply(1:2, fun_get, .backend = backend)
+          res_get <- projpred:::par_lapply(1:2, fun_get, .backend = "future")
         )
         expect_identical(res_get, list(6, 7), info = info_i)
         # With the option set to `FALSE`, the workers get no such objects:
         withr::with_options(
           list(projpred.export_to_workers = FALSE),
           expect_error(
-            projpred:::par_lapply(1:2, fun_glob, .backend = backend),
+            projpred:::par_lapply(1:2, fun_glob, .backend = "future"),
             "projpred_tst_glob", info = info_i
           )
         )
-        if (backend == "mirai" && n_wrk == 2L &&
-            "future" %in% par_backends_tst) {
-          # mirai daemons have priority over a future plan:
-          local_par_workers("future", 2L)
-          expect_identical(projpred:::par_backend(), "mirai")
-        }
       })
     }
   }
@@ -271,7 +279,7 @@ test_that(paste(
   "run"
 ), {
   skip_if_not(run_prll)
-  skip_if_not("future" %in% par_backends_tst)
+  skip_if_not("psock" %in% par_backends_tst)
   # Only with pkgload::load_all(): a new worker then loads the installed
   # projpred, or none.
   skip_if_not(file.exists(file.path(getNamespaceInfo("projpred", "path"), "R",
@@ -290,8 +298,6 @@ test_that(paste(
 test_that("a parallel run without workers warns and runs in this R session", {
   skip_if_not(run_cvvs)
   skip_if_not_installed("future")
-  skip_if_not_installed("mirai")
-  skip_if(mirai::daemons_set())
   skip_if_not(inherits(future::plan(), "sequential"))
   tstsetup_ref <- tstsetup_ref_par()
   skip_if(is.na(tstsetup_ref))
@@ -863,7 +869,7 @@ test_that(paste(
     }
   }
   # Without workers, `parallel = TRUE` gives the results of the workers:
-  if (!mirai::daemons_set() && inherits(future::plan(), "sequential")) {
+  if (inherits(future::plan(), "sequential")) {
     for (tstsetup_ref in tstsetups_ref) {
       for (cv_meth in c("LOO", "kfold")) {
         setting <- paste(tstsetup_ref, cv_meth)
