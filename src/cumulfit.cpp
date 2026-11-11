@@ -2,6 +2,7 @@
 #include <algorithm>
 #include <cmath>
 #include <limits>
+#include <vector>
 
 //[[Rcpp::depends(RcppArmadillo)]]
 
@@ -31,9 +32,13 @@ static inline void cl_funs(int link, double z, double& F, double& S,
                            double& f, double& fd) {
   switch (link) {
   case CL_LOGISTIC: {
-    F = R::plogis(z, 0.0, 1.0, 1, 0);
-    S = R::plogis(z, 0.0, 1.0, 0, 0);
-    f = R::dlogis(z, 0.0, 1.0, 0);
+    // One exp() for all four values (e <= 1, so nothing overflows):
+    double e = std::exp(-std::abs(z));
+    double d = 1.0 / (1.0 + e);
+    double tail = e * d;
+    F = (z >= 0.0) ? d : tail;
+    S = (z >= 0.0) ? tail : d;
+    f = tail * d;
     fd = f * (S - F);
     break;
   }
@@ -111,7 +116,28 @@ static double cl_eval(const mat& x, const mat& w, const vec& offset,
     h_zetazeta.zeros(q, q);
   }
   double loss = 0.0;
+  // The functions at zeta_j - eta_i are computed once per threshold and
+  // observation.  The cache key is z, so values clamped at +-100 are computed
+  // again; this occurs only on paths with an infinite objective.
+  double F_hi, S_hi, f_hi, fd_hi, F_lo, S_lo, f_lo, fd_lo;
+  cl_funs(link, 100.0, F_hi, S_hi, f_hi, fd_hi);
+  cl_funs(link, -100.0, F_lo, S_lo, f_lo, fd_lo);
+  std::vector<double> t_z(q), t_F(q), t_S(q), t_f(q), t_fd(q);
+  std::vector<char> t_done(q);
+  auto thr_funs = [&](uword j, double z, double& F, double& S, double& f,
+                      double& fd) {
+    if (!(t_done[j] && t_z[j] == z)) {
+      cl_funs(link, z, t_F[j], t_S[j], t_f[j], t_fd[j]);
+      t_z[j] = z;
+      t_done[j] = 1;
+    }
+    F = t_F[j];
+    S = t_S[j];
+    f = t_f[j];
+    fd = t_fd[j];
+  };
   for (uword i = 0; i < n; ++i) {
+    std::fill(t_done.begin(), t_done.end(), 0);
     for (uword c = 0; c < ncat; ++c) {
       double wic = w(i, c);
       if (wic == 0.0) continue;
@@ -120,8 +146,22 @@ static double cl_eval(const mat& x, const mat& w, const vec& offset,
       double z1 = (c < q) ? std::min(100.0, zeta(c) - eta(i)) : 100.0;
       double z2 = (c > 0) ? std::max(-100.0, zeta(c - 1) - eta(i)) : -100.0;
       double F1, S1, f1, fd1, F2, S2, f2, fd2;
-      cl_funs(link, z1, F1, S1, f1, fd1);
-      cl_funs(link, z2, F2, S2, f2, fd2);
+      if (c < q) {
+        thr_funs(c, z1, F1, S1, f1, fd1);
+      } else {
+        F1 = F_hi;
+        S1 = S_hi;
+        f1 = f_hi;
+        fd1 = fd_hi;
+      }
+      if (c > 0) {
+        thr_funs(c - 1, z2, F2, S2, f2, fd2);
+      } else {
+        F2 = F_lo;
+        S2 = S_lo;
+        f2 = f_lo;
+        fd2 = fd_lo;
+      }
       if (c == q) {
         f1 = 0.0;
         fd1 = 0.0;
@@ -228,9 +268,14 @@ static double cl_fit_one(const mat& x, const mat& w, const vec& offset,
     }
     if (p > 0) theta.head(p) = beta;
     theta.tail(q) = zeta;
-    // Backtracking line search (Armijo), keeping the thresholds increasing:
+    // Backtracking line search (Armijo), keeping the thresholds increasing.
+    // The full-step trial (t = 1, usually accepted) also computes the
+    // gradient and the Hessian, so that an accepted full step needs no second
+    // evaluation at the same point.
     double t = 1.0;
     bool accepted = false;
+    bool accepted_deriv = false;
+    double loss_accepted = 0.0;
     vec grad_new;
     mat hess_new;
     for (int ls = 0; ls < 60; ++ls) {
@@ -245,11 +290,14 @@ static double cl_fit_one(const mat& x, const mat& w, const vec& offset,
       }
       if (ordered) {
         vec beta_new = (p > 0) ? vec(theta_new.head(p)) : vec();
+        bool with_deriv = (ls == 0);
         double loss_new = cl_eval(x, w, offset, beta_new, zeta_new, link,
-                                  false, grad_new, hess_new);
+                                  with_deriv, grad_new, hess_new);
         if (std::isfinite(loss_new) &&
             loss_new <= loss - 1e-4 * t * decrement) {
           accepted = true;
+          accepted_deriv = with_deriv;
+          loss_accepted = loss_new;
           break;
         }
       }
@@ -263,7 +311,13 @@ static double cl_fit_one(const mat& x, const mat& w, const vec& offset,
     }
     if (p > 0) beta = theta_new.head(p);
     zeta = theta_new.tail(q);
-    loss = cl_eval(x, w, offset, beta, zeta, link, true, grad, hess);
+    if (accepted_deriv) {
+      loss = loss_accepted;
+      grad.swap(grad_new);
+      hess.swap(hess_new);
+    } else {
+      loss = cl_eval(x, w, offset, beta, zeta, link, true, grad, hess);
+    }
   }
   return loss;
 }
