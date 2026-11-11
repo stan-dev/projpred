@@ -107,6 +107,12 @@ test_that(paste(
   environment(fun_opt) <- baseenv()
   fun_glob <- function(i) i + projpred_tst_glob
   environment(fun_glob) <- globalenv()
+  # A function whose environment has the global environment as its parent
+  # (as a function that a script makes in local() or in another function):
+  fun_fact <- local({
+    a <- 1
+    function(i) i + a + projpred_tst_glob - 1
+  }, envir = new.env(parent = globalenv()))
   fun_get <- function(i) i + get(paste0("projpred_tst_", "glob"))
   environment(fun_get) <- globalenv()
   fun_has_glob <- function(i) {
@@ -189,6 +195,10 @@ test_that(paste(
             projpred:::par_lapply(1:2, fun_glob, .backend = backend),
             list(6, 7), info = info_i
           )
+          expect_identical(
+            projpred:::par_lapply(1:2, fun_fact, .backend = backend),
+            list(6, 7), info = info_i
+          )
         }
         expect_identical(
           projpred:::par_lapply(1:2, fun_has_glob, .backend = backend),
@@ -235,6 +245,18 @@ test_that(paste(
     stats::runif(1)
   })
   expect_identical(res_local$next_draw, next_draw)
+  # Without a backend, a function can change an object of the global
+  # environment (the objects are not exported and restored then):
+  assign("projpred_tst_count", 0, envir = globalenv())
+  withr::defer(rm(list = "projpred_tst_count", envir = globalenv()))
+  fun_count <- function(i) {
+    projpred_tst_count <<- projpred_tst_count + 1
+    i
+  }
+  environment(fun_count) <- globalenv()
+  expect_identical(projpred:::par_lapply(1:3, fun_count, .backend = NULL),
+                   list(1L, 2L, 3L))
+  expect_identical(get("projpred_tst_count", envir = globalenv()), 3)
   # The sequential loop with streams gives the same results:
   res_seq <- withr::with_seed(seed_tst, {
     res <- projpred:::seq_lapply_rng(7L, function(i) c(i + 10, stats::runif(1)))

@@ -1379,12 +1379,13 @@ par_lapply <- function(.X, .FUN, ..., .backend, .rng = FALSE,
   opts_prll <- c("projpred.parallel_proj_trigger", "projpred.prll_prj_trigger",
                  "projpred.parallel_cv", "projpred.prll_cv")
   opts[opts_prll] <- list(NULL)
-  globs <- par_globals(list(.FUN, list(...), .X))
   seeds <- if (.rng) par_rng_streams(n)
-  task <- list(fun = .FUN, args = list(...), opts = opts, globs = globs)
+  task <- list(fun = .FUN, args = list(...), opts = opts)
   if (is.null(.backend)) {
+    # This R session has the objects of its global environment:
     return(par_chunk(list(xs = .X, seeds = seeds), task))
   }
+  task$globs <- par_globals(list(.FUN, list(...), .X))
   par_check_workers(.backend)
   n_workers <- if (.backend == "mirai") {
     mirai::status()$connections
@@ -1430,8 +1431,9 @@ par_lapply <- function(.X, .FUN, ..., .backend, .rng = FALSE,
 # in the list `objs` (the function, the arguments and the elements of
 # par_lapply()). A function goes to a worker with its environment, but a
 # function of the global environment (e.g., a function of a custom reference
-# model that is defined in a script) goes without the objects of the global
-# environment that it uses. So for each such function in `objs` (see
+# model that is defined in a script, also inside local() or another function
+# of the script) goes without the objects of the global environment that it
+# uses. So for each such function in `objs` (see
 # global_closures()), the globals package finds these objects from the code
 # of the function (also the objects that these use). This does not find
 # objects whose names the code builds at run time (e.g., in get()); global
@@ -1442,25 +1444,33 @@ par_globals <- function(objs) {
   if (isFALSE(nms)) {
     return(list())
   }
+  if (!is.character(nms)) {
+    stop("Global option `projpred.export_to_workers` must be a character ",
+         "vector or `FALSE`.")
+  }
   genv <- globalenv()
+  # (Without the globals package, only the option gives objects.)
   if (requireNamespace("globals", quietly = TRUE)) {
     for (fun in global_closures(objs)) {
       globs <- globals::cleanup(globals::globalsOf(
-        fun, envir = genv, recursive = TRUE, mustExist = FALSE
+        fun, envir = environment(fun), recursive = TRUE, mustExist = FALSE
       ))
       where <- attr(globs, "where")
       nms <- c(nms, Filter(function(nm) identical(where[[nm]], genv),
                            names(globs)))
     }
   }
-  return(mget(unique(nms), envir = genv))
+  # The tasks set the RNG state themselves:
+  return(mget(setdiff(unique(nms), ".Random.seed"), envir = genv))
 }
 
-# The functions with the global environment as their environment that `x`
-# reaches through list elements and through the environments of functions
-# (with their parent environments, up to a namespace or the global
-# environment). Environments that are stored as objects (e.g., R6 objects)
-# are not searched.
+# The functions that `x` reaches through list elements and through the
+# environments of functions (with their parent environments, up to a
+# namespace or the global environment) and whose environment is the global
+# environment or has it as an ancestor before any namespace. Environments
+# that are stored as objects (e.g., R6 objects) are not searched, and active
+# bindings are not read. The search reads the objects of the environments of
+# functions, so it evaluates function arguments that were not evaluated yet.
 global_closures <- function(x) {
   genv <- globalenv()
   seen <- list()
@@ -1475,6 +1485,9 @@ global_closures <- function(x) {
     }
     seen[[length(seen) + 1L]] <<- env
     for (nm in setdiff(ls(env, all.names = TRUE), "...")) {
+      if (bindingIsActive(nm, env)) {
+        next
+      }
       # An argument without a value gives an error here:
       obj <- tryCatch(list(get(nm, envir = env, inherits = FALSE)),
                       error = function(e) NULL)
@@ -1490,11 +1503,13 @@ global_closures <- function(x) {
     }
     if (is.function(x)) {
       env <- environment(x)
-      if (identical(env, genv)) {
-        out[[length(out) + 1L]] <<- x
-      } else if (!is.null(env)) {
-        walk_env(env, depth + 1L)
+      if (is.null(env)) {
+        return(invisible())
       }
+      if (identical(topenv(env), genv)) {
+        out[[length(out) + 1L]] <<- x
+      }
+      walk_env(env, depth + 1L)
     } else if (is.list(x)) {
       for (el in x) {
         walk(el, depth + 1L)
@@ -1565,14 +1580,11 @@ par_rng_streams <- function(n) {
 # gives the results of the parallel one). Afterwards, the RNG state is the one
 # after the draw for the streams.
 seq_lapply_rng <- function(n, fun) {
-  seeds <- par_rng_streams(n)
-  genv <- globalenv()
-  seed_old <- get(".Random.seed", envir = genv, inherits = FALSE)
-  on.exit(assign(".Random.seed", seed_old, envir = genv))
-  lapply(seq_len(n), function(i) {
-    assign(".Random.seed", seeds[[i]], envir = genv)
-    fun(i)
-  })
+  if (n == 0L) {
+    return(list())
+  }
+  par_chunk(list(xs = seq_len(n), seeds = par_rng_streams(n)),
+            list(fun = fun, args = list()))
 }
 
 # Calls `.fun` with the arguments in the list `.args` and in `...` (for

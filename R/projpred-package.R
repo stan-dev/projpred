@@ -164,10 +164,10 @@
 #' argument `parallel`, nor on the number of workers, nor on the package that
 #' provides them.
 #'
-#' A function goes to a parallel worker together with its environment, except
-#' for the global environment. So if a function of a custom reference model
-#' is defined in the global environment (e.g., in a script) and uses other
-#' objects of the global environment, the workers need these objects.
+#' A function goes to a parallel worker with its enclosing environments up
+#' to, but not including, the global environment. So if a function of a
+#' custom reference model is defined in a script and uses other objects of
+#' the global environment, the workers need these objects.
 #' If the \pkg{globals} package is installed, \pkg{projpred} finds them from
 #' the code of such functions and sends them to the workers. This cannot find
 #' objects whose names the code creates at run time (e.g., with [get()]).
