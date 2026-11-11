@@ -123,12 +123,7 @@ perturb_refmodel <- function(refmodel, i, ll, lw_i, alpha, seed) {
     return(NULL)
   }
   if (!all(refmodel$offset == 0)) {
-    if (refmodel$family$family %in% fams_neg_linpred()) {
-      eta_offs <- refmodel$eta - refmodel$offset
-    } else {
-      eta_offs <- refmodel$eta + refmodel$offset
-    }
-    refmodel$mu_offs <- refmodel$family$linkinv(eta_offs)
+    refmodel$mu_offs <- refmodel$family$linkinv(ref_eta_offs(refmodel))
     if (!all_finite(refmodel$mu_offs)) {
       return(NULL)
     }
