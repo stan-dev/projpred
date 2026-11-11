@@ -1187,6 +1187,123 @@ fun_with_objs <- function(fun, nms, env = parent.frame()) {
   return(fun)
 }
 
+# The objects of the init_refmodel() environment that mu_fun() and
+# fetch_data() of a reference model use (see refmodel_for_folds()):
+refmodel_fun_objs <- c("data", "family", "proj_predfun",
+                       "proj_predfun_is_subprd")
+
+# A copy of `refmodel` for the parallel CV folds (one_obs() in loo_varsel();
+# one_fold() in kfold_varsel(), for the full-data reference model and for the
+# reference models of the folds). The folds use the data, the draws, `family`,
+# `div_minimizer`, mu_fun() and fetch_data() of the reference model, but not
+# the reference model fit, its fold fits (`cvfits`), and the functions that
+# need the fit (ref_predfun(), extract_model_data(), cvfun(), cvrefbuilder();
+# kfold_varsel() calls ref_predfun() before the parallel loop). Without the
+# copy, the workers get the fit and load the packages that it needs (e.g.,
+# brms or rstanarm), which takes seconds and memory. The copy has `NULL` for the fits and
+# not_in_folds() for these functions. mu_fun() and fetch_data() of
+# init_refmodel() share an environment that also holds the fit, so they get
+# an environment with only the objects that they use. Other mu_fun() and
+# fetch_data() functions stay as they are. With `formula_env`, the formula of
+# the copy gets a small environment (see formula_for_folds(); for the
+# reference model of a K-fold fold).
+refmodel_for_folds <- function(refmodel, formula_env = NULL) {
+  # The family functions of the latent and the augmented-data projection, and
+  # family functions from other packages, can hold the fit in their
+  # environments. The copy cannot remove the fit from there, so the workers get
+  # the reference model as it is, also its formula. (Without `formula_env`,
+  # the environment of the formula stays as it is. Functions of the user, e.g.,
+  # a custom `proj_predfun`, also stay as they are. They can also hold the
+  # fit.)
+  fam_pkgs <- vapply(Filter(is.function, refmodel$family), function(f) {
+    environmentName(topenv(environment(f) %||% baseenv()))
+  }, character(1))
+  if (isTRUE(refmodel$family$for_latent) ||
+      isTRUE(refmodel$family$for_augdat) ||
+      !all(fam_pkgs %in% c("base", "stats", "projpred"))) {
+    return(refmodel)
+  }
+  out <- refmodel
+  out["fit"] <- list(NULL)
+  out["cvfits"] <- list(NULL)
+  for (nm in intersect(c("ref_predfun", "extract_model_data", "cvfun",
+                         "cvrefbuilder"), names(out))) {
+    out[[nm]] <- not_in_folds
+  }
+  env <- environment(refmodel$mu_fun)
+  if (is.environment(env) &&
+      identical(environment(refmodel$fetch_data), env) &&
+      all(vapply(refmodel_fun_objs, exists, logical(1), envir = env,
+                 inherits = FALSE))) {
+    env_new <- list2env(mget(refmodel_fun_objs, envir = env, inherits = FALSE),
+                        parent = topenv(env))
+    # The data can have formula attributes (e.g., "terms" and "formula" for
+    # rstanarm::stan_gamm4()) with the environment of the model fitting, which
+    # can hold the fit. projpred does not use these attributes, so give them
+    # the environment of the reference model formula:
+    for (anm in names(attributes(env_new$data))) {
+      if (inherits(attr(env_new$data, anm), "formula")) {
+        environment(attr(env_new$data, anm)) <- environment(refmodel$formula)
+      }
+    }
+    environment(out$mu_fun) <- env_new
+    environment(out$fetch_data) <- env_new
+  }
+  if (!is.null(formula_env)) {
+    out$formula <- formula_for_folds(out$formula,
+                                     data_nms = names(out$fetch_data(obs = 1L)),
+                                     env_parent = formula_env)
+  }
+  return(out)
+}
+
+# The formula of the reference model of a K-fold fold can have the environment
+# of the refit call (e.g., of rstanarm::kfold(), if the call of the fit has
+# the formula as an expression). That environment can hold the fits, and its
+# ancestors can be the namespace of the package of the fit. This function
+# returns `formula` with a new environment that holds only the objects that
+# the formula uses from the old environment and its ancestors, up to the first
+# namespace or the global environment (without the names of the data columns
+# `data_nms`, which the data provides). The parent of the new environment is
+# `env_parent` (the environment of the full-data formula). So a name that the
+# old environment found only in a namespace among its ancestors (e.g., a
+# function of the package of the fit that is not exported) is looked up from
+# `env_parent` instead. A formula whose environment is a namespace, the
+# global, the base or the empty environment, or `env_parent` stays as it is.
+formula_for_folds <- function(formula, data_nms, env_parent) {
+  is_top <- function(env) {
+    isNamespace(env) || identical(env, globalenv()) ||
+      identical(env, baseenv()) || identical(env, emptyenv())
+  }
+  env <- environment(formula)
+  if (!is.environment(env) || is_top(env) || identical(env, env_parent)) {
+    return(formula)
+  }
+  nms <- setdiff(all.names(formula, unique = TRUE), data_nms)
+  objs <- list()
+  while (!is_top(env) && !identical(env, env_parent)) {
+    for (nm in setdiff(nms, names(objs))) {
+      if (exists(nm, envir = env, inherits = FALSE)) {
+        # A function argument without a value gives an error here; the
+        # formula cannot use it:
+        obj <- tryCatch(list(get(nm, envir = env, inherits = FALSE)),
+                        error = function(e) NULL)
+        if (!is.null(obj)) {
+          objs[nm] <- obj
+        }
+      }
+    }
+    env <- parent.env(env)
+  }
+  environment(formula) <- list2env(objs, parent = env_parent)
+  return(formula)
+}
+
+not_in_folds <- function(...) {
+  stop("This function of the reference model is not available in the ",
+       "parallel CV folds.")
+}
+
 use_progressr <- function() {
   getOption("projpred.use_progressr",
             requireNamespace("progressr", quietly = TRUE) &&

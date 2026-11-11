@@ -102,6 +102,7 @@ local_record_backend <- function(fail = FALSE, export_only = FALSE,
                                  frame = parent.frame()) {
   rec <- new.env()
   rec$env_nms <- list()
+  rec$fit_null <- logical()
   rec$export_opt <- list()
   rec$draw_env_nms <- list()
   rec$draw_export_opt <- list()
@@ -110,6 +111,16 @@ local_record_backend <- function(fail = FALSE, export_only = FALSE,
     if (length(fun_nm) == 1L) {
       rec$env_nms[[fun_nm]] <- ls(environment(get(fun_nm, envir)),
                                   all.names = TRUE)
+      rec$fit_null[fun_nm] <- is.null(
+        environment(get(fun_nm, envir))$refmodel$fit
+      )
+      if (fun_nm == "one_fold") {
+        # The reference models of the folds (iteration argument `list_cv_k`):
+        folds <- get("list_cv", envir)
+        rec$fold_fits_null <- all(vapply(folds, function(fold) {
+          is.null(fold$refmodel$fit) && !is.null(fold$eta_test)
+        }, logical(1)))
+      }
       rec$export_opt[fun_nm] <- list(getOption("doFuture.foreach.export"))
       if (fail) stop("Stop of the recording foreach backend.")
     }
@@ -133,6 +144,18 @@ local_record_backend <- function(fail = FALSE, export_only = FALSE,
     accumulator(results, seq_along(results))
     foreach::getResult(it)
   }
+  local_dopar_restore(frame)
+  foreach::setDoPar(do_record, info = function(data, item) {
+    switch(item, name = "record", version = "0", workers = 1L, NULL)
+  })
+  rec
+}
+
+# When `frame` exits, the foreach backend that is registered now is registered
+# again. foreach has no exported getter for the registered backend, so this
+# reads its internal store (the setup of this file can have registered
+# doParallel or doFuture).
+local_dopar_restore <- function(frame = parent.frame()) {
   fe_globals <- foreach:::.foreachGlobals
   nms_reg <- c("fun", "data", "info")
   reg_old <- mget(nms_reg, envir = fe_globals, ifnotfound = list(NULL))
@@ -142,19 +165,18 @@ local_record_backend <- function(fail = FALSE, export_only = FALSE,
       foreach::setDoPar(reg_old$fun, data = reg_old$data, info = reg_old$info)
     }
   }, envir = frame)
-  foreach::setDoPar(do_record, info = function(data, item) {
-    switch(item, name = "record", version = "0", workers = 1L, NULL)
-  })
-  rec
+  invisible()
 }
 
 # A GLM with K-fold fits (in the setup, these are the reference models without
 # observation weights), preferably with the traditional projection (`NA` if
-# there is none):
-tstsetup_ref_par <- function() {
+# there is none). With `pkg`, a GLM of that package (e.g., "rstanarm"):
+tstsetup_ref_par <- function(pkg = "[^.]*") {
   tstsetups_ref <- names(cvfitss)[!sapply(cvfitss, inherits, "try-error")]
-  c(grep("\\.glm\\..*\\.trad", tstsetups_ref, value = TRUE),
-    grep("\\.glm\\.", tstsetups_ref, value = TRUE))[1]
+  tstsetups_ref <- grep(paste0("^", pkg, "\\.glm\\."), tstsetups_ref,
+                        value = TRUE)
+  c(grep("\\.trad", tstsetups_ref, value = TRUE), tstsetups_ref,
+    NA_character_)[1]
 }
 
 cvvs_par <- function(tstsetup_ref, cv_meth) {
@@ -188,6 +210,12 @@ test_that(paste(
                      rec$env_nms$one_obs))
   expect_true("refmodel" %in% rec$env_nms$one_fold)
   expect_false("list_cv" %in% rec$env_nms$one_fold)
+  # The folds get the reference model without its fit (see
+  # refmodel_for_folds()):
+  expect_false(is.null(refmods[[tstsetup_ref]]$fit))
+  expect_true(isTRUE(unname(rec$fit_null["one_obs"])))
+  expect_true(isTRUE(unname(rec$fit_null["one_fold"])))
+  expect_true(isTRUE(rec$fold_fits_null))
 })
 
 test_that(paste(
@@ -366,4 +394,263 @@ test_that(paste(
     expect_true(all(in_ns), info = paste(outer_nm, ":",
                                          paste(others[!in_ns], collapse = ", ")))
   }
+})
+
+test_that(paste(
+  "refmodel_for_folds() gives a reference model without the fit, with the",
+  "objects that mu_fun() and fetch_data() use"
+), {
+  skip_if_not_installed("codetools")
+  skip_if(length(refmods) == 0)
+  # The objects of the environment of `fun` that `fun` uses:
+  used_objs <- function(fun) {
+    globs <- codetools::findGlobals(fun, merge = FALSE)
+    intersect(c(globs$variables, globs$functions),
+              ls(environment(fun), all.names = TRUE))
+  }
+  topenv_nm <- function(fun) {
+    env <- environment(fun)
+    if (is.null(env)) "base" else environmentName(topenv(env))
+  }
+  # The path from `x` to the first object of a class in `cls` that `x` reaches
+  # through list elements, attributes, and environments (except namespaces
+  # and the global environment), or `NULL`:
+  path_to_class <- function(x, cls) {
+    seen <- new.env(parent = emptyenv())
+    walk <- function(x, path) {
+      if (inherits(x, cls)) return(path)
+      if (is.environment(x)) {
+        if (isNamespace(x) || identical(x, globalenv()) ||
+            identical(x, baseenv()) || identical(x, emptyenv())) {
+          return(NULL)
+        }
+        key <- utils::capture.output(print(x))[1]
+        if (exists(key, envir = seen, inherits = FALSE)) return(NULL)
+        assign(key, TRUE, envir = seen)
+        for (nm in ls(x, all.names = TRUE)) {
+          p <- walk(get0(nm, envir = x, inherits = FALSE),
+                    paste0(path, " > env$", nm))
+          if (!is.null(p)) return(p)
+        }
+        return(walk(parent.env(x), paste0(path, " > parent.env")))
+      }
+      if (is.function(x)) {
+        p <- walk(environment(x), paste0(path, " > environment"))
+        if (!is.null(p)) return(p)
+      }
+      if (is.list(x)) {
+        nms <- if (is.null(names(x))) rep("", length(x)) else names(x)
+        for (j in seq_along(x)) {
+          p <- walk(x[[j]], paste0(path, " > [[", j, ":", nms[j], "]]"))
+          if (!is.null(p)) return(p)
+        }
+      }
+      at <- attributes(x)
+      for (anm in names(at)) {
+        p <- walk(at[[anm]], paste0(path, " > attr ", anm))
+        if (!is.null(p)) return(p)
+      }
+      NULL
+    }
+    walk(x, "x")
+  }
+  fit_cls <- c("stanreg", "brmsfit", "stanfit")
+  pkgs_copied <- character()
+  for (tstsetup in names(refmods)) {
+    refm <- refmods[[tstsetup]]
+    refm_f <- projpred:::refmodel_for_folds(refm)
+    # For the latent and the augmented-data projection and for family functions
+    # from other packages, the reference model stays as it is:
+    fam_pkgs <- vapply(Filter(is.function, refm$family), topenv_nm,
+                       character(1))
+    if (isTRUE(refm$family$for_latent) || isTRUE(refm$family$for_augdat) ||
+        !all(fam_pkgs %in% c("base", "stats", "projpred"))) {
+      expect_identical(refm_f, refm, info = tstsetup)
+      next
+    }
+    pkgs_copied <- c(pkgs_copied, sub("\\..*", "", tstsetup))
+    expect_true("fit" %in% names(refm_f), info = tstsetup)
+    expect_null(refm_f$fit, info = tstsetup)
+    expect_null(refm_f$cvfits, info = tstsetup)
+    expect_error(refm_f$ref_predfun(NULL),
+                 "not available in the parallel CV folds", info = tstsetup)
+    # The copy changes only the environments of the formula attributes of the
+    # data (e.g., "terms" if the data is a model frame):
+    no_fmls <- function(d) {
+      for (anm in names(attributes(d))) {
+        if (inherits(attr(d, anm), "formula")) attr(d, anm) <- NULL
+      }
+      d
+    }
+    expect_identical(no_fmls(refm_f$fetch_data()), no_fmls(refm$fetch_data()),
+                     info = tstsetup)
+    expect_identical(no_fmls(refm_f$fetch_data(obs = 1:3)),
+                     no_fmls(refm$fetch_data(obs = 1:3)), info = tstsetup)
+    env_f <- environment(refm_f$mu_fun)
+    expect_identical(environment(refm_f$fetch_data), env_f, info = tstsetup)
+    expect_false(identical(env_f, environment(refm$mu_fun)), info = tstsetup)
+    # The new environment holds exactly the objects of the init_refmodel()
+    # environment that mu_fun() and fetch_data() use:
+    expect_setequal(ls(env_f, all.names = TRUE),
+                    union(used_objs(refm$mu_fun), used_objs(refm$fetch_data)))
+    # The original reaches the fit, the copy does not:
+    if (!is.null(refm$fit)) {
+      expect_false(is.null(path_to_class(refm, fit_cls)), info = tstsetup)
+      path_f <- path_to_class(refm_f, fit_cls)
+      expect_null(path_f, info = paste(tstsetup, ":", path_f))
+      expect_lt(length(serialize(refm_f, NULL)),
+                length(serialize(refm, NULL)), label = tstsetup)
+    }
+  }
+  # At least one reference model of each package gets the copy:
+  pkgs_all <- intersect(sub("\\..*", "", names(refmods)),
+                        c("rstanarm", "brms"))
+  expect_gt(length(pkgs_all), 0)
+  expect_setequal(intersect(pkgs_copied, pkgs_all), pkgs_all)
+  # formula_for_folds(): a formula from a function that also holds a fit (as
+  # the refit call of rstanarm::kfold()). The new environment holds only the
+  # objects that the formula uses and that are not data columns:
+  fit_dummy <- structure(list(), class = "stanreg")
+  make_fml <- function() {
+    x <- fit_dummy
+    object <- fit_dummy
+    knots <- c(-1, 1)
+    y ~ x + splines::ns(z, knots = knots)
+  }
+  fml <- make_fml()
+  fml_f <- projpred:::formula_for_folds(fml, data_nms = c("y", "x", "z"),
+                                        env_parent = globalenv())
+  expect_false(is.null(path_to_class(fml, fit_cls)))
+  expect_null(path_to_class(fml_f, fit_cls))
+  expect_identical(ls(environment(fml_f), all.names = TRUE), "knots")
+  expect_identical(environment(fml_f)$knots, c(-1, 1))
+  expect_identical(parent.env(environment(fml_f)), globalenv())
+  expect_identical(deparse(fml_f), deparse(fml))
+  expect_identical(class(fml_f), class(fml))
+  # Objects of the ancestors of the formula environment (up to `env_parent`)
+  # are also kept, the nearest one first. A `.` and an argument without a
+  # value are not objects of the formula:
+  make_fml_outer <- function(arg) {
+    knots <- 3
+    offs <- 4
+    make_fml_inner <- function() {
+      knots <- c(-1, 1)
+      y ~ . + splines::ns(z, knots = knots) + offset(offs) + arg
+    }
+    make_fml_inner()
+  }
+  fml_o <- make_fml_outer()
+  fml_o_f <- projpred:::formula_for_folds(fml_o, data_nms = c("y", "z"),
+                                          env_parent = globalenv())
+  expect_identical(as.list(environment(fml_o_f), all.names = TRUE)[
+    c("knots", "offs")
+  ], list(knots = c(-1, 1), offs = 4))
+  expect_setequal(ls(environment(fml_o_f), all.names = TRUE),
+                  c("knots", "offs"))
+  # With the environment of make_fml_outer() as `env_parent`, the new
+  # environment holds only the object of make_fml_inner():
+  env_o <- parent.env(environment(fml_o))
+  fml_o_f <- projpred:::formula_for_folds(fml_o, data_nms = c("y", "z"),
+                                          env_parent = env_o)
+  expect_identical(ls(environment(fml_o_f), all.names = TRUE), "knots")
+  expect_identical(parent.env(environment(fml_o_f)), env_o)
+  # A formula with the global environment, a namespace or `env_parent` as its
+  # environment stays as it is:
+  for (env in list(globalenv(), asNamespace("stats"))) {
+    environment(fml) <- env
+    expect_identical(
+      projpred:::formula_for_folds(fml, data_nms = "y",
+                                   env_parent = environment(make_fml())),
+      fml
+    )
+  }
+  expect_identical(
+    projpred:::formula_for_folds(fml_f, data_nms = "y",
+                                 env_parent = environment(fml_f)),
+    fml_f
+  )
+})
+
+test_that(paste(
+  "the workers of the parallel CV folds do not load the package of the",
+  "reference model fit"
+), {
+  skip_if_not(run_prll)
+  skip_if_not(run_cvvs)
+  skip_if_not_installed("doParallel")
+  skip_if_not_installed("doRNG")
+  tstsetups_ref <- vapply(pkg_nms, tstsetup_ref_par, character(1))
+  skip_if(all(is.na(tstsetups_ref)))
+  # Workers that stay alive between the loops and that do not get the loaded
+  # namespaces of this R session (as forked workers do). With
+  # pkgload::load_all() (e.g., in devtools::test()), each worker loads the
+  # same projpred source, not an installed projpred:
+  cl <- parallel::makePSOCKcluster(2L)
+  withr::defer(parallel::stopCluster(cl))
+  init_wrk <- function(libs, path) {
+    .libPaths(libs)
+    if (file.exists(file.path(path, "R", "projpred-package.R"))) {
+      pkgload::load_all(path, compile = FALSE, helpers = FALSE, quiet = TRUE)
+    }
+    invisible()
+  }
+  environment(init_wrk) <- baseenv()
+  parallel::clusterCall(cl, init_wrk, libs = .libPaths(),
+                        path = getNamespaceInfo("projpred", "path"))
+  local_dopar_restore()
+  doParallel::registerDoParallel(cl)
+  expect_identical(foreach::getDoParWorkers(), 2L)
+  # Before each run, the workers get the default RNG kind. doRNG sets
+  # L'Ecuyer-CMRG on each worker that runs an iteration, so this shows that
+  # both workers ran folds:
+  rng_reset <- function() RNGkind("Mersenne-Twister")
+  environment(rng_reset) <- baseenv()
+  rng_kind <- function() RNGkind()[1]
+  environment(rng_kind) <- baseenv()
+  check_wrk <- function(label) {
+    expect_identical(unlist(parallel::clusterCall(cl, rng_kind)),
+                     rep("L'Ecuyer-CMRG", 2), label = label)
+    ns <- parallel::clusterCall(cl, loadedNamespaces)
+    for (pkg_fit in pkg_nms) {
+      expect_false(any(vapply(ns, function(ns_i) pkg_fit %in% ns_i,
+                              logical(1))),
+                   label = paste(label, pkg_fit))
+    }
+  }
+  # The check comes after each run, so that it names the first CV method
+  # that makes the workers load a package of a fit:
+  for (tstsetup_ref in tstsetups_ref[!is.na(tstsetups_ref)]) {
+    for (cv_meth in c("LOO", "kfold")) {
+      parallel::clusterCall(cl, rng_reset)
+      expect_s3_class(cvvs_par(tstsetup_ref, cv_meth), "vsel")
+      check_wrk(paste(tstsetup_ref, cv_meth))
+    }
+  }
+  # The fits of setup.R have a formula object in their calls. Usually, the
+  # call has the formula as an expression. rstanarm::kfold() then evaluates
+  # it in the refit call, so the formulas of the fold reference models get an
+  # environment that holds the fits:
+  tstsetup_ref <- tstsetups_ref[["rstanarm"]]
+  skip_if(is.null(tstsetup_ref) || is.na(tstsetup_ref))
+  fit_expr <- refmods[[tstsetup_ref]]$fit
+  fit_expr$call$formula <- str2lang(paste(deparse(formula(fit_expr)),
+                                          collapse = " "))
+  refm_expr <- suppressWarnings(get_refmodel(fit_expr))
+  cvfits_expr <- try(suppressWarnings(run_cvfun(refm_expr, K = K_tst,
+                                                seed = seed3_tst)),
+                     silent = TRUE)
+  skip_if(inherits(cvfits_expr, "try-error"))
+  fml_fold <- projpred:::get_kfold(refm_expr, K = K_tst, cvfits = cvfits_expr,
+                                   verbose = FALSE)[[1]]$refmodel$formula
+  expect_false(identical(environment(fml_fold),
+                         environment(refm_expr$formula)))
+  parallel::clusterCall(cl, rng_reset)
+  cvvs_expr <- suppressWarnings(cv_varsel(
+    refm_expr, cv_method = "kfold", cvfits = cvfits_expr,
+    validate_search = TRUE, nclusters = nclusters_tst,
+    nclusters_pred = nclusters_pred_tst, nterms_max = nterms_max_tst,
+    parallel = TRUE, seed = seed_tst, verbose = FALSE
+  ))
+  expect_s3_class(cvvs_expr, "vsel")
+  check_wrk("rstanarm fit with formula expression, kfold")
 })

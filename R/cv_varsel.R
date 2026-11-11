@@ -1192,6 +1192,12 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
       "refmodel", "search_control", "search_out_rks",
       "search_out_rks_was_null", "search_terms", "verbose"
     ))
+    if (parallel) {
+      # The workers get a copy of the reference model without its fits (see
+      # refmodel_for_folds()):
+      assign("refmodel", refmodel_for_folds(refmodel),
+             envir = environment(one_obs))
+    }
     if (!parallel) {
       # Sequential case. Actually, we could simply use ``%do_projpred%` <-
       # foreach::`%do%`` here and then proceed as in the parallel case, but that
@@ -1587,11 +1593,15 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws, nclusters,
     )
 
     # Performance evaluation for the reference model of the current fold:
-    eta_test <- fold$refmodel$ref_predfun(
-      fold$refmodel$fit,
-      newdata = refmodel$fetch_data(obs = fold$omitted),
-      excl_offs = FALSE
-    )
+    # In the parallel case, `fold$eta_test` holds these predictions:
+    eta_test <- fold$eta_test
+    if (is.null(eta_test)) {
+      eta_test <- fold$refmodel$ref_predfun(
+        fold$refmodel$fit,
+        newdata = refmodel$fetch_data(obs = fold$omitted),
+        excl_offs = FALSE
+      )
+    }
     mu_test <- fold$refmodel$family$linkinv(eta_test)
     summaries_ref <- weighted_summary_means(
       y_wobs_test = y_wobs_test[fold$omitted, , drop = FALSE],
@@ -1617,6 +1627,27 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws, nclusters,
     "search_out_rks_was_null", "search_path_fulldata", "search_terms",
     "validate_search", "verbose", "y_wobs_test"
   ))
+  if (parallel) {
+    # The folds need the reference model fits only for the predictions of the
+    # fold reference models for the left-out observations, so compute these
+    # here. Then the workers get the fold reference models and the full-data
+    # reference model without their fits (see refmodel_for_folds()), and the
+    # formulas of the fold reference models without the other objects of
+    # their environments (see formula_for_folds()):
+    list_cv <- lapply(list_cv, function(fold) {
+      fold$eta_test <- fold$refmodel$ref_predfun(
+        fold$refmodel$fit,
+        newdata = refmodel$fetch_data(obs = fold$omitted),
+        excl_offs = FALSE
+      )
+      fold$refmodel <- refmodel_for_folds(
+        fold$refmodel, formula_env = environment(refmodel$formula)
+      )
+      return(fold)
+    })
+    assign("refmodel", refmodel_for_folds(refmodel),
+           envir = environment(one_fold))
+  }
   if (!parallel) {
     # Sequential case. Actually, we could simply use ``%do_projpred%` <-
     # foreach::`%do%`` here and then proceed as in the parallel case, but that
