@@ -29,7 +29,7 @@ If you read this from a place other than <https://mc-stan.org/projpred/news/inde
 
 * projpred now requires R >= 4.4.0 (previously R >= 3.6.0). (GitHub: #605)
 * **posterior** is now a required package (previously suggested), so the `as_draws()` and `as_draws_matrix()` methods for projections work without an extra installation. (GitHub: #605)
-* **loo** >= 2.10.1 and **posterior** >= 1.7.0 are now required, and **gtools** is no longer needed. (GitHub: #605)
+* **loo** >= 2.10.1, **posterior** >= 1.7.0 and **gamm4** >= 0.3-0 are now required, and **gtools** is no longer needed. (GitHub: #605)
 * `get_refmodel.stanreg()` has new arguments `cvfun` and `cvrefbuilder` for K-fold CV. For example, a custom `cvrefbuilder` lets custom latent-projection functions use the draws of the fold-wise refits. (GitHub: #604)
 * New function `custom_stat()` defines a user-defined performance statistic for argument `stats` of `summary.vsel()`, `plot.vsel()` and `performances()`, and argument `stat` of `suggest_size()`. (GitHub: #566, #590)
 * Faster `cl_agg()` and conversion of arrays to augmented-rows matrices. For example, LOO CV with validated search for the latent projection with 4000 projected draws is about 3-4 times faster. (GitHub: #600)
