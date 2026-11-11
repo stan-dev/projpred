@@ -53,7 +53,8 @@ test_that(paste(
   "get_subparams() returns the standard deviations and correlations for",
   "`nm_scheme = \"brms\"` (lmer() fit)"
 ), {
-  fit <- lme4::lmer(Reaction ~ Days + (Days | Subject), data = dat_sleep())
+  fit <- lme4::lmer(Reaction ~ Days + (Days | Subject),
+                    data = lme4::sleepstudy)
   vc_s <- lme4::VarCorr(fit)$Subject
   sds <- attr(vc_s, "stddev")
   vc_expected <- c(
@@ -67,7 +68,8 @@ test_that(paste(
 
 test_that(paste(
   "get_subparams() returns the group-level variance for",
-  "`nm_scheme = \"rstanarm\"` (glmer() fit)"
+  "`nm_scheme = \"rstanarm\"` and the SD for `nm_scheme = \"brms\"`",
+  "(glmer() fit)"
 ), {
   fit <- lme4::glmer(cbind(incidence, size - incidence) ~ period + (1 | herd),
                      data = lme4::cbpp, family = binomial())
@@ -83,7 +85,8 @@ test_that(paste(
 
 test_that(paste(
   "get_subparams() returns the group-level variance for",
-  "`nm_scheme = \"rstanarm\"` (clmm() fit)"
+  "`nm_scheme = \"rstanarm\"` and the SD for `nm_scheme = \"brms\"`",
+  "(clmm() fit)"
 ), {
   fit <- ordinal::clmm(rating ~ temp + (1 | judge), data = ordinal::wine)
   sd_judge <- attr(ordinal::VarCorr(fit)$judge, "stddev")[[1]]

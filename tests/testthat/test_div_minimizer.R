@@ -230,14 +230,9 @@ test_that(paste(
     tol_coefs <- ifelse(args_ref_i$mod_nm == "glmm", 1e-4, 1e-5)
     coefs_aug <- get_subparams(outdmin_augdat[[1]], nm_scheme = "rstanarm")
     coefs_trad <- get_subparams(outdmin_trad[[1]], nm_scheme = "rstanarm")
-    if (!identical(is.na(coefs_aug), is.na(coefs_trad))) {
-      # There is at least one case where the traditional projection is not able
-      # to estimate a correlation of -1:
-      expect_true(all(coefs_aug[is.na(coefs_trad)] %in% c(-1, 1)),
-                  info = tstsetup)
-      coefs_aug <- coefs_aug[!is.na(coefs_trad)]
-      coefs_trad <- coefs_trad[!is.na(coefs_trad)]
-    }
+    # With `nm_scheme = "rstanarm"`, the variance components are variances and
+    # covariances, so a singular fit gives no NaN correlation here:
+    expect_false(anyNA(coefs_trad), info = tstsetup)
     expect_equal(coefs_aug, coefs_trad, tolerance = tol_coefs,
                  info = tstsetup)
   }

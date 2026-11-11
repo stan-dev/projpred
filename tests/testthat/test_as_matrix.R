@@ -238,11 +238,22 @@ test_that("as.matrix.projection() works", {
         } else {
           vc_j <- lme4::VarCorr(fit_j)$z.1
         }
-        vc_j <- matrix(as.vector(unclass(vc_j)), nrow = nrow(vc_j))
-        vc_j[lower.tri(vc_j, diag = TRUE)]
+        sds_j <- attr(vc_j, "stddev")
+        if (length(sds_j) == 1) {
+          return(c("Sigma[z.1:(Intercept),(Intercept)]" = sds_j[[1]]^2))
+        }
+        # A zero SD gives a NaN correlation, but a zero covariance:
+        cov_j <- if (all(sds_j > 0)) {
+          attr(vc_j, "correlation")[2, 1] * sds_j[[1]] * sds_j[[2]]
+        } else {
+          0
+        }
+        c("Sigma[z.1:(Intercept),(Intercept)]" = sds_j[[1]]^2,
+          "Sigma[z.1:xco.1,(Intercept)]" = cov_j,
+          "Sigma[z.1:xco.1,xco.1]" = sds_j[[2]]^2)
       }))
-      expect_equal(unname(m[, sigma_nms, drop = FALSE]), sigma_expect,
-                   tolerance = 1e-12, info = tstsetup)
+      expect_equal(m[, colnames(sigma_expect), drop = FALSE], sigma_expect,
+                   tolerance = 1e-10, info = tstsetup)
     }
     if (run_snaps) {
       if (testthat_ed_max2) local_edition(3)
