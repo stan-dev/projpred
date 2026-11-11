@@ -322,7 +322,7 @@ test_that("the augmented-data submodels use the contrasts", {
     categ = exp(cbind(0, eta, -eta)) / rowSums(exp(cbind(0, eta, -eta)))
   )
   # The augmented data as in proj_to_submodl() (one projected draw):
-  fit_aug <- function(fam_nm, ctrs) {
+  fit_aug <- function(fam_nm, fml, ctrs) {
     d_aug <- do.call(rbind, lapply(cats, function(cat_i) {
       d <- strip_contrasts(dat)
       d$y <- cat_i
@@ -330,26 +330,42 @@ test_that("the augmented-data submodels use the contrasts", {
     }))
     d_aug$y <- factor(d_aug$y, levels = cats)
     d_aug <- set_contrasts(d_aug, ctrs)
-    divmin_augdat(formula = y ~ f + x, data = d_aug, family = fams[[fam_nm]],
+    divmin_augdat(formula = fml, data = d_aug, family = fams[[fam_nm]],
                   weights = "unused",
                   projpred_var = matrix(NA_real_, nrow(d_aug), 1),
                   projpred_ws_aug = matrix(c(probs[[fam_nm]])),
                   verbose_divmin = FALSE, throw_warn_sdivmin = FALSE,
                   do_check_conv = FALSE)
   }
+  # Coefficient names of polr(), multinom(), clmm() and mblogit() fits (the
+  # latter as "<category>~<column>"):
+  coef_nms <- function(fit) {
+    nms <- c(names(coef(fit)), colnames(coef(fit)), names(fit$beta))
+    sub("^.*~", "", nms)
+  }
   nd <- strip_contrasts(dat[1:5, ])
-  for (fam_nm in names(fams)) {
-    fits_sum <- suppressWarnings(fit_aug(fam_nm, ctrs))
-    fits_dflt <- suppressWarnings(fit_aug(fam_nm, NULL))
-    nms_sum <- if (fam_nm == "cumul") {
-      names(coef(fits_sum[[1]]))
-    } else {
-      colnames(coef(fits_sum[[1]]))
-    }
-    expect_true(all(c("f1", "f2") %in% nms_sum), info = fam_nm)
-    expect_false(any(c("fb", "fc") %in% nms_sum), info = fam_nm)
+  # Without group-level terms: polr() and multinom(). With them: clmm(),
+  # projpred's PQL fitter and (with the global option) mblogit():
+  cases <- list(
+    list(fam_nm = "cumul", fml = y ~ f + x),
+    list(fam_nm = "categ", fml = y ~ f + x),
+    list(fam_nm = "cumul", fml = y ~ f + x + (1 | g)),
+    list(fam_nm = "categ", fml = y ~ f + x + (1 | g)),
+    list(fam_nm = "categ", fml = y ~ f + x + (1 | g), mblogit = TRUE)
+  )
+  # The old value by name, so that the exit also unsets an unset option:
+  opts_old <- options("projpred.categ_mlvl_mblogit")
+  on.exit(options(opts_old), add = TRUE)
+  for (cs in cases) {
+    info_crr <- paste(cs$fam_nm, deparse(cs$fml), isTRUE(cs$mblogit))
+    options(projpred.categ_mlvl_mblogit = isTRUE(cs$mblogit))
+    fits_sum <- suppressWarnings(fit_aug(cs$fam_nm, cs$fml, ctrs))
+    fits_dflt <- suppressWarnings(fit_aug(cs$fam_nm, cs$fml, NULL))
+    nms_sum <- coef_nms(fits_sum[[1]])
+    expect_true(all(c("f1", "f2") %in% nms_sum), info = info_crr)
+    expect_false(any(c("fb", "fc") %in% nms_sum), info = info_crr)
     expect_no_warning(prd_sum <- subprd_augdat(fits_sum, newdata = nd))
     expect_equal(prd_sum, subprd_augdat(fits_dflt, newdata = nd),
-                 tolerance = 1e-3, info = fam_nm)
+                 tolerance = 1e-3, info = info_crr)
   }
 })
