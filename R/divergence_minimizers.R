@@ -1079,23 +1079,25 @@ fit_gamm_callback <- function(formula, projpred_formula_no_random,
   # with the Laplace objective. lme4 < 2.1-1 rounds non-integer binomial data
   # in this objective (see glmer_rounds_binomial()). gamm4 >= 0.3-0 uses
   # `control$optimizer[[1]]` in both stages, so gamm_stage1_optimizer() can
-  # skip stage 2:
+  # skip stage 2. The error handler below reads `control`, so the changed
+  # control is a copy. Without stage 2, the derivatives are not needed:
+  control_gamm <- control
   if (inherits(control, "glmerControl") &&
       utils::packageVersion("gamm4") >= "0.3.0" &&
       glmer_rounds_binomial(projpred_formula_no_random, family = family,
-                            data = data, weights = dot_args$weights)) {
+                            data = data, weights = dot_args[["weights"]])) {
     opt_stage1 <- gamm_stage1_optimizer(control$optimizer[[1]],
                                         opt_ctrl = control$optCtrl)
     if (!is.null(opt_stage1)) {
-      control$optimizer <- list(opt_stage1, opt_stage1)
-      control$calc.derivs <- FALSE
+      control_gamm$optimizer <- list(opt_stage1, opt_stage1)
+      control_gamm$calc.derivs <- FALSE
     }
   }
   # Call the submodel fitter:
   fit <- tryCatch({
     do.call(gamm4::gamm4, c(
       list(formula = projpred_formula_no_random, random = projpred_random,
-           data = data, family = family, control = control),
+           data = data, family = family, control = control_gamm),
       dot_args
     ))
   }, error = function(e) {
@@ -1454,10 +1456,13 @@ glmer_rounds_binomial <- function(formula, family, data, weights) {
 # parameters, with the fixed effects from the PIRLS step) runs the optimizer
 # `optimizer`. A later call with more parameters (stage 2: the group-level
 # parameters and the fixed effects, from the stage-1 solution) returns the
-# start values, so the fit is that of `nAGQ = 0` in lme4::glmer().
-# `optimizer` is a function or the name of an optimizer of lme4 ("bobyqa" uses
-# the BOBYQA of lme4::nloptwrap()); "optimx" works only with the method
-# "nlminb" in `opt_ctrl`. Returns `NULL` for other optimizers.
+# start values with the convergence code and message of stage 1, so the fit is
+# that of `nAGQ = 0` in lme4::glmer() (up to the optimizer). `optimizer` is a
+# function or the name of an optimizer of lme4 ("bobyqa" uses the BOBYQA of
+# lme4::nloptwrap(), with `maxfun` of `opt_ctrl` as `maxeval`); "optimx" works
+# only with the method "nlminb" in `opt_ctrl`. Returns `NULL` for other
+# optimizers. The `control` argument of the returned function is not used
+# (gamm4::gamm4() passes `opt_ctrl` to both stages).
 gamm_stage1_optimizer <- function(optimizer, opt_ctrl = list()) {
   opt_ctrl <- opt_ctrl %||% list()
   ctrl_stage1 <- list()
@@ -1468,7 +1473,11 @@ gamm_stage1_optimizer <- function(optimizer, opt_ctrl = list()) {
     return(NULL)
   } else if (optimizer %in% c("bobyqa", "nloptwrap")) {
     optfun <- lme4::nloptwrap
-    if (optimizer == "nloptwrap") ctrl_stage1 <- opt_ctrl
+    if (optimizer == "nloptwrap") {
+      ctrl_stage1 <- opt_ctrl
+    } else if (!is.null(opt_ctrl$maxfun)) {
+      ctrl_stage1 <- list(maxeval = opt_ctrl$maxfun)
+    }
   } else if (optimizer == "Nelder_Mead") {
     optfun <- lme4::Nelder_Mead
     ctrl_stage1 <- opt_ctrl
@@ -1479,15 +1488,17 @@ gamm_stage1_optimizer <- function(optimizer, opt_ctrl = list()) {
   } else {
     return(NULL)
   }
-  n_par_stage1 <- NULL
+  res_stage1 <- NULL
   return(function(par, fn, lower, upper, control = list()) {
-    if (is.null(n_par_stage1) || length(par) <= n_par_stage1) {
-      n_par_stage1 <<- length(par)
-      return(optfun(par = par, fn = fn, lower = lower, upper = upper,
-                    control = ctrl_stage1))
+    if (is.null(res_stage1) || length(par) <= length(res_stage1$par)) {
+      res_stage1 <<- optfun(par = par, fn = fn, lower = lower, upper = upper,
+                            control = ctrl_stage1)
+      return(res_stage1)
     }
-    return(list(par = par, fval = fn(par), conv = 0L,
-                message = "projpred: stage 2 of gamm4::gamm4() skipped"))
+    conv <- res_stage1$conv %||% res_stage1$convergence %||% 0L
+    msg <- res_stage1$message %||% res_stage1$msg %||% ""
+    return(list(par = par, fval = fn(par), conv = conv,
+                message = paste("stage 1:", msg)))
   })
 }
 

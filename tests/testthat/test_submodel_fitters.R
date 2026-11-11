@@ -542,8 +542,23 @@ test_that(paste(
                 upper = rep(Inf, 4), control = list())
     expect_identical(res2$par, par2, info = nm)
     expect_identical(res2$fval, fn(par2), info = nm)
-    expect_identical(res2$conv, 0L, info = nm)
+    expect_equal(res2$conv, 0, info = nm)
   }
+  # Stage 2 returns the convergence code and the message of stage 1:
+  opt_fail <- gamm_stage1_optimizer(function(par, fn, lower, upper, control) {
+    list(par = par, fval = fn(par), conv = 5L, message = "no convergence")
+  })
+  opt_fail(par = 1, fn = fn, lower = 0, upper = Inf, control = list())
+  res2 <- opt_fail(par = c(1, 0), fn = fn, lower = c(0, -Inf),
+                   upper = c(Inf, Inf), control = list())
+  expect_identical(res2$conv, 5L)
+  expect_match(res2$message, "no convergence")
+  # `maxfun` for "bobyqa" is the `maxeval` of lme4::nloptwrap():
+  res1 <- gamm_stage1_optimizer("bobyqa", opt_ctrl = list(maxfun = 3))(
+    par = c(0.5, 0.5), fn = fn, lower = c(0, 0), upper = c(Inf, Inf),
+    control = list()
+  )
+  expect_identical(res1$conv, 5L)
   # Other optimizers:
   expect_null(gamm_stage1_optimizer("optimx",
                                     opt_ctrl = list(method = "L-BFGS-B")))
@@ -574,6 +589,28 @@ test_that(paste(
     Matrix::crossprod(lme4::getME(mer, "Z"), resid_w)
   ))) - lme4::getME(mer, "u")
   expect_lt(max(abs(c(grad_beta, grad_u))), 1e-4)
+})
+
+test_that(paste(
+  "a binomial gamm4() fit with non-integer data and only group-level terms",
+  "equals the glmer() fit with `nAGQ = 0` with lme4 < 2.1-1"
+), {
+  skip_if_not(gamm_skips_stage2(),
+              "only lme4 < 2.1-1 with gamm4 >= 0.3-0 skips stage 2")
+  d <- dat_fitters()
+  d$y <- plogis(d$eta)
+  fam <- extend_family(binomial())
+  w1 <- rep(1, nrow(d))
+  fit_gamm <- suppressWarnings(suppressMessages(fit_gamm_callback(
+    formula = y ~ x + (1 | g), projpred_formula_no_random = y ~ x,
+    projpred_random = ~ (1 | g), data = d, family = fam, weights = w1
+  )))
+  fit_glmer <- fit_glmer_test(y ~ x + (1 | g), d, fam, weights = w1)
+  expect_identical(nAGQ_of(fit_glmer), 0L)
+  expect_equal(unname(lme4::fixef(fit_gamm$mer)),
+               unname(lme4::fixef(fit_glmer)), tolerance = 1e-3)
+  expect_equal(unname(lme4::getME(fit_gamm$mer, "theta")),
+               unname(lme4::getME(fit_glmer, "theta")), tolerance = 1e-2)
 })
 
 test_that(paste(
@@ -609,11 +646,46 @@ test_that(paste(
   } else {
     expect_identical(ctrl$optimizer, c("bobyqa", "bobyqa"))
   }
+  # 0/1 responses with non-integer weights (augmented-data projection):
+  ctrl_used <- NULL
+  d$y <- as.numeric(d$eta > 0)
+  expect_error(fit_gamm_callback(
+    formula = y ~ s(z) + x + (1 | g),
+    projpred_formula_no_random = y ~ s(z) + x,
+    projpred_random = ~ (1 | g), data = d, family = fam_binom,
+    weights = plogis(d$eta)
+  ), "mocked gamm4")
+  expect_identical(is.function(ctrl_used$optimizer[[1]]), gamm_skips_stage2())
   # Integer data and other families:
   ctrl <- fit_gamm_mocked(fam_binom, as.numeric(d$eta > 0))
   expect_identical(ctrl$optimizer, c("bobyqa", "bobyqa"))
   ctrl <- fit_gamm_mocked(extend_family(poisson()), plogis(d$eta))
   expect_identical(ctrl$optimizer, c("bobyqa", "bobyqa"))
+})
+
+test_that(paste(
+  "fit_gamm_callback() stops after the optimx refit for a binomial submodel",
+  "with non-integer data"
+), {
+  skip_if_not_installed("optimx")
+  optimizers <- list()
+  testthat::local_mocked_bindings(
+    gamm4 = function(...) {
+      optimizers[[length(optimizers) + 1L]] <<- list(...)$control$optimizer
+      stop("Downdated VtV is not positive definite")
+    },
+    .package = "gamm4"
+  )
+  d <- dat_fitters()
+  d$y <- plogis(d$eta)
+  expect_error(fit_gamm_callback(
+    formula = y ~ s(z) + x + (1 | g),
+    projpred_formula_no_random = y ~ s(z) + x,
+    projpred_random = ~ (1 | g), data = d, family = extend_family(binomial()),
+    weights = rep(1, nrow(d))
+  ), "cannot fix this automatically")
+  # The first fit and the refit with optimx:
+  expect_length(optimizers, 2L)
 })
 
 # ordinal::clmm() ---------------------------------------------------------

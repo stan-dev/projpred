@@ -97,9 +97,12 @@ object inherits from class \code{gam}).
 \code{\link[=binomial]{binomial()}} family with non-integer responses or weights, \pkg{lme4}
 versions before 2.1-1, and \pkg{gamm4} 0.3-0 or later, \pkg{projpred} gives
 \code{\link[gamm4:gamm4]{gamm4::gamm4()}} an optimizer that skips its second optimization stage, so
-the fit is that of \code{nAGQ = 0} in \code{\link[lme4:glmer]{lme4::glmer()}} (see above). The first
-stage uses the optimizer of \code{control}, with the BOBYQA of
-\code{\link[lme4:nloptwrap]{lme4::nloptwrap()}} for \code{"bobyqa"}.
+the fit is that of \code{nAGQ = 0} in \code{\link[lme4:glmer]{lme4::glmer()}} (see the paragraph on
+\code{\link[lme4:glmer]{lme4::glmer()}} above), up to the optimizer. The first stage uses the
+optimizer of \code{control}, with the BOBYQA of \code{\link[lme4:nloptwrap]{lme4::nloptwrap()}} for
+\code{"bobyqa"}. With other optimizers than \code{"bobyqa"}, \code{"nloptwrap"},
+\code{"Nelder_Mead"}, \code{"nlminbwrap"}, \code{"optimx"} with \code{method = "nlminb"}, or a
+function, \code{\link[gamm4:gamm4]{gamm4::gamm4()}} runs both stages.
 }
 }
 

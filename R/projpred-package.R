@@ -100,9 +100,12 @@
 #' [binomial()] family with non-integer responses or weights, \pkg{lme4}
 #' versions before 2.1-1, and \pkg{gamm4} 0.3-0 or later, \pkg{projpred} gives
 #' [gamm4::gamm4()] an optimizer that skips its second optimization stage, so
-#' the fit is that of `nAGQ = 0` in [lme4::glmer()] (see above). The first
-#' stage uses the optimizer of `control`, with the BOBYQA of
-#' [lme4::nloptwrap()] for `"bobyqa"`.
+#' the fit is that of `nAGQ = 0` in [lme4::glmer()] (see the paragraph on
+#' [lme4::glmer()] above), up to the optimizer. The first stage uses the
+#' optimizer of `control`, with the BOBYQA of [lme4::nloptwrap()] for
+#' `"bobyqa"`. With other optimizers than `"bobyqa"`, `"nloptwrap"`,
+#' `"Nelder_Mead"`, `"nlminbwrap"`, `"optimx"` with `method = "nlminb"`, or a
+#' function, [gamm4::gamm4()] runs both stages.
 #'
 #' # Verbosity, messages, warnings, errors
 #'
