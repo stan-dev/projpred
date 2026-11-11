@@ -95,9 +95,7 @@ test_that("cv_varsel() in parallel gives the same results as sequentially", {
 # stricter than doFuture with `doFuture.foreach.export = ".export"`, whose
 # workers also attach the `.packages`. With `fail = TRUE`, it stops in the
 # first fold loop or projection loop. When `frame` exits, the
-# previous backend is registered again. foreach has no exported getter for the
-# registered backend, so this reads its internal store (the setup of this file
-# can have registered doParallel or doFuture).
+# previous backend is registered again (see local_dopar_restore()).
 local_record_backend <- function(fail = FALSE, export_only = FALSE,
                                  frame = parent.frame()) {
   rec <- new.env()
@@ -590,7 +588,10 @@ test_that(paste(
   init_wrk <- function(libs, path) {
     .libPaths(libs)
     if (file.exists(file.path(path, "R", "projpred-package.R"))) {
-      pkgload::load_all(path, compile = FALSE, helpers = FALSE, quiet = TRUE)
+      # (pkgload is installed if this R session uses it, so it is not in
+      # `Suggests:`.)
+      load_all <- get("load_all", envir = asNamespace("pkgload"))
+      load_all(path, compile = FALSE, helpers = FALSE, quiet = TRUE)
     }
     invisible()
   }
