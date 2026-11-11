@@ -7,6 +7,7 @@
 #' @import ggplot2
 #' @importFrom rstantools posterior_linpred
 #' @importFrom loo kfold
+#' @importFrom posterior as_draws as_draws_matrix
 #'
 #' @description
 #'
