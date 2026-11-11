@@ -96,12 +96,13 @@ count_calls_lat <- function(expr, fun) {
   return(list(value = value, ok = calls$ok, null = calls$null))
 }
 
-# Muffles the expected warnings of these small reference models; other
-# warnings stay visible.
+# Muffles the expected warnings of these small reference models (PSIS in the
+# LOO CV; fractional responses of the traditional projection of a Bernoulli
+# model); other warnings stay visible.
 muffle_lat <- function(expr) {
   withCallingHandlers(expr, warning = function(w) {
-    if (grepl(paste0("Pareto k|PSIS|pareto-k|psis|subsampl|singular|",
-                     "non-integer #successes"), conditionMessage(w))) {
+    if (grepl("Pareto k|PSIS|pareto-k|psis|non-integer #successes",
+              conditionMessage(w))) {
       invokeRestart("muffleWarning")
     }
   })
@@ -410,6 +411,43 @@ test_that("the multilevel screen with a constant criterion gives another path", 
   )
   vs_const <- vs_lat(refm, 3, nterms_max = 3)
   expect_false(identical(ranking(vs_const)$fulldata, ranking(vs_fwd)$fulldata))
+})
+
+test_that("the multilevel screen drops a factor level of a zero-weight observation", {
+  skip_on_cran()
+  # Level "d" of `f` has only observation 1, which gets weight 0 (as in a fold
+  # of the LOO CV):
+  refm <- refm_latml(fml = y ~ x1 + x2 + x6 + x7 + f + (1 | g))
+  refm$wobs[1] <- 0
+  fetch_orig <- refm$fetch_data
+  refm$fetch_data <- function(...) {
+    d <- fetch_orig(...)
+    d$f <- factor(as.character(d$f), levels = c("a", "b", "c", "d"))
+    d$f[1] <- "d"
+    d
+  }
+  set.seed(5521)
+  p_ref <- get_refdist(refm, nclusters = 2)
+  rss_na <- 0L
+  rss_orig <- latent_mlvl_rss
+  testthat::local_mocked_bindings(
+    latent_mlvl_rss = function(terms_, dat, ...) {
+      expect_false("d" %in% levels(dat$f))
+      out <- rss_orig(terms_, dat, ...)
+      rss_na <<- rss_na + is.na(out)
+      out
+    },
+    .package = "projpred"
+  )
+  out <- muffle_lat(search_forward_latent_mlvl(
+    p_ref = p_ref, refmodel = refm, nterms_max = 3, verbose = FALSE,
+    search_terms = union("1", split_formula(refm$formula,
+                                              data = refm$fetch_data())),
+    screen_m = 2L
+  ))
+  expect_false(is.null(out))
+  expect_length(out$predictor_ranking, 3)
+  expect_identical(rss_na, 0L)
 })
 
 test_that("the multilevel screen returns `NULL` outside its conditions", {

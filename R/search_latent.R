@@ -26,6 +26,23 @@ latent_verb_progress <- function(chosen, iq, verbose) {
   return(invisible(NULL))
 }
 
+# One step of the latent screens: projects the submodels `chosen` plus each
+# candidate `cands[fit_idx]` and returns the index `k` (into `cands`) and the
+# `outdmin` of the submodel with the smallest `ce`. Returns `NULL` if no `ce`
+# is available (all `NA`).
+latent_project_best <- function(chosen, cands, fit_idx, p_ref, refmodel,
+                                verbose, ...) {
+  submodls <- lapply(fit_idx, function(k) {
+    proj_to_submodl(c(chosen, cands[k]), p_ref = p_ref, refmodel = refmodel,
+                    verbose = verbose, ...)
+  })
+  ibest <- which.min(vapply(submodls, `[[`, numeric(1), "ce"))
+  if (length(ibest) == 0) {
+    return(NULL)
+  }
+  return(list(k = fit_idx[ibest], outdmin = submodls[[ibest]]$outdmin))
+}
+
 # Latent-screened forward search for cumulative models (family "cumulative",
 # logit or probit link) with the augmented-data projection and the default
 # divergence minimizer. For projected draw s, let p_c be the reference
@@ -73,7 +90,7 @@ search_forward_latent_cum <- function(p_ref, refmodel, nterms_max, verbose,
   }
   step_cands <- fast_step_cands(search_terms, des$cols_by_term)
   verb_out("Screening the candidates of each step with the latent ",
-           "approximation of the cumulative model (experimental).",
+           "approximation of the cumulative model.",
            verbose = verbose)
 
   iq <- ceiling(quantile(seq_len(nterms_max + 1L), 1:10 / 10))
@@ -101,17 +118,13 @@ search_forward_latent_cum <- function(p_ref, refmodel, nterms_max, verbose,
     } else {
       utils::head(order(gain, decreasing = TRUE), screen_m)
     }
-    submodls <- lapply(fit_idx, function(k) {
-      proj_to_submodl(c(chosen, cands[k]), p_ref = p_ref, refmodel = refmodel,
-                      verbose = verbose, ...)
-    })
-    ibest <- which.min(vapply(submodls, `[[`, numeric(1), "ce"))
-    if (length(ibest) == 0) {
+    best <- latent_project_best(chosen, cands, fit_idx, p_ref = p_ref,
+                                refmodel = refmodel, verbose = verbose, ...)
+    if (is.null(best)) {
       return(NULL)
     }
-    k <- fit_idx[ibest]
-    outdmins <- c(outdmins, list(submodls[[ibest]]$outdmin))
-    rm(submodls)
+    k <- best$k
+    outdmins <- c(outdmins, list(best$outdmin))
     chosen <- c(chosen, cands[k])
     labels_chosen <- c(labels_chosen, st$labels_new[[k]])
     cols_chosen <- c(cols_chosen, st$cols[[k]])
@@ -213,7 +226,7 @@ search_forward_latent_mlvl <- function(p_ref, refmodel, nterms_max, verbose,
   fml_base <- stats::as.formula(".projpred_eta ~ 1",
                                 env = environment(refmodel$formula))
   verb_out("Screening the candidates of each step with one multilevel fit ",
-           "to the mean latent predictor (experimental).", verbose = verbose)
+           "to the mean latent predictor.", verbose = verbose)
 
   iq <- ceiling(quantile(seq_len(nterms_max + 1L), 1:10 / 10))
   chosen <- character()
@@ -236,17 +249,13 @@ search_forward_latent_mlvl <- function(p_ref, refmodel, nterms_max, verbose,
                  "projecting them, too.", verbose = verbose)
       }
     }
-    submodls <- lapply(fit_idx, function(k) {
-      proj_to_submodl(c(chosen, cands[k]), p_ref = p_ref, refmodel = refmodel,
-                      verbose = verbose, ...)
-    })
-    ibest <- which.min(vapply(submodls, `[[`, numeric(1), "ce"))
-    if (length(ibest) == 0) {
+    best <- latent_project_best(chosen, cands, fit_idx, p_ref = p_ref,
+                                refmodel = refmodel, verbose = verbose, ...)
+    if (is.null(best)) {
       return(NULL)
     }
-    outdmins <- c(outdmins, list(submodls[[ibest]]$outdmin))
-    rm(submodls)
-    chosen <- c(chosen, cands[fit_idx[ibest]])
+    outdmins <- c(outdmins, list(best$outdmin))
+    chosen <- c(chosen, cands[best$k])
     latent_verb_progress(chosen, iq, verbose)
   }
   return(nlist(predictor_ranking = setdiff(chosen, "1"), outdmins))
