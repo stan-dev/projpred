@@ -1039,6 +1039,18 @@ element_unq <- function(list_obj, nm) {
   return(el_unq)
 }
 
+# Returns `fun` with a new enclosing environment that holds only the objects
+# `nms` of `env` (its parent is `topenv(env)`, here the projpred namespace). A
+# parallel backend then serializes these objects together with `fun`, not the
+# whole `env`. `nms` must list every free variable of `fun` that is a local
+# of `env`; a missing name is looked up in the namespace instead (test
+# "the object lists of the fold functions ..." in test_parallel.R).
+fun_with_objs <- function(fun, nms, env = parent.frame()) {
+  environment(fun) <- list2env(mget(nms, envir = env, inherits = FALSE),
+                               parent = topenv(env))
+  return(fun)
+}
+
 use_progressr <- function() {
   getOption("projpred.use_progressr",
             requireNamespace("progressr", quietly = TRUE) &&

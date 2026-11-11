@@ -84,7 +84,8 @@ Suggests:
     future,
     future.callr,
     doFuture,
-    progressr
+    progressr,
+    codetools
 LinkingTo: Rcpp, RcppArmadillo
 Additional_repositories:
     https://stan-dev.r-universe.dev/
