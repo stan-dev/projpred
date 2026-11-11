@@ -107,6 +107,8 @@ test_that(paste(
   environment(fun_opt) <- baseenv()
   fun_glob <- function(i) i + projpred_tst_glob
   environment(fun_glob) <- globalenv()
+  fun_get <- function(i) i + get(paste0("projpred_tst_", "glob"))
+  environment(fun_get) <- globalenv()
   fun_has_glob <- function(i) {
     exists("projpred_tst_glob", envir = globalenv(), inherits = FALSE)
   }
@@ -179,18 +181,35 @@ test_that(paste(
           projpred:::par_lapply(1:2, fun_opt, .backend = backend),
           rep(list(list(NULL, NULL, NULL)), 2), info = info_i
         )
-        # The workers get an object of the global environment only with
-        # global option `projpred.export_to_workers`, and only for the call:
-        expect_error(projpred:::par_lapply(1:2, fun_glob, .backend = backend),
-                     "projpred_tst_glob", info = info_i)
-        withr::with_options(
-          list(projpred.export_to_workers = "projpred_tst_glob"),
-          res_glob <- projpred:::par_lapply(1:2, fun_glob, .backend = backend)
-        )
-        expect_identical(res_glob, list(6, 7), info = info_i)
+        # The workers get the objects of the global environment that a
+        # function of the global environment uses (found from its code), but
+        # only for the call:
+        if (requireNamespace("globals", quietly = TRUE)) {
+          expect_identical(
+            projpred:::par_lapply(1:2, fun_glob, .backend = backend),
+            list(6, 7), info = info_i
+          )
+        }
         expect_identical(
           projpred:::par_lapply(1:2, fun_has_glob, .backend = backend),
           list(FALSE, FALSE), info = info_i
+        )
+        # A name that the code creates at run time needs global option
+        # `projpred.export_to_workers`:
+        expect_error(projpred:::par_lapply(1:2, fun_get, .backend = backend),
+                     "projpred_tst_glob", info = info_i)
+        withr::with_options(
+          list(projpred.export_to_workers = "projpred_tst_glob"),
+          res_get <- projpred:::par_lapply(1:2, fun_get, .backend = backend)
+        )
+        expect_identical(res_get, list(6, 7), info = info_i)
+        # With the option set to `FALSE`, the workers get no such objects:
+        withr::with_options(
+          list(projpred.export_to_workers = FALSE),
+          expect_error(
+            projpred:::par_lapply(1:2, fun_glob, .backend = backend),
+            "projpred_tst_glob", info = info_i
+          )
         )
         if (backend == "mirai" && n_wrk == 2L &&
             "future" %in% par_backends_tst) {
@@ -281,6 +300,61 @@ test_that("a parallel run without workers warns and runs in this R session", {
   expect_warning(projpred:::par_backend(warn_once = TRUE),
                  "there are no parallel workers")
   expect_no_warning(projpred:::par_backend(warn_once = TRUE))
+})
+
+test_that(paste(
+  "the workers get the objects of the global environment that a function of",
+  "a custom reference model uses"
+), {
+  skip_if_not(run_prll)
+  skip_if_not(run_cvvs)
+  skip_if(length(par_backends_tst) == 0)
+  skip_if_not_installed("globals")
+  tstsetup_ref <- tstsetup_ref_par()
+  skip_if(is.na(tstsetup_ref))
+  # A divergence minimizer as a user defines it in a script: a function of
+  # the global environment that uses another function and (through it) an
+  # object of the global environment:
+  assign("projpred_tst_flag", TRUE, envir = globalenv())
+  check_tst <- function() stopifnot(projpred_tst_flag)
+  environment(check_tst) <- globalenv()
+  assign("projpred_tst_check", check_tst, envir = globalenv())
+  withr::defer(rm(list = c("projpred_tst_flag", "projpred_tst_check"),
+                  envir = globalenv()))
+  divmin_tst <- function(...) {
+    projpred_tst_check()
+    get("divmin", envir = asNamespace("projpred"))(...)
+  }
+  environment(divmin_tst) <- globalenv()
+  refm <- refmods[[tstsetup_ref]]
+  refm$div_minimizer <- divmin_tst
+  expect_true(any(vapply(projpred:::global_closures(list(refm)), identical,
+                         logical(1), divmin_tst)))
+  expect_true(all(c("projpred_tst_flag", "projpred_tst_check") %in%
+                    names(projpred:::par_globals(list(refm)))))
+  cvvs_custom <- function(parallel) {
+    suppressWarnings(cv_varsel(
+      refm, cv_method = "LOO", validate_search = TRUE,
+      nclusters = nclusters_tst, nclusters_pred = nclusters_pred_tst,
+      nterms_max = nterms_max_tst, parallel = parallel, seed = seed_tst,
+      verbose = FALSE
+    ))
+  }
+  cvvs_seq <- cvvs_custom(FALSE)
+  for (backend in par_backends_tst) {
+    local({
+      local_par_workers(backend)
+      cvvs <- cvvs_custom(TRUE)
+      expect_identical(ranking(cvvs)[["foldwise"]],
+                       ranking(cvvs_seq)[["foldwise"]], info = backend)
+      expect_equal(cvvs$summaries, cvvs_seq$summaries, info = backend)
+      # Without the export, the function fails on the workers:
+      withr::with_options(
+        list(projpred.export_to_workers = FALSE),
+        expect_error(cvvs_custom(TRUE), "projpred_tst_check", info = backend)
+      )
+    })
+  }
 })
 
 # project() ---------------------------------------------------------------

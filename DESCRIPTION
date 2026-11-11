@@ -81,6 +81,7 @@ Suggests:
     posterior,
     future (>= 1.49.0),
     mirai (>= 2.5.1),
+    globals,
     cli,
     progressr,
     codetools

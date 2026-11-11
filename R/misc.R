@@ -1361,8 +1361,7 @@ par_backend <- function(warn_once = FALSE) {
 # The workers get the global options of projpred, except those of the
 # parallelization (so the workers run their loops sequentially), the global
 # options `contrasts` and `na.action`, which the submodel fits use, and the
-# objects of the global environment that global option
-# `projpred.export_to_workers` names.
+# objects of the global environment that the tasks need (see par_globals()).
 #
 # With `.progress = TRUE`, the future backend signals one progressr update per
 # element (if use_progressr()), and the mirai backend shows the progress of
@@ -1380,8 +1379,7 @@ par_lapply <- function(.X, .FUN, ..., .backend, .rng = FALSE,
   opts_prll <- c("projpred.parallel_proj_trigger", "projpred.prll_prj_trigger",
                  "projpred.parallel_cv", "projpred.prll_cv")
   opts[opts_prll] <- list(NULL)
-  globs <- mget(getOption("projpred.export_to_workers", character()),
-                envir = globalenv())
+  globs <- par_globals(list(.FUN, list(...), .X))
   seeds <- if (.rng) par_rng_streams(n)
   task <- list(fun = .FUN, args = list(...), opts = opts, globs = globs)
   if (is.null(.backend)) {
@@ -1426,6 +1424,86 @@ par_lapply <- function(.X, .FUN, ..., .backend, .rng = FALSE,
   }
   done <- TRUE
   return(do.call(c, unname(res)))
+}
+
+# The objects of the global environment that the workers need for the objects
+# in the list `objs` (the function, the arguments and the elements of
+# par_lapply()). A function goes to a worker with its environment, but a
+# function of the global environment (e.g., a function of a custom reference
+# model that is defined in a script) goes without the objects of the global
+# environment that it uses. So for each such function in `objs` (see
+# global_closures()), the globals package finds these objects from the code
+# of the function (also the objects that these use). This does not find
+# objects whose names the code builds at run time (e.g., in get()); global
+# option `projpred.export_to_workers` can name such objects. With that option
+# set to `FALSE`, the workers get no objects of the global environment.
+par_globals <- function(objs) {
+  nms <- getOption("projpred.export_to_workers", character())
+  if (isFALSE(nms)) {
+    return(list())
+  }
+  genv <- globalenv()
+  if (requireNamespace("globals", quietly = TRUE)) {
+    for (fun in global_closures(objs)) {
+      globs <- globals::cleanup(globals::globalsOf(
+        fun, envir = genv, recursive = TRUE, mustExist = FALSE
+      ))
+      where <- attr(globs, "where")
+      nms <- c(nms, Filter(function(nm) identical(where[[nm]], genv),
+                           names(globs)))
+    }
+  }
+  return(mget(unique(nms), envir = genv))
+}
+
+# The functions with the global environment as their environment that `x`
+# reaches through list elements and through the environments of functions
+# (with their parent environments, up to a namespace or the global
+# environment). Environments that are stored as objects (e.g., R6 objects)
+# are not searched.
+global_closures <- function(x) {
+  genv <- globalenv()
+  seen <- list()
+  out <- list()
+  is_top <- function(env) {
+    isNamespace(env) || identical(env, genv) || identical(env, baseenv()) ||
+      identical(env, emptyenv()) || !is.null(attr(env, "name"))
+  }
+  walk_env <- function(env, depth) {
+    if (is_top(env) || any(vapply(seen, identical, logical(1), env))) {
+      return(invisible())
+    }
+    seen[[length(seen) + 1L]] <<- env
+    for (nm in setdiff(ls(env, all.names = TRUE), "...")) {
+      # An argument without a value gives an error here:
+      obj <- tryCatch(list(get(nm, envir = env, inherits = FALSE)),
+                      error = function(e) NULL)
+      if (!is.null(obj)) {
+        walk(obj[[1]], depth + 1L)
+      }
+    }
+    walk_env(parent.env(env), depth + 1L)
+  }
+  walk <- function(x, depth) {
+    if (depth > 20L || isS4(x)) {
+      return(invisible())
+    }
+    if (is.function(x)) {
+      env <- environment(x)
+      if (identical(env, genv)) {
+        out[[length(out) + 1L]] <<- x
+      } else if (!is.null(env)) {
+        walk_env(env, depth + 1L)
+      }
+    } else if (is.list(x)) {
+      for (el in x) {
+        walk(el, depth + 1L)
+      }
+    }
+    return(invisible())
+  }
+  walk(x, 0L)
+  return(unique(out))
 }
 
 # One task of par_lapply(): applies `.task$fun` to the elements `.chunk$xs`,
