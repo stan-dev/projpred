@@ -88,10 +88,6 @@ static double ml_fit_one(const mat& x, const mat& w, int icpt, double thresh,
   mat hess;
   mat pr;
   double loss = ml_loss(x, w, b, pr);
-  ml_deriv(x, w, nw, pr, grad, hess);
-  conv = 1;
-  niter = 0;
-  // Non-finite objective at the start values: not converged.
   conv = 1;
   niter = 0;
   // Non-finite objective at the start values: not converged.
