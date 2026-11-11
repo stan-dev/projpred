@@ -36,6 +36,8 @@ local_par_workers <- function(backend, n = 2L, frame = parent.frame()) {
     withr::defer(future::plan(plan_old), envir = frame)
     ns_fun <- function() parallel::clusterCall(cl, loadedNamespaces)
   } else if (backend == "mirai") {
+    # Do not replace daemons that are already set:
+    skip_if(mirai::daemons_set())
     mirai::daemons(n)
     withr::defer(mirai::daemons(0), envir = frame)
     init_res <- mirai::collect_mirai(mirai::everywhere(
@@ -190,6 +192,21 @@ test_that(paste(
       })
     }
   }
+  # Without a backend, the elements run in this R session, with the same
+  # streams, and the RNG kind and the RNG state after the call are those of
+  # a call with workers (one draw for the streams):
+  res_local <- withr::with_seed(seed_tst, {
+    res <- projpred:::par_lapply(1:7, fun_rng, a = 10, .backend = NULL,
+                                 .rng = TRUE)
+    list(res = res, next_draw = stats::runif(1))
+  })
+  expect_identical(res_local$res, res_first)
+  expect_identical(RNGkind(), rng_kind_old)
+  next_draw <- withr::with_seed(seed_tst, {
+    sample.int(.Machine$integer.max, 6L)
+    stats::runif(1)
+  })
+  expect_identical(res_local$next_draw, next_draw)
 })
 
 test_that(paste(
@@ -206,11 +223,14 @@ test_that(paste(
   withr::defer(parallel::stopCluster(cl))
   plan_old <- future::plan(future::cluster, workers = cl)
   withr::defer(future::plan(plan_old))
+  # No result of an earlier check of other workers:
+  par_state <- get("par_state", envir = asNamespace("projpred"))
+  par_state$key_checked <- NULL
   expect_error(projpred:::par_lapply(1:2, identity, .backend = "future"),
                "The parallel workers (load|cannot load) projpred")
 })
 
-test_that("a parallel run without workers warns and runs sequentially", {
+test_that("a parallel run without workers warns and runs in this R session", {
   skip_if_not(run_cvvs)
   skip_if_not_installed("future")
   skip_if_not_installed("mirai")
@@ -730,8 +750,18 @@ test_that(paste(
       })
     }
   }
-  # The LOO folds draw no random numbers, so the parallel LOO results are the
-  # sequential ones:
+  # Without workers, `parallel = TRUE` gives the results of the workers:
+  if (!mirai::daemons_set() && inherits(future::plan(), "sequential")) {
+    for (tstsetup_ref in tstsetups_ref) {
+      for (cv_meth in c("LOO", "kfold")) {
+        setting <- paste(tstsetup_ref, cv_meth)
+        expect_same_cvvs(cvvs_par(tstsetup_ref, cv_meth),
+                         cvvss_first[[setting]], paste("no workers", setting))
+      }
+    }
+  }
+  # The parallel LOO results are the sequential ones (the LOO folds of these
+  # settings draw no random numbers):
   for (tstsetup_ref in tstsetups_ref) {
     expect_same_cvvs(cvvss_first[[paste(tstsetup_ref, "LOO")]],
                      cvvs_par(tstsetup_ref, "LOO", parallel = FALSE),

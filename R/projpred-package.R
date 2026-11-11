@@ -126,7 +126,11 @@
 #' plan of \pkg{future}, a parallel run is not possible, so \pkg{projpred}
 #' then runs sequentially and throws a warning. The workers must be able to
 #' load the same \pkg{projpred} installation as the main R session;
-#' \pkg{projpred} checks this.
+#' \pkg{projpred} checks this. (If the main R session uses \pkg{projpred}
+#' via `pkgload::load_all()` or `devtools::load_all()`, the workers need to
+#' load the same source directory in the same way.) With workers from the
+#' \pkg{future} package, messages and warnings from the workers are shown in
+#' the main R session. With \pkg{mirai} daemons, they are not.
 #'
 #' Using the global option `projpred.parallel_proj_trigger`, the
 #' number of projected draws below which no parallelization is applied (even if

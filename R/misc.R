@@ -1354,7 +1354,9 @@ par_backend <- function(warn_once = FALSE) {
 #
 # With `.rng = TRUE`, each element gets its own L'Ecuyer-CMRG stream, made
 # here from the RNG of this R session. So the results depend neither on the
-# backend nor on the number of workers or chunks.
+# backend nor on the number of workers or chunks. Without a backend
+# (`.backend = NULL`), the elements run as one task in this R session, which
+# gives the same results as the workers.
 #
 # The workers get the global options of projpred, except those of the
 # parallelization (so the workers run their loops sequentially), the global
@@ -1372,7 +1374,6 @@ par_lapply <- function(.X, .FUN, ..., .backend, .rng = FALSE,
   if (n == 0L) {
     return(list())
   }
-  par_check_workers(.backend)
   opts <- options()
   opts <- opts[grepl("^projpred\\.", names(opts)) |
                  names(opts) %in% c("contrasts", "na.action")]
@@ -1382,45 +1383,48 @@ par_lapply <- function(.X, .FUN, ..., .backend, .rng = FALSE,
   globs <- mget(getOption("projpred.export_to_workers", character()),
                 envir = globalenv())
   seeds <- if (.rng) par_rng_streams(n)
+  task <- list(fun = .FUN, args = list(...), opts = opts, globs = globs)
+  if (is.null(.backend)) {
+    return(par_chunk(list(xs = .X, seeds = seeds), task))
+  }
+  par_check_workers(.backend)
   n_workers <- if (.backend == "mirai") {
     mirai::status()$connections
   } else {
     future::nbrOfWorkers()
   }
-  n_chunks <- max(1, min(
+  n_chunks <- as.integer(max(1, min(
     n, n_workers * getOption("projpred.parallel_chunks_per_worker", 1L)
-  ))
+  )))
   chunks <- lapply(parallel::splitIndices(n, n_chunks), function(idxs) {
     list(xs = .X[idxs], seeds = seeds[idxs])
   })
-  task <- list(fun = .FUN, args = list(...), opts = opts, globs = globs)
+  done <- FALSE
   if (.backend == "mirai") {
     map <- mirai::mirai_map(chunks, par_chunk, .args = list(.task = task))
-    done <- FALSE
     on.exit(if (!done) mirai::stop_mirai(map))
     res <- mirai::collect_mirai(map, options = c(
       ".stop", if (.progress && interactive()) ".progress"
     ))
-    done <- TRUE
   } else {
     if (.progress && use_progressr()) {
       task$progress <- progressr::progressor(n)
     }
+    futs <- list()
+    on.exit(if (!done) future::cancel(futs))
     # The globals are given by name, so future does not search for them (and
     # the futures do not hold the frames of the calling functions). The
     # workers load projpred when they get par_chunk():
-    futs <- lapply(chunks, function(chunk) {
-      future::future(
+    for (chunk in chunks) {
+      futs <- c(futs, list(future::future(
         par_chunk(chunk, task),
         globals = list(par_chunk = par_chunk, chunk = chunk, task = task),
         seed = NULL, envir = baseenv()
-      )
-    })
-    done <- FALSE
-    on.exit(if (!done) future::cancel(futs))
+      )))
+    }
     res <- future::value(futs)
-    done <- TRUE
   }
+  done <- TRUE
   return(do.call(c, unname(res)))
 }
 
@@ -1438,11 +1442,11 @@ par_chunk <- function(.chunk, .task) {
     nms <- names(.task$globs)
     nms_new <- setdiff(nms, ls(genv, all.names = TRUE))
     globs_old <- mget(setdiff(nms, nms_new), envir = genv, inherits = FALSE)
-    list2env(.task$globs, envir = genv)
     on.exit({
-      rm(list = nms_new, envir = genv)
+      rm(list = intersect(nms_new, ls(genv, all.names = TRUE)), envir = genv)
       list2env(globs_old, envir = genv)
     }, add = TRUE)
+    list2env(.task$globs, envir = genv)
   }
   if (!is.null(.chunk$seeds)) {
     seed_old <- get0(".Random.seed", envir = genv, inherits = FALSE)

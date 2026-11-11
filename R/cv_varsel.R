@@ -152,11 +152,15 @@
 #'   e.g., `mirai::daemons(4)`) or of the \pkg{future} package (set up with,
 #'   e.g., `future::plan(future::multisession, workers = 4)`), see section
 #'   "Parallelization" in [projpred-package]. Without such workers, the CV
-#'   runs sequentially, with a warning. Each CV fold has its own random
-#'   number stream, so for a given seed, the results do not depend on the
-#'   number of workers. For GLMs, this CV parallelization should work
-#'   reliably, but
-#'   for other models (such as GLMMs), it may lead to excessive memory usage
+#'   runs sequentially, with a warning. With `parallel = TRUE`, each CV fold
+#'   has its own random number stream, so for a given seed, the results do
+#'   not depend on the number of workers (also not on whether there are
+#'   workers). With `parallel = FALSE`, the folds use the random number
+#'   generator of the R session one after the other, so the results of
+#'   folds that draw random numbers can differ from those with
+#'   `parallel = TRUE`. For GLMs, this CV parallelization should work
+#'   reliably, but for other models (such as GLMMs), it may lead to
+#'   excessive memory usage
 #'   which in turn may crash the R session (on Unix systems, setting an
 #'   appropriate memory limit via [unix::rlimit_as()] may avoid crashing the
 #'   whole machine). However, the problem of excessive memory usage is less
@@ -1195,9 +1199,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
       "refmodel", "search_control", "search_out_rks",
       "search_out_rks_was_null", "search_terms", "verbose"
     ))
-    # The backend of the parallel case (`NULL` without parallel workers):
-    backend <- if (parallel) par_backend()
-    if (is.null(backend)) {
+    if (!parallel) {
       # Sequential case.
       if (verbose == 1L) {
         pb <- utils::txtProgressBar(min = 0, max = nloo, style = 3, initial = 0,
@@ -1215,11 +1217,13 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
     } else {
       # Parallel case. The workers get a copy of the reference model without
       # its fits (see refmodel_for_folds()), and each fold gets its own RNG
-      # stream:
+      # stream. Without parallel workers (par_backend() then gives `NULL` and
+      # a warning), par_lapply() runs the folds in this R session, with the
+      # same results:
       assign("refmodel", refmodel_for_folds(refmodel),
              envir = environment(one_obs))
       res_cv <- par_lapply(seq_along(inds), one_obs, verbose_obs = FALSE, ...,
-                           .backend = backend, .rng = TRUE,
+                           .backend = par_backend(), .rng = TRUE,
                            .progress = verbose > 0)
     }
     n_perturb_failed <- sum(vapply(res_cv, "[[", logical(1), "perturb_failed"))
@@ -1590,9 +1594,7 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws, nclusters,
     "search_out_rks_was_null", "search_path_fulldata", "search_terms",
     "validate_search", "verbose", "y_wobs_test"
   ))
-  # The backend of the parallel case (`NULL` without parallel workers):
-  backend <- if (parallel) par_backend()
-  if (!is.null(backend)) {
+  if (parallel) {
     # The folds need the reference model fits only for the predictions of the
     # fold reference models for the left-out observations, so compute these
     # here. Then the workers get the fold reference models and the full-data
@@ -1613,7 +1615,7 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws, nclusters,
     assign("refmodel", refmodel_for_folds(refmodel),
            envir = environment(one_fold))
   }
-  if (is.null(backend)) {
+  if (!parallel) {
     # Sequential case.
     if (verbose == 1L) {
       pb <- utils::txtProgressBar(min = 0, max = K, style = 3, initial = 0,
@@ -1629,12 +1631,14 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws, nclusters,
       close(pb)
     }
   } else {
-    # Parallel case. Each fold gets its own RNG stream:
+    # Parallel case. Each fold gets its own RNG stream. Without parallel
+    # workers (par_backend() then gives `NULL` and a warning), par_lapply()
+    # runs the folds in this R session, with the same results:
     args_folds <- lapply(seq_len(K), function(k) {
       list(fold = list_cv[[k]], rk = search_out_rks[[k]], k = k)
     })
     res_cv <- par_lapply(args_folds, call_with_args, .fun = one_fold,
-                         verbose_fold = FALSE, ..., .backend = backend,
+                         verbose_fold = FALSE, ..., .backend = par_backend(),
                          .rng = TRUE, .progress = verbose > 0)
   }
   verb_out("-----", verbose = verbose)
