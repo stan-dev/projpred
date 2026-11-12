@@ -110,10 +110,17 @@ extract_response <- function(response) {
 # @return Character vector of parsed group terms, but as extracted by
 #   labels(terms()), i.e., lacking the surrounding parentheses.
 parse_group_terms <- function(group_terms) {
+  if (any(grepl("\\|\\|", group_terms))) {
+    stop("projpred does not support group terms with `||` (uncorrelated ",
+         "group-level effects) yet. If the terms are written separately, for ",
+         "example `(1 | g) + (0 + x | g)`, projpred merges them into one ",
+         "term with correlations in the submodels.")
+  }
   has_call <- sapply(strsplit(group_terms, "\\|"), function(grp_trm_split) {
     if (length(grp_trm_split) != 2) {
-      stop("Unexpected number of `|` characters in group terms. Please ",
-           "notify the package maintainer.")
+      stop("projpred does not support group terms with more than one `|` ",
+           "character, except for `(<terms> |<ID>| <group>)` in the ",
+           "reference model formula.")
     }
     grepl("\\(", grp_trm_split[2])
   })
@@ -122,6 +129,47 @@ parse_group_terms <- function(group_terms) {
          "character are not allowed.")
   }
   return(group_terms)
+}
+
+# Remove the correlation IDs of brms group terms: `(<terms> |<ID>| <group>)`
+# becomes `(<terms> | <group>)`. R parses `a |id| g` as `(a | id) | g`. With
+# `verbose = TRUE`, a message names the removed IDs.
+rm_group_ids <- function(formula, verbose = TRUE) {
+  ids <- character()
+  rm_id <- function(e) {
+    if (!is.call(e)) {
+      return(e)
+    }
+    if (identical(e[[1]], as.name("|")) && length(e) == 3 &&
+        is.call(e[[2]]) && identical(e[[2]][[1]], as.name("|")) &&
+        length(e[[2]]) == 3) {
+      ids <<- c(ids, deparse(e[[2]][[3]]))
+      e[[2]] <- e[[2]][[2]]
+    }
+    for (i in seq_along(e)[-1]) {
+      # Skip empty arguments (as in `x[, 1]`) and non-calls:
+      if (!identical(e[[i]], quote(expr = )) && is.call(e[[i]])) {
+        e[[i]] <- rm_id(e[[i]])
+      }
+    }
+    return(e)
+  }
+  formula[[length(formula)]] <- rm_id(formula[[length(formula)]])
+  if (length(ids) && verbose) {
+    message("Removing the correlation ID(s) ",
+            paste0("`", unique(ids), "`", collapse = ", "),
+            " from the group terms of the reference model formula. The ",
+            "submodels are for one response, so they cannot have the ",
+            "correlations across responses.")
+  }
+  return(formula)
+}
+
+# The grouping factors that have more than one group term. `group_terms` as in
+# parse_group_terms().
+grp_fctrs_multi <- function(group_terms) {
+  grp_fctrs <- trimws(sub("^.*\\|", "", group_terms))
+  return(unique(grp_fctrs[duplicated(grp_fctrs)]))
 }
 
 ## Parse additive terms (smooth terms) from a list of individual terms. See

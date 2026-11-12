@@ -1136,6 +1136,7 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
   stopifnot(inherits(formula, "formula"))
   data <- na.fail(data)
   stopifnot(is.data.frame(data))
+  formula <- rm_group_ids(formula, verbose = !called_from_cvrefbuilder)
   formula <- expand_formula(formula, data)
   if (!as.logical(attr(terms(formula), "intercept"))) {
     # Add an intercept to `formula` so that we always project onto submodels
@@ -1173,6 +1174,16 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
                !called_from_cvrefbuilder) {
       warning("Support for additive models is still experimental.")
     }
+  }
+  grp_fctrs_mult <- grp_fctrs_multi(grp_trms)
+  if (length(grp_fctrs_mult) > 0 && !called_from_cvrefbuilder) {
+    warning("The reference model formula has more than one group term for ",
+            "the grouping factor(s) ",
+            paste0("`", grp_fctrs_mult, "`", collapse = ", "), ". The ",
+            "submodels merge the group terms of a grouping factor into one ",
+            "term with correlations (for example, `(1 | g) + (0 + x | g)` ",
+            "becomes `(x | g)`), so they can have correlations that the ",
+            "reference model does not have.")
   }
   if (length(grp_trms) > 0 &&
       getOption("projpred.warn_instable_projections", TRUE) &&
