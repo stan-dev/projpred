@@ -40,6 +40,112 @@ log_sum_exp <- function(x) {
   max_x + log(sum(exp(x - max_x)))
 }
 
+# Evaluate `expr` and then restore the RNG state (and the RNG kind if `expr`
+# changed it).
+with_preserved_seed <- function(expr) {
+  old_kind <- RNGkind()
+  had_seed <- exists(".Random.seed", envir = globalenv(), inherits = FALSE)
+  if (had_seed) {
+    old_seed <- get(".Random.seed", envir = globalenv(), inherits = FALSE)
+  }
+  on.exit({
+    if (!identical(RNGkind(), old_kind)) {
+      suppressWarnings(RNGkind(old_kind[1], old_kind[2], old_kind[3]))
+    }
+    if (had_seed) {
+      assign(".Random.seed", old_seed, envir = globalenv())
+    } else if (exists(".Random.seed", envir = globalenv(), inherits = FALSE)) {
+      rm(".Random.seed", envir = globalenv())
+    }
+  })
+  expr
+}
+
+# Base seed for the weights of the weight perturbation, drawn from the current
+# RNG stream without advancing it.
+perturb_base_seed <- function() {
+  with_preserved_seed(sample.int(.Machine$integer.max, 1))
+}
+
+# Observation weights n * Dirichlet(alpha, ..., alpha). They use their own seed
+# and generator, so sequential and parallel runs give the same weights.
+perturb_weights <- function(n, alpha, seed) {
+  g <- with_preserved_seed({
+    set.seed(seed, kind = "Mersenne-Twister", normal.kind = "Inversion",
+             sample.kind = "Rejection")
+    stats::rgamma(n, alpha)
+  })
+  w <- n * g / sum(g)
+  if (!all(is.finite(w))) {
+    stop("Argument `loo_perturb_alpha` is too small: the perturbation ",
+         "weights are not finite.")
+  }
+  w
+}
+
+# `TRUE` if all values of the numeric array `x` are finite. min() and max() do
+# not copy `x`. They return NA, NaN or +-Inf if a value of `x` is not finite:
+all_finite <- function(x) {
+  length(x) == 0 || (is.finite(min(x)) && is.finite(max(x)))
+}
+
+# Reference model for the search of LOO fold i with weight perturbation. It
+# multiplies `wobs` by w = n * Dirichlet(alpha, ..., alpha), with w_i set to 0.
+# Each draw of the linear predictor of observation k moves by the first-order
+# change of its posterior mean under these weights:
+#   c_s = sum_{j != i} (w_j - 1) log p(y_j | theta_s),
+#   cbar = sum_s omega_s c_s,
+#   delta_k = sum_s omega_s (c_s - cbar) eta_ks,
+# where omega are the PSIS-LOO weights of fold i (`lw_i`, log scale). The log
+# of the dispersion moves in the same way. `ll` is the S x n log-likelihood
+# matrix of the reference draws. Returns `NULL` if the shifted linear
+# predictors, means (with and without offsets) or dispersions are not finite.
+perturb_refmodel <- function(refmodel, i, ll, lw_i, alpha, seed) {
+  n <- ncol(ll)
+  w <- perturb_weights(n, alpha, seed)
+  w[i] <- 0
+  dw <- w - 1
+  dw[i] <- 0
+  om <- exp(lw_i - log_sum_exp(lw_i))
+  cc <- drop(ll %*% dw)
+  cd <- om * (cc - sum(om * cc))
+  if (!all(is.finite(cd))) {
+    return(NULL)
+  }
+  refmodel$eta <- refmodel$eta + drop(refmodel$eta %*% cd)
+  # With a bounded inverse link (logit, probit), an infinite `eta` gives a
+  # finite `mu`, so check `eta` itself:
+  if (!all_finite(refmodel$eta)) {
+    return(NULL)
+  }
+  refmodel$mu <- refmodel$family$linkinv(refmodel$eta)
+  if (!all_finite(refmodel$mu)) {
+    return(NULL)
+  }
+  if (!all(refmodel$offset == 0)) {
+    if (refmodel$family$family %in% fams_neg_linpred()) {
+      eta_offs <- refmodel$eta - refmodel$offset
+    } else {
+      eta_offs <- refmodel$eta + refmodel$offset
+    }
+    refmodel$mu_offs <- refmodel$family$linkinv(eta_offs)
+    if (!all_finite(refmodel$mu_offs)) {
+      return(NULL)
+    }
+  } else {
+    refmodel$mu_offs <- refmodel$mu
+  }
+  if (!any(is.na(refmodel$dis)) && all(refmodel$dis > 0)) {
+    ldis <- log(refmodel$dis)
+    refmodel$dis <- exp(ldis + sum(ldis * cd))
+  }
+  if (!any(is.na(refmodel$dis)) && !all(is.finite(refmodel$dis))) {
+    return(NULL)
+  }
+  refmodel$wobs <- refmodel$wobs * w
+  refmodel
+}
+
 linkfun_raw <- function(x, link_nm) {
   if (link_nm %in% c("logistic")) {
     link_nm <- "logit"
@@ -436,7 +542,23 @@ eta_for_kmeans <- function(eta, rank_max = floor(min(dim(eta)) / 4),
 get_p_clust <- function(family, eta, mu, mu_offs, dis, nclusters = 10,
                         wobs = rep(1, dim(mu)[1]),
                         wdraws = rep(1, dim(mu)[2]), cl = NULL,
-                        clust_used_forced = NULL) {
+                        clust_used_forced = NULL, as_moments = FALSE) {
+  # With `as_moments = TRUE`, the function returns `NULL` or, for a given `cl`
+  # with one draw per cluster, finite nonzero weights and a
+  # `family$predvar_mix`, a list without the observations x clusters matrices
+  # `mu`, `mu_offs` and `var`. Instead, the list has `draws_offs` (the input
+  # `mu_offs`), the draw `idx` and the factor `ws` of each cluster (cluster
+  # center `ws[j] * mu_offs[, idx[j]]`), and `draws_predvar` (the predictive
+  # variance of cluster j for all observations). The function also returns
+  # the list for non-finite projected draws, where `draws_predvar` can be
+  # wrong (see `mu_var` below). perf_eval_gauss() detects them with the
+  # weighted sums of squares and then uses the full result.
+  # (The names do not start with "mu" or "var", because `$` matches partial
+  # names.)
+  if (as_moments && is.null(cl)) {
+    # Do not run kmeans() twice (here and in the call without `as_moments`):
+    return(NULL)
+  }
   # cluster the draws in the latent space if no clustering provided
   if (is.null(cl)) {
     # Note: A seed is not set here because this function is not exported and has
@@ -472,6 +594,9 @@ get_p_clust <- function(family, eta, mu, mu_offs, dis, nclusters = 10,
   # The weighted mean of `dis^2` and the weighted variance of `mu_offs` within
   # the clusters are needed only if `family$predvar_mix` uses them:
   need_var <- use_mix && !isFALSE(attr(family$predvar_mix, "uses_moments"))
+  if (as_moments && !all(lengths(ind_by_cl) == 1L)) {
+    return(NULL)
+  }
   if (all(lengths(ind_by_cl) == 1L)) {
     # One draw per cluster (thinned draws, or as many clusters as draws). This
     # gives the same results as the cluster loop at the end, for all clusters
@@ -483,6 +608,22 @@ get_p_clust <- function(family, eta, mu, mu_offs, dis, nclusters = 10,
     # (for a finite nonzero weight), so that `ws` is `1 - eps`. Then one
     # product with a scalar gives the centers, without copies of the draws:
     all_draws <- identical(idx, seq_len(ncol(mu)))
+    if (as_moments) {
+      if (!use_mix || anyNA(ws)) {
+        return(NULL)
+      }
+      return(list(
+        moments_only = TRUE, draws_offs = mu_offs, idx = idx, ws = ws,
+        draws_predvar = drop(family$predvar_mix(as.numeric(dis[idx])^2, 0,
+                                                1L)),
+        dis = unname(as.numeric(dis[idx]) * ws),
+        wdraws_prj = wcluster / sum(wcluster),
+        const_wdraws_prj = length(unique(wcluster / sum(wcluster))) == 1,
+        nprjdraws = nclusters,
+        cl = cl, wdraws_orig = wdraws,
+        clust_used = clust_used_forced %||% TRUE
+      ))
+    }
     ws_mult <- if (!anyNA(ws)) 1 - eps else rep(ws, each = nobs)
     scale_draws <- function(m) {
       if (!all_draws) {
@@ -1032,6 +1173,18 @@ element_unq <- function(list_obj, nm) {
     el_unq <- list_obj[[1]][[nm]]
   }
   return(el_unq)
+}
+
+# Returns `fun` with a new enclosing environment that holds only the objects
+# `nms` of `env` (its parent is `topenv(env)`, here the projpred namespace). A
+# parallel backend then serializes these objects together with `fun`, not the
+# whole `env`. `nms` must list every free variable of `fun` that is a local
+# of `env`; a missing name is looked up in the namespace instead (test
+# "the object lists of the fold functions ..." in test_parallel.R).
+fun_with_objs <- function(fun, nms, env = parent.frame()) {
+  environment(fun) <- list2env(mget(nms, envir = env, inherits = FALSE),
+                               parent = topenv(env))
+  return(fun)
 }
 
 use_progressr <- function() {

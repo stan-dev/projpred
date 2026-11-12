@@ -48,6 +48,15 @@
 #'   of the selected submodels are optimistically biased. However, these fast
 #'   biased estimates can be useful to obtain initial information on the
 #'   usefulness of projection predictive variable selection.
+#' @param loo_perturb_alpha A single positive number. It sets the concentration
+#'   \eqn{\alpha} of the weight perturbation in the fold-wise searches of LOO CV
+#'   (see section "Note"). With a smaller value, the weights have a larger
+#'   variation. `Inf` turns the weight perturbation off. The weights apply only
+#'   with `cv_method = "LOO"`, `validate_search = TRUE` and `refit_prj = TRUE`,
+#'   and not to fold-wise predictor rankings that [cv_varsel.vsel()] re-uses.
+#'   For [cv_varsel.vsel()], `NULL` (the default) uses the value stored in
+#'   `object` if this value is finite or if [cv_varsel.vsel()] re-uses the
+#'   fold-wise predictor rankings, and 10 otherwise.
 #' @param seed Pseudorandom number generation (PRNG) seed by which the same
 #'   results can be obtained again if needed. Passed to argument `seed` of
 #'   [set.seed()], but can also be `NA` to not call [set.seed()] at all. If not
@@ -56,8 +65,9 @@
 #'   clustering the reference model's posterior draws (if `!is.null(nclusters)`
 #'   or `!is.null(nclusters_pred)`), for subsampling PSIS-LOO CV folds (if
 #'   `nloo` is smaller than the number of observations), for sampling the folds
-#'   in \eqn{K}-fold CV, and for drawing new group-level effects when predicting
-#'   from a multilevel submodel (however, not yet in case of a GAMM).
+#'   in \eqn{K}-fold CV, for the weights of the weight perturbation (see section
+#'   "Note"), and for drawing new group-level effects when predicting from a
+#'   multilevel submodel (however, not yet in case of a GAMM).
 #' @param parallel A single logical value indicating whether to run costly parts
 #'   of the CV in parallel (`TRUE`) or not (`FALSE`). See also section "Note"
 #'   below as well as section "Parallelization" in [projpred-package].
@@ -79,6 +89,27 @@
 #'   have optimistic bias in the middle of the search path. This result can be
 #'   used to guide further actions and the optimistic bias can be greatly
 #'   reduced by using `validate_search = TRUE`.
+#'
+#'   With `cv_method = "LOO"` and `validate_search = TRUE`, the search runs
+#'   again in each LOO fold. With `refit_prj = TRUE` (the default), the search
+#'   of each LOO fold uses weight perturbation with Bayesian bootstrap
+#'   observation weights. This makes the LOO estimates jump less between
+#'   neighboring submodel sizes, which reduces their variance. Furthermore, the
+#'   standard errors then include more of the variation that comes from the
+#'   selection. For fold \eqn{i}, the weights are \eqn{n} times a
+#'   Dirichlet(\eqn{\alpha}, ..., \eqn{\alpha}) draw, with the weight of
+#'   observation \eqn{i} set to 0. A first-order approximation shifts the draws
+#'   of the reference model toward the posterior under these weights. The search
+#'   paths then vary more between the folds, which makes the performance
+#'   estimates of the submodel sizes more stable. The actual performance
+#'   evaluation of each fold does not use the weights. It projects onto the
+#'   submodels of the fold-wise search path, so the weights change only which
+#'   submodels it evaluates. With `refit_prj = FALSE`, the performance
+#'   evaluation re-uses the submodel fits of the search, so the search does not
+#'   use the weights either. Argument `loo_perturb_alpha` sets \eqn{\alpha}
+#'   (default 10). The `vsel` object stores the value that the fold-wise
+#'   searches used (`Inf` if they did not use weights). [cv_varsel.vsel()]
+#'   re-uses the fold-wise predictor rankings only for the same value.
 #'
 #'   PSIS uses the Pareto-\eqn{\hat{k}} diagnostic to assess the reliability of
 #'   PSIS-LOO CV. Global option `projpred.warn_psis` (default `TRUE`) controls
@@ -198,6 +229,7 @@ cv_varsel.vsel <- function(
     K = object$K %||% if (!inherits(object, "datafit")) 5 else 10,
     cvfits = object$cvfits,
     validate_search = object$validate_search %||% TRUE,
+    loo_perturb_alpha = NULL,
     ...
 ) {
   ## the following arguments should not change
@@ -216,6 +248,9 @@ cv_varsel.vsel <- function(
 
   refmodel <- get_refmodel(object)
   rk_foldwise <- ranking(object)[["foldwise"]]
+  # `loo_perturb_alpha` of the fold-wise searches in `object`. `NULL` (for
+  # example after varsel()) means that the searches used no weights:
+  alpha_prev <- object$loo_perturb_alpha %||% Inf
   if (validate_search && !is.null(rk_foldwise)) {
     if (!identical(cv_method, object[["cv_method"]]) ||
         (identical(cv_method, object[["cv_method"]]) &&
@@ -223,7 +258,9 @@ cv_varsel.vsel <- function(
          (is.null(cvfits) || !identical(cvfits, object[["cvfits"]]))) ||
         (identical(cv_method, object[["cv_method"]]) &&
          (identical(cv_method, "LOO") || identical(cv_method, "loo")) &&
-         !identical(nloo, refmodel[["nobs"]]))) {
+         (!identical(nloo, refmodel[["nobs"]]) ||
+          (!is.null(loo_perturb_alpha) &&
+           !isTRUE(loo_perturb_alpha == alpha_prev))))) {
       # In these cases, previous fold-wise predictor rankings cannot be re-used
       # for the `validate_search = TRUE` run requested here:
       message("In this case, the previous fold-wise search results cannot be ",
@@ -245,6 +282,15 @@ cv_varsel.vsel <- function(
               "brms:::get_refmodel.brmsfit() to some non-`NULL` value.")
     }
   }
+  if (is.null(loo_perturb_alpha)) {
+    # Re-used fold-wise rankings keep their value. New fold-wise searches use
+    # the finite value of `object`, or else the default 10:
+    loo_perturb_alpha <- if (!is.null(rk_foldwise) || is.finite(alpha_prev)) {
+      alpha_prev
+    } else {
+      10
+    }
+  }
 
   return(do_call(cv_varsel, c(
     list(
@@ -261,6 +307,7 @@ cv_varsel.vsel <- function(
       K = K,
       cvfits = cvfits,
       validate_search = validate_search,
+      loo_perturb_alpha = loo_perturb_alpha,
       search_out = nlist(search_path = object[["search_path"]], rk_foldwise)
     ),
     dots
@@ -289,6 +336,7 @@ cv_varsel.refmodel <- function(
     nlambda = 150,
     thresh = 1e-6,
     validate_search = TRUE,
+    loo_perturb_alpha = 10,
     seed = NA,
     search_terms = NULL,
     search_out = NULL,
@@ -367,6 +415,18 @@ cv_varsel.refmodel <- function(
   nloo <- args$nloo
   K <- args$K
   cvfits <- args$cvfits
+  if (!is.numeric(loo_perturb_alpha) || length(loo_perturb_alpha) != 1 ||
+      is.na(loo_perturb_alpha) || !(loo_perturb_alpha > 0)) {
+    stop("Argument `loo_perturb_alpha` must be a single positive number ",
+         "(or `Inf`).")
+  }
+  # Only the fold-wise searches of LOO CV with `refit_prj = TRUE` use the weight
+  # perturbation. The `vsel` object stores the value that the searches used.
+  # For reused fold-wise rankings, cv_varsel.vsel() passes their value.
+  if (cv_method != "LOO" || !validate_search || !refit_prj) {
+    loo_perturb_alpha <- Inf
+  }
+  loo_perturb_alpha <- as.numeric(loo_perturb_alpha)
 
   # Full-data search:
   if (!is.null(search_out)) {
@@ -411,7 +471,7 @@ cv_varsel.refmodel <- function(
       ndraws = ndraws, nclusters = nclusters, ndraws_pred = ndraws_pred,
       nclusters_pred = nclusters_pred, refit_prj = refit_prj, penalty = penalty,
       verbose = verbose, search_control = search_control, nloo = nloo,
-      validate_search = validate_search,
+      validate_search = validate_search, loo_perturb_alpha = loo_perturb_alpha,
       search_path_fulldata = if (validate_search) {
         # Not needed in this case, so for computational efficiency, avoiding
         # passing the large object `search_path_fulldata` to loo_varsel():
@@ -434,6 +494,7 @@ cv_varsel.refmodel <- function(
         search_control = search_control,
         nloo = refmodel$nobs,    # fast LOO-CV (using all observations)
         validate_search = FALSE, # fast LOO-CV (using all observations)
+        loo_perturb_alpha = Inf,
         search_path_fulldata = search_path_fulldata,
         search_terms = search_terms,
         search_terms_was_null = search_terms_was_null,
@@ -501,6 +562,8 @@ cv_varsel.refmodel <- function(
               loo_inds = sel_cv$inds,
               K,
               validate_search,
+              # `Inf` if the fold-wise searches did not use the weights:
+              loo_perturb_alpha,
               cvfits,
               args_search = nlist(
                 method, ndraws, nclusters, nterms_max,
@@ -615,7 +678,8 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
                        nclusters, ndraws_pred, nclusters_pred, refit_prj,
                        penalty, verbose, search_control, nloo, validate_search,
                        search_path_fulldata, search_terms,
-                       search_terms_was_null, search_out_rks, parallel, ...) {
+                       search_terms_was_null, search_out_rks, parallel,
+                       loo_perturb_alpha, ...) {
   ## Pre-processing ---------------------------------------------------------
 
   has_grp <- formula_contains_group_terms(refmodel$formula)
@@ -714,6 +778,22 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
                       "PSIS-LOO weights are > %s.")
   )
   lw <- weights(psisloo)
+
+  # cv_varsel() already sets `Inf` for `validate_search = FALSE` and
+  # `refit_prj = FALSE`. Re-used fold-wise rankings need no new search.
+  perturb_alpha <- loo_perturb_alpha
+  if (!validate_search || !refit_prj || !is.null(search_out_rks)) {
+    perturb_alpha <- Inf
+  }
+  # one_obs() gets these objects through fun_with_objs(), so they must exist:
+  perturb_seed <- NULL
+  perturb_ll <- NULL
+  if (is.finite(perturb_alpha)) {
+    perturb_seed <- perturb_base_seed()
+    # The parallel loop below has `loglik_forPSIS` in `.noexport`, so workers
+    # that do not fork the session do not get it. They get this copy.
+    perturb_ll <- loglik_forPSIS
+  }
 
   if (refmodel$family$for_latent) {
     # Need to re-calculate the latent response values in `refmodel$y` by
@@ -1053,11 +1133,29 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
       # (via `refmodel_fulldata`):
       refmodel_fold <- refmodel
       refmodel_fold$wobs[i] <- 0
+      perturb_failed <- FALSE
       if (!search_out_rks_was_null) {
         search_path <- list(predictor_ranking = search_out_rks[[run_index]])
       } else {
+        # The search of fold i uses random observation weights and reference
+        # draws shifted toward the posterior under these weights. The
+        # performance evaluation below uses `refmodel_fold`, without weights.
+        refmodel_search <- refmodel_fold
+        if (is.finite(perturb_alpha)) {
+          refmodel_search <- perturb_refmodel(
+            refmodel_fold, i = i, ll = perturb_ll, lw_i = lw[, i],
+            alpha = perturb_alpha,
+            seed = as.integer((as.numeric(perturb_seed) + i) %%
+                                .Machine$integer.max)
+          )
+          perturb_failed <- is.null(refmodel_search)
+          if (perturb_failed) {
+            # The shifted draws are not finite, so search without the weights.
+            refmodel_search <- refmodel_fold
+          }
+        }
         search_path <- .select(
-          refmodel = refmodel_fold, ndraws = ndraws, nclusters = nclusters,
+          refmodel = refmodel_search, ndraws = ndraws, nclusters = nclusters,
           reweighting_args = list(cl_ref = cl_sel, wdraws_ref = exp(lw[, i])),
           method = method, nterms_max = nterms_max, penalty = penalty,
           verbose = verbose_obs, verbose_line_length = 3,
@@ -1082,8 +1180,18 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
       return(nlist(predictor_ranking = search_path[["predictor_ranking"]],
                    summaries_sub = perf_eval_out[["sub_summaries"]],
                    clust_used_eval = perf_eval_out[["clust_used"]],
-                   nprjdraws_eval = perf_eval_out[["nprjdraws"]]))
+                   nprjdraws_eval = perf_eval_out[["nprjdraws"]],
+                   perturb_failed))
     }
+    # Some parallel backends (e.g., doFuture) send the enclosing environment of
+    # one_obs() to the workers, so keep only the objects that one_obs() uses:
+    one_obs <- fun_with_objs(one_obs, c(
+      "cl_pred", "cl_sel", "inds", "lw", "method", "n", "nclusters",
+      "nclusters_pred", "ndraws", "ndraws_pred", "nloo", "nterms_max",
+      "penalty", "perturb_alpha", "perturb_ll", "perturb_seed", "refit_prj",
+      "refmodel", "search_control", "search_out_rks",
+      "search_out_rks_was_null", "search_terms", "verbose"
+    ))
     if (!parallel) {
       # Sequential case. Actually, we could simply use ``%do_projpred%` <-
       # foreach::`%do%`` here and then proceed as in the parallel case, but that
@@ -1118,6 +1226,14 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
       }
       dot_args <- list(...)
       `%do_projpred%` <- doRNG::`%dorng%`
+      # one_obs() holds all objects that the folds need (see fun_with_objs()),
+      # and the loop body uses only `.export` objects and base functions. So
+      # set doFuture to use only the `.export` objects (its "manual" mode).
+      # This skips its automatic search for further globals, which can take
+      # seconds for a large reference model. doFuture reads the option when
+      # the loop starts; restore it right after the loop (and on an error):
+      opts_old <- options(doFuture.foreach.export = ".export")
+      on.exit(options(opts_old), add = TRUE)
       res_cv <- foreach::foreach(
         run_index = seq_along(inds),
         .packages = c("projpred"),
@@ -1135,6 +1251,13 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
         if (!is.null(progressor_obj)) progressor_obj()
         return(out_one_obs)
       }
+      options(opts_old)
+    }
+    n_perturb_failed <- sum(vapply(res_cv, "[[", logical(1), "perturb_failed"))
+    if (n_perturb_failed > 0) {
+      warning("In ", n_perturb_failed, " LOO fold(s), the weight perturbation ",
+              "gave non-finite reference draws, so these folds searched ",
+              "without it. A larger `loo_perturb_alpha` may avoid this.")
     }
     # For storing the fold-wise predictor rankings:
     predictor_ranking_mat <- matrix(nrow = n, ncol = nterms_max)
@@ -1485,6 +1608,15 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws, nclusters,
                  summaries_ref, clust_used_eval = perf_eval_out[["clust_used"]],
                  nprjdraws_eval = perf_eval_out[["nprjdraws"]]))
   }
+  # Some parallel backends (e.g., doFuture) send the enclosing environment of
+  # one_fold() to the workers, so keep only the objects that one_fold() uses
+  # (in particular not `list_cv`; each iteration gets its own fold):
+  one_fold <- fun_with_objs(one_fold, c(
+    "K", "method", "nclusters", "nclusters_pred", "ndraws", "ndraws_pred",
+    "nterms_max", "penalty", "refit_prj", "refmodel", "search_control",
+    "search_out_rks_was_null", "search_path_fulldata", "search_terms",
+    "validate_search", "verbose", "y_wobs_test"
+  ))
   if (!parallel) {
     # Sequential case. Actually, we could simply use ``%do_projpred%` <-
     # foreach::`%do%`` here and then proceed as in the parallel case, but that
@@ -1518,6 +1650,15 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws, nclusters,
     }
     dot_args <- list(...)
     `%do_projpred%` <- doRNG::`%dorng%`
+    # one_fold() holds all objects that the folds need (see fun_with_objs()),
+    # and the loop body uses only `.export` objects, base functions and the
+    # exported do_call(). So set doFuture to use only the `.export` objects
+    # (its "manual" mode). This skips its automatic search for further
+    # globals, which can take seconds for a large reference model. doFuture
+    # reads the option when the loop starts; restore it right after the loop
+    # (and on an error):
+    opts_old <- options(doFuture.foreach.export = ".export")
+    on.exit(options(opts_old), add = TRUE)
     res_cv <- foreach::foreach(
       list_cv_k = list_cv,
       search_out_rks_k = search_out_rks,
@@ -1537,6 +1678,7 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws, nclusters,
       if (!is.null(progressor_obj)) progressor_obj()
       return(out_one_fold)
     }
+    options(opts_old)
   }
   verb_out("-----", verbose = verbose)
   predictor_ranking_cv <- do.call(rbind,
