@@ -2250,9 +2250,9 @@ check_conv_s <- function(fit_s) {
   } else if (inherits(fit_s, "polr")) {
     return(fit_s$convergence == 0)
   } else if (inherits(fit_s, "gam")) {
-    # `converged`: the P-IRLS iterations; `mgcv.conv`: the smoothing parameter
-    # optimization of the "magic" optimizer; `outer.info`: that of the other
-    # optimizers (see gam_outer_conv()):
+    # `converged`: P-IRLS iterations. `mgcv.conv`: smoothing parameter
+    # optimization with "magic". `outer.info`: smoothing parameter optimization
+    # with the other optimizers (see gam_outer_conv()).
     return(isTRUE(fit_s$converged %||% TRUE) &&
              isTRUE(fit_s$mgcv.conv$fully.converged %||% TRUE) &&
              gam_outer_conv(fit_s$outer.info))
@@ -2297,18 +2297,18 @@ check_conv_s <- function(fit_s) {
   }
 }
 
-# Convergence of the smoothing parameter optimization of a mgcv::gam() fit, from
-# its element `outer.info`, which depends on the optimizer:
-# * "newton", "bfgs" and "efs": a message `conv` ("full convergence", "step
-#   failed" or "iteration limit reached").
-# * c("outer", "nlm"): the nlm() result with `code`.
-# * c("outer", "optim"): the optim() result with `convergence`.
+# Convergence of the smoothing parameter optimization of a mgcv::gam() fit.
+# Argument `outer_info` is element `outer.info` of the fit. Its form depends on
+# the optimizer:
+# * "newton", "bfgs" and "efs": a list with string `conv` ("full convergence",
+#   "step failed" or "iteration limit reached").
+# * c("outer", "nlm"): the nlm() result, with `code`.
+# * c("outer", "optim"): the optim() result, with `convergence`.
 # * "magic" and fits without smoothing parameters: `NULL`.
 # For nlm() and optim(), only the iteration limit (nlm() code 4, optim() code 1)
-# counts as non-convergence. The other codes also occur at the optimum, for
-# example nlm() code 5 if a smoothing parameter goes to infinity (a smooth
-# term of a linear function). `[[` avoids the partial match of `$conv` to
-# `convergence`.
+# is non-convergence. Other codes can occur at the optimum, for example nlm()
+# code 5 if a smoothing parameter goes to infinity (as for a smooth term of a
+# linear function). `[[` avoids the partial match of `$conv` to `convergence`.
 gam_outer_conv <- function(outer_info) {
   if (!is.list(outer_info)) {
     return(TRUE)

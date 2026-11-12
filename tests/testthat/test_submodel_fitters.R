@@ -362,7 +362,8 @@ test_that(paste(
   expect_true(gam_outer_conv(list(conv = "full convergence", iter = 5)))
   expect_false(gam_outer_conv(list(conv = "step failed", iter = 5)))
   expect_false(gam_outer_conv(list(conv = "iteration limit reached")))
-  # Only the iteration limits (nlm() code 4, optim() code 1) count:
+  # Only the iteration limits (nlm() code 4, optim() code 1) are
+  # non-convergence:
   for (code in 1:5) {
     expect_identical(gam_outer_conv(list(minimum = 1, code = code)),
                      code != 4, info = paste("nlm() code", code))
@@ -373,14 +374,14 @@ test_that(paste(
   }
 })
 
-# Fits of mgcv::gam() to the data of dat_fitters(). The tests below that need a
-# fit which did not converge skip if the fit converged (this depends on the
-# stopping rules of mgcv).
+# Fits of mgcv::gam() to the data of dat_fitters(). Tests that need a fit that
+# did not converge skip if mgcv converges (its stopping rules decide).
 fit_gam_tst <- function(formula, ...) {
   d <- dat_fitters()
   d$y_gauss <- d$eta
   d$y_binom <- plogis(d$eta)
-  # A linear function of `z`: the smoothing parameter of s(z) goes to infinity.
+  # A linear function of `x` and `z`: the smoothing parameters of s(z) and s(x)
+  # go to infinity.
   d$y_lin <- -0.2 + 0.7 * d$x + 0.5 * d$z + 0.3 * sin(3 * seq_len(nrow(d)))
   suppressWarnings(mgcv::gam(formula, data = d, ...))
 }
@@ -390,7 +391,7 @@ test_that(paste(
   "parameter optimizer"
 ), {
   fml_gauss <- y_gauss ~ s(z) + x
-  # For this linear function, nlm() stopped with code 5 (mgcv 1.9-4):
+  # For this linear function, nlm() can stop with code 5:
   fml_lin <- y_lin ~ s(z, k = 5) + s(x, k = 5)
   expect_true(check_conv_s(fit_gam_tst(fml_gauss)))
   for (opt in c("newton", "bfgs", "nlm", "optim")) {
