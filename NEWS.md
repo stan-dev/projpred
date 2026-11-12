@@ -35,7 +35,7 @@ If you read this from a place other than <https://mc-stan.org/projpred/news/inde
 * New function `custom_stat()` defines a user-defined performance statistic for argument `stats` of `summary.vsel()`, `plot.vsel()` and `performances()`, and argument `stat` of `suggest_size()`. (GitHub: #566, #590)
 * Faster `cl_agg()` and conversion of arrays to augmented-rows matrices. For example, LOO CV with validated search for the latent projection with 4000 projected draws is about 3-4 times faster. (GitHub: #600)
 * The parallel `cv_varsel()` with `validate_search = TRUE` sends less data to the workers. (GitHub: #611)
-* Faster parallel projections (global option `projpred.parallel_proj_trigger`): the workers get only the objects that the projection of a draw uses. (GitHub: #612, #NNN)
+* Faster parallel projections (global option `projpred.parallel_proj_trigger`): the workers get only the objects that the projection of a draw uses. (GitHub: #NNN)
 * The parallel LOO and K-fold CV of `cv_varsel()` send the reference models without their fits to the workers, so the workers do not load **brms** or **rstanarm** and need less memory. (GitHub: #NNN)
 * The parallel workers now get the objects of the global environment that functions of a custom reference model use (found from the code, with the **globals** package). Global option `projpred.export_to_workers` can name more objects; `FALSE` turns this off. (GitHub: #NNN)
 

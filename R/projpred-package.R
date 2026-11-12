@@ -126,10 +126,11 @@
 #' package, e.g., `future::plan(future::multisession, workers = 4)`. Plans
 #' from other packages for \pkg{future} can be used as well, e.g.,
 #' `future::plan(future.mirai::mirai_multisession, workers = 4)` from the
-#' \pkg{future.mirai} package. In our experiments, the workers of
-#' \pkg{future.mirai} started faster than those of `future::multisession`
-#' and returned big results faster (see the projection parallelization
-#' below). With the sequential plan of \pkg{future} (the default), a
+#' \pkg{future.mirai} package. In our experiments, the first parallel call
+#' with the workers of \pkg{future.mirai} was faster than with those of
+#' `future::multisession`, and the workers of \pkg{future.mirai} returned big
+#' results faster (see the projection parallelization below). With the
+#' sequential plan of \pkg{future} (the default), a
 #' parallel run is not possible, so \pkg{projpred} then runs sequentially and
 #' throws a warning. The workers must be able to load the same
 #' \pkg{projpred} installation as the main R session; \pkg{projpred} checks
