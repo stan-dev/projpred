@@ -549,6 +549,40 @@ test_that(paste(
 })
 
 test_that(paste(
+  "the cross-product search works for a term above 500 characters, and the",
+  "ranking keeps its text"
+), {
+  # Deparsed code and terms() labels break this term into lines:
+  long_term <- paste0("I(x1", strrep(" + 0", 200), ")")
+  refm <- refm_search_gauss(as.formula(paste("y ~ x2 +", long_term)), n = 40)
+  res_vs <- with_gauss_search_count(suppressWarnings(varsel(
+    refm, nclusters = 3, nclusters_pred = 5, seed = 3317, verbose = FALSE
+  )))
+  expect_identical(res_vs$n, 1L)
+  expect_identical(ranking(res_vs$value)$fulldata, c(long_term, "x2"))
+})
+
+test_that("the L1 search gives the text of a term above 500 characters", {
+  # A term with one column, and a poly() term (the L1 search ranks its columns
+  # and then replaces them by the term):
+  long_terms <- c(paste0("I(x1", strrep(" + 0", 200), ")"),
+                  paste0("poly(x3", strrep(" + 0", 200), ", 2)"))
+  for (long_term in long_terms) {
+    refm <- refm_search_gauss(as.formula(paste("y ~ x2 +", long_term)), n = 40)
+    vs <- suppressWarnings(varsel(
+      refm, method = "L1", nclusters_pred = 5, seed = 3317, verbose = FALSE
+    ))
+    rk <- ranking(vs)$fulldata
+    expect_length(rk, 2L)
+    expect_setequal(rk, c(long_term, "x2"))
+    # The largest submodel of the search has the columns of both terms:
+    x_all <- model.matrix(refm$formula, refm$fetch_data())
+    expect_identical(ncol(vs$search_path$outdmins[[3]][[1]]$x),
+                     ncol(x_all) - 1L)
+  }
+})
+
+test_that(paste(
   "search_forward_gauss() and varsel() work with a candidate string of more",
   "than 10000 bytes (the limit of an environment key)"
 ), {
