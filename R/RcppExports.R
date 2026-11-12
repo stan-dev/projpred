@@ -29,3 +29,7 @@ glm_ridge_native_multi_c <- function(x, y, weights, offset, family_code, link_co
     .Call('_projpred_glm_ridge_native_multi_c', PACKAGE = 'projpred', x, y, weights, offset, family_code, link_code, lambda, intercept, penalty, beta_init, w_init, thresh, qa_updates_max, ls_iter_max, debug)
 }
 
+wcol_moments_c <- function(mu, idx, scale, wobs, sum_w) {
+    .Call('_projpred_wcol_moments_c', PACKAGE = 'projpred', mu, idx, scale, wobs, sum_w)
+}
+
