@@ -286,12 +286,13 @@ test_that(paste(
   ref <- get_p_clust(refm$family, refm$eta + shift, refm$mu + shift,
                      refm$mu_offs + shift, refm$dis, nclusters = 4)
   expect_equal(res$value, ref, tolerance = 1e-12)
-  # `as_moments = TRUE` returns the moments for one draw per cluster, but not
-  # with `draws_shift` (its `draws_offs` would not include the shift):
+  # `as_moments = TRUE` returns the moments for one draw per cluster. With
+  # `draws_shift`, it returns `NULL`: the callers of `as_moments` do not use
+  # `draws_shift`.
   args_mom <- list(family = refm$family, eta = refm$eta, mu = refm$mu,
                    mu_offs = refm$mu_offs, dis = refm$dis, wdraws = w,
                    cl = seq_len(S), as_moments = TRUE)
-  expect_true(isTRUE(do.call(get_p_clust, args_mom)$moments_only))
+  expect_identical(do.call(get_p_clust, args_mom)$moments_only, TRUE)
   expect_null(do.call(get_p_clust, c(args_mom, list(draws_shift = shift))))
 })
 
@@ -338,14 +339,22 @@ test_that(paste(
       refmodel$draws_shift <- NULL
     }
   })))
-  res_full <- lapply(refs, function(ref) with_shift_count(run_cv(ref)))
+  res_full <- lapply(refs, function(ref) {
+    res <- with_gauss_counts(with_shift_count(run_cv(ref)))
+    c(res$value, list(n_gauss = c(res$search, res$eval)))
+  })
   for (nm in names(refs)) {
     expect_identical(res_shift[[nm]]$n, as.integer(nrow(refs[[nm]]$mu)),
                      info = nm)
     expect_identical(res_full[[nm]]$n, 0L, info = nm)
-    # The shifted cluster means go through the cross-product search and
-    # evaluation:
-    expect_true(all(res_shift[[nm]]$n_gauss > 0L), info = nm)
+    # The full-data search and each fold-wise search (with the shifted cluster
+    # means) use the cross-product search. The evaluation (without the shift)
+    # uses the cross-product evaluation in each fold. Both runs use the same
+    # paths:
+    nobs <- as.integer(nrow(refs[[nm]]$mu))
+    expect_identical(res_shift[[nm]]$n_gauss, c(nobs + 1L, nobs), info = nm)
+    expect_identical(res_full[[nm]]$n_gauss, res_shift[[nm]]$n_gauss,
+                     info = nm)
     expect_identical(ranking(res_shift[[nm]]$value),
                      ranking(res_full[[nm]]$value), info = nm)
     expect_equal(res_shift[[nm]]$value$summaries$sub,

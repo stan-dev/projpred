@@ -599,8 +599,8 @@ get_p_clust <- function(family, eta, mu, mu_offs, dis, nclusters = 10,
   # wrong (see `mu_var` below). perf_eval_gauss() detects them with the
   # weighted sums of squares and then uses the full result.
   # (The names do not start with "mu" or "var", because `$` matches partial
-  # names.) With `draws_shift`, the function returns `NULL` (`draws_offs` would
-  # have to include the shift).
+  # names.) With `draws_shift`, the function returns `NULL`: the callers of
+  # `as_moments` do not use `draws_shift`.
   if (as_moments && (is.null(cl) || !is.null(draws_shift))) {
     # Without `cl`, do not run kmeans() twice (here and in the call without
     # `as_moments`):
