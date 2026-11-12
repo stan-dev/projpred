@@ -54,7 +54,7 @@ If you read this from a place other than <https://mc-stan.org/projpred/news/inde
 * With lme4 versions before 2.1-1, binomial submodels with multilevel terms (and no additive terms) now use `nAGQ = 0` in `lme4::glmer()` for non-integer responses or weights, unless `nAGQ` is set via `...`. Their coefficients were fitted to rounded data before. (GitHub: #616)
 * Removed line breaks from the names of search terms above about 500 characters in `ranking()`, `summary()` and `plot()`. (GitHub: #607)
 * Fixed the term names of the L1 search if one model-matrix column name starts with another one. (GitHub: #615)
-* After a PIRLS error of `lme4::glmer()` in a submodel with a non-scalar group-level term or several group-level terms (for example `(x | g)`), projpred now stops with an error that contains the lme4 error. (GitHub: #565)
+* After a PIRLS error of `lme4::glmer()` in a submodel with a non-scalar group-level term or several group-level terms (for example `(x | g)`), projpred now stops with an error that contains the lme4 error. (GitHub: #565, #633)
 
 
 # projpred 2.11.0
