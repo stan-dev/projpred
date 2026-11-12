@@ -353,6 +353,87 @@ test_that(paste(
   }
 })
 
+# mgcv::gam() -------------------------------------------------------------
+
+test_that(paste(
+  "gam_outer_conv() reads the result of each smoothing parameter optimizer"
+), {
+  expect_true(gam_outer_conv(NULL))
+  expect_true(gam_outer_conv(list(conv = "full convergence", iter = 5)))
+  expect_false(gam_outer_conv(list(conv = "step failed", iter = 5)))
+  expect_false(gam_outer_conv(list(conv = "iteration limit reached")))
+  for (code in 1:5) {
+    expect_identical(gam_outer_conv(list(minimum = 1, code = code)),
+                     code %in% 1:2, info = paste("nlm() code", code))
+  }
+  for (code in c(0, 1, 51, 52)) {
+    expect_identical(gam_outer_conv(list(par = 1, convergence = code)),
+                     code == 0, info = paste("optim() code", code))
+  }
+})
+
+test_that(paste(
+  "check_conv_s() detects gam() submodel fits that did not converge, for",
+  "each smoothing parameter optimizer"
+), {
+  d <- dat_fitters()
+  d$y_gauss <- d$eta
+  d$y_binom <- plogis(d$eta)
+  fit_gam_tst <- function(formula, ...) {
+    suppressWarnings(mgcv::gam(formula, data = d, ...))
+  }
+  fml_gauss <- y_gauss ~ s(z) + x
+  fml_binom <- y_binom ~ s(z) + x
+  # Converged fits ("magic", "newton", "bfgs", nlm(), optim(), "efs", no
+  # smoothing parameters):
+  expect_true(check_conv_s(fit_gam_tst(fml_gauss)))
+  for (opt in list("newton", "bfgs", "nlm", "optim")) {
+    expect_true(check_conv_s(fit_gam_tst(
+      fml_gauss, method = "REML", optimizer = c("outer", opt)
+    )), info = opt)
+  }
+  expect_true(check_conv_s(fit_gam_tst(fml_gauss, method = "REML",
+                                       optimizer = "efs")))
+  expect_true(check_conv_s(fit_gam_tst(y_gauss ~ s(z, fx = TRUE) + x)))
+  # nlm() stops at its iteration limit without a warning:
+  fit_nlm <- fit_gam_tst(fml_gauss, method = "REML",
+                         optimizer = c("outer", "nlm"),
+                         control = mgcv::gam.control(nlm = list(iterlim = 1)))
+  expect_identical(fit_nlm$outer.info$code, 4L)
+  expect_false(check_conv_s(fit_nlm))
+  # A step failure of the Newton optimizer:
+  fit_newton <- fit_gam_tst(fml_binom, family = binomial(), method = "REML",
+                            control = mgcv::gam.control(
+                              newton = list(maxHalf = 0)
+                            ))
+  expect_identical(fit_newton$outer.info$conv, "step failed")
+  expect_false(check_conv_s(fit_newton))
+  # The P-IRLS iterations stop at their limit:
+  fit_pirls <- fit_gam_tst(fml_binom, family = binomial(),
+                           control = mgcv::gam.control(maxit = 1))
+  expect_false(fit_pirls$converged)
+  expect_false(check_conv_s(fit_pirls))
+})
+
+test_that(paste(
+  "divmin() warns if the smoothing parameter optimization of gam() submodel",
+  "fits stops without convergence and without a warning"
+), {
+  d <- dat_fitters()
+  mu <- cbind(d$eta, d$eta + 0.3 * d$z)
+  divmin_nlm <- function(iterlim) {
+    with_r_printing(divmin_tst(
+      "s(z) + x", d, extend_family(gaussian()), mu, throw_warn = TRUE,
+      check_conv = TRUE, method = "REML", optimizer = c("outer", "nlm"),
+      control = mgcv::gam.control(nlm = list(iterlim = iterlim))
+    ))
+  }
+  expect_no_warning(fits <- divmin_nlm(100))
+  expect_length(fits, 2)
+  expect_warning(divmin_nlm(1),
+                 "^2 out of 2 submodel fits .* might not have converged")
+})
+
 # gamm4::gamm4() ----------------------------------------------------------
 
 test_that(paste(

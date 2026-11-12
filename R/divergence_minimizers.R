@@ -2250,8 +2250,12 @@ check_conv_s <- function(fit_s) {
   } else if (inherits(fit_s, "polr")) {
     return(fit_s$convergence == 0)
   } else if (inherits(fit_s, "gam")) {
-    # TODO (GAMs): Is this correct?:
-    return(fit_s$converged && fit_s$mgcv.conv$fully.converged %||% TRUE)
+    # `converged`: the P-IRLS iterations; `mgcv.conv`: the smoothing parameter
+    # optimization of the "magic" optimizer; `outer.info`: that of the other
+    # optimizers (see gam_outer_conv()):
+    return(isTRUE(fit_s$converged) &&
+             isTRUE(fit_s$mgcv.conv$fully.converged %||% TRUE) &&
+             gam_outer_conv(fit_s$outer.info))
   } else if (inherits(fit_s, "gamm4")) {
     # TODO (GAMMs): I couldn't find any convergence-related information in
     # element `fit_s$gam`, so the GAM part is currently not checked for
@@ -2291,6 +2295,30 @@ check_conv_s <- function(fit_s) {
     warning("Unrecognized submodel fit. Please notify the package maintainer.")
     return(TRUE)
   }
+}
+
+# Convergence of the smoothing parameter optimization of a mgcv::gam() fit, from
+# its element `outer.info`, which depends on the optimizer:
+# * "newton", "bfgs" and "efs": a message `conv` ("full convergence", "step
+#   failed" or "iteration limit reached").
+# * "nlm": the nlm() list with `code` (1 and 2 mean convergence).
+# * "optim": the optim() list with `convergence` (0 means convergence).
+# * "magic" and fits without smoothing parameters: `NULL`.
+# `[[` avoids the partial match of `$conv` to `convergence`.
+gam_outer_conv <- function(outer_info) {
+  if (!is.list(outer_info)) {
+    return(TRUE)
+  }
+  if (!is.null(outer_info[["conv"]])) {
+    return(identical(outer_info[["conv"]], "full convergence"))
+  }
+  if (!is.null(outer_info[["code"]])) {
+    return(outer_info[["code"]] %in% c(1, 2))
+  }
+  if (!is.null(outer_info[["convergence"]])) {
+    return(identical(as.numeric(outer_info[["convergence"]]), 0))
+  }
+  return(TRUE)
 }
 
 # Prediction functions for submodels --------------------------------------
