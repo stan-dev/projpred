@@ -51,7 +51,7 @@ If you read this from a place other than <https://mc-stan.org/projpred/news/inde
 * Fixed the error "'gam.fit' is not an exported object from 'namespace:mgcv'" in projections onto additive submodels with mgcv 1.9-5. (GitHub: #598, #602)
 * Fixed the log-likelihood of binomial (logit) and Poisson (log) reference model draws with a large linear predictor, where the inverse link clamped the mean. (GitHub: #614)
 * Removed line breaks from the names of search terms above about 500 characters in `ranking()`, `summary()` and `plot()`. (GitHub: #607)
-* Group terms with a **brms** correlation ID, such as `(1 |p| g)`, now work: projpred removes the ID with a message. Group terms with `||` give a clear error, and several group terms of one grouping factor give a warning. (GitHub: #435, #495)
+* Group terms with a **brms** correlation ID, such as `(1 |p| g)`, now work: projpred removes the ID with a message. Group terms with `||` give an error that explains the limitation, and several group terms of one grouping factor give a warning. (GitHub: #435, #495)
 
 
 # projpred 2.11.0

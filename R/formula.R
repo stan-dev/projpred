@@ -112,9 +112,9 @@ extract_response <- function(response) {
 parse_group_terms <- function(group_terms) {
   if (any(grepl("\\|\\|", group_terms))) {
     stop("projpred does not support group terms with `||` (uncorrelated ",
-         "group-level effects) yet. If the terms are written separately, for ",
-         "example `(1 | g) + (0 + x | g)`, projpred merges them into one ",
-         "term with correlations in the submodels.")
+         "group-level effects) yet. You can write `(x || g)` as ",
+         "`(1 | g) + (0 + x | g)`, but then the submodels merge these terms ",
+         "into one term with correlations.")
   }
   has_call <- sapply(strsplit(group_terms, "\\|"), function(grp_trm_split) {
     if (length(grp_trm_split) != 2) {
@@ -132,10 +132,15 @@ parse_group_terms <- function(group_terms) {
 }
 
 # Remove the correlation IDs of brms group terms: `(<terms> |<ID>| <group>)`
-# becomes `(<terms> | <group>)`. R parses `a |id| g` as `(a | id) | g`. With
-# `verbose = TRUE`, a message names the removed IDs.
+# becomes `(<terms> | <group>)`. R parses `a |id| g` as `(a | id) | g`. Only
+# the `+`, `-` and `(` calls of the right-hand side are searched, so a `|`
+# inside another call (for example `I(a | b | c)`) does not change. With
+# `verbose = TRUE`, a message names the removed IDs. The output is a list with
+# the new `formula` and `grp_fctrs_shared_id`, the grouping factors with more
+# than one term, all with the same ID (brms correlates these terms).
 rm_group_ids <- function(formula, verbose = TRUE) {
   ids <- character()
+  fctrs <- character()
   rm_id <- function(e) {
     if (!is.call(e)) {
       return(e)
@@ -144,25 +149,38 @@ rm_group_ids <- function(formula, verbose = TRUE) {
         is.call(e[[2]]) && identical(e[[2]][[1]], as.name("|")) &&
         length(e[[2]]) == 3) {
       ids <<- c(ids, deparse(e[[2]][[3]]))
+      fctrs <<- c(fctrs, deparse(e[[3]]))
       e[[2]] <- e[[2]][[2]]
+      return(e)
     }
-    for (i in seq_along(e)[-1]) {
-      # Skip empty arguments (as in `x[, 1]`) and non-calls:
-      if (!identical(e[[i]], quote(expr = )) && is.call(e[[i]])) {
+    if (identical(e[[1]], as.name("|")) && length(e) == 3) {
+      # A group term without an ID:
+      ids <<- c(ids, "")
+      fctrs <<- c(fctrs, deparse(e[[3]]))
+      return(e)
+    }
+    if (as.character(e[[1]])[1] %in% c("+", "-", "(")) {
+      for (i in seq_along(e)[-1]) {
         e[[i]] <- rm_id(e[[i]])
       }
     }
     return(e)
   }
   formula[[length(formula)]] <- rm_id(formula[[length(formula)]])
-  if (length(ids) && verbose) {
+  if (any(nzchar(ids)) && verbose) {
     message("Removing the correlation ID(s) ",
-            paste0("`", unique(ids), "`", collapse = ", "),
+            paste0("`", unique(ids[nzchar(ids)]), "`", collapse = ", "),
             " from the group terms of the reference model formula. The ",
-            "submodels are for one response, so they cannot have the ",
-            "correlations across responses.")
+            "submodels contain only the predictor of the response, so they ",
+            "do not have correlations with the group terms of other ",
+            "responses or distributional parameters.")
   }
-  return(formula)
+  # The grouping factors with more than one term, all with the same ID:
+  shared <- vapply(split(ids, fctrs), function(ids_f) {
+    length(ids_f) > 1 && all(nzchar(ids_f)) && length(unique(ids_f)) == 1
+  }, logical(1))
+  return(list(formula = formula,
+              grp_fctrs_shared_id = names(shared)[shared]))
 }
 
 # The grouping factors that have more than one group term. `group_terms` as in
