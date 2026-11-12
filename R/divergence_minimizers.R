@@ -381,10 +381,11 @@ subprd_gam_direct <- function(fits, newdata) {
 # GPL (>= 2); see the file LICENSE). lme4's C++ objects change some vectors of
 # the lFormula() result in place, so each draw gets fresh copies of them. The
 # fits are equal (all.equal()) to those of lmer(), and so are the attributes of
-# their model frames (lmer_frame_attrs()). lmer_shared_ok() checks this
-# once per R session on a small fixed problem, and the test suite checks it on
-# CRAN. If the check fails (for example after a change in lme4) or lme4 is
-# older than 2.0-1, divmin() fits each draw with lmer().
+# their model frames without their environments (lmer_frame_attrs()); the
+# shared fits keep the formula environment of the first draw. lmer_shared_ok()
+# checks this once per R session on a small fixed problem, and the test suite
+# checks it on CRAN. If the check fails (for example after a change in lme4) or
+# lme4 is older than 2.0-1, divmin() fits each draw with lmer().
 
 # Replaces the name `old` by `new` in all language objects of `x`, including
 # its attributes and names (used for the response of a shared model frame).

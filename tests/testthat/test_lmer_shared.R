@@ -52,6 +52,14 @@ divmin_ls <- function(shared) {
   )
 }
 
+# New data with new levels of `g` and `h`, so that the predictions of the
+# lmer() fits use predict.merMod() and the model frame of the fit:
+idx_new_ls <- seq_len(6)
+dat_new_ls <- data.frame(x1 = cos(idx_new_ls), x2 = sin(2 * idx_new_ls),
+                         f = factor(c("a", "b", "c", "a", "b", "c")),
+                         g = factor(c("g1", "g2", "g3", "g_new", "g5", "g6")),
+                         h = factor(c("h0", "h1", "h_new", "h3", "h4", "h0")))
+
 test_that("divmin() gives the same lmer() fits with and without sharing", {
   skip_if_not(lme4_new_ls, paste("lme4 is older than", lmer_shared_lme4_min))
   fits_shared <- divmin_ls(TRUE)
@@ -100,21 +108,16 @@ test_that(paste(
   skip_if_not(lme4_new_ls, paste("lme4 is older than", lmer_shared_lme4_min))
   fits_shared <- divmin_ls(TRUE)
   fits_drawwise <- divmin_ls(FALSE)
-  idx_new <- seq_len(6)
-  # New levels of `g` and `h`, so that predict.merMod() uses the model frame
-  # of the fit:
-  dat_new <- data.frame(x1 = cos(idx_new), x2 = sin(2 * idx_new),
-                        f = factor(c("a", "b", "c", "a", "b", "c")),
-                        g = factor(c("g1", "g2", "g3", "g_new", "g5", "g6")),
-                        h = factor(c("h0", "h1", "h_new", "h3", "h4", "h0")))
   for (s in seq_len(n_draws_ls)) {
     info_s <- paste("draw", s)
     expect_identical(names(model.frame(fits_shared[[s]], fixed.only = TRUE)),
                      names(model.frame(fits_drawwise[[s]], fixed.only = TRUE)),
                      info = info_s)
     expect_equal(
-      predict(fits_shared[[s]], newdata = dat_new, allow.new.levels = TRUE),
-      predict(fits_drawwise[[s]], newdata = dat_new, allow.new.levels = TRUE),
+      predict(fits_shared[[s]], newdata = dat_new_ls,
+              allow.new.levels = TRUE),
+      predict(fits_drawwise[[s]], newdata = dat_new_ls,
+              allow.new.levels = TRUE),
       tolerance = 0, info = info_s
     )
   }
@@ -142,20 +145,26 @@ test_that(paste(
     },
     dis = rep(0.5, 5)
   ))
-  idx_new <- seq_len(6)
-  dat_new <- data.frame(x1 = cos(idx_new), x2 = sin(2 * idx_new),
-                        f = factor(c("a", "b", "c", "a", "b", "c")),
-                        g = factor(c("g1", "g2", "g3", "g_new", "g5", "g6")),
-                        h = factor(c("h0", "h1", "h_new", "h3", "h4", "h0")))
   pl <- lapply(c(shared = TRUE, drawwise = FALSE), function(shared) {
     opts_old <- options(projpred.lmer_shared = shared)
     on.exit(options(opts_old))
-    prj <- suppressWarnings(project(
-      refm, predictor_terms = c("x1", "x2", "f", "(1 | g)", "(1 | h)"),
-      ndraws = 5, verbose = 0
-    ))
+    project_call <- function() {
+      suppressWarnings(project(
+        refm, predictor_terms = c("x1", "x2", "f", "(1 | g)", "(1 | h)"),
+        ndraws = 5, verbose = 0
+      ))
+    }
+    if (shared) {
+      # The shared fits must not fall back to draw-wise fits:
+      prj <- with_mocked_bindings(
+        project_call(),
+        fit_glmer_callback = function(...) stop("draw-wise fallback")
+      )
+    } else {
+      prj <- project_call()
+    }
     set.seed(5867)
-    proj_linpred(prj, newdata = dat_new)$pred
+    proj_linpred(prj, newdata = dat_new_ls)$pred
   })
   expect_equal(pl$shared, pl$drawwise, tolerance = 0)
 })
