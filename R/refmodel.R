@@ -799,20 +799,17 @@ get_refmodel.default <- function(object, family = NULL, ...) {
 }
 
 # With argument `random`, rstanarm::stan_gamm4() stores the model frame as the
-# `data` element of the fit. The model frame has a column for each expression
-# in the formula (for example `cbind(y, n - y)`), but not the variables of the
-# expression. Returns the names of these missing variables.
+# `data` element of the fit. For an expression in the formula (for example
+# `cbind(y, n - y)`), the model frame has a column for the expression, but not
+# the variables of the expression. Returns the names of these missing variables.
 gamm4_vars_miss <- function(object) {
   data <- object$data
-  if (is.null(object$glmod) || !is.data.frame(data) ||
-      is.null(attr(data, "terms"))) {
+  trms <- attr(data, "terms")
+  if (is.null(object$glmod) || !is.data.frame(data) || is.null(trms)) {
     return(character())
   }
-  cols <- setdiff(names(data), c("(weights)", "(offset)"))
-  cols_expr <- cols[make.names(cols) != cols]
-  vars_expr <- unlist(lapply(cols_expr, function(col) {
-    tryCatch(all.vars(str2lang(col)), error = function(e) character())
-  }))
+  vars <- as.list(attr(trms, "variables"))[-1]
+  vars_expr <- unlist(lapply(Filter(Negate(is.name), vars), all.vars))
   return(setdiff(vars_expr, names(data)))
 }
 
