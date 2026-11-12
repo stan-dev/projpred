@@ -2,7 +2,7 @@
 # check. These tests need no reference model fits, so they also run on CRAN.
 
 clmm_test_data <- function() {
-  set.seed(5678)
+  withr::local_seed(5678)
   dat <- data.frame(x = rnorm(150), g = gl(15, 10))
   eta <- 0.6 * dat$x + rnorm(15, sd = 0.7)[dat$g] + rlogis(150)
   dat$y <- factor(cut(eta, c(-Inf, -1, 0, 1, Inf), labels = FALSE),
@@ -44,6 +44,40 @@ test_that("fit_cumul_mlvl() uses nlminb() if clmm() cannot use ucminf()", {
   )
   expect_identical(fit$control$method, "nlminb")
   expect_false(is.null(fit$optRes$objective))
+})
+
+test_that("fit_cumul_mlvl() fits the requested link for cloglog and loglog", {
+  skip_if_not_installed("ordinal")
+  withr::local_seed(4567)
+  n <- 400
+  dat <- data.frame(x = rnorm(n), g = gl(20, 20))
+  # Quantile functions of the latent variable for each link:
+  qfuns <- list(cloglog = function(p) log(-log1p(-p)),
+                loglog = function(p) -log(-log(p)))
+  for (lk in names(qfuns)) {
+    lk_other <- setdiff(names(qfuns), lk)
+    lat <- dat$x + qfuns[[lk]](runif(n))
+    dat$y <- factor(cut(lat, c(-Inf, -0.5, 0.5, 1.5, Inf), labels = FALSE),
+                    levels = 1:4, ordered = TRUE)
+    # The data have no group effects, so the fit is close to the clm() fit
+    # with the same link, and not to the one with the other link:
+    fit_clm <- ordinal::clm(y ~ x, data = dat, link = lk)
+    fit_clm_other <- ordinal::clm(y ~ x, data = dat, link = lk_other)
+    fit <- fit_cumul_mlvl(y ~ x + (1 | g), data = dat,
+                          family = list(link = lk), weights = rep(1, n))
+    expect_lt(fit$ST[[1]][1, 1], 0.3)
+    expect_equal(fit$coefficients, fit_clm$coefficients, tolerance = 0.05,
+                 info = lk)
+    expect_lt(max(abs(fit$coefficients - fit_clm$coefficients)),
+              max(abs(fit$coefficients - fit_clm_other$coefficients)) / 5)
+    expect_true(check_conv_s(fit), info = lk)
+    # Also with a `control` from the caller:
+    fit_ctrl <- fit_cumul_mlvl(y ~ x + (1 | g), data = dat,
+                               family = list(link = lk), weights = rep(1, n),
+                               control = ordinal::clmm.control())
+    expect_equal(fit_ctrl$coefficients, fit_clm$coefficients,
+                 tolerance = 0.05, info = lk)
+  }
 })
 
 test_that("fit_cumul_mlvl() refits with nlminb() if ucminf() does not converge", {

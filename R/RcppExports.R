@@ -33,3 +33,7 @@ mlvl_laplace_c <- function(theta, beta, x, grp, nlev, y, w, offset, u, fam, want
     .Call('_projpred_mlvl_laplace_c', PACKAGE = 'projpred', theta, beta, x, grp, nlev, y, w, offset, u, fam, want_grad, tol, maxit)
 }
 
+wcol_moments_c <- function(mu, idx, scale, wobs, sum_w) {
+    .Call('_projpred_wcol_moments_c', PACKAGE = 'projpred', mu, idx, scale, wobs, sum_w)
+}
+

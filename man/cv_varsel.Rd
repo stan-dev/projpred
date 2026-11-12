@@ -18,6 +18,7 @@ cv_varsel(object, ...)
   K = object$K \%||\% if (!inherits(object, "datafit")) 5 else 10,
   cvfits = object$cvfits,
   validate_search = object$validate_search \%||\% TRUE,
+  loo_perturb_alpha = NULL,
   ...
 )
 
@@ -41,6 +42,7 @@ cv_varsel(object, ...)
   nlambda = 150,
   thresh = 1e-06,
   validate_search = TRUE,
+  loo_perturb_alpha = 10,
   seed = NA,
   search_terms = NULL,
   search_out = NULL,
@@ -96,6 +98,16 @@ the computation is faster, but the predictive performance estimates
 of the selected submodels are optimistically biased. However, these fast
 biased estimates can be useful to obtain initial information on the
 usefulness of projection predictive variable selection.}
+
+\item{loo_perturb_alpha}{A single positive number. It sets the concentration
+\eqn{\alpha} of the weight perturbation in the fold-wise searches of LOO CV
+(see section "Note"). With a smaller value, the weights have a larger
+variation. \code{Inf} turns the weight perturbation off. The weights apply only
+with \code{cv_method = "LOO"}, \code{validate_search = TRUE} and \code{refit_prj = TRUE},
+and not to fold-wise predictor rankings that \code{\link[=cv_varsel.vsel]{cv_varsel.vsel()}} re-uses.
+For \code{\link[=cv_varsel.vsel]{cv_varsel.vsel()}}, \code{NULL} (the default) uses the value stored in
+\code{object} if this value is finite or if \code{\link[=cv_varsel.vsel]{cv_varsel.vsel()}} re-uses the
+fold-wise predictor rankings, and 10 otherwise.}
 
 \item{method}{The method for the search part. Possible options are
 \code{"forward"} for forward search and \code{"L1"} for L1 search. See also section
@@ -192,8 +204,9 @@ results can be obtained again if needed. Passed to argument \code{seed} of
 clustering the reference model's posterior draws (if \code{!is.null(nclusters)}
 or \code{!is.null(nclusters_pred)}), for subsampling PSIS-LOO CV folds (if
 \code{nloo} is smaller than the number of observations), for sampling the folds
-in \eqn{K}-fold CV, and for drawing new group-level effects when predicting
-from a multilevel submodel (however, not yet in case of a GAMM).}
+in \eqn{K}-fold CV, for the weights of the weight perturbation (see section
+"Note"), and for drawing new group-level effects when predicting from a
+multilevel submodel (however, not yet in case of a GAMM).}
 
 \item{search_terms}{Only relevant for forward search. A custom character
 vector of predictor term blocks to consider for the search. Section
@@ -291,6 +304,27 @@ moderate, the fast PSIS-LOO CV along the full-data search path is likely to
 have optimistic bias in the middle of the search path. This result can be
 used to guide further actions and the optimistic bias can be greatly
 reduced by using \code{validate_search = TRUE}.
+
+With \code{cv_method = "LOO"} and \code{validate_search = TRUE}, the search runs
+again in each LOO fold. With \code{refit_prj = TRUE} (the default), the search
+of each LOO fold uses weight perturbation with Bayesian bootstrap
+observation weights. This makes the LOO estimates jump less between
+neighboring submodel sizes, which reduces their variance. Furthermore, the
+standard errors then include more of the variation that comes from the
+selection. For fold \eqn{i}, the weights are \eqn{n} times a
+Dirichlet(\eqn{\alpha}, ..., \eqn{\alpha}) draw, with the weight of
+observation \eqn{i} set to 0. A first-order approximation shifts the draws
+of the reference model toward the posterior under these weights. The search
+paths then vary more between the folds, which makes the performance
+estimates of the submodel sizes more stable. The actual performance
+evaluation of each fold does not use the weights. It projects onto the
+submodels of the fold-wise search path, so the weights change only which
+submodels it evaluates. With \code{refit_prj = FALSE}, the performance
+evaluation re-uses the submodel fits of the search, so the search does not
+use the weights either. Argument \code{loo_perturb_alpha} sets \eqn{\alpha}
+(default 10). The \code{vsel} object stores the value that the fold-wise
+searches used (\code{Inf} if they did not use weights). \code{\link[=cv_varsel.vsel]{cv_varsel.vsel()}}
+re-uses the fold-wise predictor rankings only for the same value.
 
 PSIS uses the Pareto-\eqn{\hat{k}} diagnostic to assess the reliability of
 PSIS-LOO CV. Global option \code{projpred.warn_psis} (default \code{TRUE}) controls
