@@ -147,6 +147,121 @@ fit_glmer_test <- function(formula, data, family, weights, ...) {
   )))
 }
 
+# The default `nAGQ` of fit_glmer_callback() for a binomial submodel with
+# non-integer data.
+nAGQ_dflt_nonint <- function() {
+  if (utils::packageVersion("lme4") < "2.1.1") 0L else 1L
+}
+
+# The `nAGQ` value of a glmer() fit.
+nAGQ_of <- function(fit) {
+  unname(fit@devcomp$dims[["nAGQ"]])
+}
+
+test_that(paste(
+  "a binomial glmer() submodel with non-integer data and the default `nAGQ`",
+  "is not fitted to rounded data (all lme4 versions)"
+), {
+  d <- dat_binom_singular()
+  fam <- extend_family(binomial())
+  coef_glm <- coef(suppressWarnings(glm(y ~ x + f, data = d,
+                                        family = binomial())))
+  nAGQ_dflt <- nAGQ_dflt_nonint()
+  # Traditional projection: non-integer responses.
+  fit <- fit_glmer_test(y ~ x + f + (1 | g), d, fam,
+                        weights = rep(1, nrow(d)))
+  expect_equal(unname(lme4::fixef(fit)), unname(coef_glm), tolerance = 1e-3)
+  expect_identical(nAGQ_of(fit), nAGQ_dflt)
+  # Augmented-data projection: 0/1 responses with non-integer weights.
+  d_aug <- to_augdat_form(d)
+  fit_aug <- fit_glmer_test(y ~ x + f + (1 | g), d_aug, fam,
+                            weights = d_aug$w_aug)
+  expect_equal(unname(lme4::fixef(fit_aug)), unname(coef_glm),
+               tolerance = 1e-3)
+  expect_identical(nAGQ_of(fit_aug), nAGQ_dflt)
+})
+
+test_that(paste(
+  "the default `nAGQ` of a binomial glmer() submodel changes only for",
+  "non-integer data, and an `nAGQ` from `...` is used as it is"
+), {
+  d <- dat_fitters()
+  fam <- extend_family(binomial())
+  w1 <- rep(1, nrow(d))
+  nAGQ_dflt <- nAGQ_dflt_nonint()
+  # Non-integer responses: the default, and `nAGQ` from `...`:
+  d$y <- plogis(d$eta)
+  expect_identical(nAGQ_of(fit_glmer_test(y ~ x + (1 | g), d, fam,
+                                          weights = w1)),
+                   nAGQ_dflt)
+  expect_identical(nAGQ_of(fit_glmer_test(y ~ x + (1 | g), d, fam, weights = w1,
+                                          nAGQ = 1L)),
+                   1L)
+  # Integer data (0/1 responses with integer weights, and proportions with
+  # integer numbers of trials and successes):
+  d_int <- d
+  d_int$y <- as.numeric(d$eta > 0)
+  expect_identical(nAGQ_of(fit_glmer_test(y ~ x + (1 | g), d_int, fam,
+                                          weights = w1)),
+                   1L)
+  d_prop <- d
+  d_prop$y <- (d_int$y + 1) / 4
+  expect_identical(nAGQ_of(fit_glmer_test(y ~ x + (1 | g), d_prop, fam,
+                                          weights = 4 * w1)),
+                   1L)
+  # Other families keep the default of lme4:
+  d_pois <- d
+  d_pois$y <- round(exp(d$eta))
+  expect_identical(nAGQ_of(fit_glmer_test(y ~ x + (1 | g), d_pois,
+                                          extend_family(poisson()),
+                                          weights = w1)),
+                   1L)
+  # The check of the data:
+  expect_identical(
+    glmer_rounds_binomial(y ~ x, family = fam, data = d, weights = NULL),
+    utils::packageVersion("lme4") < "2.1.1"
+  )
+  expect_false(glmer_rounds_binomial(y ~ x, family = fam, data = d_prop,
+                                     weights = 4 * w1))
+  expect_false(glmer_rounds_binomial(y ~ x, family = extend_family(poisson()),
+                                     data = d, weights = NULL))
+  # A response that cannot be evaluated counts as non-integer data:
+  expect_identical(
+    glmer_rounds_binomial(y_missing ~ x, family = fam, data = d,
+                          weights = NULL),
+    utils::packageVersion("lme4") < "2.1.1"
+  )
+})
+
+test_that(paste(
+  "the refit of a binomial glmer() submodel after a PIRLS error uses",
+  "`nAGQ = 20`, or the `nAGQ` from `...` plus 1"
+), {
+  d <- dat_fitters()
+  d$y <- plogis(d$eta)
+  # A glmer() that records `nAGQ` and fails in its first call:
+  nAGQ_calls <- list()
+  glmer_mock <- lme4::glmer
+  body(glmer_mock) <- quote({
+    nAGQ_calls[[length(nAGQ_calls) + 1L]] <<- nAGQ
+    if (length(nAGQ_calls) == 1L) {
+      stop("PIRLS step-halvings failed to reduce deviance")
+    }
+    "fit"
+  })
+  environment(glmer_mock) <- environment()
+  testthat::local_mocked_bindings(glmer = glmer_mock, .package = "lme4")
+  fit <- fit_glmer_test(y ~ x + (1 | g), d, extend_family(binomial()),
+                        weights = rep(1, nrow(d)))
+  expect_identical(fit, "fit")
+  expect_identical(nAGQ_calls, list(nAGQ_dflt_nonint(), 20L))
+  nAGQ_calls <- list()
+  fit <- fit_glmer_test(y ~ x + (1 | g), d, extend_family(binomial()),
+                        weights = rep(1, nrow(d)), nAGQ = 3L)
+  expect_identical(fit, "fit")
+  expect_identical(nAGQ_calls, list(3L, 4L))
+})
+
 test_that(paste(
   "a binomial glmer() submodel with fractional responses gives the glm()",
   "solution for a singular fit"
