@@ -529,27 +529,45 @@ test_that(paste(
   "the inverse link clamps the mean"
 ), {
   skip_if_not(run_prll)
+  skip_if_not(run_cvvs)
   skip_if(length(par_backends_tst) == 0)
-  # The formula of the reference model goes to the workers with its
-  # environment (the frame of refm_extreme()), so the parent of that frame is
-  # the projpred namespace, not the environment of the tests with all fits:
+  # The workers get the formula with its environment (the frame of
+  # refm_extreme()). Make the projpred namespace the parent of that frame, so
+  # that the workers do not get the test environment with all fits:
   refm_ext <- refm_extreme
   environment(refm_ext) <- asNamespace("projpred")
-  # All draws have a large |eta| for some observations (see test_ll_clamp.R):
-  refm <- refm_ext(binomial(), offset = TRUE, n_extreme = 60)
-  eta <- refm$eta + refm$offset
-  expect_gt(min(apply(abs(eta), 2, max)), 30)
-  ll_exact <- refm$y * plogis(eta, log.p = TRUE) +
-    (1 - refm$y) * plogis(-eta, log.p = TRUE)
-  lpd_exact <- apply(ll_exact, 1, log_sum_exp) - log(ncol(eta))
-  cvvs_ext <- function(parallel) {
+  # All draws have a large |eta| for some observations. For the Bernoulli
+  # model, the extreme coefficients have one sign; with both signs, each
+  # observation has draws with a log-likelihood close to 0, and the clamp
+  # changes the lppd by less than 1e-14:
+  cases <- list(
+    binomial = list(refm = refm_ext(binomial(), offset = TRUE, n_extreme = 60,
+                                    sign_extreme = 1),
+                    ll_exact = function(eta, y) ll_binom_exact(eta, y, 1)),
+    poisson = list(refm = refm_ext(poisson(), offset = TRUE, n_extreme = 60),
+                   ll_exact = function(eta, y) ll_poiss_exact(eta, y, 1))
+  )
+  lpd_of <- function(ll) apply(ll, 1, log_sum_exp) - log(ncol(ll))
+  cvvs_ext <- function(refm, parallel) {
     suppressWarnings(cv_varsel(
       refm, cv_method = "kfold", K = 2, nterms_max = 1, method = "forward",
       parallel = parallel, seed = seed_tst, verbose = FALSE
     ))
   }
-  cvvs_seq <- cvvs_ext(FALSE)
-  expect_equal(cvvs_seq$summaries$ref$lppd, lpd_exact, tolerance = 1e-10)
+  for (fam_nm in names(cases)) {
+    refm <- cases[[fam_nm]]$refm
+    eta <- refm$eta + refm$offset
+    y_mat <- matrix(refm$y, nrow(eta), ncol(eta))
+    cases[[fam_nm]]$lpd_exact <- lpd_of(cases[[fam_nm]]$ll_exact(eta, y_mat))
+    # The lppd from the clamped mean differs from the exact one:
+    lpd_clamped <- lpd_of(refm$family$ll_fun(refm$family$linkinv(eta), NULL,
+                                             refm$y, 1))
+    expect_gt(max(abs(lpd_clamped - cases[[fam_nm]]$lpd_exact)), 1,
+              label = fam_nm)
+    cases[[fam_nm]]$cvvs_seq <- cvvs_ext(refm, parallel = FALSE)
+    expect_equal(cases[[fam_nm]]$cvvs_seq$summaries$ref$lppd,
+                 cases[[fam_nm]]$lpd_exact, tolerance = 1e-10, info = fam_nm)
+  }
   # Counts the calls of par_lapply() with workers:
   n_par <- 0L
   par_lapply_orig <- get("par_lapply", envir = asNamespace("projpred"))
@@ -563,14 +581,19 @@ test_that(paste(
   for (backend in par_backends_tst) {
     local({
       local_par_workers(backend)
-      n_par <<- 0L
-      cvvs <- cvvs_ext(TRUE)
-      expect_gt(n_par, 0L, label = backend)
-      expect_equal(cvvs$summaries$ref$lppd, lpd_exact, tolerance = 1e-10,
-                   info = backend)
-      expect_identical(ranking(cvvs)[["foldwise"]],
-                       ranking(cvvs_seq)[["foldwise"]], info = backend)
-      expect_equal(cvvs$summaries, cvvs_seq$summaries, info = backend)
+      for (fam_nm in names(cases)) {
+        info_i <- paste(backend, fam_nm)
+        n_par <<- 0L
+        cvvs <- cvvs_ext(cases[[fam_nm]]$refm, parallel = TRUE)
+        expect_gt(n_par, 0L, label = info_i)
+        expect_equal(cvvs$summaries$ref$lppd, cases[[fam_nm]]$lpd_exact,
+                     tolerance = 1e-10, info = info_i)
+        expect_identical(ranking(cvvs)[["foldwise"]],
+                         ranking(cases[[fam_nm]]$cvvs_seq)[["foldwise"]],
+                         info = info_i)
+        expect_equal(cvvs$summaries, cases[[fam_nm]]$cvvs_seq$summaries,
+                     info = info_i)
+      }
     })
   }
 })

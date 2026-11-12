@@ -1,18 +1,5 @@
 context("log-likelihood where the inverse link clamps the mean")
 
-# The exact log-likelihood of the binomial (logit) and Poisson (log) models.
-# The product with a zero count is 0, also for an infinite `eta`.
-xlogp_tst <- function(k, logp) ifelse(k == 0, 0, k * logp)
-ll_binom_exact <- function(eta, y, trials) {
-  lchoose(trials, y) + xlogp_tst(y, plogis(eta, log.p = TRUE)) +
-    xlogp_tst(trials - y, plogis(-eta, log.p = TRUE))
-}
-ll_poiss_exact <- function(eta, y, wobs) {
-  # ifelse() keeps the dimensions of its first argument:
-  wobs <- array(wobs, dim(eta))
-  xlogp_tst(wobs, xlogp_tst(y, eta) - exp(eta) - lgamma(y + 1))
-}
-
 test_that("binomial ll_fun() with `eta` is exact where linkinv() clamps", {
   fam <- extend_family(binomial())
   eta <- cbind(c(-450, -40, -31, -30), c(450, 40, 31, 30), c(-5, 0, 5, 20),
