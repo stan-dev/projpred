@@ -2253,7 +2253,7 @@ check_conv_s <- function(fit_s) {
     # `converged`: the P-IRLS iterations; `mgcv.conv`: the smoothing parameter
     # optimization of the "magic" optimizer; `outer.info`: that of the other
     # optimizers (see gam_outer_conv()):
-    return(isTRUE(fit_s$converged) &&
+    return(isTRUE(fit_s$converged %||% TRUE) &&
              isTRUE(fit_s$mgcv.conv$fully.converged %||% TRUE) &&
              gam_outer_conv(fit_s$outer.info))
   } else if (inherits(fit_s, "gamm4")) {
@@ -2301,10 +2301,14 @@ check_conv_s <- function(fit_s) {
 # its element `outer.info`, which depends on the optimizer:
 # * "newton", "bfgs" and "efs": a message `conv` ("full convergence", "step
 #   failed" or "iteration limit reached").
-# * "nlm": the nlm() list with `code` (1 and 2 mean convergence).
-# * "optim": the optim() list with `convergence` (0 means convergence).
+# * c("outer", "nlm"): the nlm() result with `code`.
+# * c("outer", "optim"): the optim() result with `convergence`.
 # * "magic" and fits without smoothing parameters: `NULL`.
-# `[[` avoids the partial match of `$conv` to `convergence`.
+# For nlm() and optim(), only the iteration limit (nlm() code 4, optim() code 1)
+# counts as non-convergence. The other codes also occur at the optimum, for
+# example nlm() code 5 if a smoothing parameter goes to infinity (a smooth
+# term of a linear function). `[[` avoids the partial match of `$conv` to
+# `convergence`.
 gam_outer_conv <- function(outer_info) {
   if (!is.list(outer_info)) {
     return(TRUE)
@@ -2313,10 +2317,10 @@ gam_outer_conv <- function(outer_info) {
     return(identical(outer_info[["conv"]], "full convergence"))
   }
   if (!is.null(outer_info[["code"]])) {
-    return(outer_info[["code"]] %in% c(1, 2))
+    return(!isTRUE(any(outer_info[["code"]] == 4)))
   }
   if (!is.null(outer_info[["convergence"]])) {
-    return(identical(as.numeric(outer_info[["convergence"]]), 0))
+    return(!isTRUE(any(outer_info[["convergence"]] == 1)))
   }
   return(TRUE)
 }
