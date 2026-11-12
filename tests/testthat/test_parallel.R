@@ -539,7 +539,7 @@ test_that(paste(
   # All draws have a large |eta| for some observations. For the Bernoulli
   # model, the extreme coefficients have one sign; with both signs, each
   # observation has draws with a log-likelihood close to 0, and the clamp
-  # changes the lppd by less than 1e-14:
+  # changes the lppd by much less than the test tolerance:
   cases <- list(
     binomial = list(refm = refm_ext(binomial(), offset = TRUE, n_extreme = 60,
                                     sign_extreme = 1),
