@@ -443,3 +443,60 @@ test_that(paste(
   nd$h <- factor(c("g1", "h1", "h1", "h1", "h1", "h1"))
   expect_error(subprd(list(fit), nd), "disjoint level sets")
 })
+
+test_that(paste(
+  "cv_varsel() with LOO validated search and weight perturbation uses",
+  "mlvl_laplace() with non-integer observation weights"
+), {
+  withr::local_seed(3)
+  n <- 60
+  S <- 20
+  d <- data.frame(x = rnorm(n), z = rnorm(n),
+                  g = factor(paste0("g", sample(6, n, replace = TRUE))))
+  b_g <- rnorm(6, sd = 0.8)
+  eta <- -0.2 + 0.8 * d$x + b_g[d$g]
+  # Reference model draws (no MCMC):
+  draws <- list(beta = rbind(rnorm(S, -0.2, 0.1), rnorm(S, 0.8, 0.1),
+                             rnorm(S, 0, 0.1)),
+                bg = matrix(rnorm(6 * S, rep(b_g, S), 0.2), 6, S))
+  ref_predfun <- function(fit, newdata = NULL) {
+    if (is.null(newdata)) newdata <- d
+    cbind(1, newdata$x, newdata$z) %*% fit$beta +
+      fit$bg[as.integer(factor(newdata$g, levels = levels(d$g))), ,
+             drop = FALSE]
+  }
+  mlvl_laplace_orig <- mlvl_laplace
+  rec <- list()
+  local_mocked_bindings(mlvl_laplace = function(formula, data, family,
+                                                weights = NULL) {
+    fit <- mlvl_laplace_orig(formula, data, family, weights)
+    rec[[length(rec) + 1L]] <<- list(w = weights, fit = fit)
+    fit
+  })
+  y_list <- list(binomial = rbinom(n, 1, plogis(eta)),
+                 poisson = rpois(n, exp(eta)))
+  for (fam_nm in names(y_list)) {
+    d$y <- y_list[[fam_nm]]
+    ref <- suppressWarnings(init_refmodel(
+      object = draws, data = d, formula = y ~ x + z + (1 | g),
+      family = get(fam_nm)(), ref_predfun = ref_predfun
+    ))
+    rec <- list()
+    cvvs <- suppressWarnings(suppressMessages(cv_varsel(
+      ref, cv_method = "LOO", validate_search = TRUE, method = "forward",
+      nloo = 4, ndraws = 4, ndraws_pred = 8, nterms_max = 2, seed = 5,
+      verbose = FALSE
+    )))
+    expect_identical(cvvs$loo_perturb_alpha, 10, info = fam_nm)
+    expect_gt(length(rec), 0)
+    # The perturbed searches pass non-integer weights:
+    w_nonint <- vapply(rec, function(r) {
+      any(abs(r$w - round(r$w)) > 1e-8)
+    }, logical(1))
+    expect_true(any(w_nonint), info = fam_nm)
+    expect_true(all(vapply(rec[w_nonint], function(r) {
+      inherits(r$fit, "projpred_mlvl")
+    }, logical(1))), info = fam_nm)
+    expect_true(all(is.finite(summary(cvvs)$perf_sub$elpd)), info = fam_nm)
+  }
+})
