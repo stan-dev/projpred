@@ -62,8 +62,8 @@
 - Faster [`ordinal::clmm()`](https://rdrr.io/pkg/ordinal/man/clmm.html)
   submodel fits with a single group-level intercept: projpred now uses
   `ucminf()` with forward differences, and refits with
-  [`nlminb()`](https://rdrr.io/r/stats/nlminb.html) if needed. For
-  example,
+  [`nlminb()`](https://rdrr.io/r/stats/nlminb.html) if needed. The
+  `cloglog` and `loglog` links keep the default optimizer. For example,
   [`varsel()`](https://mc-stan.org/projpred/dev/reference/varsel.md) for
   a cumulative model with 300 observations is about 1.5 to 2 times
   faster. (GitHub:
@@ -255,6 +255,13 @@
   of the R session unchanged after the tests, also when a test fails,
   and remove the manual cleanup of the test workspace. (GitHub:
   [\#586](https://github.com/stan-dev/projpred/issues/586))
+- Fixed [`ordinal::clmm()`](https://rdrr.io/pkg/ordinal/man/clmm.html)
+  submodel fits of cumulative models (e.g.,
+  [`brms::cumulative()`](https://paulbuerkner.com/brms/reference/brmsfamily.html))
+  with the `cloglog` or `loglog` link and a single group-level
+  intercept. These fits now use the slower default optimizer of
+  `clmm()`. (GitHub:
+  [\#613](https://github.com/stan-dev/projpred/issues/613))
 - Fixed the error “‘gam.fit’ is not an exported object from
   ‘namespace:mgcv’” in projections onto additive submodels with mgcv
   1.9-5. (GitHub:

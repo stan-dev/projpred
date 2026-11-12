@@ -108,7 +108,13 @@ by projpred's internal default `div_minimizer` functions, see
     If this fit fails or does not converge, projpred refits with the
     default settings of
     [`ordinal::clmm()`](https://rdrr.io/pkg/ordinal/man/clmm.html). An
-    argument `method` or `control` in `...` replaces this default.
+    argument `method` or `control` in `...` replaces this default. For
+    the `cloglog` and `loglog` links, projpred always uses
+    `useMatrix = TRUE` (see
+    [`ordinal::clmm.control()`](https://rdrr.io/pkg/ordinal/man/clmm.control.html))
+    and does not use `ucminf()`. The code of
+    [`ordinal::clmm()`](https://rdrr.io/pkg/ordinal/man/clmm.html) for a
+    single group-level term uses the other of these two links.
 
 - Submodel without multilevel but additive terms:
   [`mgcv::gam()`](https://rdrr.io/pkg/mgcv/man/gam.html) (the returned

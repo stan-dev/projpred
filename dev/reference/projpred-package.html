@@ -147,7 +147,11 @@ group-level term <code>(1 | &lt;group&gt;)</code>, <span class="pkg">projpred</s
 <code>method = "ucminf"</code> and <code>grad = "forward"</code> (see
 <code><a href="https://rdrr.io/pkg/ordinal/man/clmm.control.html" class="external-link">ordinal::clmm.control()</a></code>). If this fit fails or does not converge,
 <span class="pkg">projpred</span> refits with the default settings of <code><a href="https://rdrr.io/pkg/ordinal/man/clmm.html" class="external-link">ordinal::clmm()</a></code>. An
-argument <code>method</code> or <code>control</code> in <code>...</code> replaces this default.</p></li>
+argument <code>method</code> or <code>control</code> in <code>...</code> replaces this default. For the
+<code>cloglog</code> and <code>loglog</code> links, <span class="pkg">projpred</span> always uses
+<code>useMatrix = TRUE</code> (see <code><a href="https://rdrr.io/pkg/ordinal/man/clmm.control.html" class="external-link">ordinal::clmm.control()</a></code>) and does not use
+<code>ucminf()</code>. The code of <code><a href="https://rdrr.io/pkg/ordinal/man/clmm.html" class="external-link">ordinal::clmm()</a></code> for a single group-level term
+uses the other of these two links.</p></li>
 </ul></li>
 <li><p>Submodel without multilevel but additive terms: <code><a href="https://rdrr.io/pkg/mgcv/man/gam.html" class="external-link">mgcv::gam()</a></code> (the returned
 object inherits from class <code>gam</code>).</p></li>
