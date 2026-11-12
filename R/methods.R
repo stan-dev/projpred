@@ -1357,12 +1357,12 @@ plot.vsel <- function(
 #'   observations. For this, the response category ("class") with highest
 #'   probability (the probabilities are model-based) is taken as the prediction
 #'   ("classification") for an observation. For the corresponding uncertainty
-#'   interval, a logit-normal approximation (with the standard error
-#'   transformed by the delta method) is used if `deltas` is `FALSE` and a
-#'   normal approximation is used if `deltas` is `TRUE` (or `"mixed"`, in case
-#'   of [plot.vsel()]). If `deltas` is `FALSE` and the estimate is not strictly
-#'   between 0 and 1 (possible with subsampled LOO-CV), a normal approximation
-#'   is used.
+#'   interval, a logit-normal approximation is used if `deltas` is `FALSE`. The
+#'   standard error on the logit scale comes from the delta method. A normal
+#'   approximation is used if `deltas` is `TRUE` (or `"mixed"`, in case of
+#'   [plot.vsel()]). It is also used if `deltas` is `FALSE` and the estimate is
+#'   not strictly between 0 and 1 (an estimate outside of \[0, 1\] is possible
+#'   with subsampled LOO-CV).
 #'   * `"auc"`: area under the ROC curve (only available in the situations
 #'   mentioned in section "Details" below). For the corresponding standard error
 #'   and lower and upper uncertainty interval bounds, bootstrapping is used. Not
