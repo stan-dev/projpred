@@ -72,7 +72,12 @@ available in the situations mentioned in section "Details" below). By
 observations. For this, the response category ("class") with highest
 probability (the probabilities are model-based) is taken as the prediction
 ("classification") for an observation. For the corresponding uncertainty
-interval, a normal approximation is used.
+interval, a logit-normal approximation (with the standard error
+transformed by the delta method) is used if \code{deltas} is \code{FALSE} and a
+normal approximation is used if \code{deltas} is \code{TRUE} (or \code{"mixed"}, in case
+of \code{\link[=plot.vsel]{plot.vsel()}}). If \code{deltas} is \code{FALSE} and the estimate is not strictly
+between 0 and 1 (possible with subsampled LOO-CV), a normal approximation
+is used.
 \item \code{"auc"}: area under the ROC curve (only available in the situations
 mentioned in section "Details" below). For the corresponding standard error
 and lower and upper uncertainty interval bounds, bootstrapping is used. Not

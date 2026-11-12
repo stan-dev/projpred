@@ -1205,7 +1205,10 @@ plot.vsel <- function(
     ci_type <- "exponentiated normal-approximation "
   } else if (all(stats %in% c("mse", "rmse")) && isFALSE(deltas)) {
     ci_type <- "log-normal-approximation "
-  } else if (all(!stats %in% c(stats_bs_ci, "gmpd", "mse", "rmse")) ||
+  } else if (all(stats %in% c("acc", "pctcorr")) && isFALSE(deltas)) {
+    ci_type <- "logit-normal-approximation "
+  } else if (all(!stats %in% c(stats_bs_ci, "gmpd", "mse", "rmse", "acc",
+                               "pctcorr")) ||
              (all(!stats %in% c(stats_bs_ci, "gmpd")) &&
               (identical(deltas, "mixed") || isTRUE(deltas)))) {
     ci_type <- "normal-approximation "
@@ -1354,7 +1357,12 @@ plot.vsel <- function(
 #'   observations. For this, the response category ("class") with highest
 #'   probability (the probabilities are model-based) is taken as the prediction
 #'   ("classification") for an observation. For the corresponding uncertainty
-#'   interval, a normal approximation is used.
+#'   interval, a logit-normal approximation (with the standard error
+#'   transformed by the delta method) is used if `deltas` is `FALSE` and a
+#'   normal approximation is used if `deltas` is `TRUE` (or `"mixed"`, in case
+#'   of [plot.vsel()]). If `deltas` is `FALSE` and the estimate is not strictly
+#'   between 0 and 1 (possible with subsampled LOO-CV), a normal approximation
+#'   is used.
 #'   * `"auc"`: area under the ROC curve (only available in the situations
 #'   mentioned in section "Details" below). For the corresponding standard error
 #'   and lower and upper uncertainty interval bounds, bootstrapping is used. Not
