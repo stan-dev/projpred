@@ -999,8 +999,9 @@ collapse_ranked_predictors <- function(path, formula, data) {
   # Match the columns to the terms by the "assign" attribute (0: the
   # intercept), not by the text of the column names:
   term_idx <- attr(x, "assign")
-  # The labels and the column names of a long term have line breaks (see
-  # join_lines()):
+  # The labels of a long term have line breaks (see join_lines()). Its column
+  # names can also have them; join_lines() on `path` and on the column names
+  # keeps the match also if `path` has joined column names:
   term_labels <- join_lines(attr(terms(formula, data = data), "term.labels"))
   path <- join_lines(path)
   term_of_col <- term_labels[term_idx[term_idx > 0]]
