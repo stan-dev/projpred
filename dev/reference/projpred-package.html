@@ -138,7 +138,13 @@ from class <code>glmerMod</code>) for all other families. For <code><a href="htt
 <span class="pkg">projpred</span> uses <code>control = lme4::glmerControl(optimizer = "bobyqa")</code>,
 so both optimization stages use BOBYQA. A <code>control</code> argument in <code>...</code>
 replaces this default in the first fit. After some <span class="pkg">lme4</span> errors,
-<span class="pkg">projpred</span> refits with its own settings and ignores this <code>control</code>.</p></li>
+<span class="pkg">projpred</span> refits with its own settings and ignores this <code>control</code>.
+For the <code><a href="https://rdrr.io/r/stats/family.html" class="external-link">binomial()</a></code> family, <span class="pkg">lme4</span> versions before 2.1-1 round
+non-integer responses and weights in the objective of <code><a href="https://rdrr.io/pkg/lme4/man/glmer.html" class="external-link">lme4::glmer()</a></code>
+with <code>nAGQ &gt;= 1</code>. With these <span class="pkg">lme4</span> versions, <span class="pkg">projpred</span> uses
+<code>nAGQ = 0</code> for such submodels unless <code>nAGQ</code> is set via <code>...</code>. Then the
+fixed effects and the group-level effects do not depend on the rounded
+objective; the group-level standard deviations still do.</p></li>
 <li><p>For the augmented-data projection: <code><a href="https://rdrr.io/pkg/ordinal/man/clmm.html" class="external-link">ordinal::clmm()</a></code> (the returned
 object inherits from class <code>clmm</code>) for the <code><a href="https://paulbuerkner.com/brms/reference/brmsfamily.html" class="external-link">brms::cumulative()</a></code> family,
 <code><a href="https://melff.github.io/mclogit/reference/mblogit.html" class="external-link">mclogit::mblogit()</a></code> (the returned object inherits from class <code>mmblogit</code>)

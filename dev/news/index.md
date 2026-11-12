@@ -271,12 +271,21 @@
   reference model draws with a large linear predictor, where the inverse
   link clamped the mean. (GitHub:
   [\#614](https://github.com/stan-dev/projpred/issues/614))
+- With lme4 versions before 2.1-1, binomial submodels with multilevel
+  terms (and no additive terms) now use `nAGQ = 0` in
+  [`lme4::glmer()`](https://rdrr.io/pkg/lme4/man/glmer.html) for
+  non-integer responses or weights, unless `nAGQ` is set via `...`.
+  Their coefficients were fitted to rounded data before. (GitHub:
+  [\#616](https://github.com/stan-dev/projpred/issues/616))
 - Removed line breaks from the names of search terms above about 500
   characters in
   [`ranking()`](https://mc-stan.org/projpred/dev/reference/ranking.md),
   [`summary()`](https://rdrr.io/r/base/summary.html) and
   [`plot()`](https://rdrr.io/r/graphics/plot.default.html). (GitHub:
   [\#607](https://github.com/stan-dev/projpred/issues/607))
+- Fixed the term names of the L1 search if one model-matrix column name
+  starts with another one. (GitHub:
+  [\#615](https://github.com/stan-dev/projpred/issues/615))
 
 ## projpred 2.11.0
 

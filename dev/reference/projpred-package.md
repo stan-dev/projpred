@@ -91,6 +91,14 @@ by projpred's internal default `div_minimizer` functions, see
     optimization stages use BOBYQA. A `control` argument in `...`
     replaces this default in the first fit. After some lme4 errors,
     projpred refits with its own settings and ignores this `control`.
+    For the [`binomial()`](https://rdrr.io/r/stats/family.html) family,
+    lme4 versions before 2.1-1 round non-integer responses and weights
+    in the objective of
+    [`lme4::glmer()`](https://rdrr.io/pkg/lme4/man/glmer.html) with
+    `nAGQ >= 1`. With these lme4 versions, projpred uses `nAGQ = 0` for
+    such submodels unless `nAGQ` is set via `...`. Then the fixed
+    effects and the group-level effects do not depend on the rounded
+    objective; the group-level standard deviations still do.
 
   - For the augmented-data projection:
     [`ordinal::clmm()`](https://rdrr.io/pkg/ordinal/man/clmm.html) (the
