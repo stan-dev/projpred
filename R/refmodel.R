@@ -890,6 +890,19 @@ get_refmodel.stanreg <- function(object, latent = FALSE, dis = NULL,
 
   if (inherits(object, "gamm4")) {
     formula <- formula.gamm4(object)
+    # With argument `random`, rstanarm::stan_gamm4() stores the model frame as
+    # `object$data`, which lacks the variables of a response expression:
+    resp_miss <- setdiff(all.vars(formula[[2]]), names(data))
+    if (!is.null(object$glmod) && length(resp_miss) > 0) {
+      stop("Because of rstanarm issue #545 (see GitHub), `object$data` of ",
+           "this rstanarm::stan_gamm4() fit (with argument `random`) does ",
+           "not contain the variable(s) ",
+           paste0("`", resp_miss, "`", collapse = ", "), " of the response `",
+           paste(deparse(formula[[2]]), collapse = " "), "`. As a ",
+           "workaround, set `object$data` to the data frame that was used ",
+           "for the fit (for example, `fit$data <- dat`) before calling ",
+           "get_refmodel().")
+    }
   } else {
     formula <- formula(object)
   }
