@@ -140,10 +140,11 @@ to_augdat_form <- function(d) {
   rbind(d1, d0)
 }
 
+# The glmer() code path (`mlvl_laplace = FALSE`: no Laplace fit of projpred).
 fit_glmer_test <- function(formula, data, family, weights, ...) {
   suppressWarnings(suppressMessages(fit_glmer_callback(
     formula, projpred_formula_no_random = NA, projpred_random = NA,
-    family = family, data = data, weights = weights, ...
+    family = family, data = data, weights = weights, mlvl_laplace = FALSE, ...
   )))
 }
 
