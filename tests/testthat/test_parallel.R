@@ -524,6 +524,57 @@ test_that("cv_varsel() in parallel gives the same results as sequentially", {
   }
 })
 
+test_that(paste(
+  "the parallel K-fold cv_varsel() gives the exact reference model lppd where",
+  "the inverse link clamps the mean"
+), {
+  skip_if_not(run_prll)
+  skip_if(length(par_backends_tst) == 0)
+  # The formula of the reference model goes to the workers with its
+  # environment (the frame of refm_extreme()), so the parent of that frame is
+  # the projpred namespace, not the environment of the tests with all fits:
+  refm_ext <- refm_extreme
+  environment(refm_ext) <- asNamespace("projpred")
+  # All draws have a large |eta| for some observations (see test_ll_clamp.R):
+  refm <- refm_ext(binomial(), offset = TRUE, n_extreme = 60)
+  eta <- refm$eta + refm$offset
+  expect_gt(min(apply(abs(eta), 2, max)), 30)
+  ll_exact <- refm$y * plogis(eta, log.p = TRUE) +
+    (1 - refm$y) * plogis(-eta, log.p = TRUE)
+  lpd_exact <- apply(ll_exact, 1, log_sum_exp) - log(ncol(eta))
+  cvvs_ext <- function(parallel) {
+    suppressWarnings(cv_varsel(
+      refm, cv_method = "kfold", K = 2, nterms_max = 1, method = "forward",
+      parallel = parallel, seed = seed_tst, verbose = FALSE
+    ))
+  }
+  cvvs_seq <- cvvs_ext(FALSE)
+  expect_equal(cvvs_seq$summaries$ref$lppd, lpd_exact, tolerance = 1e-10)
+  # Counts the calls of par_lapply() with workers:
+  n_par <- 0L
+  par_lapply_orig <- get("par_lapply", envir = asNamespace("projpred"))
+  testthat::local_mocked_bindings(
+    par_lapply = function(..., .backend) {
+      if (!is.null(.backend)) n_par <<- n_par + 1L
+      par_lapply_orig(..., .backend = .backend)
+    },
+    .package = "projpred"
+  )
+  for (backend in par_backends_tst) {
+    local({
+      local_par_workers(backend)
+      n_par <<- 0L
+      cvvs <- cvvs_ext(TRUE)
+      expect_gt(n_par, 0L, label = backend)
+      expect_equal(cvvs$summaries$ref$lppd, lpd_exact, tolerance = 1e-10,
+                   info = backend)
+      expect_identical(ranking(cvvs)[["foldwise"]],
+                       ranking(cvvs_seq)[["foldwise"]], info = backend)
+      expect_equal(cvvs$summaries, cvvs_seq$summaries, info = backend)
+    })
+  }
+})
+
 # The four tests below do not need `run_prll`: the first two run the parallel
 # loops in this R session (see local_record_par()), and the other two only
 # read code and objects.
