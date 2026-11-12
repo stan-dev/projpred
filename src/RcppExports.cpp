@@ -156,6 +156,21 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// wcol_moments_c
+List wcol_moments_c(const arma::mat& mu, const IntegerVector& idx, const arma::vec& scale, const arma::vec& wobs, double sum_w);
+RcppExport SEXP _projpred_wcol_moments_c(SEXP muSEXP, SEXP idxSEXP, SEXP scaleSEXP, SEXP wobsSEXP, SEXP sum_wSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const arma::mat& >::type mu(muSEXP);
+    Rcpp::traits::input_parameter< const IntegerVector& >::type idx(idxSEXP);
+    Rcpp::traits::input_parameter< const arma::vec& >::type scale(scaleSEXP);
+    Rcpp::traits::input_parameter< const arma::vec& >::type wobs(wobsSEXP);
+    Rcpp::traits::input_parameter< double >::type sum_w(sum_wSEXP);
+    rcpp_result_gen = Rcpp::wrap(wcol_moments_c(mu, idx, scale, wobs, sum_w));
+    return rcpp_result_gen;
+END_RCPP
+}
 
 static const R_CallMethodDef CallEntries[] = {
     {"_projpred_categ_fit_multi_c", (DL_FUNC) &_projpred_categ_fit_multi_c, 6},
@@ -165,6 +180,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_projpred_glm_ridge_c", (DL_FUNC) &_projpred_glm_ridge_c, 11},
     {"_projpred_glm_ridge_native_c", (DL_FUNC) &_projpred_glm_ridge_native_c, 15},
     {"_projpred_glm_ridge_native_multi_c", (DL_FUNC) &_projpred_glm_ridge_native_multi_c, 15},
+    {"_projpred_wcol_moments_c", (DL_FUNC) &_projpred_wcol_moments_c, 5},
     {NULL, NULL, 0}
 };
 
