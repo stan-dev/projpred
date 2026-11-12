@@ -394,9 +394,9 @@ test_that("project() in parallel gives the same results as sequentially", {
   withr::local_options(list(projpred.parallel_proj_trigger = 0L))
   tstsetups <- grep("\\.glm\\.", names(prjs), value = TRUE)
   # Most GLM projections fit all draws in one call, so add multilevel
-  # submodels (loop in divmin(); the Gaussian one uses the shared lmer() setup,
-  # the non-Gaussian one calls glmer() for each draw) and an augmented-data
-  # projection (loop in divmin_augdat()):
+  # submodels (loop in divmin(); the Gaussian one normally uses the shared
+  # lmer() setup, the non-Gaussian one calls glmer() for each draw) and an
+  # augmented-data projection (loop in divmin_augdat()):
   first_prj <- function(cond) {
     names(Filter(cond, args_prj[names(prjs)]))[1]
   }
