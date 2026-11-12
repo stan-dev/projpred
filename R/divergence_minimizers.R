@@ -1886,19 +1886,8 @@ fit_cumul_mlvl <- function(formula, data, family, weights,
                               weights = weights)
     if (!is.null(fit)) {
       if (fit$convergence == 0) return(fit)
-      # The default code of ordinal::clmm() for a single group-level intercept
-      # term swaps the links cloglog and loglog; `useMatrix = TRUE` selects its
-      # other code:
-      args_clmm <- if (family$link %in% c("cloglog", "loglog")) {
-        list(control = ordinal::clmm.control(useMatrix = TRUE))
-      } else {
-        list()
-      }
-      fit_clmm <- do.call(fit_cumul_mlvl, c(
-        list(formula = formula, data = data, family = family,
-             weights = weights, mlvl_laplace = FALSE),
-        args_clmm, list(...)
-      ))
+      fit_clmm <- fit_cumul_mlvl(formula, data = data, family = family,
+                                 weights = weights, mlvl_laplace = FALSE, ...)
       return(mlvl_cumul_from_clmm(fit_clmm, formula, failed = fit))
     }
   }
