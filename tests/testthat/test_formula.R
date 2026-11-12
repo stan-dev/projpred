@@ -327,4 +327,44 @@ test_that("split_plus() splits term strings only at the `+` between terms", {
   expect_identical(split_plus("`a b` + x2 + I(`a b`^2)"),
                    c("`a b`", "x2", "I(`a b`^2)"))
   expect_identical(split_plus(character(0)), character(0))
+  expect_identical(split_plus("a + (b + c)"), c("a", "(b + c)"))
+  expect_identical(split_plus("+x + y"), c("+x", "y"))
+  expect_identical(split_plus("a + NULL"), c("a", "NULL"))
+  # The order of the parts with `+` calls as right operands:
+  expect_identical(split_plus("a + `+`(b, `+`(c, d)) + e"),
+                   c("a", "b", "c", "d", "e"))
+  # A long chain of `+` (a left-deep call tree of 4999 levels):
+  long_terms <- paste0("x", seq_len(5000))
+  expect_identical(split_plus(paste(long_terms, collapse = " + ")), long_terms)
+})
+
+test_that(paste(
+  "select_possible_terms_size() returns a long search term without line",
+  "breaks"
+), {
+  # as.character() of a formula breaks a right-hand side of this length (1289
+  # characters) into lines:
+  long_term <- paste0("v", 1:200, collapse = " + ")
+  allterms <- c("z", long_term)
+  for (use_term_info in c(FALSE, TRUE)) {
+    expect_identical(
+      select_possible_terms_size("z", allterms, size = 202,
+                                 use_term_info = use_term_info),
+      long_term,
+      info = as.character(use_term_info)
+    )
+  }
+  # A candidate that overlaps with the chosen terms:
+  expect_identical(
+    select_possible_terms_size("v1", allterms, size = 201),
+    paste0("v", 2:200, collapse = " + ")
+  )
+  expect_identical(to_character_rhs(as.formula(paste(". ~", long_term))),
+                   long_term)
+  # One term above 500 characters: split_plus() and the terms() label give the
+  # same text.
+  long_i <- paste0("I(", long_term, ")")
+  expect_identical(split_plus(paste("z +", long_i)), c("z", long_i))
+  lbls <- attr(terms(as.formula(paste("~ z +", long_i))), "term.labels")
+  expect_identical(norm_term_labels(lbls), c("z", long_i))
 })

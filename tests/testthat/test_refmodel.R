@@ -228,6 +228,86 @@ test_that(paste(
   expect_identical(refmod_user$cvrefbuilder(fit_fold)$dis, dis_user)
 })
 
+test_that(paste(
+  "get_refmodel.stanreg() uses user-supplied `cvfun` and `cvrefbuilder`",
+  "functions in K-fold CV"
+), {
+  tstsetups <- grep("^rstanarm\\..*\\.gauss\\.", names(fits), value = TRUE)
+  skip_if_not(length(tstsetups) >= 1)
+  fit <- fits[[tstsetups[1]]]
+
+  # The user-supplied `cvfun` returns the full-data fit for each fold, so no
+  # refit is needed:
+  cvfun_folds <- list()
+  cvfun_user <- function(folds) {
+    cvfun_folds[[length(cvfun_folds) + 1L]] <<- folds
+    rep(list(fit), max(folds))
+  }
+  cvrefbuilder_ks <- integer()
+  cvrefbuilder_user <- function(cvfit) {
+    cvrefbuilder_ks <<- c(cvrefbuilder_ks, cvfit$projpred_k)
+    get_refmodel(cvfit, called_from_cvrefbuilder = TRUE)
+  }
+  refmod <- get_refmodel(fit, cvfun = cvfun_user,
+                         cvrefbuilder = cvrefbuilder_user)
+  expect_identical(refmod$cvfun, cvfun_user)
+  expect_identical(refmod$cvrefbuilder, cvrefbuilder_user)
+
+  folds <- rep_len(seq_len(K_tst), refmod$nobs)
+  cvfits <- run_cvfun(refmod, folds = folds)
+  expect_length(cvfun_folds, 1)
+  expect_identical(cvfun_folds[[1]], folds)
+  expect_identical(attr(cvfits, "folds"), folds)
+  expect_length(cvfits, K_tst)
+
+  cvvs <- cv_varsel(refmod, cv_method = "kfold", K = K_tst, cvfits = cvfits,
+                    nclusters = nclusters_tst,
+                    nclusters_pred = nclusters_pred_tst, nterms_max = 1,
+                    verbose = FALSE, seed = seed_tst)
+  expect_s3_class(cvvs, "vsel")
+  expect_identical(cvrefbuilder_ks, seq_len(K_tst))
+})
+
+test_that(paste(
+  "get_refmodel.stanreg() with only one of `cvfun` and `cvrefbuilder` keeps",
+  "the default of the other, and the default `cvrefbuilder` does not pass a",
+  "user-supplied `cvfun` to the folds"
+), {
+  tstsetups <- grep("^rstanarm\\..*\\.gauss\\.", names(fits), value = TRUE)
+  skip_if_not(length(tstsetups) >= 2)
+  # The second fit stands in for a fold refit:
+  fit_full <- fits[[tstsetups[1]]]
+  fit_fold <- fits[[tstsetups[2]]]
+  sigma_fold <- data.frame(fit_fold)[, "sigma"]
+  refmod_dflt <- get_refmodel(fit_full)
+
+  cvfun_user <- function(folds) stop("Not used.")
+  refmod <- get_refmodel(fit_full, cvfun = cvfun_user)
+  expect_identical(refmod$cvfun, cvfun_user)
+  refmod_fold <- refmod$cvrefbuilder(fit_fold)
+  expect_false(identical(refmod_fold$cvfun, cvfun_user))
+  expect_identical(refmod_fold$dis, sigma_fold)
+
+  cvrefbuilder_user <- function(cvfit) stop("Not used.")
+  refmod <- get_refmodel(fit_full, cvrefbuilder = cvrefbuilder_user)
+  expect_identical(refmod$cvrefbuilder, cvrefbuilder_user)
+  # The default `cvfun` is kept:
+  expect_identical(body(refmod$cvfun), body(refmod_dflt$cvfun))
+})
+
+test_that(paste(
+  "get_refmodel.stanreg() rejects a `cvfun` or `cvrefbuilder` that is not a",
+  "function"
+), {
+  tstsetups <- grep("^rstanarm\\.", names(fits), value = TRUE)
+  skip_if_not(length(tstsetups) >= 1)
+  fit <- fits[[tstsetups[1]]]
+  expect_error(get_refmodel(fit, cvfun = "a"),
+               "^Argument `cvfun` must be a function or `NULL`\\.$")
+  expect_error(get_refmodel(fit, cvrefbuilder = 1),
+               "^Argument `cvrefbuilder` must be a function or `NULL`\\.$")
+})
+
 # predict.refmodel() ------------------------------------------------------
 
 test_that("invalid `type` fails", {
