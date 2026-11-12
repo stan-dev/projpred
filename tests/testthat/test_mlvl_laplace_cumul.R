@@ -470,3 +470,78 @@ test_that("the methods for `projpred_mlvl_cumul` objects work", {
   expect_error(as_glmerMod(fit, data = dat$d_aug),
                "does not support fits of the cumulative family")
 })
+
+test_that(paste(
+  "cv_varsel() with LOO validated search and weight perturbation uses",
+  "mlvl_laplace_cumul() with perturbed weights and gives the clmm() results"
+), {
+  skip_if_not_installed("ordinal")
+  withr::local_seed(8)
+  n <- 60
+  S <- 20
+  d <- data.frame(x = rnorm(n), z = rnorm(n),
+                  g = factor(paste0("g", sample(6, n, replace = TRUE))))
+  b_g <- rnorm(6, sd = 0.8)
+  eta <- 0.8 * d$x + b_g[d$g]
+  d$y <- cut(eta + rlogis(n), c(-Inf, -0.8, 0.2, 1.1, Inf),
+             labels = paste0("c", 1:4), ordered_result = TRUE)
+  # Reference model draws (no MCMC):
+  draws <- list(beta = rbind(rnorm(S, 0.8, 0.1), rnorm(S, 0, 0.1)),
+                bg = matrix(rnorm(6 * S, rep(b_g, S), 0.2), 6, S),
+                thres = cbind(rnorm(S, -0.8, 0.1), rnorm(S, 0.2, 0.1),
+                              rnorm(S, 1.1, 0.1)))
+  # An S x N x C_lat array of the thresholds minus the linear predictor:
+  ref_predfun <- function(fit, newdata = NULL) {
+    if (is.null(newdata)) newdata <- d
+    eta <- cbind(newdata$x, newdata$z) %*% fit$beta +
+      fit$bg[as.integer(factor(newdata$g, levels = levels(d$g))), ,
+             drop = FALSE]
+    arr <- vapply(1:3, function(cc) t(fit$thres[, cc] - t(eta)),
+                  matrix(0, nrow(eta), S))
+    aperm(arr, c(2, 1, 3))
+  }
+  fam <- extend_family(
+    structure(list(family = "cumulative", link = "logit",
+                   cats = paste0("c", 1:4)), class = "family"),
+    augdat_y_unqs = paste0("c", 1:4), augdat_link = augdat_link_cumul,
+    augdat_ilink = augdat_ilink_cumul, augdat_args_link = list(link = "logit"),
+    augdat_args_ilink = list(link = "logit")
+  )
+  ref <- suppressWarnings(init_refmodel(
+    object = draws, data = d, formula = y ~ x + z + (1 | g), family = fam,
+    ref_predfun = ref_predfun
+  ))
+  run_cv <- function() {
+    suppressWarnings(suppressMessages(cv_varsel(
+      ref, cv_method = "LOO", validate_search = TRUE, method = "forward",
+      nloo = 4, ndraws = 4, ndraws_pred = 8, nterms_max = 2, seed = 5,
+      verbose = FALSE
+    )))
+  }
+  mlvl_laplace_cumul_orig <- mlvl_laplace_cumul
+  rec <- list()
+  local_mocked_bindings(mlvl_laplace_cumul = function(formula, data, family,
+                                                      weights = NULL) {
+    fit <- mlvl_laplace_cumul_orig(formula, data, family, weights)
+    rec[[length(rec) + 1L]] <<- list(w = weights, fit = fit)
+    fit
+  })
+  cvvs <- run_cv()
+  expect_identical(cvvs$loo_perturb_alpha, 10)
+  expect_gt(length(rec), 0)
+  # The weights of the augmented rows sum to the sum of the observation
+  # weights; the perturbed searches give non-integer sums:
+  w_sums <- vapply(rec, function(r) sum(r$w), numeric(1))
+  w_pert <- abs(w_sums - round(w_sums)) > 1e-6
+  expect_true(any(w_pert))
+  expect_true(all(vapply(rec[w_pert], function(r) {
+    inherits(r$fit, "projpred_mlvl_cumul") && r$fit$convergence == 0
+  }, logical(1))))
+  # The clmm() fits minimize the same objective:
+  withr::local_options(projpred.mlvl_laplace = FALSE)
+  cvvs_clmm <- run_cv()
+  expect_identical(ranking(cvvs)$fulldata, ranking(cvvs_clmm)$fulldata)
+  expect_identical(ranking(cvvs)$foldwise, ranking(cvvs_clmm)$foldwise)
+  expect_equal(summary(cvvs)$perf_sub$elpd,
+               summary(cvvs_clmm)$perf_sub$elpd, tolerance = 1e-3)
+})
