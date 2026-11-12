@@ -32,6 +32,7 @@ If you read this from a place other than <https://mc-stan.org/projpred/news/inde
 * New function `custom_stat()` defines a user-defined performance statistic for argument `stats` of `summary.vsel()`, `plot.vsel()` and `performances()`, and argument `stat` of `suggest_size()`. (GitHub: #566, #590)
 * Faster `cl_agg()` and conversion of arrays to augmented-rows matrices. For example, LOO CV with validated search for the latent projection with 4000 projected draws is about 3-4 times faster. (GitHub: #600)
 * The parallel `cv_varsel()` with `validate_search = TRUE` sends less data to the workers. (GitHub: #611)
+* For a binomial model with more than one trial per observation, the error message of the latent and the augmented-data projection now suggests de-aggregating the data into Bernoulli trials and, for trials given as observation weights, the traditional projection. (GitHub: #530)
 
 ## Bug fixes and maintenance
 

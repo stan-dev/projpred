@@ -1148,11 +1148,13 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
   fml_extractions <- extract_terms_response(formula)
   response_name <- fml_extractions$response
   if (length(response_name) == 2) {
-    if (family$family != "binomial") {
+    if (family_resp(family) != "binomial") {
       stop("For non-binomial families, a two-column response is not allowed.")
-    } else if (family$for_augdat) {
-      stop("Currently, the augmented-data projection may not be combined with ",
-           "a 2-column response.")
+    } else if (family$for_augdat || family$for_latent) {
+      stop("Currently, the ",
+           if (family$for_augdat) "augmented-data" else "latent",
+           " projection may not be combined with a 2-column response. ",
+           binom_trials_hint(family, "2col"), call. = FALSE)
     }
   } else if (length(response_name) > 2) {
     stop("The response is not allowed to have more than two columns.")
@@ -1238,14 +1240,7 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
            "init_refmodel() needs to return an element `offset` with length ",
            "equal to the number of observations.")
     }
-    if (family$for_augdat && !all(mdat$weights == 1)) {
-      stop("Currently, the augmented-data projection may not be combined with ",
-           "observation weights (other than 1).")
-    }
-    if (family$for_latent && !all(mdat$weights == 1)) {
-      stop("Currently, the latent projection may not be combined with ",
-           "observation weights (other than 1).")
-    }
+    check_wobs_aug_lat(family, mdat$weights)
     return(mdat)
   }
 
@@ -1589,17 +1584,10 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
     }
   }
 
-  # Already performed by extract_model_data(), but repeated here because
-  # get_standard_y() might have altered the observation weights (in case of a
-  # 2-column `y`):
-  if (family$for_augdat && !all(weights == 1)) {
-    stop("Currently, the augmented-data projection may not be combined with ",
-         "observation weights (other than 1).")
-  }
-  if (family$for_latent && !all(weights == 1)) {
-    stop("Currently, the latent projection may not be combined with ",
-         "observation weights (other than 1).")
-  }
+  # Already performed by extract_model_data(). get_standard_y() changes the
+  # observation weights only for a 2-column `y`, which the augmented-data and
+  # the latent projection reject above, so this is only a guard:
+  check_wobs_aug_lat(family, weights)
 
   if (!proper_model && !all(offset == 0)) {
     # Disallow offsets for `datafit`s because the submodel fitting does not take
@@ -1745,4 +1733,47 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
   }
 
   return(refmodel)
+}
+
+# The response family on the original scale (for the latent projection, the
+# family of the extended object is gaussian()).
+family_resp <- function(family) {
+  if (isTRUE(family$for_latent)) family$family_oscale else family$family
+}
+
+# Workarounds for a binomial model with more than one trial per observation,
+# which the augmented-data and the latent projection do not support. For the
+# binomial family, projpred uses the observation weights as the numbers of
+# trials. `what` is "weights" (trials as observation weights) or "2col" (a
+# 2-column response). The 2-column message does not name the traditional
+# projection: with the default `extract_model_data`, init_refmodel() reads only
+# the first column there and uses weights of 1.
+binom_trials_hint <- function(family, what) {
+  deagg <- paste("de-aggregate the data into Bernoulli trials (one row per",
+                 "trial, with a 0/1 response).")
+  if (what == "weights") {
+    trad <- paste0(
+      "The traditional projection",
+      if (isTRUE(family$for_latent)) " (`latent = FALSE`)",
+      " supports more than one trial per observation."
+    )
+    paste("For the binomial family, projpred uses the observation weights as",
+          "the numbers of trials.", trad, "Alternatively,", deagg)
+  } else {
+    paste("As a workaround,", deagg)
+  }
+}
+
+# Stop if the augmented-data or the latent projection gets observation weights
+# other than 1. For the binomial family, the message names the workarounds.
+check_wobs_aug_lat <- function(family, weights) {
+  if (!family$for_augdat && !family$for_latent) return(invisible(TRUE))
+  if (all(weights == 1)) return(invisible(TRUE))
+  prj_type <- if (family$for_augdat) "augmented-data" else "latent"
+  msg <- paste0("Currently, the ", prj_type, " projection may not be ",
+                "combined with observation weights (other than 1).")
+  if (identical(family_resp(family), "binomial")) {
+    msg <- paste(msg, binom_trials_hint(family, "weights"))
+  }
+  stop(msg, call. = FALSE)
 }
