@@ -432,9 +432,22 @@ test_that("project() in parallel gives the same results as sequentially", {
           list(object = refmods[[args_prj_i$tstsetup_ref]]),
           excl_nonargs(args_prj_i)
         )))
-        expect_equal(p_repr, prjs[[tstsetup]], info = paste(backend, tstsetup))
+        info_i <- paste(backend, tstsetup)
         if (tstsetup %in% tstsetups_loop) {
-          expect_gt(n_par, 0L, label = paste(backend, tstsetup))
+          expect_gt(n_par, 0L, label = info_i)
+          # A fitted submodel object from a worker (e.g., of lme4) can hold
+          # class definitions that are not identical to those of this R
+          # session, so compare the projected draws and the other components:
+          draws_of <- function(prj) {
+            suppressWarnings(suppressMessages(as.matrix(prj)))
+          }
+          expect_equal(draws_of(p_repr), draws_of(prjs[[tstsetup]]),
+                       info = info_i)
+          nms_other <- setdiff(names(p_repr), "outdmin")
+          expect_equal(p_repr[nms_other], prjs[[tstsetup]][nms_other],
+                       info = info_i)
+        } else {
+          expect_equal(p_repr, prjs[[tstsetup]], info = info_i)
         }
       }
     })
