@@ -692,6 +692,7 @@ args_fit <- lapply(pkg_nms, function(pkg_nm) {
       # get_refmodel() stops (see the workaround in test_refmodel.R). This
       # exclusion also has the downside that K-fold CV cannot be tested in
       # that case.
+      fam_nms <- setdiff(fam_nms, "binom")
     }
 
     fam_nms <- setNames(nm = fam_nms)
