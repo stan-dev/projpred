@@ -104,8 +104,7 @@ arguments of \code{\link[ordinal:clmm]{ordinal::clmm()}} or of its optimizers (f
 \code{method} or \code{control}), or if global option \code{projpred.mlvl_laplace} is
 \code{FALSE}. After a fit that does not converge, the \code{\link[ordinal:clmm]{ordinal::clmm()}} fit
 is returned as class \code{projpred_mlvl_cumul}, too. For \code{\link[ordinal:clmm]{ordinal::clmm()}}
-with a single
-group-level term \verb{(1 | <group>)}, \pkg{projpred} uses
+with a single group-level term \verb{(1 | <group>)}, \pkg{projpred} uses
 \code{method = "ucminf"} and \code{grad = "forward"} (see
 \code{\link[ordinal:clmm.control]{ordinal::clmm.control()}}). If this fit fails or does not converge,
 \pkg{projpred} refits with the default settings of \code{\link[ordinal:clmm]{ordinal::clmm()}}. An

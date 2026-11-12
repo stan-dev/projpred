@@ -45,6 +45,8 @@ fit_cumul_tst <- function(dat, link = "logit", formula = y ~ x + z + (1 | g),
 # The ordinal::clmm() fit. For the links cloglog and loglog, the default code
 # of clmm() for a single group-level intercept term swaps the two links, so
 # these fits use the other code of clmm() (`useMatrix = TRUE`).
+# fit_cumul_mlvl() also sets `useMatrix = TRUE` for these links. The reference
+# sets it itself, so that it does not depend on the code under test.
 fit_clmm_tst <- function(dat, link = "logit", ...) {
   args <- list(dat, link = link, mlvl_laplace = FALSE, ...)
   if (link %in% c("cloglog", "loglog")) {
@@ -357,8 +359,8 @@ test_that(paste(
          u = rep(0, des$nlev), objective = 1, convergence = 1L,
          message = "mocked", iterations = 0L, n_restart = 0L)
   })
-  # For cloglog, the clmm() fit must be that of the cloglog model:
-  for (link in c("logit", "cloglog")) {
+  # For cloglog and loglog, the clmm() fit must be that of the requested link:
+  for (link in c("logit", "cloglog", "loglog")) {
     dat <- dat_cumul_tst(link, n = 120, n_grp = 6)
     fit <- suppressWarnings(suppressMessages(fit_cumul_tst(dat, link)))
     expect_s3_class(fit, c("projpred_mlvl_cumul", "projpred_mlvl"),
@@ -374,6 +376,8 @@ test_that(paste(
     expect_equal(fit$deviance / 2, obj_clmm_tst(fit_c, dat, link), info = link)
     expect_equal(fit$deviance / 2, -as.numeric(logLik(fit_c)),
                  tolerance = 1e-4, info = link)
+    # subprd_augdat() cannot predict from clmm() fits with the loglog link:
+    if (link == "loglog") next
     nd <- dat$d[1:5, ]
     expect_equal(subprd_augdat(list(fit), nd), subprd_augdat(list(fit_c), nd),
                  tolerance = 1e-8, info = link)

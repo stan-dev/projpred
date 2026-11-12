@@ -108,8 +108,7 @@
 #'     `method` or `control`), or if global option `projpred.mlvl_laplace` is
 #'     `FALSE`. After a fit that does not converge, the [ordinal::clmm()] fit
 #'     is returned as class `projpred_mlvl_cumul`, too. For [ordinal::clmm()]
-#'     with a single
-#'     group-level term `(1 | <group>)`, \pkg{projpred} uses
+#'     with a single group-level term `(1 | <group>)`, \pkg{projpred} uses
 #'     `method = "ucminf"` and `grad = "forward"` (see
 #'     [ordinal::clmm.control()]). If this fit fails or does not converge,
 #'     \pkg{projpred} refits with the default settings of [ordinal::clmm()]. An
