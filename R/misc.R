@@ -542,7 +542,23 @@ eta_for_kmeans <- function(eta, rank_max = floor(min(dim(eta)) / 4),
 get_p_clust <- function(family, eta, mu, mu_offs, dis, nclusters = 10,
                         wobs = rep(1, dim(mu)[1]),
                         wdraws = rep(1, dim(mu)[2]), cl = NULL,
-                        clust_used_forced = NULL) {
+                        clust_used_forced = NULL, as_moments = FALSE) {
+  # With `as_moments = TRUE`, the function returns `NULL` or, for a given `cl`
+  # with one draw per cluster, finite nonzero weights and a
+  # `family$predvar_mix`, a list without the observations x clusters matrices
+  # `mu`, `mu_offs` and `var`. Instead, the list has `draws_offs` (the input
+  # `mu_offs`), the draw `idx` and the factor `ws` of each cluster (cluster
+  # center `ws[j] * mu_offs[, idx[j]]`), and `draws_predvar` (the predictive
+  # variance of cluster j for all observations). The function also returns
+  # the list for non-finite projected draws, where `draws_predvar` can be
+  # wrong (see `mu_var` below). perf_eval_gauss() detects them with the
+  # weighted sums of squares and then uses the full result.
+  # (The names do not start with "mu" or "var", because `$` matches partial
+  # names.)
+  if (as_moments && is.null(cl)) {
+    # Do not run kmeans() twice (here and in the call without `as_moments`):
+    return(NULL)
+  }
   # cluster the draws in the latent space if no clustering provided
   if (is.null(cl)) {
     # Note: A seed is not set here because this function is not exported and has
@@ -578,6 +594,9 @@ get_p_clust <- function(family, eta, mu, mu_offs, dis, nclusters = 10,
   # The weighted mean of `dis^2` and the weighted variance of `mu_offs` within
   # the clusters are needed only if `family$predvar_mix` uses them:
   need_var <- use_mix && !isFALSE(attr(family$predvar_mix, "uses_moments"))
+  if (as_moments && !all(lengths(ind_by_cl) == 1L)) {
+    return(NULL)
+  }
   if (all(lengths(ind_by_cl) == 1L)) {
     # One draw per cluster (thinned draws, or as many clusters as draws). This
     # gives the same results as the cluster loop at the end, for all clusters
@@ -589,6 +608,22 @@ get_p_clust <- function(family, eta, mu, mu_offs, dis, nclusters = 10,
     # (for a finite nonzero weight), so that `ws` is `1 - eps`. Then one
     # product with a scalar gives the centers, without copies of the draws:
     all_draws <- identical(idx, seq_len(ncol(mu)))
+    if (as_moments) {
+      if (!use_mix || anyNA(ws)) {
+        return(NULL)
+      }
+      return(list(
+        moments_only = TRUE, draws_offs = mu_offs, idx = idx, ws = ws,
+        draws_predvar = drop(family$predvar_mix(as.numeric(dis[idx])^2, 0,
+                                                1L)),
+        dis = unname(as.numeric(dis[idx]) * ws),
+        wdraws_prj = wcluster / sum(wcluster),
+        const_wdraws_prj = length(unique(wcluster / sum(wcluster))) == 1,
+        nprjdraws = nclusters,
+        cl = cl, wdraws_orig = wdraws,
+        clust_used = clust_used_forced %||% TRUE
+      ))
+    }
     ws_mult <- if (!anyNA(ws)) 1 - eps else rep(ws, each = nobs)
     scale_draws <- function(m) {
       if (!all_draws) {
