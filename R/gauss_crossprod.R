@@ -91,7 +91,9 @@ gauss_crossprod_design <- function(refmodel, term_strings, regul) {
   n <- nrow(x)
   x_means <- colSums(x * wobs) / sum_w
   x_c <- sweep(x, 2, x_means)
-  g_mat <- crossprod(x_c, x_c * wobs)
+  # The weighted centered model matrix (for cross-products with the draws):
+  x_cw <- x_c * wobs
+  g_mat <- crossprod(x_c, x_cw)
   sd_x <- sqrt(n / (n - 1) * diag(g_mat) / sum_w)
   if (n < 2 || any(!is.finite(sd_x)) || any(sd_x == 0)) {
     return(NULL)
@@ -102,8 +104,8 @@ gauss_crossprod_design <- function(refmodel, term_strings, regul) {
   # For new data, the terms of the model frame keep the data-dependent bases
   # of the training data (attribute "predvars", for example of poly()):
   return(nlist(tt_pred = attr(mf, "terms"), xlev = .getXlevels(tt, mf), keep,
-               x_c, x_means, cols_by_term, g_mat, a_full, lambda_x, wobs,
-               sum_w, contrasts = ctrs))
+               x_c, x_cw, x_means, cols_by_term, g_mat, a_full, lambda_x,
+               wobs, sum_w, contrasts = ctrs))
 }
 
 # The term labels of a term string (see norm_term_labels()).
@@ -111,7 +113,9 @@ labels_gauss <- function(term_string) {
   if (identical(term_string, "1")) {
     return(character(0))
   }
-  return(unique(norm_term_labels(split_plus(term_string))))
+  cached_by_strings("labels_gauss", term_string, function() {
+    unique(norm_term_labels(split_plus(term_string)))
+  })
 }
 
 # The performance evaluation of perf_eval() along the predictor ranking for
@@ -119,11 +123,13 @@ labels_gauss <- function(term_string) {
 # size in `nterms`, the projected dispersion, the cross-entropy and the
 # predictions for the test data, without the draw-wise submodel fits. Returns
 # the list `out_by_size` of perf_eval() (elements `sub_summary`, `ce` and
-# `dis_sub`), or `NULL` if a condition does not hold.
+# `dis_sub`), or `NULL` if a condition does not hold. For a `p_ref` from
+# get_p_clust(as_moments = TRUE), the function `p_ref_full` (no arguments)
+# must return the get_p_clust() result with the draw matrices.
 perf_eval_gauss <- function(search_path, nterms, refmodel, p_ref,
                             refmodel_fulldata, indices_test, newdata_test,
                             offset_test, wobs_test, y_test, y_oscale_test,
-                            divmin_args) {
+                            divmin_args, p_ref_full) {
   regul <- gauss_crossprod_regul(refmodel, divmin_args)
   ranking <- search_path$predictor_ranking
   if (is.null(regul) || length(nterms) == 0 || any(nterms > length(ranking)) ||
@@ -149,12 +155,45 @@ perf_eval_gauss <- function(search_path, nterms, refmodel, p_ref,
   # Quantities of the projected reference draws:
   wobs <- des$wobs
   sum_w <- des$sum_w
-  mu_ref <- p_ref$mu_offs
-  ybar <- colSums(mu_ref * wobs) / sum_w
-  sum_wr2 <- colSums(sweep(mu_ref, 2, ybar)^2 * wobs)
-  sum_wvar <- colSums(p_ref$var * wobs)
-  c_mat <- crossprod(des$x_c, mu_ref * wobs)
-  nprj <- ncol(mu_ref)
+  # Weighted means and sums of squares of the projected draws, in compiled code
+  # without temporary observations x draws matrices. The weights scale the
+  # (small) model matrix, not the draws.
+  if (isTRUE(p_ref$moments_only)) {
+    # One draw per cluster, without the observations x draws matrices of
+    # `p_ref` (see get_p_clust()): the center of cluster j is
+    # `ws[j] * draws_offs[, idx[j]]`, and its predictive variance is
+    # `draws_predvar[j]` for all observations.
+    mom <- wcol_moments_c(p_ref$draws_offs, p_ref$idx - 1L, p_ref$ws, wobs,
+                          sum_w)
+    if (!all(is.finite(mom$ss))) {
+      # A non-finite value in a projected draw (or an overflow) gives a
+      # non-finite sum of squares. The predictive variances can then depend on
+      # the observation, so the full `p_ref` is needed:
+      p_ref <- p_ref_full()
+    }
+  }
+  if (isTRUE(p_ref$moments_only)) {
+    draws <- p_ref$draws_offs
+    idx <- p_ref$idx
+    ws <- p_ref$ws
+    sum_wvar <- p_ref$draws_predvar * sum_w
+    if (identical(idx, seq_len(ncol(draws)))) {
+      c_mat <- crossprod(des$x_cw, draws)
+    } else {
+      # Thinned draws: the product only for the projected draws.
+      c_mat <- crossprod(des$x_cw, draws[, idx, drop = FALSE])
+    }
+    c_mat <- c_mat * rep(ws, each = nrow(c_mat))
+  } else {
+    mu_ref <- unclass(p_ref$mu_offs)
+    mom <- wcol_moments_c(mu_ref, seq_len(ncol(mu_ref)) - 1L,
+                          rep(1, ncol(mu_ref)), wobs, sum_w)
+    sum_wvar <- drop(crossprod(wobs, unclass(p_ref$var)))
+    c_mat <- crossprod(des$x_cw, mu_ref)
+  }
+  ybar <- mom$mean
+  sum_wr2 <- mom$ss
+  nprj <- length(ybar)
 
   # Columns of the submodel of each size (the submodels are nested):
   labels_size <- lapply(seq_along(ranking), function(j) {
