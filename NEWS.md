@@ -51,7 +51,7 @@ If you read this from a place other than <https://mc-stan.org/projpred/news/inde
 * Fixed the error "'gam.fit' is not an exported object from 'namespace:mgcv'" in projections onto additive submodels with mgcv 1.9-5. (GitHub: #598, #602)
 * Fixed the log-likelihood of binomial (logit) and Poisson (log) reference model draws with a large linear predictor, where the inverse link clamped the mean. (GitHub: #614)
 * Removed line breaks from the names of search terms above about 500 characters in `ranking()`, `summary()` and `plot()`. (GitHub: #607)
-* `as.matrix()` and `as_draws_matrix()` of a projection onto a submodel with smooth and group-level terms (GAMM) now stop with an error. Before, they returned only `sigma` (Gaussian family) or no parameters (other families). (GitHub: #131)
+* `as.matrix()` and `as_draws_matrix()` of a projection onto a submodel with smooth and group-level terms (GAMM) now stop with an error. Before, they returned only `sigma` (Gaussian family) or no parameters (other families). (GitHub: #131, #627)
 
 
 # projpred 2.11.0
