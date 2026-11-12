@@ -380,7 +380,8 @@ subprd_gam_direct <- function(fits, newdata) {
 # transcribes these steps of lmer() in lme4 2.0-1 to 2.1-0 (R package lme4,
 # GPL (>= 2); see the file LICENSE). lme4's C++ objects change some vectors of
 # the lFormula() result in place, so each draw gets fresh copies of them. The
-# fits are equal (all.equal()) to those of lmer(). lmer_shared_ok() checks this
+# fits are equal (all.equal()) to those of lmer(), and so are the attributes of
+# their model frames (lmer_frame_attrs()). lmer_shared_ok() checks this
 # once per R session on a small fixed problem, and the test suite checks it on
 # CRAN. If the check fails (for example after a change in lme4) or lme4 is
 # older than 2.0-1, divmin() fits each draw with lmer().
@@ -389,7 +390,10 @@ subprd_gam_direct <- function(fits, newdata) {
 # its attributes and names (used for the response of a shared model frame).
 # In attributes, it also replaces character elements equal to `old` (for
 # example, attribute "varnames.fixed" of the terms of an lme4 model frame,
-# which model.frame(<merMod>, fixed.only = TRUE) uses for predictions).
+# which model.frame(<merMod>, fixed.only = TRUE) uses for predictions). This
+# requires that no other character attribute value (for example a term label or
+# a class name in "dataClasses") equals `old`, which holds for the response
+# names of the draws (".<response>.<draw>").
 rename_sym <- function(x, old, new) {
   if (is.name(x)) {
     if (identical(x, as.name(old))) {
@@ -417,12 +421,12 @@ rename_sym <- function(x, old, new) {
       attr(x, nm) <- at_nm
     }
     if (!is.null(at$names)) {
-      names(x)[names(x) == old] <- new
+      names(x)[names(x) %in% old] <- new
     }
     if (!is.null(at$dimnames)) {
       attr(x, "dimnames") <- lapply(at$dimnames, function(dnms) {
         if (!is.null(dnms)) {
-          dnms[dnms == old] <- new
+          dnms[dnms %in% old] <- new
         }
         dnms
       })
@@ -559,9 +563,23 @@ lmer_shared_check <- function() {
     }))
     same[s] <- isTRUE(all.equal(fit_ref, fit_shared, tolerance = 0)) &&
       identical(lme4::getME(fit_ref, "theta"),
-                lme4::getME(fit_shared, "theta"))
+                lme4::getME(fit_shared, "theta")) &&
+      identical(lmer_frame_attrs(fit_ref), lmer_frame_attrs(fit_shared))
   }
   return(all(same))
+}
+
+# The attributes "terms" and "formula" of the model frame of a merMod fit,
+# without their environments. all.equal() does not compare the attributes of
+# these terms (for example "varnames.fixed", which predictions for new data
+# use).
+lmer_frame_attrs <- function(fit) {
+  out <- list(terms = attr(fit@frame, "terms"),
+              formula = attr(fit@frame, "formula"))
+  lapply(out, function(x) {
+    attr(x, ".Environment") <- NULL
+    x
+  })
 }
 
 # Removes the lines of the captured messages and warnings of a submodel fit

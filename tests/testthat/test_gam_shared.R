@@ -36,6 +36,23 @@ test_that("divmin() gives the same gam() fits with and without sharing", {
                  info = s)
     expect_identical(formula(fits_shared[[s]]),
                      formula(fits_drawwise[[s]]), info = s)
+    # all.equal() does not compare the attributes of terms objects:
+    noenv <- function(x) {
+      attr(x, ".Environment") <- NULL
+      x
+    }
+    info_s <- paste("draw", s)
+    for (el in c("terms", "pterms")) {
+      expect_identical(noenv(fits_shared[[s]][[el]]),
+                       noenv(fits_drawwise[[s]][[el]]),
+                       info = paste(info_s, el))
+    }
+    at_shared <- attributes(fits_shared[[s]]$model)
+    at_drawwise <- attributes(fits_drawwise[[s]]$model)
+    expect_identical(noenv(at_shared$terms), noenv(at_drawwise$terms),
+                     info = info_s)
+    at_shared$terms <- at_drawwise$terms <- NULL
+    expect_identical(at_shared, at_drawwise, info = info_s)
   }
 })
 
