@@ -7,7 +7,7 @@ If you read this from a place other than <https://mc-stan.org/projpred/news/inde
 
 ## Major changes
 
-* Faster forward search and LOO CV with validated search for Gaussian submodels with the identity link and for the latent projection, computed from cross-products of the model matrix. For example, `cv_varsel()` with `validate_search = TRUE` for a Gaussian model with 40 observations and 15 predictor terms is about 8 times faster. (GitHub: #579)
+* Faster forward search and LOO CV with validated search for Gaussian submodels with the identity link and for the latent projection, computed from cross-products of the model matrix. For example, `cv_varsel()` with `validate_search = TRUE` for a Gaussian model with 40 observations and 15 predictor terms is about 8 times faster. (GitHub: #579, #607)
 * Faster repeated forward searches, as in `cv_varsel()` with `validate_search = TRUE`: the results of the term-label and formula code are cached within the R session (R >= 4.2.0). For example, LOO CV with validated search is about 12-18 % faster. (GitHub: #599)
 * Less formula and model-matrix work in the forward search and in the projections: the candidate submodels are selected from precomputed term labels, and the predictions for the training data use the stored submodel model matrices. For example, `varsel()` with forward search for a Gaussian model with 50 observations and 200 predictor terms is about 1.5 times faster. (GitHub: #578)
 * Faster clustering of the reference model draws for a large number of observations: `kmeans()` runs on the coordinates of the draws in their low-dimensional span, which gives the same clusters. For example, `varsel()` with 50 000 observations, 4 000 draws and 20 clusters is about 4.5 times faster. (GitHub: #576)
@@ -49,6 +49,7 @@ If you read this from a place other than <https://mc-stan.org/projpred/news/inde
 * Tests: Leave the options, the random seed and the global environment of the R session unchanged after the tests, also when a test fails, and remove the manual cleanup of the test workspace. (GitHub: #586)
 * Fixed the error "'gam.fit' is not an exported object from 'namespace:mgcv'" in projections onto additive submodels with mgcv 1.9-5. (GitHub: #598, #602)
 * Fixed the log-likelihood of binomial (logit) and Poisson (log) reference model draws with a large linear predictor, where the inverse link clamped the mean. (GitHub: #614)
+* Removed line breaks from the names of search terms above about 500 characters in `ranking()`, `summary()` and `plot()`. (GitHub: #607)
 
 
 # projpred 2.11.0
