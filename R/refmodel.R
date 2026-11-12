@@ -800,8 +800,9 @@ get_refmodel.default <- function(object, family = NULL, ...) {
 
 # With argument `random`, rstanarm::stan_gamm4() stores the model frame as the
 # `data` element of the fit. For an expression in the formula (for example
-# `cbind(y, n - y)`), the model frame has a column for the expression, but not
-# the variables of the expression. Returns the names of these missing variables.
+# `cbind(y, n - y)`), the model frame has a column for the expression, but no
+# column for the variables in the expression. This function returns the names
+# of these variables.
 gamm4_vars_miss <- function(object) {
   data <- object$data
   trms <- attr(data, "terms")
@@ -907,22 +908,21 @@ get_refmodel.stanreg <- function(object, latent = FALSE, dis = NULL,
     formula <- formula.gamm4(object)
     vars_miss <- gamm4_vars_miss(object)
     if (length(vars_miss) > 0) {
-      stop("Because of rstanarm issue #545 (see GitHub), the `data` element ",
-           "of this rstanarm::stan_gamm4() fit (with argument `random`) does ",
-           "not contain the variable(s) ",
+      stop("The `data` element of this rstanarm::stan_gamm4() fit (with ",
+           "argument `random`) lacks the variable(s) ",
            paste0("`", vars_miss, "`", collapse = ", "), " of the model ",
-           "formula. As a workaround, before you call get_refmodel(), set ",
-           "the `data` element of the fit to the data frame that you gave ",
-           "to stan_gamm4(), with only the rows that the fit used (for ",
-           "example, `fit$data <- dat`). K-fold CV with the default `cvfun` ",
-           "still fails because of the same rstanarm issue.")
+           "formula. This is rstanarm issue #545 ",
+           "(https://github.com/stan-dev/rstanarm/issues/545). To work around ",
+           "it, set `fit$data` to the data frame that you gave to ",
+           "stan_gamm4(), for example with `fit$data <- dat`. Use only the ",
+           "rows that the fit used. Then call get_refmodel() again. K-fold CV ",
+           "with the default `cvfun` still fails because of the same issue.")
     }
     if (!is.null(object$glmod) && nrow(data) != NROW(object$y)) {
       stop("The `data` element of this rstanarm::stan_gamm4() fit has ",
            nrow(data), " rows, but the fit has ", NROW(object$y),
-           " observations. Use only the rows that the fit used (the fit ",
-           "leaves out rows with missing values and rows outside of ",
-           "`subset`).")
+           " rows. Use only the rows that the fit used. The fit leaves out ",
+           "rows with missing values and rows outside of `subset`.")
     }
   } else {
     formula <- formula(object)

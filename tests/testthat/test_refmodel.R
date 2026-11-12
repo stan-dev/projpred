@@ -167,14 +167,14 @@ test_that(paste(
   ))
   expect_error(
     get_refmodel(fit_gamm_cbind),
-    paste("rstanarm issue #545.*not contain the variable\\(s\\)",
-          "`y_glm_binom`, `wobs_col` of the model formula")
+    paste("lacks the variable\\(s\\) `y_glm_binom`, `wobs_col` of the model",
+          "formula\\. This is rstanarm issue #545")
   )
   fit_rows <- fit_gamm_cbind
   fit_rows$data <- dat[-1, ]
   expect_error(get_refmodel(fit_rows),
                paste("has", nrow(dat) - 1L, "rows, but the fit has",
-                     nrow(dat), "observations"))
+                     nrow(dat), "rows"))
   fit_gamm_cbind$data <- dat
   refmod_cbind <- get_refmodel(fit_gamm_cbind)
   expect_equal(refmod_cbind$y, dat$y_glm_binom)
