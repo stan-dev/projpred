@@ -1015,31 +1015,35 @@ test_that(paste(
                         projpred_random = rnd, data = d, family = family)
     })
   }
-  # Count the calls of subprd_gamm4_direct() that returned predictions:
+  # Count the calls of predict.gamm4() (the draw-by-draw path of subprd()):
   calls <- new.env()
   calls$n <- 0L
   ns <- asNamespace("projpred")
   suppressMessages(trace(
-    "subprd_gamm4_direct", where = ns, print = FALSE,
-    exit = bquote(if (!is.null(returnValue(NULL))) {
+    "predict.gamm4", where = ns, print = FALSE,
+    tracer = bquote(
       assign("n", get("n", envir = .(calls)) + 1L, envir = .(calls))
-    })
+    )
   ))
-  on.exit(suppressMessages(untrace("subprd_gamm4_direct", where = ns)),
-          add = TRUE)
-  # Compare with predict.gamm4() for each fit (with the same random numbers for
-  # new group levels):
-  expect_drawwise <- function(fits, nd, info) {
-    nd_icpt <- cbind(`(Intercept)` = rep(1, nrow(nd)), nd)
+  on.exit(suppressMessages(untrace("predict.gamm4", where = ns)), add = TRUE)
+  subprd_n_pred <- function(fits, nd) {
     n_bef <- calls$n
     set.seed(5521)
     prd <- subprd(fits, newdata = nd)
+    list(prd = prd, n_pred = calls$n - n_bef)
+  }
+  # Compare with predict.gamm4() for each fit (with the same random numbers for
+  # new group levels). subprd() must predict all draws at once:
+  expect_drawwise <- function(fits, nd, info) {
+    nd_icpt <- cbind(`(Intercept)` = rep(1, nrow(nd)), nd)
+    res <- subprd_n_pred(fits, nd)
+    prd <- res$prd
+    expect_identical(res$n_pred, 0L, info = info)
     set.seed(5521)
     prd_expected <- do.call(cbind, lapply(fits, function(fit) {
       predict(fit, newdata = nd_icpt)
     }))
     expect_equal(prd, prd_expected, tolerance = 1e-12, info = info)
-    expect_identical(calls$n, n_bef + 1L, info = info)
     return(invisible(prd))
   }
   # Independent of the code of predict.gamm4() for the group-level part (only
@@ -1093,9 +1097,9 @@ test_that(paste(
   )
   for (nm in names(fits_other)) {
     fits_nm <- fits_other[[nm]]
-    expect_null(subprd_gamm4_direct(fits_nm, nd_icpt), info = nm)
-    set.seed(5521)
-    prd <- subprd(fits_nm, newdata = nd)
+    res <- subprd_n_pred(fits_nm, nd)
+    prd <- res$prd
+    expect_identical(res$n_pred, length(fits_nm), info = nm)
     set.seed(5521)
     prd_expected <- cbind(predict(fits_nm[[1]], newdata = nd_icpt),
                           predict(fits_nm[[2]], newdata = nd_icpt))
