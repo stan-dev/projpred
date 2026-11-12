@@ -387,6 +387,9 @@ subprd_gam_direct <- function(fits, newdata) {
 
 # Replaces the name `old` by `new` in all language objects of `x`, including
 # its attributes and names (used for the response of a shared model frame).
+# In attributes, it also replaces character elements equal to `old` (for
+# example, attribute "varnames.fixed" of the terms of an lme4 model frame,
+# which model.frame(<merMod>, fixed.only = TRUE) uses for predictions).
 rename_sym <- function(x, old, new) {
   if (is.name(x)) {
     if (identical(x, as.name(old))) {
@@ -407,7 +410,11 @@ rename_sym <- function(x, old, new) {
   if (!is.null(at)) {
     for (nm in setdiff(names(at), c("names", "dim", "dimnames", "row.names",
                                     "class"))) {
-      attr(x, nm) <- rename_sym(at[[nm]], old, new)
+      at_nm <- rename_sym(at[[nm]], old, new)
+      if (is.character(at_nm)) {
+        at_nm[at_nm %in% old] <- new
+      }
+      attr(x, nm) <- at_nm
     }
     if (!is.null(at$names)) {
       names(x)[names(x) == old] <- new

@@ -74,6 +74,33 @@ test_that(paste(
   }
 })
 
+test_that(paste(
+  "lmer() fits with and without sharing give the same predictions for new",
+  "data"
+), {
+  fits_shared <- divmin_ls(TRUE)
+  fits_drawwise <- divmin_ls(FALSE)
+  idx_new <- seq_len(6)
+  dat_new <- data.frame(x1 = cos(idx_new), x2 = sin(2 * idx_new),
+                        f = factor(c("a", "b", "c", "a", "b", "c")),
+                        g = factor(c("g1", "g2", "g3", "g_new", "g5", "g6")),
+                        h = factor(c("h0", "h1", "h_new", "h3", "h4", "h0")))
+  for (s in seq_len(n_draws_ls)) {
+    trms_shared <- terms(fits_shared[[s]]@frame)
+    trms_drawwise <- terms(fits_drawwise[[s]]@frame)
+    expect_identical(attr(trms_shared, "varnames.fixed"),
+                     attr(trms_drawwise, "varnames.fixed"), info = paste("draw", s))
+    expect_identical(names(model.frame(fits_shared[[s]], fixed.only = TRUE)),
+                     names(model.frame(fits_drawwise[[s]], fixed.only = TRUE)),
+                     info = paste("draw", s))
+    expect_equal(
+      predict(fits_shared[[s]], newdata = dat_new, allow.new.levels = TRUE),
+      predict(fits_drawwise[[s]], newdata = dat_new, allow.new.levels = TRUE),
+      tolerance = 0, info = paste("draw", s)
+    )
+  }
+})
+
 test_that("lmer_shared_callback() returns `NULL` for other cases", {
   fmls <- validate_response_formula(fml_ls)
   dot_args <- list(data = dat_ls, family = extend_family(gaussian()),
