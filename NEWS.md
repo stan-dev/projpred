@@ -49,8 +49,8 @@ If you read this from a place other than <https://mc-stan.org/projpred/news/inde
 * Tests: Leave the options, the random seed and the global environment of the R session unchanged after the tests, also when a test fails, and remove the manual cleanup of the test workspace. (GitHub: #586)
 * Fixed the error "'gam.fit' is not an exported object from 'namespace:mgcv'" in projections onto additive submodels with mgcv 1.9-5. (GitHub: #598, #602)
 * Fixed the log-likelihood of binomial (logit) and Poisson (log) reference model draws with a large linear predictor, where the inverse link clamped the mean. (GitHub: #614)
-* The projection now drops the linear term from a submodel with a smooth term of the same variable (such as `x` and `s(x)`), and `project()` gives a message. The coefficient of such a linear term is not identifiable. (GitHub: #150)
-* The reference model formula of an **rstanarm** GAMM no longer has extra linear terms for the variables of its smooth terms, as in an **rstanarm** GAM. The search candidates do not change. (GitHub: #384)
+* The projection now drops the linear term from a submodel with a smooth term of the same variable (such as `x` and `s(x)`), and `project()` gives a message. The coefficient of such a linear term is not identifiable. (GitHub: #150, #626)
+* The reference model formula of an **rstanarm** GAMM no longer has extra linear terms for the variables of its smooth terms, as in an **rstanarm** GAM. The search candidates do not change. (GitHub: #384, #626)
 
 
 # projpred 2.11.0
