@@ -119,8 +119,8 @@ parse_group_terms <- function(group_terms) {
   has_call <- sapply(strsplit(group_terms, "\\|"), function(grp_trm_split) {
     if (length(grp_trm_split) != 2) {
       stop("projpred does not support group terms with more than one `|` ",
-           "character, except for `(<terms> |<ID>| <group>)` in the ",
-           "reference model formula.")
+           "character (except for `(<terms> |<ID>| <group>)` in the ",
+           "reference model formula) or a `|` inside a function call.")
     }
     grepl("\\(", grp_trm_split[2])
   })
@@ -141,6 +141,10 @@ parse_group_terms <- function(group_terms) {
 rm_group_ids <- function(formula, verbose = TRUE) {
   ids <- character()
   fctrs <- character()
+  # As in the term labels of terms(): one string, with backticks:
+  dprs <- function(x) {
+    paste(deparse(x, width.cutoff = 500L, backtick = TRUE), collapse = " ")
+  }
   rm_id <- function(e) {
     if (!is.call(e)) {
       return(e)
@@ -148,15 +152,15 @@ rm_group_ids <- function(formula, verbose = TRUE) {
     if (identical(e[[1]], as.name("|")) && length(e) == 3 &&
         is.call(e[[2]]) && identical(e[[2]][[1]], as.name("|")) &&
         length(e[[2]]) == 3) {
-      ids <<- c(ids, deparse(e[[2]][[3]]))
-      fctrs <<- c(fctrs, deparse(e[[3]]))
+      ids <<- c(ids, dprs(e[[2]][[3]]))
+      fctrs <<- c(fctrs, dprs(e[[3]]))
       e[[2]] <- e[[2]][[2]]
       return(e)
     }
     if (identical(e[[1]], as.name("|")) && length(e) == 3) {
       # A group term without an ID:
       ids <<- c(ids, "")
-      fctrs <<- c(fctrs, deparse(e[[3]]))
+      fctrs <<- c(fctrs, dprs(e[[3]]))
       return(e)
     }
     if (as.character(e[[1]])[1] %in% c("+", "-", "(")) {

@@ -62,6 +62,16 @@ test_that("rm_group_ids() removes the correlation IDs of group terms", {
   expect_silent(out_or <- rm_group_ids(fml_or))
   expect_identical(out_or$formula, fml_or)
 
+  # A non-syntactic grouping factor name: the same text as in the term labels
+  # of terms(), so that grp_fctrs_multi() and rm_group_ids() agree:
+  out_bt <- rm_group_ids(y ~ (1 |p| `my g`) + (0 + x |p| `my g`),
+                         verbose = FALSE)
+  expect_identical(out_bt$grp_fctrs_shared_id, "`my g`")
+  expect_identical(
+    grp_fctrs_multi(attr(terms(out_bt$formula), "term.labels")),
+    "`my g`"
+  )
+
   # Terms of one grouping factor with other IDs or without an ID:
   fml_mix <- y ~ (1 |p| g) + (0 + x | g) + (1 |p| h) + (0 + x |q| h)
   expect_length(rm_group_ids(fml_mix, verbose = FALSE)$grp_fctrs_shared_id, 0)
