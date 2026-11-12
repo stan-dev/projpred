@@ -409,3 +409,24 @@ test_that(paste(
   expect_true(check_wobs_aug_lat(fam_lat_binom, c(1, 1)))
   expect_true(check_wobs_aug_lat(fam_trad_binom, wobs))
 })
+
+test_that(paste(
+  "extend_family() stops for the brms families with `trials()` other than",
+  "binomial(), in the latent and in the traditional projection"
+), {
+  for (fam_nm in c("beta_binomial", "zero_inflated_binomial",
+                   "zero_inflated_beta_binomial")) {
+    # A family object with the brms family name is sufficient, because the
+    # check reads only `family$family`:
+    fam <- binomial()
+    fam$family <- fam_nm
+    for (latent in c(FALSE, TRUE)) {
+      expect_error(
+        extend_family(fam, latent = latent),
+        paste0("Currently, projpred does not support the brms family `",
+               fam_nm, "()`."),
+        fixed = TRUE, info = paste(fam_nm, "latent:", latent)
+      )
+    }
+  }
+})
