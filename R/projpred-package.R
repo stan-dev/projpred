@@ -145,8 +145,8 @@
 #' computational overhead of a parallelization. By default, the projection
 #' parallelization is turned off, which can also be achieved by supplying
 #' `Inf` (or `NULL`) to option `projpred.parallel_proj_trigger`. The
-#' projection parallelization only affects submodels with multilevel or
-#' additive terms: for other submodels, \pkg{projpred} usually fits all
+#' projection parallelization is mainly useful for submodels with multilevel
+#' or additive terms: for most other submodels, \pkg{projpred} fits all
 #' projected draws in a single call, which does not run in parallel. It is
 #' useful for [varsel()], [project()], and [cv_varsel()] without fold-wise
 #' computations; with the CV parallelization, the workers do not run the

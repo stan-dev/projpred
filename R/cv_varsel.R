@@ -155,9 +155,8 @@
 #'   runs sequentially, with a warning. Each CV fold has its own random
 #'   number stream (also with `parallel = FALSE`), so for a given seed, the
 #'   results depend neither on argument `parallel` nor on the number of
-#'   workers. For GLMs, this CV parallelization should work
-#'   reliably, but for other models (such as GLMMs), it may lead to
-#'   excessive memory usage
+#'   workers. For GLMs, this CV parallelization should work reliably, but for
+#'   other models (such as GLMMs), it may lead to excessive memory usage
 #'   which in turn may crash the R session (on Unix systems, setting an
 #'   appropriate memory limit via [unix::rlimit_as()] may avoid crashing the
 #'   whole machine). However, the problem of excessive memory usage is less

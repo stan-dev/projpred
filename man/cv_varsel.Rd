@@ -370,9 +370,8 @@ parallelization uses the workers of the current plan of the
 runs sequentially, with a warning. Each CV fold has its own random
 number stream (also with \code{parallel = FALSE}), so for a given seed, the
 results depend neither on argument \code{parallel} nor on the number of
-workers. For GLMs, this CV parallelization should work
-reliably, but for other models (such as GLMMs), it may lead to
-excessive memory usage
+workers. For GLMs, this CV parallelization should work reliably, but for
+other models (such as GLMMs), it may lead to excessive memory usage
 which in turn may crash the R session (on Unix systems, setting an
 appropriate memory limit via \code{\link[unix:rlimit_as]{unix::rlimit_as()}} may avoid crashing the
 whole machine). However, the problem of excessive memory usage is less

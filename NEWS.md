@@ -25,7 +25,7 @@ If you read this from a place other than <https://mc-stan.org/projpred/news/inde
 * Faster projections onto additive submodels without group-level terms (`mgcv::gam()`): all projected draws share one setup of `mgcv::gam()`, and one linear-predictor matrix gives the predictions of all draws. For example, `varsel()` for an additive model is about 1.5 times faster. (GitHub: #584)
 * Faster reweighting of the clusters of the reference model draws in `cv_varsel()` with `validate_search = TRUE`. For example, `cv_varsel()` with `validate_search = TRUE` and 400 clusters is about 2 times faster for a Gaussian model with 382 observations. (GitHub: #601)
 * New argument `loo_perturb_alpha` of `cv_varsel()`. With LOO, `validate_search = TRUE` and `refit_prj = TRUE`, the fold-wise searches use observation weight perturbation, so the LOO estimates jump less between submodel sizes. This changes the default results. (GitHub: #603, #620)
-* The parallelization now uses the **future** package instead of **foreach**. Set up the workers with, e.g., `future::plan(future::multisession, workers = 4)`; without workers, a parallel run gives a warning and runs sequentially. (GitHub: #NNN)
+* The parallelization now uses the **future** package instead of **foreach**. Set up the workers with, e.g., `future::plan(future::multisession, workers = 4)`; without workers, a parallel run gives a warning and runs sequentially. A **foreach** backend (e.g., from `doParallel::registerDoParallel()`) has no effect anymore. (GitHub: #NNN)
 * Global options `projpred.foreach_errorhandling` and `projpred.foreach_verbose` are removed. (GitHub: #NNN)
 * In `cv_varsel()`, each CV fold now has its own random number stream, so for a given seed, the results depend neither on `parallel` nor on the number of workers. Results of folds that draw random numbers (e.g., in K-fold CV) differ from earlier versions. (GitHub: #NNN)
 
@@ -35,7 +35,7 @@ If you read this from a place other than <https://mc-stan.org/projpred/news/inde
 * New function `custom_stat()` defines a user-defined performance statistic for argument `stats` of `summary.vsel()`, `plot.vsel()` and `performances()`, and argument `stat` of `suggest_size()`. (GitHub: #566, #590)
 * Faster `cl_agg()` and conversion of arrays to augmented-rows matrices. For example, LOO CV with validated search for the latent projection with 4000 projected draws is about 3-4 times faster. (GitHub: #600)
 * The parallel `cv_varsel()` with `validate_search = TRUE` sends less data to the workers. (GitHub: #611)
-* Faster parallel projections (global option `projpred.parallel_proj_trigger`) with doFuture: doFuture skips its search for globals. For example, `varsel()` for a Bernoulli multilevel model with 4 to 16 workers is about 2 to 3 times faster. (GitHub: #612)
+* Faster parallel projections (global option `projpred.parallel_proj_trigger`): the workers get only the objects that the projection of a draw uses. (GitHub: #612, #NNN)
 * The parallel LOO and K-fold CV of `cv_varsel()` send the reference models without their fits to the workers, so the workers do not load **brms** or **rstanarm** and need less memory. (GitHub: #NNN)
 * The parallel workers now get the objects of the global environment that functions of a custom reference model use (found from the code, with the **globals** package). Global option `projpred.export_to_workers` can name more objects; `FALSE` turns this off. (GitHub: #NNN)
 

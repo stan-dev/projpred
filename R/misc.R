@@ -1320,8 +1320,8 @@ par_state <- new.env(parent = emptyenv())
 # warning comes only once per R session (for the loops over the projected
 # draws, which run many times).
 par_backend <- function(warn_once = FALSE) {
-  if (requireNamespace("future", quietly = TRUE) &&
-      !inherits(future::plan(), "sequential")) {
+  has_future <- requireNamespace("future", quietly = TRUE)
+  if (has_future && !inherits(future::plan(), "sequential")) {
     return("future")
   }
   if (!warn_once || !isTRUE(par_state$warned)) {
@@ -1330,7 +1330,9 @@ par_backend <- function(warn_once = FALSE) {
     }
     warning(
       "A parallel run was requested, but there are no parallel workers, so ",
-      "running sequentially. Set up workers with, e.g., ",
+      "running sequentially. ",
+      if (!has_future) "Install the future package. ",
+      "Set up workers with, e.g., ",
       "`future::plan(future::multisession, workers = 4)` (see section ",
       "\"Parallelization\" in `?projpred`)."
     )
@@ -1338,9 +1340,10 @@ par_backend <- function(warn_once = FALSE) {
   return(NULL)
 }
 
-# Applies `.FUN` to the elements of `.X` on the workers of `.backend` (see
-# par_backend()) and returns the results in a list, as lapply(). The arguments
-# in `...` go to each call of `.FUN`.
+# Applies `.FUN` to the elements of `.X` on the parallel workers and returns
+# the results in a list, as lapply() (but without the names of `.X`). The
+# arguments in `...` go to each call of `.FUN`. `.backend` is the value of
+# par_backend(): `NULL` if there are no workers.
 #
 # The elements are split into consecutive chunks (by default one per worker;
 # global option `projpred.parallel_chunks_per_worker`), and each chunk is one
@@ -1352,9 +1355,8 @@ par_backend <- function(warn_once = FALSE) {
 # With `.rng = TRUE`, each element gets its own L'Ecuyer-CMRG stream, made
 # here from the RNG of this R session. So the results depend neither on the
 # plan of the future package nor on the number of workers or chunks. Without
-# a backend
-# (`.backend = NULL`), the elements run as one task in this R session,
-# which gives the same results as the workers.
+# a backend (`.backend = NULL`), the elements run as one task in this R
+# session, which gives the same results as the workers.
 #
 # The workers get the global options of projpred, except those of the
 # parallelization (so the workers run their loops sequentially), the global
@@ -1396,7 +1398,7 @@ par_lapply <- function(.X, .FUN, ..., .backend, .rng = FALSE,
   }
   done <- FALSE
   futs <- list()
-  on.exit(if (!done) future::cancel(futs))
+  on.exit(if (!done) future::cancel(futs), add = TRUE)
   # The globals are given by name, so future does not search for them (and
   # the futures do not hold the frames of the calling functions). The workers
   # load projpred when they get par_chunk(). It goes inside `task`: as a
@@ -1582,9 +1584,9 @@ call_with_args <- function(.args, .fun, ...) {
 }
 
 # Stops if a worker of the future plan does not load the projpred of this R
-# session (same version, same path). The functions of the tasks have the projpred
-# namespace as an ancestor of their environments, so a worker uses the
-# functions of the projpred that it loads. By default, this is the installed
+# session (same version, same path). The functions of the tasks have the
+# projpred namespace as an ancestor of their environments, so a worker uses
+# the functions of the projpred that it loads. By default, this is the installed
 # projpred, also if this R session uses pkgload::load_all(). One task does the
 # check, on one worker, and only if the workers or the projpred of this R
 # session changed since the last check.

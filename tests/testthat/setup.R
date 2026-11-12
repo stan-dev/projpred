@@ -84,32 +84,19 @@ if (run_snaps && !requireNamespace("vdiffr", quietly = TRUE)) {
 if (run_snaps) {
   testthat_ed_max2 <- edition_get() <= 2
 }
-# Run tests for the parallelization of the projection?:
+# Run the tests that need parallel workers (see test_parallel.R)?:
 # Notes:
-#   * Throughout the tests, the terms "parallelization" and "parallel" refer to
-#   the parallelization of the projection ("projection parallelization"), not
-#   the parallelization of the CV ("CV parallelization").
-#   * We don't run the parallel tests on CRAN or continuous integration (CI)
-#   systems because parallelization might require special care there.
-#   * Currently, parallelization on Windows takes longer than running
-#   sequentially. This makes parallelization impractical on Windows, so we
-#   don't run the tests on Windows by default.
-#   * Currently, parallelization only works reliably for GLMs (because of
-#   memory issues for more complex models like GLMMs, GAMs and GAMMs).
-#   Therefore, we will only test GLMs here.
+#   * We don't run these tests on CRAN or continuous integration (CI) systems
+#   because parallelization might require special care there.
+#   * The parallelization is not tested on Windows.
 run_prll <- identical(Sys.getenv("NOT_CRAN"), "true") &&
   !identical(toupper(Sys.getenv("CI")), "TRUE") &&
   !identical(.Platform$OS.type, "windows")
 if (run_prll) {
-  ncores <- parallel::detectCores(logical = FALSE)
-  if (ncores == 1) {
+  if (parallel::detectCores(logical = FALSE) == 1) {
     warning("Deactivating the parallel tests because only a single worker ",
             "could be detected.")
     run_prll <- FALSE
-  }
-  # Do not run on more than 2 cores if requested so:
-  if (identical(Sys.getenv("_R_CHECK_LIMIT_CORES_"), "TRUE")) {
-    ncores <- min(ncores, 2L)
   }
 }
 # Run all test scripts (following this setup script) in a completely random RNG

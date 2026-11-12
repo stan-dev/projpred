@@ -393,16 +393,49 @@ test_that("project() in parallel gives the same results as sequentially", {
   skip_if(length(par_backends_tst) == 0)
   withr::local_options(list(projpred.parallel_proj_trigger = 0L))
   tstsetups <- grep("\\.glm\\.", names(prjs), value = TRUE)
+  # Most GLM projections fit all draws in one call, so add a multilevel
+  # submodel (loop in divmin()) and an augmented-data projection (loop in
+  # divmin_augdat()):
+  first_prj <- function(cond) {
+    names(Filter(cond, args_prj[names(prjs)]))[1]
+  }
+  tstsetups_loop <- c(
+    first_prj(function(args_prj_i) {
+      args_prj_i$mod_nm == "glmm" && args_prj_i$prj_nm == "trad" &&
+        any(grepl("|", args_prj_i$predictor_terms, fixed = TRUE))
+    }),
+    first_prj(function(args_prj_i) {
+      args_prj_i$prj_nm == "augdat" && args_prj_i$fam_nm == "brnll"
+    })
+  )
+  tstsetups_loop <- tstsetups_loop[!is.na(tstsetups_loop)]
+  tstsetups <- union(tstsetups, tstsetups_loop)
+  # Counts the calls of par_lapply() with workers:
+  n_par <- 0L
+  par_lapply_orig <- get("par_lapply", envir = asNamespace("projpred"))
+  testthat::local_mocked_bindings(
+    par_lapply = function(..., .backend) {
+      if (!is.null(.backend)) n_par <<- n_par + 1L
+      par_lapply_orig(..., .backend = .backend)
+    },
+    .package = "projpred"
+  )
   for (backend in par_backends_tst) {
     local({
       local_par_workers(backend)
       for (tstsetup in tstsetups) {
         args_prj_i <- args_prj[[tstsetup]]
-        p_repr <- do.call(project, c(
+        n_par <<- 0L
+        # Use suppressWarnings() because of convergence warnings of the
+        # multilevel submodel:
+        p_repr <- suppressWarnings(do.call(project, c(
           list(object = refmods[[args_prj_i$tstsetup_ref]]),
           excl_nonargs(args_prj_i)
-        ))
+        )))
         expect_equal(p_repr, prjs[[tstsetup]], info = paste(backend, tstsetup))
+        if (tstsetup %in% tstsetups_loop) {
+          expect_gt(n_par, 0L, label = paste(backend, tstsetup))
+        }
       }
     })
   }

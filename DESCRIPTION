@@ -80,7 +80,7 @@ Suggests:
     bayesplot (>= 1.5.0),
     posterior,
     future (>= 1.49.0),
-    future.mirai,
+    future.mirai (>= 0.10.1),
     globals,
     progressr,
     codetools
