@@ -113,6 +113,7 @@ the corresponding test set of each CV fold. A special method is
 <span>  K <span class="op">=</span> <span class="va">object</span><span class="op">$</span><span class="va">K</span> <span class="op"><a href="https://rdrr.io/r/base/Control.html" class="external-link">%||%</a></span> <span class="kw">if</span> <span class="op">(</span><span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/class.html" class="external-link">inherits</a></span><span class="op">(</span><span class="va">object</span>, <span class="st">"datafit"</span><span class="op">)</span><span class="op">)</span> <span class="fl">5</span> <span class="kw">else</span> <span class="fl">10</span>,</span>
 <span>  cvfits <span class="op">=</span> <span class="va">object</span><span class="op">$</span><span class="va">cvfits</span>,</span>
 <span>  validate_search <span class="op">=</span> <span class="va">object</span><span class="op">$</span><span class="va">validate_search</span> <span class="op"><a href="https://rdrr.io/r/base/Control.html" class="external-link">%||%</a></span> <span class="cn">TRUE</span>,</span>
+<span>  loo_perturb_alpha <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  <span class="va">...</span></span>
 <span><span class="op">)</span></span>
 <span></span>
@@ -137,6 +138,7 @@ the corresponding test set of each CV fold. A special method is
 <span>  nlambda <span class="op">=</span> <span class="fl">150</span>,</span>
 <span>  thresh <span class="op">=</span> <span class="fl">1e-06</span>,</span>
 <span>  validate_search <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  loo_perturb_alpha <span class="op">=</span> <span class="fl">10</span>,</span>
 <span>  seed <span class="op">=</span> <span class="cn">NA</span>,</span>
 <span>  search_terms <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  search_out <span class="op">=</span> <span class="cn">NULL</span>,</span>
@@ -209,6 +211,18 @@ the computation is faster, but the predictive performance estimates
 of the selected submodels are optimistically biased. However, these fast
 biased estimates can be useful to obtain initial information on the
 usefulness of projection predictive variable selection.</p></dd>
+
+
+<dt id="arg-loo-perturb-alpha">loo_perturb_alpha<a class="anchor" aria-label="anchor" href="#arg-loo-perturb-alpha"></a></dt>
+<dd><p>A single positive number. It sets the concentration
+\(\alpha\) of the weight perturbation in the fold-wise searches of LOO CV
+(see section "Note"). With a smaller value, the weights have a larger
+variation. <code>Inf</code> turns the weight perturbation off. The weights apply only
+with <code>cv_method = "LOO"</code>, <code>validate_search = TRUE</code> and <code>refit_prj = TRUE</code>,
+and not to fold-wise predictor rankings that <code>cv_varsel.vsel()</code> re-uses.
+For <code>cv_varsel.vsel()</code>, <code>NULL</code> (the default) uses the value stored in
+<code>object</code> if this value is finite or if <code>cv_varsel.vsel()</code> re-uses the
+fold-wise predictor rankings, and 10 otherwise.</p></dd>
 
 
 <dt id="arg-method">method<a class="anchor" aria-label="anchor" href="#arg-method"></a></dt>
@@ -331,8 +345,9 @@ results can be obtained again if needed. Passed to argument <code>seed</code> of
 clustering the reference model's posterior draws (if <code>!is.null(nclusters)</code>
 or <code>!is.null(nclusters_pred)</code>), for subsampling PSIS-LOO CV folds (if
 <code>nloo</code> is smaller than the number of observations), for sampling the folds
-in \(K\)-fold CV, and for drawing new group-level effects when predicting
-from a multilevel submodel (however, not yet in case of a GAMM).</p></dd>
+in \(K\)-fold CV, for the weights of the weight perturbation (see section
+"Note"), and for drawing new group-level effects when predicting from a
+multilevel submodel (however, not yet in case of a GAMM).</p></dd>
 
 
 <dt id="arg-search-terms">search_terms<a class="anchor" aria-label="anchor" href="#arg-search-terms"></a></dt>
@@ -422,6 +437,26 @@ moderate, the fast PSIS-LOO CV along the full-data search path is likely to
 have optimistic bias in the middle of the search path. This result can be
 used to guide further actions and the optimistic bias can be greatly
 reduced by using <code>validate_search = TRUE</code>.</p>
+<p>With <code>cv_method = "LOO"</code> and <code>validate_search = TRUE</code>, the search runs
+again in each LOO fold. With <code>refit_prj = TRUE</code> (the default), the search
+of each LOO fold uses weight perturbation with Bayesian bootstrap
+observation weights. This makes the LOO estimates jump less between
+neighboring submodel sizes, which reduces their variance. Furthermore, the
+standard errors then include more of the variation that comes from the
+selection. For fold \(i\), the weights are \(n\) times a
+Dirichlet(\(\alpha\), ..., \(\alpha\)) draw, with the weight of
+observation \(i\) set to 0. A first-order approximation shifts the draws
+of the reference model toward the posterior under these weights. The search
+paths then vary more between the folds, which makes the performance
+estimates of the submodel sizes more stable. The actual performance
+evaluation of each fold does not use the weights. It projects onto the
+submodels of the fold-wise search path, so the weights change only which
+submodels it evaluates. With <code>refit_prj = FALSE</code>, the performance
+evaluation re-uses the submodel fits of the search, so the search does not
+use the weights either. Argument <code>loo_perturb_alpha</code> sets \(\alpha\)
+(default 10). The <code>vsel</code> object stores the value that the fold-wise
+searches used (<code>Inf</code> if they did not use weights). <code>cv_varsel.vsel()</code>
+re-uses the fold-wise predictor rankings only for the same value.</p>
 <p>PSIS uses the Pareto-\(\hat{k}\) diagnostic to assess the reliability of
 PSIS-LOO CV. Global option <code>projpred.warn_psis</code> (default <code>TRUE</code>) controls
 whether the Pareto-\(\hat{k}\) diagnostics may result in warnings. See

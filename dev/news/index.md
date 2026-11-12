@@ -10,7 +10,9 @@
   [`cv_varsel()`](https://mc-stan.org/projpred/dev/reference/cv_varsel.md)
   with `validate_search = TRUE` for a Gaussian model with 40
   observations and 15 predictor terms is about 8 times faster. (GitHub:
-  [\#579](https://github.com/stan-dev/projpred/issues/579))
+  [\#579](https://github.com/stan-dev/projpred/issues/579),
+  [\#607](https://github.com/stan-dev/projpred/issues/607),
+  [\#610](https://github.com/stan-dev/projpred/issues/610))
 - Faster repeated forward searches, as in
   [`cv_varsel()`](https://mc-stan.org/projpred/dev/reference/cv_varsel.md)
   with `validate_search = TRUE`: the results of the term-label and
@@ -85,14 +87,13 @@
   [\#608](https://github.com/stan-dev/projpred/issues/608))
 - Faster projections onto categorical submodels without group-level
   terms
-  ([`brms::categorical()`](https://paulbuerkner.com/brms/reference/brmsfamily.html)):
-  one C++ call fits all projected draws, with results equal to those of
-  [`nnet::multinom()`](https://rdrr.io/pkg/nnet/man/multinom.html) up to
-  its convergence tolerance. For example,
+  ([`brms::categorical()`](https://paulbuerkner.com/brms/reference/brmsfamily.html)).
+  For example,
   [`cv_varsel()`](https://mc-stan.org/projpred/dev/reference/cv_varsel.md)
-  with `validate_search = TRUE` is about 8 times faster for a model with
-  4 categories. (GitHub:
-  [\#583](https://github.com/stan-dev/projpred/issues/583))
+  with `validate_search = TRUE` is about 11 times faster for a model
+  with 4 categories. (GitHub:
+  [\#583](https://github.com/stan-dev/projpred/issues/583),
+  [\#609](https://github.com/stan-dev/projpred/issues/609))
 - Faster projections onto binomial and Poisson GLM submodels (and
   Gaussian GLM submodels with a non-identity link): the IRLS fits
   compute their pseudo-observations in C++, and one C++ call fits all
@@ -145,6 +146,14 @@
   with `validate_search = TRUE` and 400 clusters is about 2 times faster
   for a Gaussian model with 382 observations. (GitHub:
   [\#601](https://github.com/stan-dev/projpred/issues/601))
+- New argument `loo_perturb_alpha` of
+  [`cv_varsel()`](https://mc-stan.org/projpred/dev/reference/cv_varsel.md).
+  With LOO, `validate_search = TRUE` and `refit_prj = TRUE`, the
+  fold-wise searches use observation weight perturbation, so the LOO
+  estimates jump less between submodel sizes. This changes the default
+  results. (GitHub:
+  [\#603](https://github.com/stan-dev/projpred/issues/603),
+  [\#620](https://github.com/stan-dev/projpred/issues/620))
 
 ### Minor changes
 
@@ -255,6 +264,12 @@
   reference model draws with a large linear predictor, where the inverse
   link clamped the mean. (GitHub:
   [\#614](https://github.com/stan-dev/projpred/issues/614))
+- Removed line breaks from the names of search terms above about 500
+  characters in
+  [`ranking()`](https://mc-stan.org/projpred/dev/reference/ranking.md),
+  [`summary()`](https://rdrr.io/r/base/summary.html) and
+  [`plot()`](https://rdrr.io/r/graphics/plot.default.html). (GitHub:
+  [\#607](https://github.com/stan-dev/projpred/issues/607))
 
 ## projpred 2.11.0
 
