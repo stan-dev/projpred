@@ -180,6 +180,27 @@ test_that(paste(
   expect_identical(rp_o$dis, rp$dis)
 })
 
+# Evaluates `expr` and counts the calls of search_forward_gauss() and
+# perf_eval_gauss() that returned a result (not `NULL`).
+with_gauss_counts <- function(expr) {
+  calls <- new.env()
+  calls$search <- 0L
+  calls$eval <- 0L
+  ns <- asNamespace("projpred")
+  fns <- c(search = "search_forward_gauss", eval = "perf_eval_gauss")
+  withr::defer(suppressMessages(for (fn in fns) untrace(fn, where = ns)))
+  for (nm in names(fns)) {
+    suppressMessages(trace(
+      fns[[nm]], where = ns, print = FALSE,
+      exit = bquote(if (!is.null(returnValue(NULL))) {
+        assign(.(nm), get(.(nm), envir = .(calls)) + 1L, envir = .(calls))
+      })
+    ))
+  }
+  value <- expr
+  return(list(value = value, search = calls$search, eval = calls$eval))
+}
+
 # Evaluates `expr` and counts the get_p_clust() calls that added `draws_shift`
 # to the cluster means (and did not shift the draws).
 with_shift_count <- function(expr) {
@@ -265,6 +286,13 @@ test_that(paste(
   ref <- get_p_clust(refm$family, refm$eta + shift, refm$mu + shift,
                      refm$mu_offs + shift, refm$dis, nclusters = 4)
   expect_equal(res$value, ref, tolerance = 1e-12)
+  # `as_moments = TRUE` returns the moments for one draw per cluster, but not
+  # with `draws_shift` (its `draws_offs` would not include the shift):
+  args_mom <- list(family = refm$family, eta = refm$eta, mu = refm$mu,
+                   mu_offs = refm$mu_offs, dis = refm$dis, wdraws = w,
+                   cl = seq_len(S), as_moments = TRUE)
+  expect_true(isTRUE(do.call(get_p_clust, args_mom)$moments_only))
+  expect_null(do.call(get_p_clust, c(args_mom, list(draws_shift = shift))))
 })
 
 test_that(paste(
@@ -298,7 +326,10 @@ test_that(paste(
       verbose = FALSE
     ))
   }
-  res_shift <- lapply(refs, function(ref) with_shift_count(run_cv(ref)))
+  res_shift <- lapply(refs, function(ref) {
+    res <- with_gauss_counts(with_shift_count(run_cv(ref)))
+    c(res$value, list(n_gauss = c(res$search, res$eval)))
+  })
   # The reference: .select() gets the shifted draws.
   withr::defer(suppressMessages(untrace(".select", where = ns)))
   suppressMessages(trace(".select", where = ns, print = FALSE, tracer = quote({
@@ -312,6 +343,9 @@ test_that(paste(
     expect_identical(res_shift[[nm]]$n, as.integer(nrow(refs[[nm]]$mu)),
                      info = nm)
     expect_identical(res_full[[nm]]$n, 0L, info = nm)
+    # The shifted cluster means go through the cross-product search and
+    # evaluation:
+    expect_true(all(res_shift[[nm]]$n_gauss > 0L), info = nm)
     expect_identical(ranking(res_shift[[nm]]$value),
                      ranking(res_full[[nm]]$value), info = nm)
     expect_equal(res_shift[[nm]]$value$summaries$sub,
@@ -460,27 +494,6 @@ test_that(paste(
   )))
   expect_identical(cvvs_s2$loo_perturb_alpha, 4)
 })
-
-# Evaluates `expr` and counts the calls of search_forward_gauss() and
-# perf_eval_gauss() that returned a result (not `NULL`).
-with_gauss_counts <- function(expr) {
-  calls <- new.env()
-  calls$search <- 0L
-  calls$eval <- 0L
-  ns <- asNamespace("projpred")
-  fns <- c(search = "search_forward_gauss", eval = "perf_eval_gauss")
-  withr::defer(suppressMessages(for (fn in fns) untrace(fn, where = ns)))
-  for (nm in names(fns)) {
-    suppressMessages(trace(
-      fns[[nm]], where = ns, print = FALSE,
-      exit = bquote(if (!is.null(returnValue(NULL))) {
-        assign(.(nm), get(.(nm), envir = .(calls)) + 1L, envir = .(calls))
-      })
-    ))
-  }
-  value <- expr
-  return(list(value = value, search = calls$search, eval = calls$eval))
-}
 
 test_that(paste(
   "weight perturbation gives the same results with and without the Gaussian",
