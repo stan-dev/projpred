@@ -1288,6 +1288,14 @@ fit_glmer_callback <- function(formula, projpred_formula_no_random,
       # `nAGQ` from `...` (not the `nAGQ = 0` that the code above sets for
       # non-integer binomial data):
       dot_args_retry <- list(...)
+      # lme4 accepts `nAGQ > 1` only for a single scalar group-level term:
+      if (!glmer_scalar_re(formula, data = dot_args_retry$data)) {
+        stop("Encountering a PIRLS error while running the lme4 fitting ",
+             "procedure, but cannot fix this automatically: a larger `nAGQ` ",
+             "requires a single scalar group-level term. You will probably ",
+             "have to tweak lme4 tuning parameters manually (via `...`). ",
+             "The lme4 error was: ", conditionMessage(e))
+      }
       if (length(dot_args_retry$nAGQ) > 0) {
         nAGQ_new <- dot_args_retry$nAGQ + 1L
       } else {
@@ -1430,6 +1438,24 @@ glmer_rounds_binomial <- function(formula, family, data, weights) {
     }
   }, error = function(e) TRUE)
   return(!isFALSE(out))
+}
+
+# Whether the multilevel `formula` has a single scalar group-level term (one
+# term after reformulas::findbars(), with one model-matrix column), the case in
+# which lme4::glmer() accepts `nAGQ > 1`. `TRUE` also if the number of columns
+# cannot be computed (then the refit with a larger `nAGQ` runs).
+glmer_scalar_re <- function(formula, data = NULL) {
+  bars <- reformulas::findbars(formula)
+  if (length(bars) != 1) {
+    return(FALSE)
+  }
+  fml_lhs <- stats::as.formula(call("~", bars[[1]][[2]]))
+  environment(fml_lhs) <- environment(formula)
+  n_col <- tryCatch(
+    ncol(stats::model.matrix(fml_lhs, data = data)),
+    error = function(e) NA_integer_
+  )
+  return(is.na(n_col) || n_col == 1L)
 }
 
 # Helper function for fit_glmer_callback() and fit_gamm_callback() to get the
