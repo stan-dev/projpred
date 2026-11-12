@@ -721,8 +721,9 @@ split_plus <- function(term_strings) {
         stack[top] <- list(e[[3L]])
         e <- e[[2L]]
       }
-      parts[length(parts) + 1L] <-
-        paste(deparse(e, width.cutoff = 500L, backtick = TRUE), collapse = " ")
+      parts[length(parts) + 1L] <- join_lines(
+        paste(deparse(e, width.cutoff = 500L, backtick = TRUE), collapse = "\n")
+      )
     }
     return(parts)
   }
@@ -733,10 +734,11 @@ split_plus <- function(term_strings) {
 }
 
 # Term labels with the variables of an interaction in sorted order, so that, for
-# example, "x2:x1" and "x1:x2" are equal (as for terms()).
+# example, "x2:x1" and "x1:x2" are equal (as for terms()). The lines of a long
+# label are joined (see join_lines()).
 norm_term_labels <- function(labels) {
   cached_by_strings("norm_term_labels", labels, function() {
-    vapply(strsplit(labels, ":", fixed = TRUE), function(parts) {
+    vapply(strsplit(join_lines(labels), ":", fixed = TRUE), function(parts) {
       paste(sort(trimws(parts)), collapse = ":")
     }, character(1))
   })
@@ -860,7 +862,7 @@ select_possible_terms_size_uncached <- function(chosen, terms, size,
     if (size_crr == size) {
       if (length(dups) > 0) {
         tt <- terms(formula(paste("~", x, "-", paste(dups, collapse = "-"))))
-        x <- setdiff(attr(tt, "term.labels"), chosen)
+        x <- setdiff(join_lines(attr(tt, "term.labels")), chosen)
         if (grepl("\\|", x) && !grepl("[()]", x)) {
           x <- paste0("(", x, ")")
         }
@@ -894,7 +896,14 @@ select_possible_terms_size_uncached <- function(chosen, terms, size,
 ## @return a character vector containing only the right hand side.
 to_character_rhs <- function(rhs) {
   chr <- as.character(rhs)
-  return(chr[length(chr)])
+  return(join_lines(chr[length(chr)]))
+}
+
+# Deparsed code (from as.character(), deparse() or terms() labels) breaks a long
+# expression into lines. Join the lines with one space, as in a short
+# expression.
+join_lines <- function(x) {
+  gsub("[[:space:]]*\n[[:space:]]*", " ", x)
 }
 
 ## Given a refmodel structure, count the number of terms included.
@@ -967,38 +976,38 @@ lhs <- function(x) {
   if (length(x) == 3L) update(x, . ~ 1) else NULL
 }
 
-# Collapse "raw" predictor terms representing contrasts, dummy codings, or
-# polynomial terms into their corresponding original terms from a model formula.
+# Collapse "raw" predictor terms (the columns of the model matrix, for example
+# those of contrasts, dummy codings, or polynomial terms) into their
+# corresponding original terms from a model formula.
 #
-# @param path Vector of ranked "raw" predictor terms ("raw" means that these
-#   terms may represent contrasts, dummy codings, or polynomial terms).
+# @param path Vector of ranked "raw" predictor terms: column names of
+#   `model.matrix(formula, data = data)`.
 # @param formula The model formula (from which the ranking in `path` was
 #   derived).
 # @param data The model data (from which the ranking in `path` was derived).
 #
-# @return A character vector of collapsed predictor terms (i.e., all of these
-#   returned predictor terms occur in `formula`).
+# @return A character vector of collapsed predictor terms, in the order of their
+#   first column in `path`. These terms occur in `formula`; an element of `path`
+#   that is not a column (for example `NA`) is returned as it is.
 collapse_ranked_predictors <- function(path, formula, data) {
-  tt <- terms(formula)
-  terms_ <- attr(tt, "term.labels")
-  for (term in terms_) {
-    # TODO: In the following model.matrix() call, allow user-specified contrasts
-    # to be passed to argument `contrasts.arg`. The `contrasts.arg` default
-    # (`NULL`) uses `options("contrasts")` internally, but it might be more
-    # convenient to let users specify contrasts directly. At that occasion,
-    # contrasts should also be tested thoroughly (not done until now).
-    x <- model.matrix(as.formula(paste("~ 1 +", term)), data = data)
-    if (length(attr(x, "contrasts")) == 0 &&
-        !grepl("^poly[m]*\\(.+\\)$", term)) {
-      next
-    }
-    x <- x[, colnames(x) != "(Intercept)", drop = FALSE]
-    for (col_nm in colnames(x)) {
-      path <- gsub(esc_chars(col_nm), term, path)
-    }
-    path <- unique(path)
-  }
-  return(path)
+  # TODO: In the following model.matrix() call, allow user-specified contrasts
+  # to be passed to argument `contrasts.arg`. The `contrasts.arg` default
+  # (`NULL`) uses `options("contrasts")` internally, but it might be more
+  # convenient to let users specify contrasts directly. At that occasion,
+  # contrasts should also be tested thoroughly (not done until now).
+  x <- model.matrix(formula, data = data)
+  # Match the columns to the terms by the "assign" attribute (0: the
+  # intercept), not by the text of the column names:
+  term_idx <- attr(x, "assign")
+  # The labels of a long term have line breaks (see join_lines()). Its column
+  # names can also have them; join_lines() on `path` and on the column names
+  # keeps the match also if `path` has joined column names:
+  term_labels <- join_lines(attr(terms(formula, data = data), "term.labels"))
+  path <- join_lines(path)
+  term_of_col <- term_labels[term_idx[term_idx > 0]]
+  path_terms <- term_of_col[match(path, join_lines(colnames(x)[term_idx > 0]))]
+  path_terms[is.na(path_terms)] <- path[is.na(path_terms)]
+  return(unique(path_terms))
 }
 
 split_formula_random_gamm4 <- function(formula) {
