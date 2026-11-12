@@ -393,21 +393,36 @@ test_that("project() in parallel gives the same results as sequentially", {
   skip_if(length(par_backends_tst) == 0)
   withr::local_options(list(projpred.parallel_proj_trigger = 0L))
   tstsetups <- grep("\\.glm\\.", names(prjs), value = TRUE)
-  # Most GLM projections fit all draws in one call, so add a multilevel
-  # submodel (loop in divmin()) and an augmented-data projection (loop in
-  # divmin_augdat()):
+  # Most GLM projections fit all draws in one call, so add multilevel
+  # submodels (loop in divmin(); the Gaussian one uses the shared lmer() setup,
+  # the non-Gaussian one calls glmer() for each draw) and an augmented-data
+  # projection (loop in divmin_augdat()):
   first_prj <- function(cond) {
     names(Filter(cond, args_prj[names(prjs)]))[1]
   }
+  is_glmm_trad <- function(args_prj_i) {
+    args_prj_i$mod_nm == "glmm" &&
+      args_prj_i$prj_nm %in% c("trad", "trad_compare") &&
+      any(grepl("|", args_prj_i$predictor_terms, fixed = TRUE))
+  }
   tstsetups_loop <- c(
-    first_prj(function(args_prj_i) {
-      args_prj_i$mod_nm == "glmm" && args_prj_i$prj_nm == "trad" &&
-        any(grepl("|", args_prj_i$predictor_terms, fixed = TRUE))
+    glmm_gauss = first_prj(function(args_prj_i) {
+      is_glmm_trad(args_prj_i) && args_prj_i$fam_nm == "gauss"
     }),
-    first_prj(function(args_prj_i) {
+    glmm_nongauss = first_prj(function(args_prj_i) {
+      is_glmm_trad(args_prj_i) && args_prj_i$fam_nm != "gauss"
+    }),
+    augdat = first_prj(function(args_prj_i) {
       args_prj_i$prj_nm == "augdat" && args_prj_i$fam_nm == "brnll"
     })
   )
+  # With rstanarm and brms, the test setups have all three cases:
+  if (all(c("rstanarm", "brms") %in% pkg_nms)) {
+    expect_false(anyNA(tstsetups_loop), info = paste(
+      "missing:", paste(names(tstsetups_loop)[is.na(tstsetups_loop)],
+                        collapse = ", ")
+    ))
+  }
   tstsetups_loop <- tstsetups_loop[!is.na(tstsetups_loop)]
   tstsetups <- union(tstsetups, tstsetups_loop)
   # Counts the calls of par_lapply() with workers:
