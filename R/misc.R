@@ -123,12 +123,7 @@ perturb_refmodel <- function(refmodel, i, ll, lw_i, alpha, seed) {
     return(NULL)
   }
   if (!all(refmodel$offset == 0)) {
-    if (refmodel$family$family %in% fams_neg_linpred()) {
-      eta_offs <- refmodel$eta - refmodel$offset
-    } else {
-      eta_offs <- refmodel$eta + refmodel$offset
-    }
-    refmodel$mu_offs <- refmodel$family$linkinv(eta_offs)
+    refmodel$mu_offs <- refmodel$family$linkinv(ref_eta_offs(refmodel))
     if (!all_finite(refmodel$mu_offs)) {
       return(NULL)
     }
@@ -168,6 +163,17 @@ ilinkfun_raw <- function(x, link_nm) {
   }
   basic_ilink <- binomial(link = link_nm)$linkinv
   return(basic_ilink(x))
+}
+
+# The linear predictor of the reference model draws with the offsets, which
+# gives `refmodel$mu_offs` (as in init_refmodel()). `family$ll_fun()` uses it
+# where the inverse link clamps `mu_offs`.
+ref_eta_offs <- function(refmodel) {
+  if (refmodel$family$family %in% fams_neg_linpred()) {
+    return(refmodel$eta - refmodel$offset)
+  } else {
+    return(refmodel$eta + refmodel$offset)
+  }
 }
 
 .auc <- function(x) {

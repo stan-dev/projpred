@@ -725,13 +725,12 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
     }
   } else {
     # The linear predictor gives the exact log-likelihood where the inverse
-    # link clamps `mu_offs` (binomial and Poisson families):
-    # (binomial and Poisson are not in fams_neg_linpred(), so the offset is
-    # added; the augmented-data projection uses its own log-likelihood):
+    # link clamps `mu_offs` (binomial and Poisson families, augmented-data
+    # projection):
     eta_offs <- NULL
-    if (refmodel$family$family %in% c("binomial", "poisson") &&
-        !refmodel$family$for_augdat) {
-      eta_offs <- refmodel$eta + refmodel$offset
+    if (refmodel$family$for_augdat ||
+        refmodel$family$family %in% c("binomial", "poisson")) {
+      eta_offs <- ref_eta_offs(refmodel)
     }
     loglik_forPSIS <- t(refmodel$family$ll_fun(
       refmodel$mu_offs, refmodel$dis, refmodel$y, refmodel$wobs,
@@ -1364,8 +1363,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
     if (has_grp && getOption("projpred.mlvl_pred_new", FALSE)) {
       # Need to use `mlvl_allrandom = TRUE` (`loo_ref_oscale` is based on
       # `mlvl_allrandom = getOption("projpred.mlvl_proj_ref_new", FALSE)`):
-      # `eta` as in `loglik_forPSIS` (ignored by the augmented-data
-      # log-likelihood):
+      # `eta` as in `loglik_forPSIS`:
       loglik_mlvlRan <- t(refmodel$family$ll_fun(
         mu_offs_mlvlRan, refmodel$dis, refmodel$y, refmodel$wobs,
         eta = eta_offs_mlvlRan
@@ -1600,7 +1598,10 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws, nclusters,
       wdraws = fold$refmodel$wdraws_ref,
       mu = mu_test,
       dis = fold$refmodel$dis,
-      cl_ref = seq_along(fold$refmodel$wdraws_ref)
+      cl_ref = seq_along(fold$refmodel$wdraws_ref),
+      # The linear predictor gives the exact log-likelihood where the inverse
+      # link clamps `mu_test` (as in `loglik_forPSIS` of loo_varsel()):
+      eta = if (!fold$refmodel$family$for_latent) eta_test
     )
 
     return(nlist(predictor_ranking = search_path[["predictor_ranking"]],
