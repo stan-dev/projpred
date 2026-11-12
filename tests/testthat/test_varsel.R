@@ -679,10 +679,12 @@ if (run_more) {
     skip_if_not(length(tstsetups) > 0)
     for (tstsetup in tstsetups) {
       args_vs_i <- args_vs[[tstsetup]]
+      # The group-level terms of an rstanarm::stan_gamm4() fit are not in
+      # `args_fit[[...]]$formula`, so use the reference model formula:
       if (identical(args_vs_i$nterms_max, unname(ntermss[args_vs_i$mod_nm])) &&
-          any(grepl("\\|", labels(terms(
-            args_fit[[args_vs_i$tstsetup_fit]]$formula
-          ))))) {
+          formula_contains_group_terms(
+            refmods[[args_vs_i$tstsetup_ref]]$formula
+          )) {
         warn_expected <- "the projection onto the full model can be instable"
       } else {
         warn_expected <- NA

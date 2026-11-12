@@ -314,11 +314,11 @@ project <- function(
             "also has the smooth term(s) `", paste(smooths, collapse = "`, `"),
             "`. The coefficient of such a linear term is not identifiable.")
   }
-  nterms_all <- count_terms_in_formula(refmodel$formula) - 1L
-  if (nterms_max == nterms_all &&
-      formula_contains_group_terms(refmodel$formula) &&
-      getOption("projpred.warn_instable_projections", TRUE) &&
-      (refmodel$family$family == "gaussian" || refmodel$family$for_latent)) {
+  prd_trms_max <- predictor_terms[seq_len(nterms_max)]
+  if (getOption("projpred.warn_instable_projections", TRUE) &&
+      (refmodel$family$family == "gaussian" || refmodel$family$for_latent) &&
+      formula_contains_group_terms(make_formula(prd_trms_max)) &&
+      is_full_projection(prd_trms_max, object = object, refmodel = refmodel)) {
     warning(
       "In case of the Gaussian family (also in case of the latent projection) ",
       "and multilevel terms, the projection onto the full model can be ",
@@ -348,6 +348,28 @@ project <- function(
   # If there is only a single submodel size, just return the `projection` object
   # instead of returning it in a list of length 1:
   return(unlist_proj(projs))
+}
+
+# Whether the submodel with the predictor terms `prd_trms` has all of the search
+# terms of `object` (if `object` is a `vsel` object) or all of the terms of the
+# reference model (as in the table of possible predictor terms in project()).
+# A linear term next to a smooth term of the same variable does not count,
+# because the projection drops such a linear term.
+is_full_projection <- function(prd_trms, object, refmodel) {
+  if (inherits(object, "vsel")) {
+    search_terms_all <- object$args_search$search_terms %||%
+      split_formula(refmodel$formula, data = refmodel$fetch_data())
+  } else {
+    search_terms_all <- split_formula(refmodel$formula,
+                                      data = refmodel$fetch_data(),
+                                      add_lower_terms = FALSE)
+  }
+  trm_labels <- function(trms) {
+    fml <- flatten_formula(make_formula(trms), duplicates = FALSE)
+    return(norm_term_labels(labels(terms(fml))))
+  }
+  return(all(trm_labels(unique(split_plus(search_terms_all))) %in%
+               trm_labels(prd_trms)))
 }
 
 #' Print information about [project()] output

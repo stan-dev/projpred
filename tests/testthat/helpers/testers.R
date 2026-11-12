@@ -2349,9 +2349,15 @@ vsel_tester <- function(
     expect_null(vs$summaries_fast, info = info_str)
   }
 
-  # nterms_all
+  # nterms_all (the size of the submodel with all search terms)
+  if (is.null(search_terms_expected)) {
+    search_terms_all <- split_formula(vs$refmodel$formula,
+                                      data = vs$refmodel$fetch_data())
+  } else {
+    search_terms_all <- search_terms_expected
+  }
   expect_identical(vs$nterms_all,
-                   count_terms_in_formula(vs$refmodel$formula) - 1L,
+                   count_terms_chosen(union("1", search_terms_all)) - 1L,
                    info = info_str)
 
   # nterms_max
