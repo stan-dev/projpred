@@ -18,6 +18,9 @@ ids_inputs <- withr::with_seed(4, {
 })
 
 refm_ids <- function(formula, ...) {
+  # Without the test setup, a custom reference model without `cvrefbuilder`
+  # gives a warning:
+  withr::local_options(projpred.warn_cvrefbuilder_NULL = FALSE)
   init_refmodel(list(eta = ids_inputs$eta), data = ids_inputs$dat,
                 formula = formula, family = gaussian(),
                 ref_predfun = function(fit, newdata = NULL) {
