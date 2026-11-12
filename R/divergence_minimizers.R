@@ -344,6 +344,19 @@ subprd_gam_direct <- function(fits, newdata) {
       }, logical(1)))) {
     return(NULL)
   }
+  if (!gam_same_submodel(fits)) {
+    return(NULL)
+  }
+  x_lp <- stats::predict(fits[[1]], newdata = newdata, type = "lpmatrix")
+  prd <- x_lp %*% do.call(cbind, lapply(fits, stats::coef))
+  dimnames(prd) <- list(rownames(x_lp), NULL)
+  return(prd)
+}
+
+# Whether the `gam` fits `fits` have the same parametric terms, smooths and
+# coefficient names and no offset, so that one linear-predictor matrix
+# (predict.gam() with `type = "lpmatrix"`) serves all of them.
+gam_same_submodel <- function(fits) {
   fit_1 <- fits[[1]]
   terms_noenv <- function(trms) {
     trms <- delete.response(trms)
@@ -357,15 +370,65 @@ subprd_gam_direct <- function(fits, newdata) {
       identical(fit$smooth, smooth_1) &&
       identical(names(stats::coef(fit)), names(stats::coef(fit_1)))
   }, logical(1)))) {
+    return(FALSE)
+  }
+  return(!length(attr(fit_1$terms, "offset")) &&
+           !length(attr(fit_1$pterms, "offset")))
+}
+
+# Linear predictors of `gamm4` fits of the same submodel for `newdata`, as from
+# predict.gamm4() for each fit. The population-level part comes from one
+# linear-predictor matrix of the `gam` components for all draws (as in
+# subprd_gam_direct()). The group-level part comes from one random-effects
+# design for all draws (see gamm4_re_prep()); the draws for new group levels
+# come in the same order as from predict.gamm4(). Returns `NULL` if the fits
+# differ in the population-level terms (see gam_same_submodel()), the factor
+# levels of the `gam` components, the group-level formula or the group levels,
+# if there is an offset, and for fits without group-level terms.
+subprd_gamm4_direct <- function(fits, newdata) {
+  if (is.null(newdata) || length(fits) == 0 ||
+      !all(vapply(fits, function(fit) {
+        inherits(fit, "gamm4") && !is.null(fit$random)
+      }, logical(1)))) {
     return(NULL)
   }
-  if (length(attr(fit_1$terms, "offset")) ||
-      length(attr(fit_1$pterms, "offset"))) {
+  gams <- lapply(fits, "[[", "gam")
+  if (!gam_same_submodel(gams)) {
     return(NULL)
   }
-  x_lp <- stats::predict(fit_1, newdata = newdata, type = "lpmatrix")
-  prd <- x_lp %*% do.call(cbind, lapply(fits, stats::coef))
-  dimnames(prd) <- list(rownames(x_lp), NULL)
+  fit_1 <- fits[[1]]
+  fml_noenv <- function(fml) {
+    attr(fml, ".Environment") <- NULL
+    fml
+  }
+  random_1 <- fml_noenv(fit_1$random)
+  xlevels_1 <- fit_1$gam$xlevels
+  if (!all(vapply(fits, function(fit) {
+    identical(fml_noenv(fit$random), random_1) &&
+      identical(fit$gam$xlevels, xlevels_1)
+  }, logical(1)))) {
+    return(NULL)
+  }
+  vnms <- gamm4_re_vnms(fit_1)
+  ranefs <- lapply(fits, function(fit) {
+    lme4::ranef(fit$mer, condVar = FALSE)[vnms]
+  })
+  dimnames_1 <- lapply(ranefs[[1]], dimnames)
+  if (!all(vapply(ranefs, function(ranef_s) {
+    identical(lapply(ranef_s, dimnames), dimnames_1)
+  }, logical(1)))) {
+    return(NULL)
+  }
+  # The population-level part first, as in predict.gamm4():
+  x_lp <- stats::predict(gams[[1]], newdata = newdata, type = "lpmatrix")
+  prep <- gamm4_re_prep(fit_1, newdata = newdata, ranef_tmp = ranefs[[1]])
+  bs <- do.call(cbind, Map(function(fit, ranef_s) {
+    gamm4_re_b(fit, prep = prep, ranef_tmp = ranef_s)
+  }, fits, ranefs))
+  prd <- x_lp %*% do.call(cbind, lapply(gams, stats::coef)) +
+    t(as(t(bs) %*% prep$Zt, "matrix"))
+  # As cbind() of the outputs of predict.gamm4():
+  dimnames(prd) <- NULL
   return(prd)
 }
 
@@ -2325,6 +2388,15 @@ subprd <- function(fits, newdata) {
       return(prd_direct)
     }
   }
+  # gamm4 fits of one submodel: all draws at once (see subprd_gamm4_direct()):
+  if (!is.null(newdata) && length(fits) > 0 && inherits(fits[[1]], "gamm4")) {
+    prd_direct <- subprd_gamm4_direct(
+      fits, cbind(`(Intercept)` = rep(1, NROW(newdata)), newdata)
+    )
+    if (!is.null(prd_direct)) {
+      return(prd_direct)
+    }
+  }
   if (!is.null(newdata) && length(fits) > 1 && inherits(fits[[1]], "subfit")) {
     prd <- subprd_subfit_shared(fits, newdata)
     if (!is.null(prd)) {
@@ -2800,6 +2872,16 @@ mkNewReTrms_man <- function(re.form, newdata, xlevels, re, D = NULL) {
     Rcnms <- ReTrms$cnms
   }
   new_levels <- lapply(ReTrms$flist, function(x) levels(factor(x)))
+  re_new <- mkNewRe_b(re, new_levels = new_levels, cnms = Rcnms)
+  Zt <- ReTrms$Zt
+  attr(Zt, "na.action") <- NULL
+  list(Zt = Zt, b = re_new, new_levels = new_levels, cnms = Rcnms)
+}
+
+# The group-level effects `re` (as from ranef()) in the order of the rows of the
+# `Zt` from mkNewReTrms_man(), with zeros for new group levels. Arguments
+# `new_levels` and `cnms` are the elements of the output of mkNewReTrms_man().
+mkNewRe_b <- function(re, new_levels, cnms) {
   re_x <- Map(
     function(r, n) {
       ("lme4" %:::% "levelfun")(r, n, allow.new.levels = TRUE)
@@ -2816,10 +2898,9 @@ mkNewReTrms_man <- function(re.form, newdata, xlevels, re, D = NULL) {
     }
     t(re_x[[rname]][, cnms])
   }
-  re_new <- unlist(Map(get_re, nRnms, Rcnms))
-  Zt <- ReTrms$Zt
-  attr(Zt, "na.action") <- attr(re_new, "na.action") <- NULL
-  list(Zt = Zt, b = re_new)
+  re_new <- unlist(Map(get_re, names(cnms), cnms))
+  attr(re_new, "na.action") <- NULL
+  return(re_new)
 }
 
 repair_re <- function(object, newdata) {
@@ -3033,8 +3114,16 @@ repair_re.clmm <- function(object, newdata) {
 #' @export
 repair_re.gamm4 <- function(object, newdata) {
   stopifnot(!is.null(newdata))
-  re_fml <- object$random
-  vnms <- unique(vapply(reformulas::findbars(re_fml), function(bar) {
+  vnms <- gamm4_re_vnms(object)
+  ranef_tmp <- lme4::ranef(object$mer, condVar = FALSE)[vnms]
+  prep <- gamm4_re_prep(object, newdata = newdata, ranef_tmp = ranef_tmp)
+  b <- gamm4_re_b(object, prep = prep, ranef_tmp = ranef_tmp)
+  return(drop(as(b %*% prep$Zt, "matrix")))
+}
+
+# The grouping variables of the group-level terms of a `gamm4` fit.
+gamm4_re_vnms <- function(object) {
+  vnms <- unique(vapply(reformulas::findbars(object$random), function(bar) {
     deparse_combine(bar[[3]])
   }, character(1)))
   if (any(grepl("[/:]", vnms))) {
@@ -3043,11 +3132,23 @@ repair_re.gamm4 <- function(object, newdata) {
          "the dataset manually and then adapt the model formula) interaction ",
          "terms.")
   }
+  return(vnms)
+}
+
+# The parts of repair_re.gamm4() that depend only on `newdata`, the group-level
+# formula and the group levels of the fit: the existing and new group levels
+# and the random-effects design `Zt` for `newdata`. `ranef_tmp` holds the
+# group-level effects of `object` for the grouping variables from
+# gamm4_re_vnms(). Fits with the same group-level formula, group levels and
+# factor levels of the `gam` component (`object$gam$xlevels`) give the same
+# output.
+gamm4_re_prep <- function(object, newdata, ranef_tmp) {
+  re_fml <- object$random
+  vnms <- names(ranef_tmp)
   vnms_miss <- setdiff(vnms, names(newdata))
   if (length(vnms_miss) > 0) {
     stop("Could not find column `", vnms_miss[1], "` in `newdata`.")
   }
-  ranef_tmp <- lme4::ranef(object$mer, condVar = FALSE)[vnms]
   lvls_list <- lapply(setNames(nm = vnms), function(vnm) {
     from_fit <- rownames(ranef_tmp[[vnm]])
     from_new <- as.character(unique(newdata[[vnm]]))
@@ -3073,17 +3174,26 @@ repair_re.gamm4 <- function(object, newdata) {
                                  xlevels = c(lapply(lvls_list, "[[", "comb"),
                                              object$gam$xlevels),
                                  re = ranef_tmp)
-  names(ranefs_prep$b) <- rownames(ranefs_prep$Zt)
+  return(list(lvls_list = lvls_list, Zt = ranefs_prep$Zt,
+              new_levels = ranefs_prep$new_levels, cnms = ranefs_prep$cnms))
+}
+
+# The group-level effects of `object` in the order of the rows of `prep$Zt`
+# (`prep` from gamm4_re_prep()), with draws from the fitted (multivariate)
+# Gaussian distribution for new group levels.
+gamm4_re_b <- function(object, prep, ranef_tmp) {
+  b <- mkNewRe_b(ranef_tmp, new_levels = prep$new_levels, cnms = prep$cnms)
+  names(b) <- rownames(prep$Zt)
 
   VarCorr_tmp <- lme4::VarCorr(object$mer)
-  for (vnm in vnms) {
-    lvls_new <- lvls_list[[vnm]]$new
+  for (vnm in names(ranef_tmp)) {
+    lvls_new <- prep$lvls_list[[vnm]]$new
     if (!getOption("projpred.mlvl_pred_new", FALSE)) {
-      lvls_exist <- lvls_list[[vnm]]$exist
+      lvls_exist <- prep$lvls_list[[vnm]]$exist
       lvls_new <- setdiff(lvls_new, lvls_exist)
     }
     if (length(lvls_new) > 0) {
-      ranefs_prep$b[names(ranefs_prep$b) %in% lvls_new] <- t(mvtnorm::rmvnorm(
+      b[names(b) %in% lvls_new] <- t(mvtnorm::rmvnorm(
         n = length(lvls_new),
         # Add `[, , drop = FALSE]` to drop attributes:
         sigma = VarCorr_tmp[[vnm]][, , drop = FALSE],
@@ -3091,7 +3201,7 @@ repair_re.gamm4 <- function(object, newdata) {
       ))
     }
   }
-  return(drop(as(ranefs_prep$b %*% ranefs_prep$Zt, "matrix")))
+  return(b)
 }
 
 # For objects of class `mmblogit`, the following repair_re() method will re-use
