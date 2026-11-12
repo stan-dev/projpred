@@ -754,3 +754,32 @@ test_that(paste(
   }
   RNGversion(getRversion())
 })
+
+test_that("a long search term keeps its text in the ranking", {
+  withr::local_seed(5309)
+  n <- 50
+  nms <- sprintf("predictor_with_a_long_name_%02d", 1:30)
+  dat <- as.data.frame(matrix(rnorm(n * 30), n, 30,
+                              dimnames = list(NULL, nms)))
+  dat$z <- rnorm(n)
+  dat$y <- dat$z + rnorm(n)
+  extract_model_data <- function(object, newdata, wrhs = NULL, orhs = NULL,
+                                 extract_y = TRUE) {
+    y_wobs_offs(newdata = newdata, wrhs = wrhs, orhs = orhs,
+                resp_form = if (extract_y) ~ y else NULL)
+  }
+  fml <- as.formula(paste("y ~ z +", paste(nms, collapse = " + ")))
+  refm <- suppressWarnings(init_refmodel(
+    object = NULL, data = dat, formula = fml, family = gaussian(),
+    extract_model_data = extract_model_data
+  ))
+  # A search term of 957 characters:
+  long_term <- paste(nms, collapse = " + ")
+  for (use_crossprod in c(TRUE, FALSE)) {
+    withr::local_options(projpred.search_gauss_crossprod = use_crossprod)
+    vs <- suppressWarnings(varsel(refm, search_terms = c("1", "z", long_term),
+                                  nterms_max = 31, verbose = FALSE))
+    expect_identical(ranking(vs)$fulldata, c("z", long_term),
+                     info = as.character(use_crossprod))
+  }
+})
