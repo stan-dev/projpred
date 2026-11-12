@@ -705,13 +705,27 @@ cached_by_strings <- function(type, key, compute, max_n = 10000L) {
 # so their spacing is that of terms() labels (for example "poly(x3, 2)" for
 # "poly(x3,2)"), and non-syntactic names keep their backticks.
 split_plus <- function(term_strings) {
+  # A loop, not recursion: the call tree of a long `+` chain is deep. The loop
+  # goes down the left operands and puts the right operands on a stack (`top`
+  # is the index of its last element), so the parts come in their order.
   parts_of <- function(expr) {
-    if (is.call(expr) && identical(expr[[1L]], as.name("+")) &&
-        length(expr) == 3L) {
-      return(c(parts_of(expr[[2L]]), parts_of(expr[[3L]])))
+    parts <- character()
+    stack <- list(expr)
+    top <- 1L
+    while (top > 0L) {
+      e <- stack[[top]]
+      top <- top - 1L
+      while (is.call(e) && identical(e[[1L]], as.name("+")) &&
+             length(e) == 3L) {
+        top <- top + 1L
+        stack[top] <- list(e[[3L]])
+        e <- e[[2L]]
+      }
+      parts[length(parts) + 1L] <- join_lines(
+        paste(deparse(e, width.cutoff = 500L, backtick = TRUE), collapse = "\n")
+      )
     }
-    return(paste(deparse(expr, width.cutoff = 500L, backtick = TRUE),
-                 collapse = " "))
+    return(parts)
   }
   return(as.character(unlist(
     lapply(term_strings, function(x) parts_of(str2lang(x))),
@@ -720,10 +734,11 @@ split_plus <- function(term_strings) {
 }
 
 # Term labels with the variables of an interaction in sorted order, so that, for
-# example, "x2:x1" and "x1:x2" are equal (as for terms()).
+# example, "x2:x1" and "x1:x2" are equal (as for terms()). The lines of a long
+# label are joined (see join_lines()).
 norm_term_labels <- function(labels) {
   cached_by_strings("norm_term_labels", labels, function() {
-    vapply(strsplit(labels, ":", fixed = TRUE), function(parts) {
+    vapply(strsplit(join_lines(labels), ":", fixed = TRUE), function(parts) {
       paste(sort(trimws(parts)), collapse = ":")
     }, character(1))
   })
@@ -847,7 +862,7 @@ select_possible_terms_size_uncached <- function(chosen, terms, size,
     if (size_crr == size) {
       if (length(dups) > 0) {
         tt <- terms(formula(paste("~", x, "-", paste(dups, collapse = "-"))))
-        x <- setdiff(attr(tt, "term.labels"), chosen)
+        x <- setdiff(join_lines(attr(tt, "term.labels")), chosen)
         if (grepl("\\|", x) && !grepl("[()]", x)) {
           x <- paste0("(", x, ")")
         }
@@ -881,7 +896,14 @@ select_possible_terms_size_uncached <- function(chosen, terms, size,
 ## @return a character vector containing only the right hand side.
 to_character_rhs <- function(rhs) {
   chr <- as.character(rhs)
-  return(chr[length(chr)])
+  return(join_lines(chr[length(chr)]))
+}
+
+# Deparsed code (from as.character(), deparse() or terms() labels) breaks a long
+# expression into lines. Join the lines with one space, as in a short
+# expression.
+join_lines <- function(x) {
+  gsub("[[:space:]]*\n[[:space:]]*", " ", x)
 }
 
 ## Given a refmodel structure, count the number of terms included.
@@ -967,7 +989,10 @@ lhs <- function(x) {
 #   returned predictor terms occur in `formula`).
 collapse_ranked_predictors <- function(path, formula, data) {
   tt <- terms(formula)
-  terms_ <- attr(tt, "term.labels")
+  # The labels and the column names of a long term have line breaks (see
+  # join_lines()):
+  terms_ <- join_lines(attr(tt, "term.labels"))
+  path <- join_lines(path)
   for (term in terms_) {
     # TODO: In the following model.matrix() call, allow user-specified contrasts
     # to be passed to argument `contrasts.arg`. The `contrasts.arg` default
@@ -980,7 +1005,7 @@ collapse_ranked_predictors <- function(path, formula, data) {
       next
     }
     x <- x[, colnames(x) != "(Intercept)", drop = FALSE]
-    for (col_nm in colnames(x)) {
+    for (col_nm in join_lines(colnames(x))) {
       path <- gsub(esc_chars(col_nm), term, path)
     }
     path <- unique(path)

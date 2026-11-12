@@ -38,8 +38,9 @@ same as \code{length(ranking(object)$fulldata)}. Note that \code{nterms_max} doe
 count the intercept, so use \code{nterms_max = 0} for the intercept-only model.
 For \code{\link[=plot.vsel]{plot.vsel()}}, \code{nterms_max} must be at least \code{1}.}
 
-\item{stats}{One or more character strings determining which performance
-statistics (i.e., utilities or losses) to estimate based on the
+\item{stats}{One or more character strings (or \code{\link[=custom_stat]{custom_stat()}} objects, see
+below) determining which performance statistics (i.e., utilities or
+losses) to estimate based on the
 observations in the evaluation (or "test") set (in case of
 cross-validation, these are all observations because they are partitioned
 into multiple test sets; in case of \code{\link[=varsel]{varsel()}} with \code{d_test = NULL}, these
@@ -88,7 +89,12 @@ mentioned in section "Details" below). For the corresponding standard error
 and lower and upper uncertainty interval bounds, bootstrapping is used. Not
 supported in case of subsampled LOO-CV (see argument \code{nloo} of
 \code{\link[=cv_varsel]{cv_varsel()}}).
-}}
+}
+
+For a user-defined statistic, use \code{\link[=custom_stat]{custom_stat()}}. \code{stats} then takes one
+\code{\link[=custom_stat]{custom_stat()}} object, or a \code{list} of single character strings (built-in
+statistics) and \code{\link[=custom_stat]{custom_stat()}} objects, for example
+\code{stats = list("elpd", custom_stat(...))}.}
 
 \item{deltas}{May be set to \code{FALSE}, \code{TRUE}, or \code{"mixed"}. If \code{FALSE}, the
 submodel performance statistics are plotted on their actual scale and the

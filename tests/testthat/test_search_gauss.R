@@ -549,6 +549,79 @@ test_that(paste(
 })
 
 test_that(paste(
+  "the cross-product search works for a term above 500 characters, and the",
+  "ranking keeps its text"
+), {
+  # Deparsed code and terms() labels break this term into lines:
+  long_term <- paste0("I(x1", strrep(" + 0", 200), ")")
+  refm <- refm_search_gauss(as.formula(paste("y ~ x2 +", long_term)), n = 40)
+  res_vs <- with_gauss_search_count(suppressWarnings(varsel(
+    refm, nclusters = 3, nclusters_pred = 5, seed = 3317, verbose = FALSE
+  )))
+  expect_identical(res_vs$n, 1L)
+  expect_identical(ranking(res_vs$value)$fulldata, c(long_term, "x2"))
+})
+
+test_that("the L1 search gives the text of a term above 500 characters", {
+  # A term with one column, and a poly() term (the L1 search ranks its columns
+  # and then replaces them by the term):
+  long_terms <- c(paste0("I(x1", strrep(" + 0", 200), ")"),
+                  paste0("poly(x3", strrep(" + 0", 200), ", 2)"))
+  for (long_term in long_terms) {
+    refm <- refm_search_gauss(as.formula(paste("y ~ x2 +", long_term)), n = 40)
+    vs <- suppressWarnings(varsel(
+      refm, method = "L1", nclusters_pred = 5, seed = 3317, verbose = FALSE
+    ))
+    rk <- ranking(vs)$fulldata
+    expect_length(rk, 2L)
+    expect_setequal(rk, c(long_term, "x2"))
+    # The largest submodel of the search has the columns of both terms:
+    x_all <- model.matrix(refm$formula, refm$fetch_data())
+    expect_identical(ncol(vs$search_path$outdmins[[3]][[1]]$x),
+                     ncol(x_all) - 1L)
+  }
+})
+
+test_that(paste(
+  "search_forward_gauss() and varsel() work with a candidate string of more",
+  "than 10000 bytes (the limit of an environment key)"
+), {
+  set.seed(5307)
+  n <- 30
+  # The smallest `p` with more than 10000 bytes in `block` (8 bytes per term).
+  # With n < p, the search needs the default `regul`:
+  p <- 1251
+  dat <- as.data.frame(matrix(rnorm(n * p), n, p,
+                              dimnames = list(NULL, sprintf("v%04d", seq_len(p)))))
+  dat$y <- dat$v0001 + rnorm(n)
+  ndraws <- 20
+  beta <- matrix(rnorm(2 * ndraws, mean = c(0, 1), sd = 0.05), 2)
+  fit <- list(beta = beta, data = dat)
+  ref_predfun <- function(fit, newdata = NULL) {
+    nd <- if (is.null(newdata)) fit$data else newdata
+    cbind(1, nd$v0001) %*% fit$beta
+  }
+  block <- paste(sprintf("v%04d", seq_len(p)), collapse = " + ")
+  expect_gt(nchar(block, type = "bytes"), 10000)
+  refm <- suppressWarnings(init_refmodel(
+    fit, data = dat, formula = as.formula(paste("y ~", block)),
+    family = gaussian(), ref_predfun = ref_predfun, dis = rep(1, ndraws)
+  ))
+  p_ref <- get_refdist(refm, nclusters = 2)
+  out <- search_forward_gauss(p_ref = p_ref, refmodel = refm, nterms_max = p,
+                              verbose = FALSE, search_terms = c("1", block),
+                              return_outdmins = FALSE)
+  expect_false(is.null(out))
+  expect_length(out$predictor_ranking, 1)
+  expect_identical(split_plus(out$predictor_ranking), split_plus(block))
+  # The whole path, with the projections and their cache:
+  vs <- varsel(refm, search_terms = c("1", block), nterms_max = p,
+               verbose = FALSE)
+  expect_identical(split_plus(ranking(vs)$fulldata), split_plus(block))
+  expect_s3_class(summary(vs), "vselsummary")
+})
+
+test_that(paste(
   "the cross-product search and evaluation find functions from the",
   "environment of the reference model formula"
 ), {
