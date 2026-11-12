@@ -159,6 +159,7 @@ test_that(paste(
   "fails with an informative error, and the workaround works"
 ), {
   skip_if_not_installed("rstanarm")
+  skip_if_not(run_additive)
   fit_gamm_cbind <- suppressWarnings(rstanarm::stan_gamm4(
     cbind(y_glm_binom, wobs_col - y_glm_binom) ~ xco.1 + s(s.1),
     random = ~ (1 | z.1), family = f_binom, data = dat,
@@ -166,10 +167,14 @@ test_that(paste(
   ))
   expect_error(
     get_refmodel(fit_gamm_cbind),
-    paste0("rstanarm issue #545.*not contain the variable\\(s\\) ",
-           "`y_glm_binom`, `wobs_col` of the response ",
-           "`cbind\\(y_glm_binom, wobs_col - y_glm_binom\\)`")
+    paste("rstanarm issue #545.*not contain the variable\\(s\\)",
+          "`y_glm_binom`, `wobs_col` of the model formula")
   )
+  fit_rows <- fit_gamm_cbind
+  fit_rows$data <- dat[-1, ]
+  expect_error(get_refmodel(fit_rows),
+               paste("has", nrow(dat) - 1L, "rows, but the fit has",
+                     nrow(dat), "observations"))
   fit_gamm_cbind$data <- dat
   refmod_cbind <- get_refmodel(fit_gamm_cbind)
   expect_equal(refmod_cbind$y, dat$y_glm_binom)

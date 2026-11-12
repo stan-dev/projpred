@@ -798,6 +798,18 @@ get_refmodel.default <- function(object, family = NULL, ...) {
                        ...))
 }
 
+# With argument `random`, rstanarm::stan_gamm4() stores the model frame as the
+# `data` element of the fit. The model frame lacks the variables of expressions
+# in the formula, for example of the response `cbind(y, n - y)`. Returns the
+# names of the missing variables.
+gamm4_vars_miss <- function(object) {
+  if (!inherits(object, "gamm4") || is.null(object$glmod) ||
+      !is.data.frame(object$data)) {
+    return(character())
+  }
+  return(setdiff(all.vars(formula.gamm4(object)), names(object$data)))
+}
+
 #' @rdname refmodel-init-get
 #' @export
 get_refmodel.stanreg <- function(object, latent = FALSE, dis = NULL,
@@ -890,18 +902,22 @@ get_refmodel.stanreg <- function(object, latent = FALSE, dis = NULL,
 
   if (inherits(object, "gamm4")) {
     formula <- formula.gamm4(object)
-    # With argument `random`, rstanarm::stan_gamm4() stores the model frame as
-    # `object$data`, which lacks the variables of a response expression:
-    resp_miss <- setdiff(all.vars(formula[[2]]), names(data))
-    if (!is.null(object$glmod) && length(resp_miss) > 0) {
-      stop("Because of rstanarm issue #545 (see GitHub), `object$data` of ",
-           "this rstanarm::stan_gamm4() fit (with argument `random`) does ",
+    vars_miss <- gamm4_vars_miss(object)
+    if (length(vars_miss) > 0) {
+      stop("Because of rstanarm issue #545 (see GitHub), the `data` element ",
+           "of this rstanarm::stan_gamm4() fit (with argument `random`) does ",
            "not contain the variable(s) ",
-           paste0("`", resp_miss, "`", collapse = ", "), " of the response `",
-           paste(deparse(formula[[2]]), collapse = " "), "`. As a ",
-           "workaround, set `object$data` to the data frame that was used ",
-           "for the fit (for example, `fit$data <- dat`) before calling ",
-           "get_refmodel().")
+           paste0("`", vars_miss, "`", collapse = ", "), " of the model ",
+           "formula. As a workaround, before you call get_refmodel(), set ",
+           "the `data` element of the fit to the data frame of the fit, ",
+           "with the same rows as in the fit (for example, ",
+           "`fit$data <- dat`). K-fold CV with the default `cvfun` still ",
+           "fails because of the same rstanarm issue.")
+    }
+    if (!is.null(object$glmod) && nrow(data) != NROW(object$y)) {
+      stop("The `data` element of this rstanarm::stan_gamm4() fit has ",
+           nrow(data), " rows, but the fit has ", NROW(object$y),
+           " observations.")
     }
   } else {
     formula <- formula(object)
