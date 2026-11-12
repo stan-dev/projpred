@@ -451,6 +451,7 @@ varsel.refmodel <- function(
         mu_test <- refmodel$family$linkinv(eta_test)
       } else {
         mu_test <- refmodel$mu_offs
+        eta_test <- ref_eta_offs(refmodel)
       }
     } else {
       newdata_for_ref <- d_test$data
@@ -471,7 +472,10 @@ varsel.refmodel <- function(
       y_wobs_test = y_wobs_test,
       data_aux_test = d_test$data %||% refmodel$fetch_data(),
       family = refmodel$family, wdraws = refmodel$wdraws_ref, mu = mu_test,
-      dis = refmodel$dis, cl_ref = seq_along(refmodel$wdraws_ref)
+      dis = refmodel$dis, cl_ref = seq_along(refmodel$wdraws_ref),
+      # The linear predictor gives the exact log-likelihood where the inverse
+      # link clamps `mu_test` (as in loo_varsel()):
+      eta = eta_test
     )
   }
 

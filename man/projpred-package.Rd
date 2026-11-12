@@ -74,6 +74,12 @@ from class \code{glmerMod}) for all other families. For \code{\link[lme4:glmer]{
 so both optimization stages use BOBYQA. A \code{control} argument in \code{...}
 replaces this default in the first fit. After some \pkg{lme4} errors,
 \pkg{projpred} refits with its own settings and ignores this \code{control}.
+For the \code{\link[=binomial]{binomial()}} family, \pkg{lme4} versions before 2.1-1 round
+non-integer responses and weights in the objective of \code{\link[lme4:glmer]{lme4::glmer()}}
+with \code{nAGQ >= 1}. With these \pkg{lme4} versions, \pkg{projpred} uses
+\code{nAGQ = 0} for such submodels unless \code{nAGQ} is set via \code{...}. Then the
+fixed effects and the group-level effects do not depend on the rounded
+objective; the group-level standard deviations still do.
 \item For the augmented-data projection: \code{\link[ordinal:clmm]{ordinal::clmm()}} (the returned
 object inherits from class \code{clmm}) for the \code{\link[brms:cumulative]{brms::cumulative()}} family,
 \code{\link[mclogit:mblogit]{mclogit::mblogit()}} (the returned object inherits from class \code{mmblogit})
