@@ -82,7 +82,11 @@ group-level term \verb{(1 | <group>)}, \pkg{projpred} uses
 \code{method = "ucminf"} and \code{grad = "forward"} (see
 \code{\link[ordinal:clmm.control]{ordinal::clmm.control()}}). If this fit fails or does not converge,
 \pkg{projpred} refits with the default settings of \code{\link[ordinal:clmm]{ordinal::clmm()}}. An
-argument \code{method} or \code{control} in \code{...} replaces this default.
+argument \code{method} or \code{control} in \code{...} replaces this default. For the
+\code{cloglog} and \code{loglog} links, \pkg{projpred} always uses
+\code{useMatrix = TRUE} (see \code{\link[ordinal:clmm.control]{ordinal::clmm.control()}}) and does not use
+\code{ucminf()}. The code of \code{\link[ordinal:clmm]{ordinal::clmm()}} for a single group-level term
+uses the other of these two links.
 }
 \item Submodel without multilevel but additive terms: \code{\link[mgcv:gam]{mgcv::gam()}} (the returned
 object inherits from class \code{gam}).
