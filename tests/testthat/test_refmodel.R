@@ -181,9 +181,8 @@ test_that(paste(
                            . ~ . - (xco.1 | z.1) + (xco.1 |p| z.1))
   expect_message(refmod_id <- get_refmodel(fit_id),
                  "correlation ID(s) `p`", fixed = TRUE, info = tstsetup)
-  expect_true(any(grepl("xco.1 | z.1", deparse(refmod_id$formula),
-                        fixed = TRUE)),
-              info = tstsetup)
+  expect_identical(extract_terms_response(refmod_id$formula)$group_terms,
+                   "xco.1 | z.1", info = tstsetup)
   fit_dbar <- fits[[tstsetup]]
   fit_dbar$formula <- update(fit_dbar$formula,
                              . ~ . - (xco.1 | z.1) + (xco.1 || z.1))
