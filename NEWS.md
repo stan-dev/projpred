@@ -51,7 +51,7 @@ If you read this from a place other than <https://mc-stan.org/projpred/news/inde
 * Fixed the error "'gam.fit' is not an exported object from 'namespace:mgcv'" in projections onto additive submodels with mgcv 1.9-5. (GitHub: #598, #602)
 * Fixed the log-likelihood of binomial (logit) and Poisson (log) reference model draws with a large linear predictor, where the inverse link clamped the mean. (GitHub: #614)
 * Removed line breaks from the names of search terms above about 500 characters in `ranking()`, `summary()` and `plot()`. (GitHub: #607)
-* The convergence check of additive submodels (`mgcv::gam()`) now also checks the smoothing parameter optimization. A user-set `optimizer = c("outer", "nlm")`, `c("outer", "optim")` or `"efs"` that stops at its iteration limit now gives a warning. (GitHub: #479)
+* The convergence check of `mgcv::gam()` submodel fits now also checks the smoothing parameter optimization. With `optimizer` `c("outer", "bfgs")`, `c("outer", "nlm")`, `c("outer", "optim")` or `"efs"`, a stop at the iteration limit now gives a warning. (GitHub: #479)
 
 
 # projpred 2.11.0
