@@ -365,6 +365,51 @@ test_that(paste(
   expect_true("s.1" %in% names(coef(prj_lin$outdmin[[1]])))
 })
 
+test_that(paste(
+  "project() warns about the projection onto the full Gaussian multilevel",
+  "model, also for a smooth term without the linear term of its variable"
+), {
+  withr::local_options(projpred.warn_instable_projections = TRUE,
+                       projpred.warn_proj_drawwise = FALSE,
+                       projpred.check_convergence = FALSE,
+                       projpred.mssg_smooth_linear = FALSE)
+  withr::local_seed(7350)
+  n <- 60L
+  dat <- data.frame(x1 = runif(n), g = gl(6, 10))
+  u <- rnorm(6, sd = 1)
+  dat$y <- sin(2 * pi * dat$x1) + u[dat$g] + rnorm(n, sd = 0.3)
+  # Simulated reference model draws (no model fit is necessary):
+  ndraws <- 20L
+  mu <- (sin(2 * pi * dat$x1) + u[dat$g]) +
+    matrix(rnorm(n * ndraws, sd = 0.05), n, ndraws)
+  refmod_tst <- function(fml) {
+    suppressWarnings(init_refmodel(
+      list(mu = mu), data = dat, formula = fml, family = gaussian(),
+      ref_predfun = function(fit, newdata = NULL) {
+        stopifnot(is.null(newdata))
+        fit$mu
+      },
+      dis = rep(0.3, ndraws)
+    ))
+  }
+  warn_full <- "the projection onto the full model can be instable"
+  prj_tst <- function(refmod, predictor_terms) {
+    project(refmod, predictor_terms = predictor_terms, ndraws = 2,
+            seed = 1234, verbose = 0)
+  }
+
+  refmod <- refmod_tst(y ~ x1 + (1 | g))
+  expect_warning(prj_tst(refmod, c("x1", "(1 | g)")), warn_full)
+  expect_no_warning(prj_tst(refmod, "(1 | g)"), message = warn_full)
+  expect_no_warning(prj_tst(refmod, "x1"), message = warn_full)
+
+  # The full model of a GAMM has the smooth term, also without the linear term
+  # of its variable:
+  refmod <- refmod_tst(y ~ s(x1) + (1 | g))
+  expect_warning(prj_tst(refmod, c("s(x1)", "(1 | g)")), warn_full)
+  expect_no_warning(prj_tst(refmod, c("x1", "(1 | g)")), message = warn_full)
+})
+
 test_that("non-clustered projection does not require a seed", {
   skip_if_not(run_prj)
   # This test is important to ensure that we don't have to set a seed where we
