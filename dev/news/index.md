@@ -271,6 +271,10 @@
   reference model draws with a large linear predictor, where the inverse
   link clamped the mean. (GitHub:
   [\#614](https://github.com/stan-dev/projpred/issues/614))
+- Fixed the log-likelihood of reference model draws with small response
+  category probabilities in the augmented-data projection (cumulative,
+  categorical and binomial families). (GitHub:
+  [\#618](https://github.com/stan-dev/projpred/issues/618))
 - With lme4 versions before 2.1-1, binomial submodels with multilevel
   terms (and no additive terms) now use `nAGQ = 0` in
   [`lme4::glmer()`](https://rdrr.io/pkg/lme4/man/glmer.html) for
