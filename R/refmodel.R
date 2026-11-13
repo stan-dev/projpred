@@ -73,7 +73,11 @@
 #' @param extract_model_data A function for fetching some variables (response,
 #'   observation weights, offsets) from the original dataset (supplied to
 #'   argument `data`) or from a new dataset. May be `NULL` for using an internal
-#'   default that essentially corresponds to [y_wobs_offs()]. See also section
+#'   default that essentially corresponds to [y_wobs_offs()]. For a 2-column
+#'   binomial response (successes and failures), this internal default uses the
+#'   sums of the two columns (the numbers of trials) as observation weights.
+#'   Then a `newdata` in prediction functions must contain the variables of the
+#'   response columns, or the call must supply `weightsnew`. See also section
 #'   "Argument `extract_model_data`" below.
 #' @param family An object of class `family` representing the observation model
 #'   (i.e., the distributional family for the response) of the *submodels*.
@@ -1164,14 +1168,25 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
   fml_extractions <- extract_terms_response(formula)
   response_name <- fml_extractions$response
   if (length(response_name) == 2) {
-    if (family$family != "binomial") {
+    if (family_resp(family) != "binomial") {
       stop("For non-binomial families, a two-column response is not allowed.")
-    } else if (family$for_augdat) {
-      stop("Currently, the augmented-data projection may not be combined with ",
-           "a 2-column response.")
+    } else if (family$for_augdat || family$for_latent) {
+      stop("Currently, the ",
+           if (family$for_augdat) "augmented-data" else "latent",
+           " projection may not be combined with a 2-column response. ",
+           binom_trials_hint(family, "2col"), call. = FALSE)
     }
   } else if (length(response_name) > 2) {
     stop("The response is not allowed to have more than two columns.")
+  }
+  # 2-column binomial response: the default `extract_model_data` below uses the
+  # row sums (the numbers of trials) as observation weights.
+  wrhs_2col <- NULL
+  if (length(response_name) == 2) {
+    wrhs_2col <- as.formula(
+      paste0("~ (", response_name[1], ") + (", response_name[2], ")"),
+      env = environment(formula)
+    )
   }
   # Remove parentheses from the response:
   response_name <- gsub("[()]", "", response_name)
@@ -1222,7 +1237,8 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
   # Functions ---------------------------------------------------------------
 
   extract_model_data_usr <- extract_model_data
-  if (is.null(extract_model_data_usr)) {
+  emd_default <- is.null(extract_model_data_usr)
+  if (emd_default) {
     # The internal default for `extract_model_data`:
     extract_model_data_usr <- function(object, newdata, wrhs = NULL,
                                        orhs = NULL, extract_y = TRUE) {
@@ -1235,6 +1251,19 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
         }
       } else {
         resp_fml <- NULL
+      }
+      if (is.null(wrhs) && !is.null(wrhs_2col)) {
+        # The response variables that are columns of `data` must also be
+        # columns of `newdata` (others, such as a constant number of trials,
+        # come from the formula environment):
+        vars_2col <- intersect(all.vars(wrhs_2col), names(data))
+        if (!all(vars_2col %in% names(newdata))) {
+          stop("For a reference model with a 2-column response, the ",
+               "observation weights (numbers of trials) for `newdata` come ",
+               "from the response columns. Supply these columns in `newdata` ",
+               "or supply argument `weightsnew`.")
+        }
+        wrhs <- wrhs_2col
       }
       return(y_wobs_offs(newdata = newdata, wrhs = wrhs, orhs = orhs,
                          resp_form = resp_fml))
@@ -1254,14 +1283,7 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
            "init_refmodel() needs to return an element `offset` with length ",
            "equal to the number of observations.")
     }
-    if (family$for_augdat && !all(mdat$weights == 1)) {
-      stop("Currently, the augmented-data projection may not be combined with ",
-           "observation weights (other than 1).")
-    }
-    if (family$for_latent && !all(mdat$weights == 1)) {
-      stop("Currently, the latent projection may not be combined with ",
-           "observation weights (other than 1).")
-    }
+    check_wobs_aug_lat(family, mdat$weights)
     return(mdat)
   }
 
@@ -1389,9 +1411,14 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
       if (excl_offs) {
         # Observation weights are not needed here, so we can use the default of
         # `wrhs = NULL` (using something like `wrhs = rep(1, nrow(newdata %||%
-        # data))` would cause a warning in newer brms versions):
-        offs <- extract_model_data(fit, newdata = newdata,
-                                   extract_y = FALSE)$offset
+        # data))` would cause a warning in newer brms versions). The internal
+        # default `extract_model_data` gets weights of 1, so that it does not
+        # need the response columns of a 2-column response in `newdata`:
+        offs <- extract_model_data(
+          fit, newdata = newdata,
+          wrhs = if (emd_default) rep(1, nrow(newdata %||% data)),
+          extract_y = FALSE
+        )$offset
         stopifnot(length(offs) %in% c(1L, n_obs))
         if (family$family %in% fams_neg_linpred()) {
           linpred_out <- linpred_out + offs
@@ -1576,8 +1603,14 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
     y_oscale <- NULL
   }
 
-  # Add (transformed) response under the (possibly) new name:
-  data[, response_name] <- y
+  # Add (transformed) response under the (possibly) new name. For a 2-column
+  # response, a 1-column `y` holds the first column (the successes), so the
+  # second column of `data` must stay as it is:
+  if (NCOL(y) == 1) {
+    data[, response_name[1]] <- y
+  } else {
+    data[, response_name] <- y
+  }
 
   target <- get_standard_y(y, weights, family)
   y <- target$y
@@ -1610,17 +1643,10 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
     }
   }
 
-  # Already performed by extract_model_data(), but repeated here because
-  # get_standard_y() might have altered the observation weights (in case of a
-  # 2-column `y`):
-  if (family$for_augdat && !all(weights == 1)) {
-    stop("Currently, the augmented-data projection may not be combined with ",
-         "observation weights (other than 1).")
-  }
-  if (family$for_latent && !all(weights == 1)) {
-    stop("Currently, the latent projection may not be combined with ",
-         "observation weights (other than 1).")
-  }
+  # Already performed by extract_model_data(). get_standard_y() changes the
+  # observation weights only for a 2-column `y`, which the augmented-data and
+  # the latent projection reject above, so this is only a guard:
+  check_wobs_aug_lat(family, weights)
 
   if (!proper_model && !all(offset == 0)) {
     # Disallow offsets for `datafit`s because the submodel fitting does not take
@@ -1764,4 +1790,47 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
   }
 
   return(refmodel)
+}
+
+# The response family on the original scale (for the latent projection, the
+# family of the extended object is gaussian()).
+family_resp <- function(family) {
+  if (isTRUE(family$for_latent)) family$family_oscale else family$family
+}
+
+# Workarounds for a binomial model with more than one trial per observation,
+# which the augmented-data and the latent projection do not support. For the
+# binomial family, projpred uses the observation weights as the numbers of
+# trials. `what` is "weights" (trials as observation weights) or "2col" (a
+# 2-column response). The 2-column message does not name the traditional
+# projection: with the default `extract_model_data`, init_refmodel() reads only
+# the first column there and uses weights of 1.
+binom_trials_hint <- function(family, what) {
+  deagg <- paste("de-aggregate the data into Bernoulli trials (one row per",
+                 "trial, with a 0/1 response).")
+  if (what == "weights") {
+    trad <- paste0(
+      "The traditional projection",
+      if (isTRUE(family$for_latent)) " (`latent = FALSE`)",
+      " supports more than one trial per observation."
+    )
+    paste("For the binomial family, projpred uses the observation weights as",
+          "the numbers of trials.", trad, "Alternatively,", deagg)
+  } else {
+    paste("As a workaround,", deagg)
+  }
+}
+
+# Stop if the augmented-data or the latent projection gets observation weights
+# other than 1. For the binomial family, the message names the workarounds.
+check_wobs_aug_lat <- function(family, weights) {
+  if (!family$for_augdat && !family$for_latent) return(invisible(TRUE))
+  if (all(weights == 1)) return(invisible(TRUE))
+  prj_type <- if (family$for_augdat) "augmented-data" else "latent"
+  msg <- paste0("Currently, the ", prj_type, " projection may not be ",
+                "combined with observation weights (other than 1).")
+  if (identical(family_resp(family), "binomial")) {
+    msg <- paste(msg, binom_trials_hint(family, "weights"))
+  }
+  stop(msg, call. = FALSE)
 }
