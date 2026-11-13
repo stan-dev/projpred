@@ -7,7 +7,7 @@
 The following global options are for internal use:
 \itemize{
 \item \code{projpred.mssg_ndraws}, \code{projpred.mssg_cut_search}, \code{projpred.mssg_time},
-\code{projpred.warn_wobs_ppd}, \code{projpred.warn_additive_experimental},
+\code{projpred.mssg_smooth_linear}, \code{projpred.warn_wobs_ppd}, \code{projpred.warn_additive_experimental},
 \code{projpred.warn_allrandom_dis}, \code{projpred.warn_instable_projections},
 \code{projpred.warn_cvrefbuilder_NULL}, \code{projpred.warn_kfold_refits}: A single
 logical value indicating whether to throw certain messages or warnings

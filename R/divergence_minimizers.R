@@ -655,6 +655,8 @@ filter_mssgs_warns <- function(mssgs_warns_capt) {
 # * The reference level: the prediction is the mean of the predictions for the
 #   other levels, with weights p (1 - p), where p is the weighted share of a
 #   level. For two other levels, this is their midpoint.
+# With other contrasts (for example, sum contrasts), the prediction for a lost
+# level comes from the ridge solution of glm_ridge().
 lost_levels <- function(data, keep, formula) {
   fml_fixed <- reformulas::nobars(formula)
   rhs_fixed <- fml_fixed[[length(fml_fixed)]]
@@ -740,7 +742,12 @@ recode_lost_levels <- function(newdata, lost_lvls) {
 
 # Drops the levels that lost_levels() recorded from the factors in `data` (the
 # data without the removed rows), so that fitters which keep unused levels in
-# the model matrix do not get a column of zeros.
+# the model matrix do not get a column of zeros. factor() removes the
+# `contrasts` attribute, so the fit uses the default contrasts for such a
+# factor. A contrast matrix cannot in general be reduced to fewer levels. The
+# population-level predictions of these (multilevel, additive and
+# augmented-data) fitters do not depend on the contrasts; the group-level
+# predictions do not depend on them for an unstructured covariance matrix.
 drop_lost_levels <- function(data, lost_lvls) {
   for (x_nm in intersect(names(lost_lvls), names(data))) {
     x <- data[[x_nm]]
@@ -765,6 +772,7 @@ fit_glm_ridge_callback <- function(formula, data,
     # differs between the draws:
     x <- projpred_shared_x$x
     xlvls <- projpred_shared_x$xlvls
+    ctrs <- projpred_shared_x$contrasts
     # These terms come from the first draw-wise formula. The predictions for
     # new data use only their predictor variables:
     terms_train <- projpred_shared_x$terms
@@ -774,6 +782,7 @@ fit_glm_ridge_callback <- function(formula, data,
     xy <- glm_model_matrix(formula, data = data)
     x <- xy$x
     xlvls <- xy$xlvls
+    ctrs <- xy$contrasts
     terms_train <- xy$terms
     y <- xy$y
   }
@@ -799,7 +808,7 @@ fit_glm_ridge_callback <- function(formula, data,
   # `terms` keeps the data-dependent bases of the training data (attribute
   # "predvars"), for predictions for new data:
   sub <- nlist(alpha = fit$beta0, beta = fit$beta, w = fit$w, formula, x, y,
-               xlvls, terms = terms_train)
+               xlvls, terms = terms_train, contrasts = ctrs)
   class(sub) <- "subfit"
   return(sub)
 }
@@ -820,15 +829,13 @@ glm_model_matrix <- function(formula, data) {
   } else {
     xlvls <- NULL
   }
-  # TODO: In the following model.matrix() call, allow user-specified contrasts
-  # to be passed to argument `contrasts.arg`. The `contrasts.arg` default
-  # (`NULL`) uses `options("contrasts")` internally, but it might be more
-  # convenient to let users specify contrasts directly. At that occasion,
-  # contrasts should also be tested thoroughly (not done until now).
+  # The model frame keeps the `contrasts` attributes of `data` (see
+  # set_contrasts()), and model.matrix() uses them:
   x <- model.matrix(formula, data = fr)
+  ctrs <- attr(x, "contrasts")
   x <- x[, colnames(x) != "(Intercept)", drop = FALSE]
   return(list(x = x, xlvls = xlvls, y = model.response(fr), n_fr = nrow(fr),
-              terms = attr(fr, "terms")))
+              terms = attr(fr, "terms"), contrasts = ctrs))
 }
 
 # Model matrix shared by the draw-wise formulas `formulas` (which have to differ
@@ -859,7 +866,7 @@ shared_model_matrix <- function(formulas, data) {
   # The response names (as from model.response()) are also shared, so the
   # draw-wise responses do not each get their own copy:
   return(list(x = xy$x, xlvls = xy$xlvls, y_names = names(xy$y),
-              terms = xy$terms))
+              terms = xy$terms, contrasts = xy$contrasts))
 }
 
 # fit_glm_ridge_callback() with a fixed shared model matrix. The enclosing
@@ -993,7 +1000,8 @@ glm_ridge_gauss_multi <- function(formulas, shared_x, dot_args, y = NULL) {
     # variables.
     structure(list(alpha = unname(beta0[s]), beta = beta_s, w = w,
                    formula = formulas[[s]], x = x, y = y_s,
-                   xlvls = shared_x$xlvls, terms = shared_x$terms),
+                   xlvls = shared_x$xlvls, terms = shared_x$terms,
+                   contrasts = shared_x$contrasts),
               class = "subfit")
   }))
 }
@@ -1069,7 +1077,7 @@ glm_ridge_native_multi <- function(formulas, shared_x, dot_args, y = NULL) {
     structure(list(alpha = beta0[s], beta = beta_s,
                    w = out$w[, s, drop = FALSE], formula = formulas[[s]],
                    x = x, y = y_s, xlvls = shared_x$xlvls,
-                   terms = shared_x$terms),
+                   terms = shared_x$terms, contrasts = shared_x$contrasts),
               class = "subfit")
   })
   # As fit_glm_ridge_callback() turns the messages into one warning and
@@ -1198,6 +1206,8 @@ fit_gamm_callback <- function(formula, projpred_formula_no_random,
 
   fit$random <- projpred_random
   fit$formula <- projpred_formula_no_random
+  # Contrasts of the factors in the group-level terms, for repair_re.gamm4():
+  fit$re_contrasts <- re_contrasts(data, projpred_random)
   class(fit) <- c("gamm4")
   return(fit)
 }
@@ -1297,6 +1307,16 @@ fit_glmer_callback <- function(formula, projpred_formula_no_random,
         names(dot_args),
         methods::formalArgs(lme4::glmer)
       )]
+      # lme4 < 2.1-1 rounds non-integer binomial data in the objective of
+      # `nAGQ >= 1`. With `nAGQ = 0`, the fixed effects and the group-level
+      # effects do not depend on this objective (the group-level standard
+      # deviations still do):
+      if (is.null(dot_args$nAGQ) &&
+          glmer_rounds_binomial(formula, family = family,
+                                data = dot_args$data,
+                                weights = dot_args$weights)) {
+        dot_args$nAGQ <- 0L
+      }
       # Call the submodel fitter:
       return(do.call(lme4::glmer, c(list(formula = formula, family = family,
                                          control = control),
@@ -1338,26 +1358,29 @@ fit_glmer_callback <- function(formula, projpred_formula_no_random,
         ...
       ))
     } else if (grepl("PIRLS", as.character(e))) {
-      if (length(dot_args$nAGQ) > 0) {
-        nAGQ_new <- dot_args$nAGQ + 1L
+      # `nAGQ` from `...` (not the `nAGQ = 0` that the code above sets for
+      # non-integer binomial data):
+      dot_args_retry <- list(...)
+      if (length(dot_args_retry$nAGQ) > 0) {
+        nAGQ_new <- dot_args_retry$nAGQ + 1L
       } else {
         nAGQ_new <- 20L
       }
+      dot_args_retry$nAGQ <- nAGQ_new
       if (nAGQ_new > 30L) {
         stop("Encountering a PIRLS error while running the lme4 fitting ",
              "procedure, but cannot fix this automatically anymore. You will ",
              "probably have to tweak lme4 tuning parameters manually (via ",
              "`...`).")
       }
-      return(fit_glmer_callback(
-        formula = formula,
-        projpred_formula_no_random = projpred_formula_no_random,
-        projpred_random = projpred_random,
-        family = family,
-        control = control,
-        nAGQ = nAGQ_new,
-        ...
-      ))
+      return(do.call(fit_glmer_callback, c(
+        list(formula = formula,
+             projpred_formula_no_random = projpred_formula_no_random,
+             projpred_random = projpred_random,
+             family = family,
+             control = control),
+        dot_args_retry
+      )))
     } else if (grepl("pwrssUpdate did not converge in \\(maxit\\) iterations",
                      as.character(e))) {
       tolPwrss_new <- 10 * control$tolPwrss
@@ -1454,6 +1477,32 @@ fit_glmer_callback <- function(formula, projpred_formula_no_random,
       stop(e)
     }
   })
+}
+
+# Whether lme4::glmer() would fit a binomial submodel to rounded data: lme4 <
+# 2.1-1 computes the objective of `nAGQ >= 1` with binomial()$aic(), which
+# rounds non-integer numbers of successes and trials. The traditional
+# projection has non-integer responses, and the augmented-data projection has
+# non-integer weights. `TRUE` also if the data cannot be checked (then
+# `nAGQ = 0` is used for data that may be integer).
+glmer_rounds_binomial <- function(formula, family, data, weights) {
+  if (!identical(family$family, "binomial") ||
+      utils::packageVersion("lme4") >= "2.1.1") {
+    return(FALSE)
+  }
+  is_whole <- function(x) {
+    all(abs(x - round(x)) < 1e-8)
+  }
+  out <- tryCatch({
+    y <- eval(formula[[2]], data, environment(formula))
+    w <- weights %||% 1
+    if (is.matrix(y)) {
+      !is_whole(w) || !is_whole(y)
+    } else {
+      !is_whole(w) || !is_whole(as.numeric(y) * w)
+    }
+  }, error = function(e) TRUE)
+  return(!isFALSE(out))
 }
 
 # Helper function for fit_glmer_callback() and fit_gamm_callback() to get the
@@ -2752,14 +2801,23 @@ predict.subfit <- function(object, newdata = NULL, ...) {
 # Model matrix (with intercept column) of a `subfit` object for new data, with
 # the columns in the order of the coefficients.
 subfit_newdata_x <- function(object, newdata) {
-  # TODO: In the following model.matrix() call, allow user-specified
-  # contrasts to be passed to argument `contrasts.arg`. The `contrasts.arg`
-  # default (`NULL`) uses `options("contrasts")` internally, but it might be
-  # more convenient to let users specify contrasts directly. At that
-  # occasion, contrasts should also be tested thoroughly (not done until
-  # now).
-  x <- model.matrix(subfit_terms_newdata(object), data = newdata,
-                    xlev = object$xlvls)
+  tt <- subfit_terms_newdata(object)
+  # The contrasts of the fit, not the `contrasts` attributes of `newdata` (with
+  # them, model.matrix() would warn "contrasts dropped from factor"). Also,
+  # model.matrix() warns about contrasts of variables that the terms do not
+  # have:
+  newdata <- strip_contrasts(newdata)
+  ctrs <- object$contrasts
+  if (length(ctrs) > 0) {
+    vars <- vapply(as.list(attr(tt, "variables"))[-1], deparse_combine,
+                   character(1))
+    ctrs <- ctrs[intersect(names(ctrs), vars)]
+    if (length(ctrs) == 0) {
+      ctrs <- NULL
+    }
+  }
+  x <- model.matrix(tt, data = newdata, xlev = object$xlvls,
+                    contrasts.arg = ctrs)
   # Need to ensure that the columns of `x` match the coefficients (note that
   # `rownames(beta)` is the same as `colnames(object$x)`, see the tests):
   nms_to_use <- c("(Intercept)", colnames(object$x))
@@ -2799,6 +2857,7 @@ subprd_subfit_shared <- function(fits, newdata) {
     inherits(fit, "subfit") && identical(fit$formula[[3]], rhs_1) &&
       identical(rownames(fit$beta), nms_1) &&
       identical(fit$xlvls, fit_1$xlvls) &&
+      identical(fit$contrasts, fit_1$contrasts) &&
       identical(predvars_predictors(fit$terms), pv_1)
   }, logical(1)))
   if (!is_shared) {
@@ -2854,12 +2913,27 @@ empty_intersection <- function(x, el_nm = "new") {
 #
 # The license of lme4 version 1.1-28 is:
 # "GPL (>=2)" (see <https://CRAN.R-project.org/package=lme4>).
-mkNewReTrms_man <- function(re.form, newdata, xlevels, re, D = NULL) {
+mkNewReTrms_man <- function(re.form, newdata, xlevels, re, D = NULL,
+                            contrasts = NULL) {
   stopifnot(!is.null(newdata))
   tt <- terms(reformulas::subbars(re.form))
   rfd <- suppressWarnings(
     model.frame(tt, newdata, na.action = na.pass, xlev = xlevels)
   )
+  # The contrasts of the factors in the group-level terms of the fit (from
+  # re_contrasts()), as in lme4::mkNewReTrms():
+  for (nm in intersect(names(contrasts), names(rfd))) {
+    x <- factor(rfd[[nm]], levels = rownames(contrasts[[nm]]),
+                ordered = is.ordered(rfd[[nm]]))
+    is_new <- is.na(x) & !is.na(rfd[[nm]])
+    if (any(is_new)) {
+      stop("Factor `", nm, "` has new levels: ",
+           paste(unique(as.character(rfd[[nm]][is_new])), collapse = ", "),
+           ".")
+    }
+    contrasts(x) <- contrasts[[nm]]
+    rfd[[nm]] <- x
+  }
   ReTrms <- reformulas::mkReTrms(reformulas::findbars(re.form[[2]]), rfd)
   ns.re <- names(re)
   nRnms <- names(Rcnms <- ReTrms$cnms)
@@ -3180,7 +3254,8 @@ gamm4_re_prep <- function(object, newdata, ranef_tmp) {
                                  newdata = newdata,
                                  xlevels = c(lapply(lvls_list, "[[", "comb"),
                                              object$gam$xlevels),
-                                 re = ranef_tmp)
+                                 re = ranef_tmp,
+                                 contrasts = object$re_contrasts)
   return(list(lvls_list = lvls_list, Zt = ranefs_prep$Zt,
               new_levels = ranefs_prep$new_levels, cnms = ranefs_prep$cnms))
 }
