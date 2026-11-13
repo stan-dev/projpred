@@ -154,6 +154,33 @@ test_that(paste(
                "response values must be numbers of successes")
 })
 
+test_that(paste(
+  "rstanarm::stan_gamm4() with argument `random` and a two-column response",
+  "fails with an informative error, and the workaround works"
+), {
+  skip_if_not_installed("rstanarm")
+  skip_if_not(run_additive)
+  fit_gamm_cbind <- suppressWarnings(rstanarm::stan_gamm4(
+    cbind(y_glm_binom, wobs_col - y_glm_binom) ~ xco.1 + s(s.1),
+    random = ~ (1 | z.1), family = f_binom, data = dat,
+    chains = 1L, seed = seed_fit, iter = 200L, refresh = 0
+  ))
+  expect_error(
+    get_refmodel(fit_gamm_cbind),
+    paste("lacks the variable\\(s\\) `y_glm_binom`, `wobs_col` of the model",
+          "formula\\. This is rstanarm issue #545")
+  )
+  fit_rows <- fit_gamm_cbind
+  fit_rows$data <- dat[-1, ]
+  expect_error(get_refmodel(fit_rows),
+               paste("has", nrow(dat) - 1L, "rows, but the fit has",
+                     nrow(dat), "rows"))
+  fit_gamm_cbind$data <- dat
+  refmod_cbind <- get_refmodel(fit_gamm_cbind)
+  expect_equal(refmod_cbind$y, dat$y_glm_binom)
+  expect_equal(refmod_cbind$wobs, dat$wobs_col)
+})
+
 test_that("function calls in group terms fail", {
   tstsetup <- "brms.glmm.brnll.stdformul.without_wobs.without_offs"
   args_fit_i <- args_fit[[tstsetup]]

@@ -687,11 +687,12 @@ args_fit <- lapply(pkg_nms, function(pkg_nm) {
     }
 
     if (pkg_nm == "rstanarm" && mod_nm == "gamm") {
-      # Exclude "binom" from `fam_nms` since there seems to be an issue with
-      # get_refmodel.stanreg() in this case (probably issue #148):
+      # Exclude "binom" from `fam_nms`: with argument `random`, the `data`
+      # element of the fit lacks the variables of the two-column response, so
+      # get_refmodel() stops (see the workaround in test_refmodel.R). This
+      # exclusion also has the downside that K-fold CV cannot be tested in
+      # that case.
       fam_nms <- setdiff(fam_nms, "binom")
-      # TODO (GAMMs): Fix this. This exclusion also has the downside that K-fold
-      # CV cannot be tested in that case.
     }
 
     fam_nms <- setNames(nm = fam_nms)
