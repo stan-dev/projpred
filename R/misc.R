@@ -1404,3 +1404,19 @@ set_contrasts <- function(data, ctrs) {
   }
   return(data)
 }
+
+# The contrast matrices (see contrasts_from_data()) of the factors in the
+# left-hand sides of the group-level terms of `random` (a formula such as
+# `~ (1 + f | g)`), as set in `data`. The grouping variables are left out. A
+# factor with a level that no row has is left out, because model.frame() with
+# `drop.unused.levels = TRUE` drops its `contrasts` attribute.
+re_contrasts <- function(data, random) {
+  vars <- unlist(lapply(reformulas::findbars(random), function(bar) {
+    all.vars(bar[[2]])
+  }))
+  vars <- Filter(function(nm) {
+    x <- data[[nm]]
+    !is.factor(x) || all(tabulate(x, nbins = nlevels(x)) > 0)
+  }, intersect(unique(vars), names(data)))
+  return(contrasts_from_data(data, vars = vars))
+}

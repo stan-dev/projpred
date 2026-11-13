@@ -681,9 +681,10 @@ recode_lost_levels <- function(newdata, lost_lvls) {
 # data without the removed rows), so that fitters which keep unused levels in
 # the model matrix do not get a column of zeros. factor() removes the
 # `contrasts` attribute, so the fit uses the default contrasts for such a
-# factor. A contrast matrix cannot in general be reduced to fewer levels, and
-# the predictions of these (multilevel, additive and augmented-data) fitters do
-# not depend on the contrasts.
+# factor. A contrast matrix cannot in general be reduced to fewer levels. The
+# population-level predictions of these (multilevel, additive and
+# augmented-data) fitters do not depend on the contrasts; the group-level
+# predictions do not depend on them for an unstructured covariance matrix.
 drop_lost_levels <- function(data, lost_lvls) {
   for (x_nm in intersect(names(lost_lvls), names(data))) {
     x <- data[[x_nm]]
@@ -1142,6 +1143,8 @@ fit_gamm_callback <- function(formula, projpred_formula_no_random,
 
   fit$random <- projpred_random
   fit$formula <- projpred_formula_no_random
+  # Contrasts of the factors in the group-level terms, for repair_re.gamm4():
+  fit$re_contrasts <- re_contrasts(data, projpred_random)
   class(fit) <- c("gamm4")
   return(fit)
 }
@@ -2838,12 +2841,27 @@ empty_intersection <- function(x, el_nm = "new") {
 #
 # The license of lme4 version 1.1-28 is:
 # "GPL (>=2)" (see <https://CRAN.R-project.org/package=lme4>).
-mkNewReTrms_man <- function(re.form, newdata, xlevels, re, D = NULL) {
+mkNewReTrms_man <- function(re.form, newdata, xlevels, re, D = NULL,
+                            contrasts = NULL) {
   stopifnot(!is.null(newdata))
   tt <- terms(reformulas::subbars(re.form))
   rfd <- suppressWarnings(
     model.frame(tt, newdata, na.action = na.pass, xlev = xlevels)
   )
+  # The contrasts of the factors in the group-level terms of the fit (from
+  # re_contrasts()), as in lme4::mkNewReTrms():
+  for (nm in intersect(names(contrasts), names(rfd))) {
+    x <- factor(rfd[[nm]], levels = rownames(contrasts[[nm]]),
+                ordered = is.ordered(rfd[[nm]]))
+    is_new <- is.na(x) & !is.na(rfd[[nm]])
+    if (any(is_new)) {
+      stop("Factor `", nm, "` has new levels: ",
+           paste(unique(as.character(rfd[[nm]][is_new])), collapse = ", "),
+           ".")
+    }
+    contrasts(x) <- contrasts[[nm]]
+    rfd[[nm]] <- x
+  }
   ReTrms <- reformulas::mkReTrms(reformulas::findbars(re.form[[2]]), rfd)
   ns.re <- names(re)
   nRnms <- names(Rcnms <- ReTrms$cnms)
@@ -3135,7 +3153,8 @@ repair_re.gamm4 <- function(object, newdata) {
                                  newdata = newdata,
                                  xlevels = c(lapply(lvls_list, "[[", "comb"),
                                              object$gam$xlevels),
-                                 re = ranef_tmp)
+                                 re = ranef_tmp,
+                                 contrasts = object$re_contrasts)
   names(ranefs_prep$b) <- rownames(ranefs_prep$Zt)
 
   VarCorr_tmp <- lme4::VarCorr(object$mer)

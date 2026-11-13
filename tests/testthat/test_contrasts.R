@@ -241,6 +241,66 @@ test_that("multilevel and additive submodels use the contrasts", {
                tolerance = 1e-10)
 })
 
+test_that("a factor in a group-level term uses the contrasts", {
+  skip_if_not_installed("lme4")
+  skip_if_not_installed("gamm4")
+  dat <- dat_contr(ctr_f = contr.sum(3))
+  # Groups that contain all levels of `f`:
+  dat$g <- factor(rep(paste0("g", 1:6), each = 10))
+  # Only the left-hand sides of the group-level terms, and only factors without
+  # unused levels (see re_contrasts()):
+  contrasts(dat$g) <- contr.sum(6)
+  expect_equal(re_contrasts(dat, ~ (1 + f | g)),
+               contrasts_from_data(dat, vars = "f"))
+  expect_null(re_contrasts(dat[dat$f != "c", ], ~ (1 + f | g)))
+  dat <- strip_contrasts(dat)
+  contrasts(dat$f) <- contr.sum(3)
+  nd <- strip_contrasts(dat[1:5, ])
+  # New data with fewer levels:
+  idx_ab <- which(dat$f != "c")[1:4]
+  nd_ab <- droplevels(strip_contrasts(dat[idx_ab, ]))
+  cases <- list(
+    lmer = list(fml = y ~ f + x + (1 + f | g),
+                trms = c("f", "x", "(1 | g)", "(f | g)")),
+    gamm = list(fml = y ~ f + s(x) + (1 + f | g),
+                trms = c("f", "s(x)", "(1 | g)", "(f | g)")),
+    # `f` only in the group-level term:
+    gamm_re = list(fml = y ~ s(x) + (1 + f | g),
+                   trms = c("s(x)", "(1 | g)", "(f | g)"))
+  )
+  for (nm in names(cases)) {
+    # A reference model with group-specific effects of `f` (and with `o`, so
+    # that the submodels do not fit it exactly):
+    refm <- refm_contr(dat, fml = cases[[nm]]$fml,
+                       fml_ref = y ~ f * g + x + o)
+    prj <- suppressWarnings(project(
+      refm, predictor_terms = cases[[nm]]$trms, nclusters = 1,
+      verbose = FALSE
+    ))
+    fit <- prj$outdmin[[1]]
+    fit_mer <- if (inherits(fit, "gamm4")) fit$mer else fit
+    expect_identical(lme4::getME(fit_mer, "cnms")$g,
+                     c("(Intercept)", "f1", "f2"), info = nm)
+    expect_gt(max(abs(as.matrix(lme4::ranef(fit_mer)$g[, c("f1", "f2")]))),
+              0.05)
+    # The predictions for the training data and for new data use the group-level
+    # effects of the fit with the same coding:
+    fv <- unname(fitted(fit_mer))
+    expect_equal(unname(drop(proj_linpred(prj)$pred)), fv, tolerance = 1e-8,
+                 info = nm)
+    expect_equal(unname(drop(proj_linpred(prj, newdata = nd)$pred)), fv[1:5],
+                 tolerance = 1e-8, info = nm)
+    expect_equal(unname(drop(proj_linpred(prj, newdata = nd_ab)$pred)),
+                 fv[idx_ab], tolerance = 1e-8, info = nm)
+    if (nm == "gamm_re") {
+      nd_new <- nd
+      nd_new$f <- factor(c("d", as.character(nd$f[-1])))
+      expect_error(proj_linpred(prj, newdata = nd_new),
+                   "Factor `f` has new levels: d\\.")
+    }
+  }
+})
+
 test_that(paste(
   "the LOO CV with validated search works with contrasts and a level that",
   "only one observation has"
