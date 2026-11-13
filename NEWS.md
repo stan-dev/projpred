@@ -61,6 +61,8 @@ If you read this from a place other than <https://mc-stan.org/projpred/news/inde
 * The reference model formula of an **rstanarm** GAMM no longer has extra linear terms for the variables of its smooth terms, as in an **rstanarm** GAM. The search candidates do not change. (GitHub: #384, #626)
 * Fixed wrong predictions and errors of additive multilevel submodels (`gamm4::gamm4()`) for new data, and wrong predictions with group-level slopes. New group levels now get drawn group-level effects, and option `projpred.mlvl_pred_new` now applies. (GitHub: #239, #623)
 * Fixed the term names of the L1 search if one model-matrix column name starts with another one. (GitHub: #615)
+* After a PIRLS error of `lme4::glmer()` in a submodel with a non-scalar group-level term or several group-level terms (for example `(x | g)`), projpred now stops with an error that contains the lme4 error. (GitHub: #565, #633)
+* If the optimx refit after a `not positive definite` error of lme4 fails, too, projpred now stops with an error that contains both error messages. (GitHub: #323, #633)
 * `get_refmodel()` now stops with an error that names the missing variables and gives a workaround. This applies to `rstanarm::stan_gamm4()` fits with argument `random` and an expression in the formula, such as `cbind(y, n - y)`. (GitHub: #148, #634)
 
 

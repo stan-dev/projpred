@@ -1096,17 +1096,19 @@ fit_gamm_callback <- function(formula, projpred_formula_no_random,
              "optimizer, but cannot find the optimx package. Please install ",
              "it to be able to try this fix.")
       }
-      return(fit_gamm_callback(
-        formula = formula,
-        projpred_formula_no_random = projpred_formula_no_random,
-        projpred_random = projpred_random,
-        data = data,
-        family = family,
-        control = control_callback(family,
-                                   optimizer = "optimx",
-                                   optCtrl = list(method = "nlminb")),
-        ...
-      ))
+      return(refit_optimx(function() {
+        fit_gamm_callback(
+          formula = formula,
+          projpred_formula_no_random = projpred_formula_no_random,
+          projpred_random = projpred_random,
+          data = data,
+          family = family,
+          control = control_callback(family,
+                                     optimizer = "optimx",
+                                     optCtrl = list(method = "nlminb")),
+          ...
+        )
+      }, e_first = e, pkg = "gamm4"))
     } else if (grepl("pwrssUpdate", as.character(e))) {
       # lme4's PIRLS could not reduce the deviance any further, so relax the
       # convergence tolerance for the PIRLS step by a factor of 10 and retry
@@ -1137,6 +1139,28 @@ fit_gamm_callback <- function(formula, projpred_formula_no_random,
   fit$formula <- projpred_formula_no_random
   class(fit) <- c("gamm4")
   return(fit)
+}
+
+# Calls `refit()`, the refit with optimx and `nlminb` after the `not positive
+# definite` error `e_first` of lme4. If this refit fails with an error that is
+# not a "cannot fix this automatically" error, stop with a message that
+# contains both error messages. (If `nlminb` fails, optimx returns `NA`
+# parameters, and lme4 then stops with "missing value where TRUE/FALSE
+# needed".) `pkg` is the package of the tuning parameters in the message.
+refit_optimx <- function(refit, e_first, pkg) {
+  tryCatch(refit(), error = function(e) {
+    if (grepl("cannot fix this automatically", conditionMessage(e))) {
+      stop(e)
+    }
+    msg_first <- trimws(conditionMessage(e_first))
+    if (!grepl("\\.$", msg_first)) msg_first <- paste0(msg_first, ".")
+    stop("Encountering the `not positive definite` error while running the ",
+         "lme4 fitting procedure, but cannot fix this automatically: the ",
+         "refit with optimx and `nlminb` failed, too. You will probably have ",
+         "to tweak ", pkg, " tuning parameters manually (via `...`). The lme4 ",
+         "error was: ", msg_first, " The error of the refit was: ",
+         conditionMessage(e))
+  })
 }
 
 # Use package "lme4" to fit multilevel submodels:
@@ -1274,20 +1298,30 @@ fit_glmer_callback <- function(formula, projpred_formula_no_random,
              "optimizer, but cannot find the optimx package. Please install ",
              "it to be able to try this fix.")
       }
-      return(fit_glmer_callback(
-        formula = formula,
-        projpred_formula_no_random = projpred_formula_no_random,
-        projpred_random = projpred_random,
-        family = family,
-        control = control_callback(family,
-                                   optimizer = "optimx",
-                                   optCtrl = list(method = "nlminb")),
-        ...
-      ))
+      return(refit_optimx(function() {
+        fit_glmer_callback(
+          formula = formula,
+          projpred_formula_no_random = projpred_formula_no_random,
+          projpred_random = projpred_random,
+          family = family,
+          control = control_callback(family,
+                                     optimizer = "optimx",
+                                     optCtrl = list(method = "nlminb")),
+          ...
+        )
+      }, e_first = e, pkg = "lme4"))
     } else if (grepl("PIRLS", as.character(e))) {
       # `nAGQ` from `...` (not the `nAGQ = 0` that the code above sets for
       # non-integer binomial data):
       dot_args_retry <- list(...)
+      # lme4 accepts `nAGQ > 1` only for a single scalar group-level term:
+      if (!glmer_scalar_re(formula, data = dot_args_retry$data)) {
+        stop("Encountering a PIRLS error while running the lme4 fitting ",
+             "procedure, but cannot fix this automatically: a larger `nAGQ` ",
+             "requires a single scalar group-level term. You will probably ",
+             "have to tweak lme4 tuning parameters manually (via `...`). ",
+             "The lme4 error was: ", conditionMessage(e))
+      }
       if (length(dot_args_retry$nAGQ) > 0) {
         nAGQ_new <- dot_args_retry$nAGQ + 1L
       } else {
@@ -1430,6 +1464,24 @@ glmer_rounds_binomial <- function(formula, family, data, weights) {
     }
   }, error = function(e) TRUE)
   return(!isFALSE(out))
+}
+
+# Whether the multilevel `formula` has a single scalar group-level term (one
+# term after reformulas::findbars(), with one model-matrix column), the case in
+# which lme4::glmer() accepts `nAGQ > 1`. `TRUE` also if the number of columns
+# cannot be computed (then the refit with a larger `nAGQ` runs).
+glmer_scalar_re <- function(formula, data = NULL) {
+  bars <- reformulas::findbars(formula)
+  if (length(bars) != 1) {
+    return(FALSE)
+  }
+  fml_lhs <- stats::as.formula(call("~", bars[[1]][[2]]))
+  environment(fml_lhs) <- environment(formula)
+  n_col <- tryCatch(
+    ncol(stats::model.matrix(fml_lhs, data = data)),
+    error = function(e) NA_integer_
+  )
+  return(is.na(n_col) || n_col == 1L)
 }
 
 # Helper function for fit_glmer_callback() and fit_gamm_callback() to get the
