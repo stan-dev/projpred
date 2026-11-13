@@ -1462,7 +1462,6 @@ control_callback <- function(family, ...) {
 
 # Needed to avoid a NOTE in `R CMD check`:
 utils::globalVariables("projpred_w_aug_s")
-utils::globalVariables("projpred_internal_w_aug")
 
 divmin_augdat <- function(
     formula,
