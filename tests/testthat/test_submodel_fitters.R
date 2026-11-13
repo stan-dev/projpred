@@ -569,6 +569,17 @@ test_that(paste(
     control = list()
   )
   expect_identical(res1$conv, 5L)
+  # Nelder_Mead at `maxfun` does not report convergence:
+  opt_nm <- gamm_stage1_optimizer("Nelder_Mead", opt_ctrl = list(maxfun = 3))
+  expect_warning(
+    res1 <- opt_nm(par = c(0.5, 0.5), fn = fn, lower = c(0, 0),
+                   upper = c(Inf, Inf), control = list()),
+    "failure to converge"
+  )
+  expect_identical(res1$convergence, 4L)
+  res2 <- opt_nm(par = c(res1$par, 0, 0), fn = fn, lower = c(0, 0, -Inf, -Inf),
+                 upper = rep(Inf, 4), control = list())
+  expect_identical(res2$conv, 4L)
   # Other optimizers:
   expect_null(gamm_stage1_optimizer("optimx",
                                     opt_ctrl = list(method = "L-BFGS-B")))
@@ -696,6 +707,7 @@ test_that(paste(
   ), "cannot fix this automatically")
   # The first fit and the refit with optimx:
   expect_length(optimizers, 2L)
+  expect_identical(is.function(optimizers[[2]][[1]]), gamm_skips_stage2())
 })
 
 # ordinal::clmm() ---------------------------------------------------------

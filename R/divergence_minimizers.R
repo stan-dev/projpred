@@ -1501,6 +1501,12 @@ gamm_stage1_optimizer <- function(optimizer, opt_ctrl = list()) {
     if (is.null(res_stage1) || length(par) <= length(res_stage1$par)) {
       res_stage1 <<- optfun(par = par, fn = fn, lower = lower, upper = upper,
                             control = ctrl_stage1)
+      # As in lme4:::optwrap(), which does this only for the name
+      # "Nelder_Mead": lme4::Nelder_Mead() gives `convergence = 0` when it
+      # reaches `maxfun`.
+      if (isTRUE(res_stage1$NM.result == 4)) {
+        res_stage1$convergence <<- 4L
+      }
       return(res_stage1)
     }
     conv <- res_stage1$conv %||% res_stage1$convergence %||% 0L
