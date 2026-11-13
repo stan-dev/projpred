@@ -60,19 +60,28 @@ expand_formula <- function(formula, data) {
   return(formula(terms(formula, data = data)))
 }
 
-remove_duplicates <- function(formula) {
+# Returns the arguments of a smooth term, for example c("x", "z") for
+# "s(x, z)". projpred does not allow other arguments of s() and t2() (see
+# parse_additive_terms()).
+smooth_args <- function(smooth) {
+  cl <- str2lang(smooth)
+  return(unname(vapply(as.list(cl)[-1], deparse_combine, character(1))))
+}
+
+# Returns the linear terms of `formula` that are also an argument of a smooth
+# term, for example `x` next to `s(x)`. With the default bases of mgcv, the smooth term
+# contains the linear term, so the coefficient of the linear term is not
+# identifiable. Interaction terms (such as `x:z` next to `t2(x, z)`) are not
+# checked.
+smooth_covered_terms <- function(formula) {
   terms <- extract_terms_response(formula)
   linear <- terms$individual_terms
-  additive <- unlist(regmatches(
-    terms$additive_terms,
-    gregexpr("(?<=\\().*?(?=\\))",
-             terms$additive_terms,
-             perl = TRUE)
-  ))
-  additive <- trimws(unique(unlist(
-    strsplit(paste0(additive, collapse = ","), ",")
-  )))
-  dups <- linear[!is.na(match(linear, additive))]
+  covered <- unique(unlist(lapply(terms$additive_terms, smooth_args)))
+  return(linear[linear %in% covered])
+}
+
+remove_duplicates <- function(formula) {
+  dups <- smooth_covered_terms(formula)
   if (length(dups) > 0) {
     update(formula, as.formula(paste0(
       ". ~ . - ",
@@ -976,41 +985,35 @@ lhs <- function(x) {
   if (length(x) == 3L) update(x, . ~ 1) else NULL
 }
 
-# Collapse "raw" predictor terms representing contrasts, dummy codings, or
-# polynomial terms into their corresponding original terms from a model formula.
+# Collapse "raw" predictor terms (the columns of the model matrix, for example
+# those of contrasts, dummy codings, or polynomial terms) into their
+# corresponding original terms from a model formula.
 #
-# @param path Vector of ranked "raw" predictor terms ("raw" means that these
-#   terms may represent contrasts, dummy codings, or polynomial terms).
+# @param path Vector of ranked "raw" predictor terms: column names of
+#   `model.matrix(formula, data = data)`.
 # @param formula The model formula (from which the ranking in `path` was
 #   derived).
 # @param data The model data (from which the ranking in `path` was derived).
 #
-# @return A character vector of collapsed predictor terms (i.e., all of these
-#   returned predictor terms occur in `formula`).
+# @return A character vector of collapsed predictor terms, in the order of their
+#   first column in `path`. These terms occur in `formula`; an element of `path`
+#   that is not a column (for example `NA`) is returned as it is.
 collapse_ranked_predictors <- function(path, formula, data) {
-  tt <- terms(formula)
-  # The labels and the column names of a long term have line breaks (see
-  # join_lines()):
-  terms_ <- join_lines(attr(tt, "term.labels"))
+  # `data` is the model frame of search_L1(), with the contrasts of the
+  # reference model:
+  x <- model.matrix(formula, data = data)
+  # Match the columns to the terms by the "assign" attribute (0: the
+  # intercept), not by the text of the column names:
+  term_idx <- attr(x, "assign")
+  # The labels of a long term have line breaks (see join_lines()). Its column
+  # names can also have them; join_lines() on `path` and on the column names
+  # keeps the match also if `path` has joined column names:
+  term_labels <- join_lines(attr(terms(formula, data = data), "term.labels"))
   path <- join_lines(path)
-  for (term in terms_) {
-    # TODO: In the following model.matrix() call, allow user-specified contrasts
-    # to be passed to argument `contrasts.arg`. The `contrasts.arg` default
-    # (`NULL`) uses `options("contrasts")` internally, but it might be more
-    # convenient to let users specify contrasts directly. At that occasion,
-    # contrasts should also be tested thoroughly (not done until now).
-    x <- model.matrix(as.formula(paste("~ 1 +", term)), data = data)
-    if (length(attr(x, "contrasts")) == 0 &&
-        !grepl("^poly[m]*\\(.+\\)$", term)) {
-      next
-    }
-    x <- x[, colnames(x) != "(Intercept)", drop = FALSE]
-    for (col_nm in join_lines(colnames(x))) {
-      path <- gsub(esc_chars(col_nm), term, path)
-    }
-    path <- unique(path)
-  }
-  return(path)
+  term_of_col <- term_labels[term_idx[term_idx > 0]]
+  path_terms <- term_of_col[match(path, join_lines(colnames(x)[term_idx > 0]))]
+  path_terms[is.na(path_terms)] <- path[is.na(path_terms)]
+  return(unique(path_terms))
 }
 
 split_formula_random_gamm4 <- function(formula) {
@@ -1045,14 +1048,10 @@ formula.gamm4 <- function(x, ...) {
     paste0("(", t, ")")
   }))
   ref <- paste(ref, collapse = " + ")
-  updated <- update(formula, paste(". ~ . + ", ref))
-  form <- flatten_formula(update(
-    updated,
-    paste(
-      ". ~",
-      paste(split_formula(updated), collapse = " + ")
-    )
-  ))
+  # Keep only the terms of the model, as for a model without group-level
+  # terms. The search adds the linear terms of the smooth variables as
+  # candidates.
+  form <- flatten_formula(update(formula, paste(". ~ . + ", ref)))
   # TODO (GAMMs): Once rstanarm issue #253 has been resolved, we probably need
   # to include offset terms here (in the output of formula.gamm4()) as well.
   return(form)

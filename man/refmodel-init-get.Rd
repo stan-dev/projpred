@@ -117,8 +117,13 @@ original call and with \code{called_from_cvrefbuilder = TRUE}. A custom
 functions that depend on the posterior draws (see \code{\link[=extend_family]{extend_family()}}).}
 
 \item{data}{A \code{data.frame} containing the data to use for the projection
-predictive variable selection. Any \code{contrasts} attributes of the dataset's
-columns are silently removed. For custom reference models, the columns of
+predictive variable selection. The \code{contrasts} attributes of the factor
+columns (see \code{\link[=contrasts]{contrasts()}}) set the contrasts of these predictors in the
+submodels; for other factors, the submodels use \code{options("contrasts")}.
+The \code{stanreg} method of \code{\link[=get_refmodel]{get_refmodel()}} takes the contrasts from the
+\pkg{rstanarm} fit (except for \code{\link[rstanarm:stan_gamm4]{rstanarm::stan_gamm4()}}, which does not
+store them), and \pkg{brms} sets these attributes. For custom reference
+models, the columns of
 \code{data} do not necessarily have to coincide with those of the dataset used
 for fitting the reference model, but keep in mind that a row-subset of
 \code{data} is used for argument \code{newdata} of \code{ref_predfun} during \eqn{K}-fold
@@ -154,7 +159,11 @@ submodel onto which the reference model is projected. See also section
 \item{extract_model_data}{A function for fetching some variables (response,
 observation weights, offsets) from the original dataset (supplied to
 argument \code{data}) or from a new dataset. May be \code{NULL} for using an internal
-default that essentially corresponds to \code{\link[=y_wobs_offs]{y_wobs_offs()}}. See also section
+default that essentially corresponds to \code{\link[=y_wobs_offs]{y_wobs_offs()}}. For a 2-column
+binomial response (successes and failures), this internal default uses the
+sums of the two columns (the numbers of trials) as observation weights.
+Then a \code{newdata} in prediction functions must contain the variables of the
+response columns, or the call must supply \code{weightsnew}. See also section
 "Argument \code{extract_model_data}" below.}
 
 \item{cvfits}{For \eqn{K}-fold CV only. A \code{list} containing the \eqn{K}
