@@ -639,9 +639,7 @@ proj_predict_aux <- function(proj, newdata, offsetnew, weightsnew,
 }
 
 # Needed to avoid a NOTE in `R CMD check`:
-if (getRversion() >= package_version("2.15.1")) {
-  utils::globalVariables("fontsize")
-}
+utils::globalVariables("fontsize")
 
 #' Plot predictive performance
 #'
@@ -2019,11 +2017,8 @@ replace_population_names <- function(population_effects, nm_scheme) {
       names(population_effects),
       nm_scheme = nm_scheme
     )
-    if (length(population_effects) > 0) {
-      # We could also use `recycle0 = TRUE` here, but that would
-      # require R >= 4.0.1.
-      names(population_effects) <- paste0("b_", names(population_effects))
-    }
+    names(population_effects) <- paste0("b_", names(population_effects),
+                                        recycle0 = TRUE)
   }
   return(population_effects)
 }
@@ -2557,12 +2552,10 @@ get_subparams.mmblogit <- function(x, ...) {
 #' # Since the draws have all the same weight here, we can treat them like
 #' # ordinary MCMC draws, e.g., we can summarize them using the `posterior`
 #' # package:
-#' if (requireNamespace("posterior", quietly = TRUE)) {
-#'   print(posterior::summarize_draws(
-#'     posterior::as_draws_matrix(prj_mat),
-#'     "median", "mad", function(x) quantile(x, probs = c(0.025, 0.975))
-#'   ))
-#' }
+#' print(posterior::summarize_draws(
+#'   posterior::as_draws_matrix(prj_mat),
+#'   "median", "mad", function(x) quantile(x, probs = c(0.025, 0.975))
+#' ))
 #' # Or visualize them using the `bayesplot` package:
 #' if (requireNamespace("bayesplot", quietly = TRUE)) {
 #'   print(bayesplot::mcmc_intervals(prj_mat))
@@ -2629,7 +2622,7 @@ as.matrix.projection <- function(x, nm_scheme = NULL,
 #'   \eqn{Q} the number of parameters. If the projected draws have nonconstant
 #'   weights, [posterior::weight_draws()] is applied internally.
 #'
-#' @examplesIf requireNamespace("rstanarm", quietly = TRUE) && requireNamespace("posterior", quietly = TRUE)
+#' @examplesIf requireNamespace("rstanarm", quietly = TRUE)
 #' # Data:
 #' dat_gauss <- data.frame(y = df_gaussian$y, df_gaussian$x)
 #'
@@ -2687,9 +2680,6 @@ as_draws.projection <- function(x, ...) {
 # argument `wdraws_prj`) to a `draws_matrix` (which will be weighted if `xmat`
 # possesses an argument `wdraws_prj`).
 mat2drmat <- function(xmat) {
-  if (!requireNamespace("posterior", quietly = TRUE)) {
-    stop("Please install the 'posterior' package.")
-  }
   drmat <- posterior::as_draws_matrix(structure(xmat, wdraws_prj = NULL))
   wdr <- attr(xmat, "wdraws_prj")
   if (!is.null(wdr)) {

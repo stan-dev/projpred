@@ -294,7 +294,6 @@ test_that(paste(
   "posterior::weight_draws()"
 ), {
   skip_if_not(run_prj)
-  skip_if_not_installed("posterior")
   for (tstsetup in names(prjs)) {
     if (args_prj[[tstsetup]]$mod_nm == "gamm") {
       # as_draws_matrix() stops for GAMM submodels. The other submodels of
@@ -328,7 +327,6 @@ test_that(paste(
   "as.matrix.projection()"
 ), {
   skip_if_not(run_prj)
-  skip_if_not_installed("posterior")
   for (tstsetup in grep("rstanarm\\.glm\\.", names(prjs), value = TRUE)) {
     m <- as.matrix(prjs[[tstsetup]], nm_scheme = "brms",
                    allow_nonconst_wdraws_prj = ndr_ncl_dtls(
@@ -348,7 +346,6 @@ test_that(paste(
   "as_draws.projection() is a wrapper for as_draws_matrix.projection()"
 ), {
   skip_if_not(run_prj)
-  skip_if_not_installed("posterior")
   for (tstsetup in grep("rstanarm\\.glm\\.", names(prjs), value = TRUE)) {
     m_dr <- posterior::as_draws_matrix(prjs[[tstsetup]], nm_scheme = "brms")
     m_dr_unspec <- posterior::as_draws(prjs[[tstsetup]], nm_scheme = "brms")
@@ -441,3 +438,20 @@ if (run_snaps) {
 
   if (testthat_ed_max2) local_edition(2)
 }
+
+test_that("replace_population_names() works for zero and more effects", {
+  coefs <- c("(Intercept)" = 0.5, x1 = 1.2, "x2:x3" = -0.3)
+  expect_identical(
+    replace_population_names(coefs, nm_scheme = "brms"),
+    c(b_Intercept = 0.5, b_x1 = 1.2, "b_x2:x3" = -0.3)
+  )
+  expect_identical(replace_population_names(coefs, nm_scheme = "rstanarm"),
+                   coefs)
+  # No population-level effects (for example, the `beta` of an ordinal
+  # submodel without predictors):
+  for (coefs_empty in list(numeric(0), setNames(numeric(0), character(0)))) {
+    res <- replace_population_names(coefs_empty, nm_scheme = "brms")
+    expect_length(res, 0)
+    expect_identical(names(res), character(0))
+  }
+})

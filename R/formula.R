@@ -742,9 +742,9 @@ count_terms_in_group_term <- function(term) {
 # Cache for results that depend only on strings (term labels, formula text).
 # The fold-wise searches of cv_varsel() and the steps of a search use the same
 # strings again, so these results are computed once. The cache is a
-# utils::hashtab() (R >= 4.2.0; older R versions compute without the cache),
-# so the keys can be any character vectors (with names and `NA`). The cache is
-# emptied when it has `max_n` entries; otherwise it stays for the R session.
+# utils::hashtab(), so a key can be any character vector (with names and `NA`)
+# or a list of atomic vectors. The cache is emptied when it has `max_n`
+# entries; otherwise it stays for the R session.
 string_cache <- new.env(parent = emptyenv())
 
 # The value of `compute()` for `key` (a character vector or a list of atomic
@@ -753,15 +753,6 @@ string_cache <- new.env(parent = emptyenv())
 cached_by_strings <- function(type, key, compute, max_n = 10000L) {
   tab <- string_cache$tab
   if (is.null(tab)) {
-    # The version check once per session (getRversion() takes long compared
-    # to a cache lookup):
-    if (isFALSE(string_cache$available)) {
-      return(compute())
-    }
-    string_cache$available <- getRversion() >= "4.2.0"
-    if (!string_cache$available) {
-      return(compute())
-    }
     tab <- utils::hashtab("identical")
     string_cache$tab <- tab
   }
@@ -825,7 +816,7 @@ norm_term_labels <- function(labels) {
 
 # For each search term: its term labels (see norm_term_labels()) and, for a
 # search term with one label, the string that select_possible_terms_size()
-# returns for it. Cached (R >= 4.2.0) for each set of search terms, so that
+# returns for it. Cached for each set of search terms, so that
 # select_possible_terms_size() does not parse the same formulas again for each
 # candidate and step. Returns `NULL` if a search term has a smooth, group-level
 # or offset term or no intercept (the fast path does not cover these cases).

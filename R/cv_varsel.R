@@ -154,7 +154,7 @@
 #'   \pkg{doFuture}. For GLMs, this CV parallelization should work reliably, but
 #'   for other models (such as GLMMs), it may lead to excessive memory usage
 #'   which in turn may crash the R session (on Unix systems, setting an
-#'   appropriate memory limit via [unix::rlimit_as()] may avoid crashing the
+#'   appropriate memory limit via `unix::rlimit_as()` may avoid crashing the
 #'   whole machine). However, the problem of excessive memory usage is less
 #'   pronounced for the CV parallelization than for the projection
 #'   parallelization described in [projpred-package]. In that regard, the CV
@@ -1478,11 +1478,9 @@ warn_pareto <- function(n07, n, khat_threshold = 0.7, warn_txt) {
 # K-fold CV ---------------------------------------------------------------
 
 # Needed to avoid a NOTE in `R CMD check`:
-if (getRversion() >= package_version("2.15.1")) {
-  utils::globalVariables("list_cv_k")
-  utils::globalVariables("search_out_rks_k")
-  utils::globalVariables("ks_k")
-}
+utils::globalVariables("list_cv_k")
+utils::globalVariables("search_out_rks_k")
+utils::globalVariables("ks_k")
 
 kfold_varsel <- function(refmodel, method, nterms_max, ndraws, nclusters,
                          ndraws_pred, nclusters_pred, refit_prj, penalty,
@@ -1689,16 +1687,7 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws, nclusters,
 
   # Handle the submodels' performance evaluation results:
   sub_foldwise <- lapply(res_cv, "[[", "summaries_sub")
-  if (getRversion() >= package_version("4.2.0")) {
-    sub_foldwise <- simplify2array(sub_foldwise, higher = FALSE, except = NULL)
-  } else {
-    sub_foldwise <- simplify2array(sub_foldwise, higher = FALSE)
-    if (is.null(dim(sub_foldwise))) {
-      sub_dim <- dim(predictor_ranking_cv)
-      sub_dim[2] <- sub_dim[2] + 1L # +1 is for the empty model
-      dim(sub_foldwise) <- rev(sub_dim)
-    }
-  }
+  sub_foldwise <- simplify2array(sub_foldwise, higher = FALSE, except = NULL)
   sub <- apply(sub_foldwise, 1, rbind2list)
   idxs_sorted_by_fold <- unlist(lapply(list_cv, function(fold) {
     fold$omitted

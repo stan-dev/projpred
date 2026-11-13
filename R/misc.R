@@ -853,13 +853,6 @@ nlist <- function(...) {
   dots
 }
 
-# The `%||%` special binary (infix) operator from brms (equivalent to the
-# `%ORifNULL%` operator from rstanarm):
-`%||%` <- function(x, y) {
-  if (is.null(x)) x <- y
-  x
-}
-
 #' Execute a function call
 #'
 #' Execute a function call similar to [do.call()], but without deparsing
@@ -1209,12 +1202,24 @@ all_ia_perms <- function(ia, is_split = FALSE) {
   } else {
     ia_split <- strsplit(ia, ":")[[1]]
   }
-  ia_perms_split <- gtools::permutations(n = length(ia_split),
-                                         r = length(ia_split),
-                                         v = ia_split, set = FALSE)
+  ia_perms_split <- matrix(ia_split[perm_idxs(length(ia_split))],
+                           ncol = length(ia_split))
   return(unlist(
     apply(ia_perms_split, 1, paste, collapse = ":", simplify = FALSE)
   ))
+}
+
+# All permutations of `seq_len(n)` as the rows of a matrix, in lexicographic
+# order (a matrix with one row and no columns for `n = 0`).
+perm_idxs <- function(n) {
+  if (n <= 1L) {
+    return(matrix(seq_len(n), nrow = 1L, ncol = n))
+  }
+  sub_perms <- perm_idxs(n - 1L)
+  return(do.call(rbind, lapply(seq_len(n), function(i) {
+    cbind(i, matrix(seq_len(n)[-i][sub_perms], ncol = n - 1L),
+          deparse.level = 0)
+  })))
 }
 
 # Reorders the main-effect terms involved in a single interaction term `ia`
