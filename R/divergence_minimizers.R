@@ -1234,6 +1234,16 @@ fit_glmer_callback <- function(formula, projpred_formula_no_random,
         names(dot_args),
         methods::formalArgs(lme4::glmer)
       )]
+      # lme4 < 2.1-1 rounds non-integer binomial data in the objective of
+      # `nAGQ >= 1`. With `nAGQ = 0`, the fixed effects and the group-level
+      # effects do not depend on this objective (the group-level standard
+      # deviations still do):
+      if (is.null(dot_args$nAGQ) &&
+          glmer_rounds_binomial(formula, family = family,
+                                data = dot_args$data,
+                                weights = dot_args$weights)) {
+        dot_args$nAGQ <- 0L
+      }
       # Call the submodel fitter:
       return(do.call(lme4::glmer, c(list(formula = formula, family = family,
                                          control = control),
@@ -1275,26 +1285,29 @@ fit_glmer_callback <- function(formula, projpred_formula_no_random,
         ...
       ))
     } else if (grepl("PIRLS", as.character(e))) {
-      if (length(dot_args$nAGQ) > 0) {
-        nAGQ_new <- dot_args$nAGQ + 1L
+      # `nAGQ` from `...` (not the `nAGQ = 0` that the code above sets for
+      # non-integer binomial data):
+      dot_args_retry <- list(...)
+      if (length(dot_args_retry$nAGQ) > 0) {
+        nAGQ_new <- dot_args_retry$nAGQ + 1L
       } else {
         nAGQ_new <- 20L
       }
+      dot_args_retry$nAGQ <- nAGQ_new
       if (nAGQ_new > 30L) {
         stop("Encountering a PIRLS error while running the lme4 fitting ",
              "procedure, but cannot fix this automatically anymore. You will ",
              "probably have to tweak lme4 tuning parameters manually (via ",
              "`...`).")
       }
-      return(fit_glmer_callback(
-        formula = formula,
-        projpred_formula_no_random = projpred_formula_no_random,
-        projpred_random = projpred_random,
-        family = family,
-        control = control,
-        nAGQ = nAGQ_new,
-        ...
-      ))
+      return(do.call(fit_glmer_callback, c(
+        list(formula = formula,
+             projpred_formula_no_random = projpred_formula_no_random,
+             projpred_random = projpred_random,
+             family = family,
+             control = control),
+        dot_args_retry
+      )))
     } else if (grepl("pwrssUpdate did not converge in \\(maxit\\) iterations",
                      as.character(e))) {
       tolPwrss_new <- 10 * control$tolPwrss
@@ -1391,6 +1404,32 @@ fit_glmer_callback <- function(formula, projpred_formula_no_random,
       stop(e)
     }
   })
+}
+
+# Whether lme4::glmer() would fit a binomial submodel to rounded data: lme4 <
+# 2.1-1 computes the objective of `nAGQ >= 1` with binomial()$aic(), which
+# rounds non-integer numbers of successes and trials. The traditional
+# projection has non-integer responses, and the augmented-data projection has
+# non-integer weights. `TRUE` also if the data cannot be checked (then
+# `nAGQ = 0` is used for data that may be integer).
+glmer_rounds_binomial <- function(formula, family, data, weights) {
+  if (!identical(family$family, "binomial") ||
+      utils::packageVersion("lme4") >= "2.1.1") {
+    return(FALSE)
+  }
+  is_whole <- function(x) {
+    all(abs(x - round(x)) < 1e-8)
+  }
+  out <- tryCatch({
+    y <- eval(formula[[2]], data, environment(formula))
+    w <- weights %||% 1
+    if (is.matrix(y)) {
+      !is_whole(w) || !is_whole(y)
+    } else {
+      !is_whole(w) || !is_whole(as.numeric(y) * w)
+    }
+  }, error = function(e) TRUE)
+  return(!isFALSE(out))
 }
 
 # Helper function for fit_glmer_callback() and fit_gamm_callback() to get the
@@ -1860,6 +1899,13 @@ fit_cumul_mlvl <- function(formula, data, family, weights, ...) {
   link_nm <- family$link
   if (link_nm == "probit_approx") {
     link_nm <- "probit"
+  }
+  # clmm() with a single `(1 | <group>)` term uses C code that swaps the links
+  # "cloglog" and "loglog" (ordinal 2025.12.29, 2026.7-26).  Use its R code
+  # (`useMatrix = TRUE` overrides `control`); this excludes ucminf().
+  if (link_nm %in% c("cloglog", "loglog")) {
+    dot_args$useMatrix <- TRUE
+    use_ucminf <- FALSE
   }
   # Call the submodel fitter:
   fit_clmm <- function(dot_args) {
