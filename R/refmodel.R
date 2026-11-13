@@ -68,7 +68,11 @@
 #' @param extract_model_data A function for fetching some variables (response,
 #'   observation weights, offsets) from the original dataset (supplied to
 #'   argument `data`) or from a new dataset. May be `NULL` for using an internal
-#'   default that essentially corresponds to [y_wobs_offs()]. See also section
+#'   default that essentially corresponds to [y_wobs_offs()]. For a 2-column
+#'   binomial response (successes and failures), this internal default uses the
+#'   sums of the two columns (the numbers of trials) as observation weights.
+#'   Then a `newdata` in prediction functions must contain the variables of the
+#'   response columns, or the call must supply `weightsnew`. See also section
 #'   "Argument `extract_model_data`" below.
 #' @param family An object of class `family` representing the observation model
 #'   (i.e., the distributional family for the response) of the *submodels*.
@@ -1159,6 +1163,15 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
   } else if (length(response_name) > 2) {
     stop("The response is not allowed to have more than two columns.")
   }
+  # 2-column binomial response: the default `extract_model_data` below uses the
+  # row sums (the numbers of trials) as observation weights.
+  wrhs_2col <- NULL
+  if (length(response_name) == 2) {
+    wrhs_2col <- as.formula(
+      paste0("~ (", response_name[1], ") + (", response_name[2], ")"),
+      env = environment(formula)
+    )
+  }
   # Remove parentheses from the response:
   response_name <- gsub("[()]", "", response_name)
   if (family$for_latent) {
@@ -1208,7 +1221,8 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
   # Functions ---------------------------------------------------------------
 
   extract_model_data_usr <- extract_model_data
-  if (is.null(extract_model_data_usr)) {
+  emd_default <- is.null(extract_model_data_usr)
+  if (emd_default) {
     # The internal default for `extract_model_data`:
     extract_model_data_usr <- function(object, newdata, wrhs = NULL,
                                        orhs = NULL, extract_y = TRUE) {
@@ -1221,6 +1235,19 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
         }
       } else {
         resp_fml <- NULL
+      }
+      if (is.null(wrhs) && !is.null(wrhs_2col)) {
+        # The response variables that are columns of `data` must also be
+        # columns of `newdata` (others, such as a constant number of trials,
+        # come from the formula environment):
+        vars_2col <- intersect(all.vars(wrhs_2col), names(data))
+        if (!all(vars_2col %in% names(newdata))) {
+          stop("For a reference model with a 2-column response, the ",
+               "observation weights (numbers of trials) for `newdata` come ",
+               "from the response columns. Supply these columns in `newdata` ",
+               "or supply argument `weightsnew`.")
+        }
+        wrhs <- wrhs_2col
       }
       return(y_wobs_offs(newdata = newdata, wrhs = wrhs, orhs = orhs,
                          resp_form = resp_fml))
@@ -1368,9 +1395,14 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
       if (excl_offs) {
         # Observation weights are not needed here, so we can use the default of
         # `wrhs = NULL` (using something like `wrhs = rep(1, nrow(newdata %||%
-        # data))` would cause a warning in newer brms versions):
-        offs <- extract_model_data(fit, newdata = newdata,
-                                   extract_y = FALSE)$offset
+        # data))` would cause a warning in newer brms versions). The internal
+        # default `extract_model_data` gets weights of 1, so that it does not
+        # need the response columns of a 2-column response in `newdata`:
+        offs <- extract_model_data(
+          fit, newdata = newdata,
+          wrhs = if (emd_default) rep(1, nrow(newdata %||% data)),
+          extract_y = FALSE
+        )$offset
         stopifnot(length(offs) %in% c(1L, n_obs))
         if (family$family %in% fams_neg_linpred()) {
           linpred_out <- linpred_out + offs
@@ -1550,8 +1582,14 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
     y_oscale <- NULL
   }
 
-  # Add (transformed) response under the (possibly) new name:
-  data[, response_name] <- y
+  # Add (transformed) response under the (possibly) new name. For a 2-column
+  # response, a 1-column `y` holds the first column (the successes), so the
+  # second column of `data` must stay as it is:
+  if (NCOL(y) == 1) {
+    data[, response_name[1]] <- y
+  } else {
+    data[, response_name] <- y
+  }
 
   target <- get_standard_y(y, weights, family)
   y <- target$y
