@@ -927,6 +927,8 @@ meth_tst <- list(
 options(projpred.mssg_cut_search = FALSE)
 # Suppress the message for the runtime of the forward search:
 options(projpred.mssg_time = FALSE)
+# Suppress the message for a linear term next to a smooth term:
+options(projpred.mssg_smooth_linear = FALSE)
 # Suppress the PSIS warnings:
 options(projpred.warn_psis = FALSE)
 # Suppress the warnings for the K reference model refits in case of K-fold CV:
@@ -1377,7 +1379,8 @@ if (run_cvvs) {
     )))
     if (args_cvvs_i$mod_nm == "gamm" &&
         !identical(args_cvvs_i$cv_method, "kfold")) {
-      # Due to issue #239, we have to wrap the call to cv_varsel() in try():
+      # The gamm4 getVb() failure (see is_gamm_backsolve_msg()) can occur in
+      # the LOO CV, so wrap the call to cv_varsel() in try():
       return(try(eval(cvvs_expr), silent = TRUE))
     } else {
       return(eval(cvvs_expr))
@@ -1385,9 +1388,7 @@ if (run_cvvs) {
   })
   success_cvvs <- !sapply(cvvss, inherits, "try-error")
   err_ok_cvvs <- sapply(cvvss[!success_cvvs], function(cvvs_err) {
-    cvvs_msg <- attr(cvvs_err, "condition")$message
-    cvvs_msg == "Not enough (non-NA) data to do anything meaningful" ||
-      is_gamm_backsolve_msg(cvvs_msg)
+    is_gamm_backsolve_msg(attr(cvvs_err, "condition")$message)
   })
   expect_true(
     all(err_ok_cvvs),

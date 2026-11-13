@@ -154,7 +154,11 @@ submodel onto which the reference model is projected. See also section
 \item{extract_model_data}{A function for fetching some variables (response,
 observation weights, offsets) from the original dataset (supplied to
 argument \code{data}) or from a new dataset. May be \code{NULL} for using an internal
-default that essentially corresponds to \code{\link[=y_wobs_offs]{y_wobs_offs()}}. See also section
+default that essentially corresponds to \code{\link[=y_wobs_offs]{y_wobs_offs()}}. For a 2-column
+binomial response (successes and failures), this internal default uses the
+sums of the two columns (the numbers of trials) as observation weights.
+Then a \code{newdata} in prediction functions must contain the variables of the
+response columns, or the call must supply \code{weightsnew}. See also section
 "Argument \code{extract_model_data}" below.}
 
 \item{cvfits}{For \eqn{K}-fold CV only. A \code{list} containing the \eqn{K}

@@ -137,10 +137,6 @@ test_that("pe: `newdata` works", {
     }
     dat_crr <- get_dat(tstsetup)
     for (nobsv_crr in nobsv_tst) {
-      if (args_prj[[tstsetup]]$mod_nm == "gamm") {
-        # TODO (GAMMs): Fix this.
-        next
-      }
       if (!is.null(
         refmods[[args_prj[[tstsetup]]$tstsetup_ref]]$family$cats
       )) {
