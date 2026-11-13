@@ -68,6 +68,7 @@ If you read this from a place other than <https://mc-stan.org/projpred/news/inde
 * Fixed the term names of the L1 search if one model-matrix column name starts with another one. (GitHub: #615)
 * The submodels now use the contrasts of the reference model for factor predictors instead of `options("contrasts")`. This changes the projected coefficients and can change the L1 search and LOO predictions for a level of one observation. (GitHub: #283, #619)
 * `get_refmodel()` now stops with an error that names the missing variables and gives a workaround. This applies to `rstanarm::stan_gamm4()` fits with argument `random` and an expression in the formula, such as `cbind(y, n - y)`. (GitHub: #148, #634)
+* With lme4 versions before 2.1-1, binomial submodels with multilevel and additive terms and non-integer data now skip the second optimization stage of `gamm4::gamm4()` (as `nAGQ = 0`). Their coefficients were fitted to rounded data before. (GitHub: #???)
 
 
 # projpred 2.11.0

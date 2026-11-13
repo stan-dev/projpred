@@ -520,6 +520,196 @@ test_that(paste(
                lme4::getME(fit_trad$mer, "theta"), tolerance = 1e-3)
 })
 
+# Whether fit_gamm_callback() skips stage 2 of gamm4::gamm4() for binomial
+# submodels with non-integer data.
+gamm_skips_stage2 <- function() {
+  utils::packageVersion("lme4") < "2.1.1"
+}
+
+test_that(paste(
+  "gamm_stage1_optimizer() runs the optimizer in stage 1 and returns the",
+  "start values in stage 2"
+), {
+  # Stage 1 has 2 parameters (optimum c(1, 2)), stage 2 has 4:
+  fn <- function(p) sum((p - c(1, 2, 3, 4)[seq_along(p)])^2)
+  optims <- list(
+    bobyqa = gamm_stage1_optimizer("bobyqa"),
+    nloptwrap = gamm_stage1_optimizer("nloptwrap"),
+    Nelder_Mead = gamm_stage1_optimizer("Nelder_Mead"),
+    nlminbwrap = gamm_stage1_optimizer("nlminbwrap"),
+    optimx_nlminb = gamm_stage1_optimizer("optimx",
+                                          opt_ctrl = list(method = "nlminb")),
+    fun = gamm_stage1_optimizer(lme4::nlminbwrap)
+  )
+  for (nm in names(optims)) {
+    opt <- optims[[nm]]
+    expect_true(is.function(opt), info = nm)
+    res1 <- opt(par = c(0.5, 0.5), fn = fn, lower = c(0, 0),
+                upper = c(Inf, Inf), control = list())
+    expect_equal(res1$par, c(1, 2), tolerance = 1e-4, info = nm)
+    par2 <- c(res1$par, 0, 0)
+    res2 <- opt(par = par2, fn = fn, lower = c(0, 0, -Inf, -Inf),
+                upper = rep(Inf, 4), control = list())
+    expect_identical(res2$par, par2, info = nm)
+    expect_identical(res2$fval, fn(par2), info = nm)
+    expect_equal(res2$conv, 0, info = nm)
+  }
+  # Stage 2 returns the convergence code and the message of stage 1:
+  opt_fail <- gamm_stage1_optimizer(function(par, fn, lower, upper, control) {
+    list(par = par, fval = fn(par), conv = 5L, message = "no convergence")
+  })
+  opt_fail(par = 1, fn = fn, lower = 0, upper = Inf, control = list())
+  res2 <- opt_fail(par = c(1, 0), fn = fn, lower = c(0, -Inf),
+                   upper = c(Inf, Inf), control = list())
+  expect_identical(res2$conv, 5L)
+  expect_match(res2$message, "no convergence")
+  # `maxfun` for "bobyqa" is the `maxeval` of lme4::nloptwrap():
+  res1 <- gamm_stage1_optimizer("bobyqa", opt_ctrl = list(maxfun = 3))(
+    par = c(0.5, 0.5), fn = fn, lower = c(0, 0), upper = c(Inf, Inf),
+    control = list()
+  )
+  expect_identical(res1$conv, 5L)
+  # Nelder_Mead at `maxfun` does not report convergence:
+  opt_nm <- gamm_stage1_optimizer("Nelder_Mead", opt_ctrl = list(maxfun = 3))
+  expect_warning(
+    res1 <- opt_nm(par = c(0.5, 0.5), fn = fn, lower = c(0, 0),
+                   upper = c(Inf, Inf), control = list()),
+    "failure to converge"
+  )
+  expect_identical(res1$convergence, 4L)
+  res2 <- opt_nm(par = c(res1$par, 0, 0), fn = fn, lower = c(0, 0, -Inf, -Inf),
+                 upper = rep(Inf, 4), control = list())
+  expect_identical(res2$conv, 4L)
+  # Other optimizers:
+  expect_null(gamm_stage1_optimizer("optimx",
+                                    opt_ctrl = list(method = "L-BFGS-B")))
+  expect_null(gamm_stage1_optimizer("an_optimizer"))
+  expect_null(gamm_stage1_optimizer(c("bobyqa", "Nelder_Mead")))
+})
+
+test_that(paste(
+  "a binomial gamm4() submodel with non-integer data is not fitted to rounded",
+  "data with lme4 < 2.1-1"
+), {
+  skip_if_not(gamm_skips_stage2(),
+              "only lme4 < 2.1-1 rounds the data")
+  d <- dat_fitters()
+  fit <- divmin_tst("s(z) + x + (1 | g)", d, extend_family(binomial()),
+                    plogis(d$eta))[[1]]
+  expect_s3_class(fit, "gamm4")
+  # The fixed effects and the group-level effects (including the penalized
+  # parts of the smooth) solve the penalized likelihood equations of the
+  # non-integer data (the PIRLS solution for the group-level parameters):
+  mer <- fit$mer
+  resid_w <- stats::weights(mer, type = "prior") *
+    (lme4::getME(mer, "y") - stats::fitted(mer))
+  grad_beta <- drop(as.matrix(Matrix::crossprod(lme4::getME(mer, "X"),
+                                                resid_w)))
+  grad_u <- drop(as.matrix(Matrix::crossprod(
+    lme4::getME(mer, "Lambda"),
+    Matrix::crossprod(lme4::getME(mer, "Z"), resid_w)
+  ))) - lme4::getME(mer, "u")
+  expect_lt(max(abs(c(grad_beta, grad_u))), 1e-4)
+})
+
+test_that(paste(
+  "a binomial gamm4() fit with non-integer data and only group-level terms",
+  "equals the glmer() fit with `nAGQ = 0` with lme4 < 2.1-1"
+), {
+  skip_if_not(gamm_skips_stage2(),
+              "only lme4 < 2.1-1 rounds the data")
+  d <- dat_fitters()
+  d$y <- plogis(d$eta)
+  fam <- extend_family(binomial())
+  w1 <- rep(1, nrow(d))
+  fit_gamm <- suppressWarnings(suppressMessages(fit_gamm_callback(
+    formula = y ~ x + (1 | g), projpred_formula_no_random = y ~ x,
+    projpred_random = ~ (1 | g), data = d, family = fam, weights = w1
+  )))
+  fit_glmer <- fit_glmer_test(y ~ x + (1 | g), d, fam, weights = w1)
+  expect_identical(nAGQ_of(fit_glmer), 0L)
+  expect_equal(unname(lme4::fixef(fit_gamm$mer)),
+               unname(lme4::fixef(fit_glmer)), tolerance = 1e-3)
+  expect_equal(unname(lme4::getME(fit_gamm$mer, "theta")),
+               unname(lme4::getME(fit_glmer, "theta")), tolerance = 1e-2)
+})
+
+test_that(paste(
+  "fit_gamm_callback() passes the stage-1 optimizer to gamm4() only for",
+  "binomial submodels with non-integer data"
+), {
+  ctrl_used <- NULL
+  testthat::local_mocked_bindings(
+    gamm4 = function(...) {
+      ctrl_used <<- list(...)$control
+      stop("mocked gamm4()")
+    },
+    .package = "gamm4"
+  )
+  d <- dat_fitters()
+  fit_gamm_mocked <- function(family, y) {
+    d$y <- y
+    expect_error(fit_gamm_callback(
+      formula = y ~ s(z) + x + (1 | g),
+      projpred_formula_no_random = y ~ s(z) + x,
+      projpred_random = ~ (1 | g), data = d, family = family,
+      weights = rep(1, nrow(d))
+    ), "mocked gamm4")
+    return(ctrl_used)
+  }
+  fam_binom <- extend_family(binomial())
+  # Non-integer data:
+  ctrl <- fit_gamm_mocked(fam_binom, plogis(d$eta))
+  if (gamm_skips_stage2()) {
+    expect_true(is.function(ctrl$optimizer[[1]]))
+    expect_identical(ctrl$optimizer[[1]], ctrl$optimizer[[2]])
+    expect_false(ctrl$calc.derivs)
+  } else {
+    expect_identical(ctrl$optimizer, c("bobyqa", "bobyqa"))
+  }
+  # 0/1 responses with non-integer weights (augmented-data projection):
+  ctrl_used <- NULL
+  d$y <- as.numeric(d$eta > 0)
+  expect_error(fit_gamm_callback(
+    formula = y ~ s(z) + x + (1 | g),
+    projpred_formula_no_random = y ~ s(z) + x,
+    projpred_random = ~ (1 | g), data = d, family = fam_binom,
+    weights = plogis(d$eta)
+  ), "mocked gamm4")
+  expect_identical(is.function(ctrl_used$optimizer[[1]]), gamm_skips_stage2())
+  # Integer data and other families:
+  ctrl <- fit_gamm_mocked(fam_binom, as.numeric(d$eta > 0))
+  expect_identical(ctrl$optimizer, c("bobyqa", "bobyqa"))
+  ctrl <- fit_gamm_mocked(extend_family(poisson()), plogis(d$eta))
+  expect_identical(ctrl$optimizer, c("bobyqa", "bobyqa"))
+})
+
+test_that(paste(
+  "fit_gamm_callback() stops after the optimx refit for a binomial submodel",
+  "with non-integer data"
+), {
+  skip_if_not_installed("optimx")
+  optimizers <- list()
+  testthat::local_mocked_bindings(
+    gamm4 = function(...) {
+      optimizers[[length(optimizers) + 1L]] <<- list(...)$control$optimizer
+      stop("Downdated VtV is not positive definite")
+    },
+    .package = "gamm4"
+  )
+  d <- dat_fitters()
+  d$y <- plogis(d$eta)
+  expect_error(fit_gamm_callback(
+    formula = y ~ s(z) + x + (1 | g),
+    projpred_formula_no_random = y ~ s(z) + x,
+    projpred_random = ~ (1 | g), data = d, family = extend_family(binomial()),
+    weights = rep(1, nrow(d))
+  ), "cannot fix this automatically")
+  # The first fit and the refit with optimx:
+  expect_length(optimizers, 2L)
+  expect_identical(is.function(optimizers[[2]][[1]]), gamm_skips_stage2())
+})
+
 # ordinal::clmm() ---------------------------------------------------------
 
 cats_ord <- c("1", "2", "3", "4")

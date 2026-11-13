@@ -97,7 +97,16 @@ uses the other of these two links.
 \item Submodel without multilevel but additive terms: \code{\link[mgcv:gam]{mgcv::gam()}} (the returned
 object inherits from class \code{gam}).
 \item Submodel with multilevel and additive terms: \code{\link[gamm4:gamm4]{gamm4::gamm4()}} (within
-\pkg{projpred}, the returned object inherits from class \code{gamm4}).
+\pkg{projpred}, the returned object inherits from class \code{gamm4}). For the
+\code{\link[=binomial]{binomial()}} family with non-integer responses or weights and \pkg{lme4}
+versions before 2.1-1, \pkg{projpred} gives
+\code{\link[gamm4:gamm4]{gamm4::gamm4()}} an optimizer that skips its second optimization stage, so
+the fit is that of \code{nAGQ = 0} in \code{\link[lme4:glmer]{lme4::glmer()}} (see the paragraph on
+\code{\link[lme4:glmer]{lme4::glmer()}} above), up to the optimizer. The first stage uses the
+optimizer of \code{control}, with the BOBYQA of \code{\link[lme4:nloptwrap]{lme4::nloptwrap()}} for
+\code{"bobyqa"}. With other optimizers than \code{"bobyqa"}, \code{"nloptwrap"},
+\code{"Nelder_Mead"}, \code{"nlminbwrap"}, \code{"optimx"} with \code{method = "nlminb"}, or a
+function, \code{\link[gamm4:gamm4]{gamm4::gamm4()}} runs both stages.
 }
 }
 
