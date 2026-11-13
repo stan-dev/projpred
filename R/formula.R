@@ -219,11 +219,26 @@ parse_additive_terms <- function(terms) {
   smooth <- unlist(lapply(smooth_terms, function(st) {
     grep(make_function_regexp(st), terms, value = TRUE)
   }))
-  if (any(grepl("\\(.+,.*=.+\\)", smooth))) {
+  if (any(vapply(smooth, function(st) has_named_smooth_arg(str2lang(st)),
+                 logical(1)))) {
     stop("In s() and t2() terms, arguments other than predictors are not ",
          "allowed.")
   }
   return(smooth)
+}
+
+# Checks whether a call to s() or t2() in the expression `e` has a named
+# argument (for example `k = 5` or `by = g`), at any position.
+has_named_smooth_arg <- function(e) {
+  if (!is.call(e)) {
+    return(FALSE)
+  }
+  fn <- e[[1]]
+  if (is.name(fn) && as.character(fn) %in% c("s", "t2") &&
+      any(nzchar(names(e)[-1]))) {
+    return(TRUE)
+  }
+  return(any(vapply(as.list(e)[-1], has_named_smooth_arg, logical(1))))
 }
 
 make_function_regexp <- function(fname) {

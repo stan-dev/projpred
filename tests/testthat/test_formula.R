@@ -440,6 +440,24 @@ test_that(paste(
 })
 
 test_that(paste(
+  "parse_additive_terms() fails for a named argument of s() or t2() at any",
+  "position"
+), {
+  for (st in c("s(x, by = g)", "s(by = g, x)", "s(k = 5, x)", "s(x = x1)",
+               "t2(x, z, k = 4)", "t2(k = 4, x, z)", "log(s(x, k = 5))")) {
+    expect_error(parse_additive_terms(c("z", st)),
+                 "arguments other than predictors are not allowed",
+                 info = st)
+  }
+  expect_identical(parse_additive_terms(c("z", "s(x)", "t2(x, z)")),
+                   c("s(x)", "t2(x, z)"))
+  expect_identical(parse_additive_terms(c("s(log(z), x)", "s(X[, 1])")),
+                   c("s(log(z), x)", "s(X[, 1])"))
+  expect_error(extract_terms_response(y ~ x + g + s(by = g, x)),
+               "arguments other than predictors are not allowed")
+})
+
+test_that(paste(
   "formula.gamm4() for an rstanarm::stan_gamm4() fit does not add the",
   "variables of the smooth terms as linear terms"
 ), {
