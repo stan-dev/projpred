@@ -390,13 +390,12 @@ cv_varsel.refmodel <- function(
   on.exit(proj_cache_exit(), add = TRUE)
 
   refmodel <- object
-  nterms_all <- count_terms_in_formula(refmodel$formula) - 1L
 
   # Parse arguments which also exist in varsel():
   args <- parse_args_varsel(
     refmodel = refmodel, method = method, refit_prj = refit_prj,
     nterms_max = nterms_max, nclusters = nclusters, search_terms = search_terms,
-    nterms_all = nterms_all, verbose = verbose
+    verbose = verbose
   )
   method <- args$method
   refit_prj <- args$refit_prj
@@ -404,6 +403,7 @@ cv_varsel.refmodel <- function(
   nclusters <- args$nclusters
   search_terms <- args$search_terms
   search_terms_was_null <- args$search_terms_was_null
+  nterms_all <- args$nterms_all
   verbose <- args$verbose
   # Parse arguments specific to cv_varsel():
   args <- parse_args_cv_varsel(

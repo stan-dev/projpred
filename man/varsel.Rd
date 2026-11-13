@@ -146,7 +146,11 @@ vector of predictor term blocks to consider for the search. Section
 The intercept (\code{"1"}) is always included internally via \code{union()}, so
 there's no difference between including it explicitly or omitting it. The
 default \code{search_terms} considers all the terms in the reference model's
-formula.}
+formula and, for each smooth term, the linear terms of its variables. A
+smooth term can enter the search only after the linear terms of its
+variables that are search terms without a smooth term; the smooth term then
+adds the nonlinear part. To search a smooth term without its linear terms,
+leave these linear terms out of \code{search_terms}.}
 
 \item{search_out}{Intended for internal use.}
 

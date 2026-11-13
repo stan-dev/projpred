@@ -930,11 +930,31 @@ select_possible_terms_size_uncached <- function(chosen, terms, size,
              terms_chosen$additive_terms,
              perl = TRUE)
   ))
+  # A smooth term can enter only after the linear terms of its variables if
+  # these linear terms are search terms (without a smooth term). With the
+  # default bases of mgcv, a smooth term contains the linear term, so the smooth
+  # term then adds the nonlinear part, and a submodel has the same size on all
+  # search paths. Names are compared without backticks, as smooth_args() gives
+  # them:
+  unquote <- function(nms) gsub("`", "", nms, fixed = TRUE)
+  linear_search <- unique(unquote(unlist(lapply(terms, function(x) {
+    tt <- extract_terms_response(make_formula(x))
+    if (length(tt$additive_terms) > 0) {
+      return(NULL)
+    }
+    return(tt$individual_terms)
+  }))))
   valid_sub_trm_combs <- lapply(terms, function(x) {
     ## if we are adding a linear term whose smooth is already
     ## included, we reject it
     terms_new <- extract_terms_response(make_formula(x))
     linear <- terms_new$individual_terms
+    smooth_vars <- unquote(unlist(lapply(terms_new$additive_terms,
+                                         smooth_args)))
+    if (!all(intersect(smooth_vars, linear_search) %in%
+               unquote(c(terms_chosen$individual_terms, linear)))) {
+      return(NA)
+    }
     dups <- setdiff(linear[!is.na(match(linear, additive))], chosen)
 
     size_crr <- count_terms_chosen(c(chosen, x)) - length(dups)
@@ -998,6 +1018,14 @@ count_terms_chosen <- function(list_of_terms, duplicates = TRUE) {
   return(
     count_terms_in_formula(flatten_formula(formula, duplicates = duplicates))
   )
+}
+
+# The size of the submodel with all of the search terms `search_terms` (not
+# counting the intercept), that is, the largest size of a forward search. With
+# the default search terms, this counts a linear term and a smooth term of the
+# same variable as two terms (see select_possible_terms_size()).
+nterms_search_all <- function(search_terms) {
+  return(count_terms_chosen(unique(split_plus(search_terms))) - 1L)
 }
 
 ## Helper function to evaluate right hand side formulas in a context

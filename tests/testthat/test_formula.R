@@ -311,6 +311,117 @@ test_that("select_possible_terms_size() works for non-redundant models", {
   )
 })
 
+test_that(paste(
+  "select_possible_terms_size() adds a smooth term only after the linear",
+  "terms of its variables that are search terms"
+), {
+  allterms <- c("1", "s(x1)", "x2", "x1")
+  for (use_ti in c(FALSE, TRUE)) {
+    expect_identical(
+      select_possible_terms_size("1", allterms, size = 2,
+                                 use_term_info = use_ti),
+      c("x2", "x1"),
+      info = paste("use_term_info:", use_ti)
+    )
+  }
+  expect_identical(select_possible_terms_size(c("1", "x2"), allterms, size = 3),
+                   "x1")
+  expect_identical(select_possible_terms_size(c("1", "x1"), allterms, size = 3),
+                   c("s(x1)", "x2"))
+  # The submodel with all search terms has the same size on all search paths:
+  expect_identical(nterms_search_all(allterms), 3L)
+  dat <- data.frame(y = 1:4, x1 = 1:4, x2 = 1:4, g = gl(2, 2))
+  fml <- y ~ x2 + s(x1) + (1 | g)
+  expect_identical(
+    nterms_search_all(union("1", split_formula(fml, data = dat))), 4L
+  )
+  # Without the linear term in the search terms:
+  allterms <- c("1", "s(x1)", "x2")
+  expect_identical(select_possible_terms_size("1", allterms, size = 2),
+                   c("s(x1)", "x2"))
+  expect_identical(nterms_search_all(allterms), 2L)
+  # A smooth term of two variables:
+  allterms <- c("1", "t2(x1, x3)", "x1", "x3")
+  expect_identical(select_possible_terms_size(c("1", "x1"), allterms, size = 3),
+                   "x3")
+  expect_identical(
+    select_possible_terms_size(c("1", "x1", "x3"), allterms, size = 4),
+    "t2(x1, x3)"
+  )
+  allterms <- c("1", "t2(x1, x3)", "x1")
+  expect_identical(select_possible_terms_size(c("1", "x1"), allterms, size = 3),
+                   "t2(x1, x3)")
+  # A search term with the linear and the smooth term:
+  expect_identical(
+    select_possible_terms_size("1", c("1", "x1 + s(x1)", "x2"), size = 3),
+    "x1 + s(x1)"
+  )
+  # Linear terms in search terms with a smooth term do not count (otherwise,
+  # these two search terms would wait for each other):
+  expect_identical(
+    select_possible_terms_size("1", c("1", "x2 + s(x1)", "x1 + s(x2)"),
+                               size = 3),
+    c("x2 + s(x1)", "x1 + s(x2)")
+  )
+  # Non-syntactic names:
+  allterms <- c("1", "s(`my x`)", "`my x`")
+  expect_identical(select_possible_terms_size("1", allterms, size = 2),
+                   "`my x`")
+  expect_identical(
+    select_possible_terms_size(c("1", "`my x`"), allterms, size = 3),
+    "s(`my x`)"
+  )
+})
+
+test_that(paste(
+  "the warning about the projection onto the full multilevel model uses the",
+  "submodel with all search terms"
+), {
+  withr::local_options(projpred.warn_instable_projections = TRUE)
+  dat <- data.frame(y = 1:12, x1 = sin(1:12), x2 = cos(1:12), g = gl(3, 4))
+  refmod_fake <- function(fml) {
+    list(formula = fml, fetch_data = function(...) dat,
+         family = list(family = "gaussian", for_latent = FALSE,
+                       for_augdat = FALSE))
+  }
+  parse_args <- function(fml, search_terms) {
+    parse_args_varsel(refmod_fake(fml), method = "forward", refit_prj = TRUE,
+                      nterms_max = NULL, nclusters = 1,
+                      search_terms = search_terms, verbose = 0)
+  }
+  warn_full <- "the projection onto the full model can be instable"
+  # varsel() and cv_varsel():
+  expect_warning(args <- parse_args(y ~ x2 + s(x1) + (1 | g), NULL),
+                 warn_full)
+  expect_identical(args$nterms_all, 4L)
+  expect_equal(args$nterms_max, 4)
+  expect_warning(args <- parse_args(y ~ x2 + s(x1) + (1 | g),
+                                    c("s(x1)", "x2", "(1 | g)")),
+                 warn_full)
+  expect_identical(args$nterms_all, 3L)
+  # Search terms without group-level terms:
+  expect_no_warning(args <- parse_args(y ~ x1 + x2 + (1 | g), c("x1", "x2")))
+  expect_identical(args$nterms_all, 2L)
+  # project(): a submodel with a smooth term and without the linear term of its
+  # variable is the full model:
+  refmod <- refmod_fake(y ~ s(x1) + (1 | g))
+  expect_true(is_full_projection(c("s(x1)", "(1 | g)"), refmod, refmod))
+  expect_true(is_full_projection(c("x1", "s(x1)", "(1 | g)"), refmod, refmod))
+  expect_false(is_full_projection(c("x1", "(1 | g)"), refmod, refmod))
+  vs <- structure(list(args_search = list(search_terms = NULL)),
+                  class = "vsel")
+  expect_true(is_full_projection(c("x1", "s(x1)", "(1 | g)"), vs, refmod))
+  vs$args_search$search_terms <- c("x1", "(1 | g)")
+  expect_true(is_full_projection(c("x1", "(1 | g)"), vs, refmod))
+  # Group-level slopes:
+  refmod <- refmod_fake(y ~ x1 + (x1 | g))
+  expect_true(is_full_projection(c("x1", "(x1 | g)"), refmod, refmod))
+  expect_false(is_full_projection(c("x1", "(1 | g)"), refmod, refmod))
+  vs$args_search$search_terms <- NULL
+  expect_true(is_full_projection(c("(1 | g)", "x1 + (x1 | g)"), vs, refmod))
+  expect_false(is_full_projection(c("(1 | g)", "x1 + (1 | g)"), vs, refmod))
+})
+
 test_that("split_plus() splits term strings only at the `+` between terms", {
   expect_identical(split_plus("x1"), "x1")
   expect_identical(split_plus(c("x1 + x2", "x3")), c("x1", "x2", "x3"))
