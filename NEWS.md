@@ -7,23 +7,25 @@ If you read this from a place other than <https://mc-stan.org/projpred/news/inde
 
 ## Major changes
 
-* Faster forward search and LOO CV with validated search for Gaussian submodels with the identity link and for the latent projection, computed from cross-products of the model matrix. For example, `cv_varsel()` with `validate_search = TRUE` for a Gaussian model with 40 observations and 15 predictor terms is about 8 times faster. (GitHub: #579)
+* Faster forward search and LOO CV with validated search for Gaussian submodels with the identity link and for the latent projection, computed from cross-products of the model matrix. For example, `cv_varsel()` with `validate_search = TRUE` for a Gaussian model with 40 observations and 15 predictor terms is about 8 times faster. (GitHub: #579, #607, #610)
 * Faster repeated forward searches, as in `cv_varsel()` with `validate_search = TRUE`: the results of the term-label and formula code are cached within the R session. For example, LOO CV with validated search is about 12-18 % faster. (GitHub: #599)
 * Less formula and model-matrix work in the forward search and in the projections: the candidate submodels are selected from precomputed term labels, and the predictions for the training data use the stored submodel model matrices. For example, `varsel()` with forward search for a Gaussian model with 50 observations and 200 predictor terms is about 1.5 times faster. (GitHub: #578)
 * Faster clustering of the reference model draws for a large number of observations: `kmeans()` runs on the coordinates of the draws in their low-dimensional span, which gives the same clusters. For example, `varsel()` with 50 000 observations, 4 000 draws and 20 clusters is about 4.5 times faster. (GitHub: #576)
 * Faster projections onto submodels without group-level or additive terms: the projected draws (or clusters) share one model matrix, and for the Gaussian family with the identity link, one linear solve gives the submodel fits for all draws. For example, `varsel()` with forward search for a Gaussian model with 50 observations and 200 predictor terms is about 7 times faster. (GitHub: #574)
 * Faster computation of the predictive variance of the reference model for the Gaussian and Student-t families. This matters for a large number of observations and many projected draws. For example, `project()` with 10 000 observations and 4 000 projected draws is about 7 times faster. (GitHub: #575)
 * Faster and more accurate multilevel submodel fits for the `brms::categorical()` family: projpred now uses its own implementation of the PQL algorithm of `mclogit::mblogit()`, with a corrected gradient. For example, `varsel()` for a model with 300 observations is about 26 times faster. (GitHub: #597)
-* Faster `ordinal::clmm()` submodel fits with a single group-level intercept: projpred now uses `ucminf()` with forward differences, and refits with `nlminb()` if needed. For example, `varsel()` for a cumulative model with 300 observations is about 1.5 to 2 times faster. (GitHub: #596)
+* Faster `ordinal::clmm()` submodel fits with a single group-level intercept: projpred now uses `ucminf()` with forward differences, and refits with `nlminb()` if needed. The `cloglog` and `loglog` links keep the default optimizer. For example, `varsel()` for a cumulative model with 300 observations is about 1.5 to 2 times faster. (GitHub: #596)
 * Faster `lme4::glmer()` submodel fits: projpred now uses BOBYQA in both optimization stages, which changes the fits only within the optimizer tolerance. For example, `varsel()` for a Bernoulli model with 300 observations and two grouping factors is about 2 times faster. (GitHub: #592)
 * Faster projections onto ordinal submodels without group-level terms (`brms::cumulative()`, `rstanarm::stan_polr()`). For example, `cv_varsel()` with `validate_search = TRUE` is about 45 times faster for a model with 6 categories. (GitHub: #583, #608)
-* Faster projections onto categorical submodels without group-level terms (`brms::categorical()`): one C++ call fits all projected draws, with results equal to those of `nnet::multinom()` up to its convergence tolerance. For example, `cv_varsel()` with `validate_search = TRUE` is about 8 times faster for a model with 4 categories. (GitHub: #583)
+* Faster projections onto categorical submodels without group-level terms (`brms::categorical()`). For example, `cv_varsel()` with `validate_search = TRUE` is about 11 times faster for a model with 4 categories. (GitHub: #583, #609)
 * Faster projections onto binomial and Poisson GLM submodels (and Gaussian GLM submodels with a non-identity link): the IRLS fits compute their pseudo-observations in C++, and one C++ call fits all projected draws (or clusters). For example, `cv_varsel()` with `validate_search = TRUE` for binomial and Poisson models is about 4 to 6 times faster. (GitHub: #581)
 * `varsel()`, `cv_varsel()` and `project()` cache the submodel formulas and model matrices per set of predictor terms, so the folds of `cv_varsel()` with `validate_search = TRUE` do not build them again. For example, `cv_varsel()` with `validate_search = TRUE` for binomial and Poisson models is about 1.3 to 1.7 times faster. Global option `projpred.proj_cache_mb` (default 512) limits the size of the cache. (GitHub: #582)
 * Faster predictions of multilevel submodels (`lme4::lmer()`, `lme4::glmer()`) for data without new group levels, for example the training data: one model matrix and one random-effects design serve all projected draws. (GitHub: #584)
 * Faster projections onto Gaussian multilevel submodels (`lme4::lmer()`): all projected draws share one `lme4::lFormula()` result. Together with the faster predictions above, `cv_varsel()` with `validate_search = TRUE` for a Gaussian multilevel model is about 3 times faster. (GitHub: #584)
 * Faster projections onto additive submodels without group-level terms (`mgcv::gam()`): all projected draws share one setup of `mgcv::gam()`, and one linear-predictor matrix gives the predictions of all draws. For example, `varsel()` for an additive model is about 1.5 times faster. (GitHub: #584)
 * Faster reweighting of the clusters of the reference model draws in `cv_varsel()` with `validate_search = TRUE`. For example, `cv_varsel()` with `validate_search = TRUE` and 400 clusters is about 2 times faster for a Gaussian model with 382 observations. (GitHub: #601)
+* New argument `loo_perturb_alpha` of `cv_varsel()`. With LOO, `validate_search = TRUE` and `refit_prj = TRUE`, the fold-wise searches use observation weight perturbation, so the LOO estimates jump less between submodel sizes. This changes the default results. (GitHub: #603, #620)
+* Faster weight perturbation in `cv_varsel()` with `validate_search = TRUE` for Gaussian models and the latent projection. For example, `cv_varsel()` with 400 clusters is about 9 % faster for a Gaussian model with 382 observations. (GitHub: #621)
 
 ## Minor changes
 
@@ -34,11 +36,13 @@ If you read this from a place other than <https://mc-stan.org/projpred/news/inde
 * New function `custom_stat()` defines a user-defined performance statistic for argument `stats` of `summary.vsel()`, `plot.vsel()` and `performances()`, and argument `stat` of `suggest_size()`. (GitHub: #566, #590)
 * Faster `cl_agg()` and conversion of arrays to augmented-rows matrices. For example, LOO CV with validated search for the latent projection with 4000 projected draws is about 3-4 times faster. (GitHub: #600)
 * The parallel `cv_varsel()` with `validate_search = TRUE` sends less data to the workers. (GitHub: #611)
+* Improved error message for a binomial model with more than one trial per observation. Latent projection now stops for the brms families `beta_binomial()`, `zero_inflated_binomial()` and `zero_inflated_beta_binomial()`. (GitHub: #530, #624)
 
 ## Bug fixes and maintenance
 
 * Fixed bug in the predictions of submodels for new data: Terms with a data-dependent basis, such as `poly()` or `splines::ns()`, used a basis computed from the new data instead of the basis of the training data. This affected `proj_linpred()` and `proj_predict()` with `newdata`, `varsel()` with `d_test`, and K-fold CV, and caused `cv_varsel()` with `validate_search = TRUE` and LOO CV to fail with `poly()` terms. (GitHub: #573)
 * Tests: Adapt to version 2.1-0 of package lme4. (GitHub: #577)
+* Fixed bug in `init_refmodel()` with a 2-column binomial response (successes and failures) and the default `extract_model_data`. (GitHub: #625)
 * Fixed bug in `cv_varsel()` with `cv_method = "kfold"` for **rstanarm** reference models with a dispersion parameter (e.g., the `gaussian()` family). (GitHub: #587)
 * Docs: Explain how custom latent-projection functions can use fold-wise draws in K-fold CV (`?extend_family`, latent-projection vignette). (GitHub: #588)
 * Fixed bias in `cv_varsel()` with `cv_method = "LOO"` and `validate_search = TRUE`: the projections of each fold used the left-out observation, so the submodels, mostly the larger ones, looked too good. The elpd estimates change, and `suggest_size()` can select larger submodels if many Pareto k values are high. (GitHub: #580)
@@ -49,8 +53,17 @@ If you read this from a place other than <https://mc-stan.org/projpred/news/inde
 * With `options(projpred.PQL = TRUE)`, remove the warnings that every projection gave: the "iteration" messages of `MASS::glmmPQL()`, the warnings about non-integer Poisson responses, and "Unrecognized submodel fit" in the convergence check. (GitHub: #585)
 * Tests: Add tests that run on CRAN for the submodel fitters from lme4, MASS, gamm4, ordinal and mclogit. (GitHub: #585)
 * Tests: Leave the options, the random seed and the global environment of the R session unchanged after the tests, also when a test fails, and remove the manual cleanup of the test workspace. (GitHub: #586)
+* Fixed `ordinal::clmm()` submodel fits of cumulative models (e.g., `brms::cumulative()`) with the `cloglog` or `loglog` link and a single group-level intercept. These fits now use the slower default optimizer of `clmm()`. (GitHub: #613)
 * Fixed the error "'gam.fit' is not an exported object from 'namespace:mgcv'" in projections onto additive submodels with mgcv 1.9-5. (GitHub: #598, #602)
 * Fixed the log-likelihood of binomial (logit) and Poisson (log) reference model draws with a large linear predictor, where the inverse link clamped the mean. (GitHub: #614)
+* With `nm_scheme = "rstanarm"`, the `Sigma[...]` columns of `as.matrix.projection()` now hold the group-level variances and covariances in the rstanarm order, as in rstanarm. (GitHub: #622)
+* Fixed the log-likelihood of reference model draws with small response category probabilities in the augmented-data projection (cumulative, categorical and binomial families). (GitHub: #618)
+* With lme4 versions before 2.1-1, binomial submodels with multilevel terms (and no additive terms) now use `nAGQ = 0` in `lme4::glmer()` for non-integer responses or weights, unless `nAGQ` is set via `...`. Their coefficients were fitted to rounded data before. (GitHub: #616)
+* Removed line breaks from the names of search terms above about 500 characters in `ranking()`, `summary()` and `plot()`. (GitHub: #607)
+* The projection now drops the linear term from a submodel with a smooth term of the same variable (such as `x` and `s(x)`), and `project()` gives a message. The coefficient of such a linear term is not identifiable. (GitHub: #150, #626)
+* The reference model formula of an **rstanarm** GAMM no longer has extra linear terms for the variables of its smooth terms, as in an **rstanarm** GAM. The search candidates do not change. (GitHub: #384, #626)
+* Fixed wrong predictions and errors of additive multilevel submodels (`gamm4::gamm4()`) for new data, and wrong predictions with group-level slopes. New group levels now get drawn group-level effects, and option `projpred.mlvl_pred_new` now applies. (GitHub: #239, #623)
+* Fixed the term names of the L1 search if one model-matrix column name starts with another one. (GitHub: #615)
 
 
 # projpred 2.11.0

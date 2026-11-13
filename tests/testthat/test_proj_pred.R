@@ -311,10 +311,6 @@ test_that("`newdata` and `integrated` work (even in edge cases)", {
     }
     dat_crr <- get_dat(tstsetup)
     for (nobsv_crr in nobsv_tst) {
-      if (args_prj[[tstsetup]]$mod_nm == "gamm") {
-        # TODO (GAMMs): Fix this.
-        next
-      }
       if (args_prj[[tstsetup]]$prj_nm == "augdat") {
         ncats_nlats_expected_crr <- length(
           refmods[[args_prj[[tstsetup]]$tstsetup_ref]]$family$cats
@@ -949,10 +945,6 @@ test_that(paste(
 ), {
   skip_if_not(run_prj)
   for (tstsetup in grep("\\.clust$", names(prjs), value = TRUE)) {
-    if (args_prj[[tstsetup]]$mod_nm == "gamm") {
-      # TODO (GAMMs): Fix this.
-      next
-    }
     if (grepl("\\.with_wobs|\\.binom", tstsetup)) {
       wobs_crr <- head(wobs_tst, 1)
     } else {
@@ -1348,10 +1340,6 @@ test_that("`newdata` and `nresample_clusters` work (even in edge cases)", {
   skip_if_not(run_prj)
   for (tstsetup in names(prjs)) {
     for (nobsv_crr in nobsv_tst) {
-      if (args_prj[[tstsetup]]$mod_nm == "gamm") {
-        # TODO (GAMMs): Fix this.
-        next
-      }
       if (grepl("\\.with_wobs|\\.binom", tstsetup)) {
         wobs_crr <- head(prjs[[tstsetup]]$refmodel$wobs, nobsv_crr)
       } else {
@@ -1735,10 +1723,6 @@ test_that(paste(
 ), {
   skip_if_not(run_prj)
   for (tstsetup in grep("\\.clust$", names(prjs), value = TRUE)) {
-    if (args_prj[[tstsetup]]$mod_nm == "gamm") {
-      # TODO (GAMMs): Fix this.
-      next
-    }
     if (grepl("\\.with_wobs|\\.binom", tstsetup)) {
       wobs_crr <- head(wobs_tst, 1)
     } else {

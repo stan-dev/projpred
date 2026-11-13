@@ -1234,6 +1234,16 @@ fit_glmer_callback <- function(formula, projpred_formula_no_random,
         names(dot_args),
         methods::formalArgs(lme4::glmer)
       )]
+      # lme4 < 2.1-1 rounds non-integer binomial data in the objective of
+      # `nAGQ >= 1`. With `nAGQ = 0`, the fixed effects and the group-level
+      # effects do not depend on this objective (the group-level standard
+      # deviations still do):
+      if (is.null(dot_args$nAGQ) &&
+          glmer_rounds_binomial(formula, family = family,
+                                data = dot_args$data,
+                                weights = dot_args$weights)) {
+        dot_args$nAGQ <- 0L
+      }
       # Call the submodel fitter:
       return(do.call(lme4::glmer, c(list(formula = formula, family = family,
                                          control = control),
@@ -1275,26 +1285,29 @@ fit_glmer_callback <- function(formula, projpred_formula_no_random,
         ...
       ))
     } else if (grepl("PIRLS", as.character(e))) {
-      if (length(dot_args$nAGQ) > 0) {
-        nAGQ_new <- dot_args$nAGQ + 1L
+      # `nAGQ` from `...` (not the `nAGQ = 0` that the code above sets for
+      # non-integer binomial data):
+      dot_args_retry <- list(...)
+      if (length(dot_args_retry$nAGQ) > 0) {
+        nAGQ_new <- dot_args_retry$nAGQ + 1L
       } else {
         nAGQ_new <- 20L
       }
+      dot_args_retry$nAGQ <- nAGQ_new
       if (nAGQ_new > 30L) {
         stop("Encountering a PIRLS error while running the lme4 fitting ",
              "procedure, but cannot fix this automatically anymore. You will ",
              "probably have to tweak lme4 tuning parameters manually (via ",
              "`...`).")
       }
-      return(fit_glmer_callback(
-        formula = formula,
-        projpred_formula_no_random = projpred_formula_no_random,
-        projpred_random = projpred_random,
-        family = family,
-        control = control,
-        nAGQ = nAGQ_new,
-        ...
-      ))
+      return(do.call(fit_glmer_callback, c(
+        list(formula = formula,
+             projpred_formula_no_random = projpred_formula_no_random,
+             projpred_random = projpred_random,
+             family = family,
+             control = control),
+        dot_args_retry
+      )))
     } else if (grepl("pwrssUpdate did not converge in \\(maxit\\) iterations",
                      as.character(e))) {
       tolPwrss_new <- 10 * control$tolPwrss
@@ -1391,6 +1404,32 @@ fit_glmer_callback <- function(formula, projpred_formula_no_random,
       stop(e)
     }
   })
+}
+
+# Whether lme4::glmer() would fit a binomial submodel to rounded data: lme4 <
+# 2.1-1 computes the objective of `nAGQ >= 1` with binomial()$aic(), which
+# rounds non-integer numbers of successes and trials. The traditional
+# projection has non-integer responses, and the augmented-data projection has
+# non-integer weights. `TRUE` also if the data cannot be checked (then
+# `nAGQ = 0` is used for data that may be integer).
+glmer_rounds_binomial <- function(formula, family, data, weights) {
+  if (!identical(family$family, "binomial") ||
+      utils::packageVersion("lme4") >= "2.1.1") {
+    return(FALSE)
+  }
+  is_whole <- function(x) {
+    all(abs(x - round(x)) < 1e-8)
+  }
+  out <- tryCatch({
+    y <- eval(formula[[2]], data, environment(formula))
+    w <- weights %||% 1
+    if (is.matrix(y)) {
+      !is_whole(w) || !is_whole(y)
+    } else {
+      !is_whole(w) || !is_whole(as.numeric(y) * w)
+    }
+  }, error = function(e) TRUE)
+  return(!isFALSE(out))
 }
 
 # Helper function for fit_glmer_callback() and fit_gamm_callback() to get the
@@ -1860,6 +1899,13 @@ fit_cumul_mlvl <- function(formula, data, family, weights, ...) {
   link_nm <- family$link
   if (link_nm == "probit_approx") {
     link_nm <- "probit"
+  }
+  # clmm() with a single `(1 | <group>)` term uses C code that swaps the links
+  # "cloglog" and "loglog" (ordinal 2025.12.29, 2026.7-26).  Use its R code
+  # (`useMatrix = TRUE` overrides `control`); this excludes ucminf().
+  if (link_nm %in% c("cloglog", "loglog")) {
+    dot_args$useMatrix <- TRUE
+    use_ucminf <- FALSE
   }
   # Call the submodel fitter:
   fit_clmm <- function(dot_args) {
@@ -2742,33 +2788,19 @@ subprd_subfit_shared <- function(fits, newdata) {
   return(subfit_newdata_x(fit_1, newdata) %*% rbind(alphas, betas))
 }
 
+# Linear predictors of a gamm4::gamm4() fit. The population-level part
+# (parametric terms, smooths and offsets) comes from the `gam` component, so the
+# smooth bases are those of the training data. The group-level part comes from
+# repair_re.gamm4(). Without `newdata`, the training data are used.
 #' @noRd
 #' @export
 predict.gamm4 <- function(object, newdata = NULL, ...) {
   if (is.null(newdata)) {
-    newdata <- model.frame(object$mer)
+    newdata <- object$gam$model
   }
-  formula <- object$formula
-  random <- object$random
-  gamm_struct <- model.matrix_gamm4(delete.response(terms(formula)),
-                                    random = random, data = newdata)
-  ranef <- lme4::ranef(object$mer) # TODO (GAMMs): Add `, condVar = FALSE` here?
-  b <- gamm_struct$b
-  mf <- gamm_struct$mf
-
-  ## base pred only smooth and fixed effects
-  gamm_pred <- predict(object$mer, newdata = mf, re.form = NA)
-
-  ## gamm4 trick to replace dummy smooth variables with actual smooth terms
-  sn <- names(ranef)
-  tn <- names(b$reTrms$cnms)
-  ind <- seq_along(tn)
-  for (i in seq_along(tn)) { ## loop through random effect smooths
-    k <- ind[sn[i] == tn] ## which term should contain G$random[[i]]
-    ii <- (b$reTrms$Gp[k] + 1):b$reTrms$Gp[k + 1]
-    r_pred <- t(as.matrix(b$reTrms$Zt[ii, ])) %*%
-      as.matrix(c(as.matrix(ranef[[i]])))
-    gamm_pred <- gamm_pred + r_pred
+  gamm_pred <- as.vector(predict(object$gam, newdata = newdata))
+  if (!is.null(object$random)) {
+    gamm_pred <- gamm_pred + repair_re(object, newdata = newdata)
   }
   return(as.matrix(unname(gamm_pred)))
 }
@@ -3022,6 +3054,90 @@ repair_re.clmm <- function(object, newdata) {
     }
   }
   return(-drop(as(ranefs_prep$b %*% ranefs_prep$Zt, "matrix")))
+}
+
+# For objects of class `gamm4`, the following repair_re() method works as
+# repair_re.clmm(): it re-uses the estimated group-level effects for existing
+# group levels and draws those for new group levels from a (multivariate)
+# Gaussian distribution, and option `projpred.mlvl_pred_new` determines whether
+# existing group levels are also considered as new group levels. It uses only
+# the grouping variables of `object$random`, because the lme4 fit `object$mer`
+# also has one grouping variable for each penalized smooth term.
+#
+# License/copyright notice: repair_re.gamm4() is inspired by and uses code
+# snippets from lme4:::predict.merMod() from lme4 version 1.1-28 (see
+# <https://CRAN.R-project.org/package=lme4>). See the `LICENSE` file in
+# projpred's root directory for details.
+#
+# The copyright statement for lme4 version 1.1-28 is:
+# Copyright (C) 2003-2022 The LME4 Authors (see
+# <https://CRAN.R-project.org/package=lme4>).
+#
+# The license of lme4 version 1.1-28 is:
+# "GPL (>=2)" (see <https://CRAN.R-project.org/package=lme4>).
+#' @noRd
+#' @export
+repair_re.gamm4 <- function(object, newdata) {
+  stopifnot(!is.null(newdata))
+  re_fml <- object$random
+  vnms <- unique(vapply(reformulas::findbars(re_fml), function(bar) {
+    deparse_combine(bar[[3]])
+  }, character(1)))
+  if (any(grepl("[/:]", vnms))) {
+    stop("The `/` and `:` syntax for grouping variables is currently not ",
+         "supported. Please write out (i.e., create corresponding columns in ",
+         "the dataset manually and then adapt the model formula) interaction ",
+         "terms.")
+  }
+  vnms_miss <- setdiff(vnms, names(newdata))
+  if (length(vnms_miss) > 0) {
+    stop("Could not find column `", vnms_miss[1], "` in `newdata`.")
+  }
+  ranef_tmp <- lme4::ranef(object$mer, condVar = FALSE)[vnms]
+  lvls_list <- lapply(setNames(nm = vnms), function(vnm) {
+    from_fit <- rownames(ranef_tmp[[vnm]])
+    from_new <- as.character(unique(newdata[[vnm]]))
+    list(comb = union(from_fit, from_new),
+         exist = intersect(from_new, from_fit),
+         new = from_new)
+  })
+  # In case of duplicated levels across group variables, later code would have
+  # to be adapted:
+  if (getOption("projpred.mlvl_pred_new", FALSE)) {
+    el_nm_gamm <- "new"
+  } else {
+    el_nm_gamm <- "comb"
+  }
+  if (length(lvls_list) >= 2 &&
+      !all(utils::combn(lvls_list, 2, empty_intersection,
+                        el_nm = el_nm_gamm))) {
+    stop("Currently, projpred requires all variables with group-level effects ",
+         "to have disjoint level sets.")
+  }
+  ranefs_prep <- mkNewReTrms_man(re.form = re_fml,
+                                 newdata = newdata,
+                                 xlevels = c(lapply(lvls_list, "[[", "comb"),
+                                             object$gam$xlevels),
+                                 re = ranef_tmp)
+  names(ranefs_prep$b) <- rownames(ranefs_prep$Zt)
+
+  VarCorr_tmp <- lme4::VarCorr(object$mer)
+  for (vnm in vnms) {
+    lvls_new <- lvls_list[[vnm]]$new
+    if (!getOption("projpred.mlvl_pred_new", FALSE)) {
+      lvls_exist <- lvls_list[[vnm]]$exist
+      lvls_new <- setdiff(lvls_new, lvls_exist)
+    }
+    if (length(lvls_new) > 0) {
+      ranefs_prep$b[names(ranefs_prep$b) %in% lvls_new] <- t(mvtnorm::rmvnorm(
+        n = length(lvls_new),
+        # Add `[, , drop = FALSE]` to drop attributes:
+        sigma = VarCorr_tmp[[vnm]][, , drop = FALSE],
+        checkSymmetry = FALSE
+      ))
+    }
+  }
+  return(drop(as(ranefs_prep$b %*% ranefs_prep$Zt, "matrix")))
 }
 
 # For objects of class `mmblogit`, the following repair_re() method will re-use

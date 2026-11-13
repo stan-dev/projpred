@@ -72,6 +72,9 @@ test_that("the cached functions give the results of the uncached ones", {
       }
     }
   }
+  expect_identical(labels_gauss("x2:x1 + x1 + x1"), c("x1:x2", "x1"))
+  # The second call gets the value from the cache:
+  expect_identical(labels_gauss("x2:x1 + x1 + x1"), c("x1:x2", "x1"))
 })
 
 test_that("the cached functions store their results under their keys", {

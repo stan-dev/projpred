@@ -197,6 +197,24 @@ test_that("extra arguments in s() or t2() terms fail", {
   )
 })
 
+test_that(paste(
+  "the formula of an rstanarm GAMM reference model has no linear terms for",
+  "the variables of the smooth terms, as for an rstanarm GAM"
+), {
+  skip_if_no_setups(refmods)
+  skip_if_not(run_additive)
+  tstsetups <- grep("^rstanarm\\.gam{1,2}\\.", names(refmods), value = TRUE)
+  expect_true(any(grepl("^rstanarm\\.gamm\\.", tstsetups)))
+  for (tstsetup in tstsetups) {
+    fml <- refmods[[tstsetup]]$formula
+    expect_identical(smooth_covered_terms(fml), character(0), info = tstsetup)
+    expect_true(formula_contains_additive_terms(fml), info = tstsetup)
+    if (grepl("^rstanarm\\.gamm\\.", tstsetup)) {
+      expect_true(formula_contains_group_terms(fml), info = tstsetup)
+    }
+  }
+})
+
 test_that("get_refmodel() is idempotent", {
   skip_if_no_setups(refmods)
   for (tstsetup in names(refmods)) {
@@ -468,4 +486,109 @@ test_that(paste(
       if (testthat_ed_max2) local_edition(2)
     }
   }
+})
+
+# 2-column binomial response ----------------------------------------------
+
+test_that(paste(
+  "init_refmodel() with a 2-column binomial response and the default",
+  "`extract_model_data` uses the numbers of trials as observation weights"
+), {
+  withr::local_options(projpred.warn_cvrefbuilder_NULL = FALSE)
+  set.seed(5302)
+  n <- 40
+  ndraws <- 20
+  dat <- data.frame(x1 = rnorm(n), x2 = rnorm(n),
+                    trials = sample(2:10, n, replace = TRUE))
+  dat$y <- rbinom(n, dat$trials, plogis(0.5 * dat$x1))
+  fit <- list(beta = rbind(rnorm(ndraws, 0, 0.1), rnorm(ndraws, 0.5, 0.1),
+                           rnorm(ndraws, 0, 0.1)),
+              data = dat)
+  ref_predfun <- function(fit, newdata = NULL) {
+    nd <- if (is.null(newdata)) fit$data else newdata
+    model.matrix(~ x1 + x2, nd) %*% fit$beta
+  }
+  refm_2col <- init_refmodel(
+    fit, data = dat, formula = cbind(y, trials - y) ~ x1 + x2,
+    family = binomial(), ref_predfun = ref_predfun
+  )
+  # The same model with a 1-column response and the trials as weights:
+  emd_1col <- function(object, newdata, wrhs = NULL, orhs = NULL,
+                       extract_y = TRUE) {
+    y_wobs_offs(newdata = newdata, wrhs = wrhs %||% ~ trials, orhs = orhs,
+                resp_form = if (extract_y) ~ y else NULL)
+  }
+  refm_1col <- init_refmodel(
+    fit, data = dat, formula = y ~ x1 + x2, family = binomial(),
+    ref_predfun = ref_predfun, extract_model_data = emd_1col
+  )
+  expect_equal(refm_2col$wobs, dat$trials)
+  expect_equal(refm_2col$y, refm_1col$y)
+  prj_2col <- suppressMessages(
+    project(refm_2col, predictor_terms = "x1", ndraws = ndraws, seed = 5302)
+  )
+  prj_1col <- suppressMessages(
+    project(refm_1col, predictor_terms = "x1", ndraws = ndraws, seed = 5302)
+  )
+  expect_equal(as.matrix(prj_2col), as.matrix(prj_1col))
+  expect_equal(proj_linpred(prj_2col, newdata = dat)$lpd,
+               proj_linpred(prj_1col, newdata = dat)$lpd)
+  # Without the response columns in `newdata`, the weights need `weightsnew`:
+  nd <- dat[1:5, c("x1", "x2")]
+  expect_error(proj_linpred(prj_2col, newdata = nd),
+               "or supply argument `weightsnew`", fixed = TRUE)
+  # `pred` does not use the weights; this checks that the call with
+  # `weightsnew` does not stop:
+  expect_equal(
+    proj_linpred(prj_2col, newdata = nd, weightsnew = dat$trials[1:5])$pred,
+    proj_linpred(prj_1col, newdata = nd, weightsnew = dat$trials[1:5])$pred
+  )
+  expect_error(predict(refm_2col, newdata = nd),
+               "or supply argument `weightsnew`", fixed = TRUE)
+  expect_equal(
+    predict(refm_2col, newdata = nd, weightsnew = dat$trials[1:5]),
+    predict(refm_1col, newdata = nd, weightsnew = dat$trials[1:5])
+  )
+  expect_error(proj_predict(prj_2col, newdata = nd),
+               "or supply argument `weightsnew`", fixed = TRUE)
+  expect_equal(
+    proj_predict(prj_2col, newdata = nd, weightsnew = dat$trials[1:5],
+                 .seed = 5302),
+    proj_predict(prj_1col, newdata = nd, weightsnew = dat$trials[1:5],
+                 .seed = 5302)
+  )
+
+  # Two response columns that are both columns of `data`: the second column
+  # must stay unchanged in the stored data.
+  dat$fail <- dat$trials - dat$y
+  fit$data <- dat
+  refm_sf <- init_refmodel(
+    fit, data = dat, formula = cbind(y, fail) ~ x1 + x2,
+    family = binomial(), ref_predfun = ref_predfun
+  )
+  expect_equal(refm_sf$wobs, dat$trials)
+  expect_equal(refm_sf$fetch_data()$fail, dat$fail)
+  prj_sf <- suppressMessages(
+    project(refm_sf, predictor_terms = "x1", ndraws = ndraws, seed = 5302)
+  )
+  expect_equal(proj_linpred(prj_sf)$lpd, proj_linpred(prj_1col)$lpd)
+
+  # A constant number of trials from the formula environment: only the
+  # response variables that are columns of `data` must be in `newdata`.
+  nt <- 10L
+  dat_nt <- dat
+  dat_nt$y <- rbinom(n, nt, plogis(0.5 * dat_nt$x1))
+  fit_nt <- fit
+  fit_nt$data <- dat_nt
+  refm_nt <- init_refmodel(
+    fit_nt, data = dat_nt, formula = cbind(y, nt - y) ~ x1 + x2,
+    family = binomial(), ref_predfun = ref_predfun
+  )
+  expect_equal(refm_nt$wobs, rep(nt, n))
+  prj_nt <- suppressMessages(
+    project(refm_nt, predictor_terms = "x1", ndraws = ndraws, seed = 5302)
+  )
+  expect_no_error(
+    proj_linpred(prj_nt, newdata = dat_nt[1:5, c("x1", "x2", "y")])
+  )
 })

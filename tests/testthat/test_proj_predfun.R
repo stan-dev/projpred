@@ -890,3 +890,107 @@ test_that(paste(
   expect_equal(as.numeric(lpreds), as.numeric(lpreds_man),
                tolerance = 1e-14)
 })
+
+test_that(paste(
+  "subprd() of a GAMM uses the smooth bases of the training data for any",
+  "`newdata`, and repair_re() works for GAMMs"
+), {
+  withr::local_seed(seed2_tst)
+
+  # Data and fits -----------------------------------------------------------
+
+  n_grp <- 8L
+  n <- 80L
+  dat <- data.frame(
+    x = runif(n), z = rnorm(n),
+    g = factor(paste0("g", rep(seq_len(n_grp), length.out = n)))
+  )
+  u <- matrix(rnorm(2 * n_grp, sd = 0.6), ncol = 2)
+  dat$y <- sin(2 * pi * dat$x) + u[dat$g, 1] + u[dat$g, 2] * dat$z +
+    rnorm(n, sd = 0.3)
+  dat$y_pois <- rpois(n, exp(0.5 + sin(2 * pi * dat$x) + u[dat$g, 1]))
+  fit_tst <- function(d, fml = y ~ s(x) + z, rnd = ~ (1 + z | g),
+                      family = gaussian()) {
+    fit_gamm_callback(formula = fml, projpred_formula_no_random = fml,
+                      projpred_random = rnd, data = d, family = family)
+  }
+  # The population-level part from the `gam` component (as recommended in the
+  # documentation of gamm4::gamm4()):
+  lpreds_pop <- function(fit, nd) {
+    unname(as.vector(predict(fit$gam, newdata = nd)))
+  }
+  lpreds_man <- function(fit, nd) {
+    re <- lme4::ranef(fit$mer, condVar = FALSE)$g
+    lpreds_pop(fit, nd) + re[as.character(nd$g), "(Intercept)"] +
+      re[as.character(nd$g), "z"] * nd$z
+  }
+  fit <- fit_tst(dat)
+
+  # Existing group levels ---------------------------------------------------
+
+  expect_equal(unname(subprd(list(fit), newdata = dat)[, 1]),
+               unname(fitted(fit$mer)), tolerance = 1e-8)
+  expect_equal(unname(predict(fit)[, 1]), unname(fitted(fit$mer)),
+               tolerance = 1e-8)
+  lpreds_all <- subprd(list(fit), newdata = dat)[, 1]
+  rows_list <- list(all = seq_len(n), all_lvls = seq_len(2 * n_grp),
+                    two_lvls = which(dat$g %in% c("g1", "g2")), one_row = 5L)
+  for (rows_nm in names(rows_list)) {
+    nd <- dat[rows_list[[rows_nm]], , drop = FALSE]
+    lpreds <- subprd(list(fit), newdata = nd)
+    expect_identical(dim(lpreds), c(nrow(nd), 1L), info = rows_nm)
+    expect_equal(unname(lpreds[, 1]), lpreds_man(fit, nd), tolerance = 1e-12,
+                 info = rows_nm)
+    # The prediction for a row does not depend on the other rows of `newdata`:
+    expect_equal(unname(lpreds[, 1]),
+                 unname(lpreds_all[rows_list[[rows_nm]]]), tolerance = 1e-12,
+                 info = rows_nm)
+  }
+
+  # A group level that is not in the training data --------------------------
+
+  fit_lost <- fit_tst(droplevels(dat[dat$g != "g1", ]))
+  nd <- dat[dat$g %in% c("g1", "g2"), ]
+  is_g1 <- nd$g == "g1"
+  set.seed(seed3_tst)
+  lpreds <- subprd(list(fit_lost), newdata = nd)[, 1]
+  set.seed(seed3_tst)
+  ranmulti <- mvtnorm::rmvnorm(
+    n = 1, sigma = lme4::VarCorr(fit_lost$mer)$g[, , drop = FALSE],
+    checkSymmetry = FALSE
+  )
+  expect_equal(unname(lpreds[!is_g1]), lpreds_man(fit_lost, nd[!is_g1, ]),
+               tolerance = 1e-12)
+  expect_equal(unname(lpreds[is_g1]),
+               lpreds_pop(fit_lost, nd[is_g1, ]) + ranmulti[1, 1] +
+                 ranmulti[1, 2] * nd$z[is_g1],
+               tolerance = 1e-12)
+
+  # Option `projpred.mlvl_pred_new` -----------------------------------------
+
+  withr::local_options(projpred.mlvl_pred_new = TRUE)
+  set.seed(seed3_tst)
+  lpreds <- subprd(list(fit), newdata = nd)[, 1]
+  set.seed(seed3_tst)
+  ranmulti <- mvtnorm::rmvnorm(
+    n = 2, sigma = lme4::VarCorr(fit$mer)$g[, , drop = FALSE],
+    checkSymmetry = FALSE
+  )
+  lvl_idx <- ifelse(is_g1, 1L, 2L)
+  expect_equal(unname(lpreds),
+               lpreds_pop(fit, nd) + ranmulti[lvl_idx, 1] +
+                 ranmulti[lvl_idx, 2] * nd$z,
+               tolerance = 1e-12)
+  withr::local_options(projpred.mlvl_pred_new = FALSE)
+
+  # Poisson family (linear predictors on the link scale) --------------------
+
+  fit_pois <- fit_tst(dat, fml = y_pois ~ s(x), rnd = ~ (1 | g),
+                      family = poisson())
+  lpreds_all <- subprd(list(fit_pois), newdata = dat)[, 1]
+  expect_equal(unname(lpreds_all),
+               unname(predict(fit_pois$mer, type = "link")), tolerance = 1e-8)
+  rows <- rows_list$two_lvls
+  expect_equal(unname(subprd(list(fit_pois), newdata = dat[rows, ])[, 1]),
+               unname(lpreds_all[rows]), tolerance = 1e-12)
+})
