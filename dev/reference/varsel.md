@@ -217,8 +217,7 @@ varsel(
   calling `varsel()`) upon exiting `varsel()`. Here, `seed` is used for
   clustering the reference model's posterior draws (if
   `!is.null(nclusters)` or `!is.null(nclusters_pred)`) and for drawing
-  new group-level effects when predicting from a multilevel submodel
-  (however, not yet in case of a GAMM).
+  new group-level effects when predicting from a multilevel submodel.
 
 ## Value
 

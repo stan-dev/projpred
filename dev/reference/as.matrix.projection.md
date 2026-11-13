@@ -55,6 +55,15 @@ draws with nonconstant weights cause an error.)
 
 ## Details
 
+For a multilevel submodel, the group-level variance components follow
+the naming scheme and the parametrization of the corresponding package:
+With `nm_scheme = "rstanarm"`, the columns `Sigma[<group>:<a>,<a>]` and
+`Sigma[<group>:<b>,<a>]` contain the group-level variances and
+covariances (per group, the lower triangle of the covariance matrix in
+column-major order). With `nm_scheme = "brms"`, the columns
+`sd_<group>__<a>` and `cor_<group>__<a>__<b>` contain the group-level
+standard deviations and correlations.
+
 In case of the augmented-data projection for a multilevel submodel of a
 [`brms::categorical()`](https://paulbuerkner.com/brms/reference/brmsfamily.html)
 reference model, the multilevel parameters (and therefore also their

@@ -123,7 +123,10 @@ instead.</p></dd>
 <dd><p>If not <code>NULL</code>, then this needs to be a character
 vector of predictor terms for the submodel onto which the projection will
 be performed. Argument <code>nterms</code> is ignored in that case. For an <code>object</code>
-which is not of class <code>vsel</code>, <code>predictor_terms</code> must not be <code>NULL</code>.</p></dd>
+which is not of class <code>vsel</code>, <code>predictor_terms</code> must not be <code>NULL</code>. If a
+submodel has a linear term and a smooth term of the same variable (for
+example, <code>x</code> and <code>s(x)</code>), the projection drops the linear term and gives a
+message. The coefficient of this linear term is not identifiable.</p></dd>
 
 
 <dt id="arg-refit-prj">refit_prj<a class="anchor" aria-label="anchor" href="#arg-refit-prj"></a></dt>
@@ -158,9 +161,8 @@ results can be obtained again if needed. Passed to argument <code>seed</code> of
 <code>project()</code>) upon exiting <code>project()</code>. Here, <code>seed</code> is used for clustering
 the reference model's posterior draws (if <code>!is.null(nclusters)</code>) and for
 drawing new group-level effects when predicting from a multilevel submodel
-(however, not yet in case of a GAMM) and having global option
-<code>projpred.mlvl_pred_new</code> set to <code>TRUE</code>. (Such a prediction takes place when
-calculating output elements <code>dis</code> and <code>ce</code>.)</p></dd>
+and having global option <code>projpred.mlvl_pred_new</code> set to <code>TRUE</code>. (Such a
+prediction takes place when calculating output elements <code>dis</code> and <code>ce</code>.)</p></dd>
 
 
 <dt id="arg-verbose">verbose<a class="anchor" aria-label="anchor" href="#arg-verbose"></a></dt>

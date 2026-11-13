@@ -211,10 +211,9 @@ results can be obtained again if needed. Passed to argument <code>seed</code> of
 <code>NA</code>, then the PRNG state is reset (to the state before calling
 <code>proj_linpred()</code>, <code>proj_epred()</code>, or <code>proj_predict()</code>) upon exiting
 <code>proj_linpred()</code>, <code>proj_epred()</code>, or <code>proj_predict()</code>. Here, <code>.seed</code> is
-used for drawing new group-level effects
-in case of a multilevel submodel (however, not yet in case of a GAMM) and
-for drawing from the predictive distributions of the submodel(s) in case of
-<code>proj_predict()</code>. If a clustered projection was performed, then in
+used for drawing new group-level effects in case of a multilevel submodel
+and for drawing from the predictive distributions of the submodel(s) in
+case of <code>proj_predict()</code>. If a clustered projection was performed, then in
 <code>proj_predict()</code>, <code>.seed</code> is also used for drawing from the set of
 projected clusters of posterior draws (see argument <code>nresample_clusters</code>).
 If <code><a href="project.html">project()</a></code> is called internally with <code>seed = NA</code> (or with <code>seed</code> being

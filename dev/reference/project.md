@@ -56,7 +56,11 @@ project(
   If not `NULL`, then this needs to be a character vector of predictor
   terms for the submodel onto which the projection will be performed.
   Argument `nterms` is ignored in that case. For an `object` which is
-  not of class `vsel`, `predictor_terms` must not be `NULL`.
+  not of class `vsel`, `predictor_terms` must not be `NULL`. If a
+  submodel has a linear term and a smooth term of the same variable (for
+  example, `x` and `s(x)`), the projection drops the linear term and
+  gives a message. The coefficient of this linear term is not
+  identifiable.
 
 - refit_prj:
 
@@ -92,10 +96,9 @@ project(
   calling `project()`) upon exiting `project()`. Here, `seed` is used
   for clustering the reference model's posterior draws (if
   `!is.null(nclusters)`) and for drawing new group-level effects when
-  predicting from a multilevel submodel (however, not yet in case of a
-  GAMM) and having global option `projpred.mlvl_pred_new` set to `TRUE`.
-  (Such a prediction takes place when calculating output elements `dis`
-  and `ce`.)
+  predicting from a multilevel submodel and having global option
+  `projpred.mlvl_pred_new` set to `TRUE`. (Such a prediction takes place
+  when calculating output elements `dis` and `ce`.)
 
 - verbose:
 

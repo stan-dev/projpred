@@ -293,7 +293,7 @@ cv_varsel(
   observations), for sampling the folds in \\K\\-fold CV, for the
   weights of the weight perturbation (see section "Note"), and for
   drawing new group-level effects when predicting from a multilevel
-  submodel (however, not yet in case of a GAMM).
+  submodel.
 
 - search_terms:
 

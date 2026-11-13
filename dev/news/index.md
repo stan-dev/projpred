@@ -154,6 +154,14 @@
   results. (GitHub:
   [\#603](https://github.com/stan-dev/projpred/issues/603),
   [\#620](https://github.com/stan-dev/projpred/issues/620))
+- Faster weight perturbation in
+  [`cv_varsel()`](https://mc-stan.org/projpred/dev/reference/cv_varsel.md)
+  with `validate_search = TRUE` for Gaussian models and the latent
+  projection. For example,
+  [`cv_varsel()`](https://mc-stan.org/projpred/dev/reference/cv_varsel.md)
+  with 400 clusters is about 9 % faster for a Gaussian model with 382
+  observations. (GitHub:
+  [\#621](https://github.com/stan-dev/projpred/issues/621))
 
 ### Minor changes
 
@@ -183,6 +191,12 @@
   [`cv_varsel()`](https://mc-stan.org/projpred/dev/reference/cv_varsel.md)
   with `validate_search = TRUE` sends less data to the workers. (GitHub:
   [\#611](https://github.com/stan-dev/projpred/issues/611))
+- Improved error message for a binomial model with more than one trial
+  per observation. Latent projection now stops for the brms families
+  `beta_binomial()`, `zero_inflated_binomial()` and
+  `zero_inflated_beta_binomial()`. (GitHub:
+  [\#530](https://github.com/stan-dev/projpred/issues/530),
+  [\#624](https://github.com/stan-dev/projpred/issues/624))
 
 ### Bug fixes and maintenance
 
@@ -204,6 +218,11 @@
   [\#573](https://github.com/stan-dev/projpred/issues/573))
 - Tests: Adapt to version 2.1-0 of package lme4. (GitHub:
   [\#577](https://github.com/stan-dev/projpred/issues/577))
+- Fixed bug in
+  [`init_refmodel()`](https://mc-stan.org/projpred/dev/reference/refmodel-init-get.md)
+  with a 2-column binomial response (successes and failures) and the
+  default `extract_model_data`. (GitHub:
+  [\#625](https://github.com/stan-dev/projpred/issues/625))
 - Fixed bug in
   [`cv_varsel()`](https://mc-stan.org/projpred/dev/reference/cv_varsel.md)
   with `cv_method = "kfold"` for **rstanarm** reference models with a
@@ -271,6 +290,11 @@
   reference model draws with a large linear predictor, where the inverse
   link clamped the mean. (GitHub:
   [\#614](https://github.com/stan-dev/projpred/issues/614))
+- With `nm_scheme = "rstanarm"`, the `Sigma[...]` columns of
+  [`as.matrix.projection()`](https://mc-stan.org/projpred/dev/reference/as.matrix.projection.md)
+  now hold the group-level variances and covariances in the rstanarm
+  order, as in rstanarm. (GitHub:
+  [\#622](https://github.com/stan-dev/projpred/issues/622))
 - Fixed the log-likelihood of reference model draws with small response
   category probabilities in the augmented-data projection (cumulative,
   categorical and binomial families). (GitHub:
@@ -287,6 +311,25 @@
   [`summary()`](https://rdrr.io/r/base/summary.html) and
   [`plot()`](https://rdrr.io/r/graphics/plot.default.html). (GitHub:
   [\#607](https://github.com/stan-dev/projpred/issues/607))
+- The projection now drops the linear term from a submodel with a smooth
+  term of the same variable (such as `x` and `s(x)`), and
+  [`project()`](https://mc-stan.org/projpred/dev/reference/project.md)
+  gives a message. The coefficient of such a linear term is not
+  identifiable. (GitHub:
+  [\#150](https://github.com/stan-dev/projpred/issues/150),
+  [\#626](https://github.com/stan-dev/projpred/issues/626))
+- The reference model formula of an **rstanarm** GAMM no longer has
+  extra linear terms for the variables of its smooth terms, as in an
+  **rstanarm** GAM. The search candidates do not change. (GitHub:
+  [\#384](https://github.com/stan-dev/projpred/issues/384),
+  [\#626](https://github.com/stan-dev/projpred/issues/626))
+- Fixed wrong predictions and errors of additive multilevel submodels
+  ([`gamm4::gamm4()`](https://rdrr.io/pkg/gamm4/man/gamm4.html)) for new
+  data, and wrong predictions with group-level slopes. New group levels
+  now get drawn group-level effects, and option `projpred.mlvl_pred_new`
+  now applies. (GitHub:
+  [\#239](https://github.com/stan-dev/projpred/issues/239),
+  [\#623](https://github.com/stan-dev/projpred/issues/623))
 - Fixed the term names of the L1 search if one model-matrix column name
   starts with another one. (GitHub:
   [\#615](https://github.com/stan-dev/projpred/issues/615))

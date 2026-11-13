@@ -221,7 +221,12 @@ init_refmodel(
   from a new dataset. May be `NULL` for using an internal default that
   essentially corresponds to
   [`y_wobs_offs()`](https://mc-stan.org/projpred/dev/reference/y_wobs_offs.md).
-  See also section "Argument `extract_model_data`" below.
+  For a 2-column binomial response (successes and failures), this
+  internal default uses the sums of the two columns (the numbers of
+  trials) as observation weights. Then a `newdata` in prediction
+  functions must contain the variables of the response columns, or the
+  call must supply `weightsnew`. See also section "Argument
+  `extract_model_data`" below.
 
 - cvfits:
 
