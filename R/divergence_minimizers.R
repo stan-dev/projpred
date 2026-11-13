@@ -2131,6 +2131,17 @@ fit_categ_mlvl <- function(formula, projpred_formula_no_random,
     stop("For the brms::categorical() family, projpred only supports the ",
          "logit link.")
   }
+  # repair_re() and get_subparams() for `mmblogit` objects need one covariance
+  # matrix per group-level term over all latent categories:
+  if (!is.null(dot_args$catCov)) {
+    cat_cov <- match.arg(dot_args$catCov, c("free", "diagonal", "single"))
+    if (cat_cov != "free") {
+      stop("For multilevel submodels of the brms::categorical() family, ",
+           "projpred only supports `catCov = \"free\"`.")
+    }
+    # categ_pql_fit() fits this model:
+    dot_args$catCov <- NULL
+  }
   # Handle offsets (but note that currently, offsets in the submodel fitter are
   # unexpected; this case could only occur in `test_div_minimizer.R`):
   trms <- terms(projpred_formula_no_random, data = data)
@@ -2160,6 +2171,8 @@ fit_categ_mlvl <- function(formula, projpred_formula_no_random,
   random_fmls <- lapply(random_trms, function(random_trm) {
     as.formula(paste("~", random_trm))
   })
+  # Contrasts of the factors in the group-level terms, for repair_re.mmblogit():
+  re_ctrs <- re_contrasts(data, projpred_random)
   # Use categ_pql_fit() unless there are offsets, global option
   # `projpred.categ_mlvl_mblogit` is `TRUE`, or `...` has mblogit() settings
   # that categ_pql_fit() does not support.  In mclogit's PQL algorithm,
@@ -2180,7 +2193,10 @@ fit_categ_mlvl <- function(formula, projpred_formula_no_random,
              data = mat_resp$data),
         dot_args[intersect(names(dot_args), pql_args)]
       ))
-      if (!is.null(fitobj)) return(fitobj)
+      if (!is.null(fitobj)) {
+        fitobj$re_contrasts <- re_ctrs
+        return(fitobj)
+      }
     }
   }
   if (length(random_fmls) == 1) {
@@ -2207,6 +2223,7 @@ fit_categ_mlvl <- function(formula, projpred_formula_no_random,
       "fitting procedure did not converge."
     )
   }
+  fitobj$re_contrasts <- re_ctrs
   return(fitobj)
 }
 
@@ -3222,9 +3239,10 @@ repair_re.mmblogit <- function(object, newdata) {
         stop("It seems like you fitted a model with a nested group-level ",
              "term. Currently, these are not supported.")
       }
-      # The number of "random slopes", including the intercept (the intercept is
-      # the reason for `+ 1L`):
-      ncoefs <- length(all.vars(obj_rand$formula)) + 1L
+      # The number of group-level coefficients per latent category (the columns
+      # of the group-level model matrix, for example K - 1 for a factor with K
+      # levels):
+      ncoefs <- ncol(object$VarCov[[VarCov_idx]]) %/% nlats
       # The coercion itself:
       ranef_i <- matrix(
         object$random.effects[[grp_idx]],
@@ -3281,7 +3299,8 @@ repair_re.mmblogit <- function(object, newdata) {
                                  xlevels = c(lapply(lvls_list, "[[", "comb"),
                                              object$xlevels),
                                  re = ranef_tmp,
-                                 D = object$D)
+                                 D = object$D,
+                                 contrasts = object$re_contrasts)
   names(ranefs_prep$b) <- rownames(ranefs_prep$Zt)
 
   VarCorr_tmp <- object$VarCov

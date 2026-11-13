@@ -92,7 +92,9 @@ argument \code{method} or \code{control} in \code{...} replaces this default. Fo
 \code{cloglog} and \code{loglog} links, \pkg{projpred} always uses
 \code{useMatrix = TRUE} (see \code{\link[ordinal:clmm.control]{ordinal::clmm.control()}}) and does not use
 \code{ucminf()}. The code of \code{\link[ordinal:clmm]{ordinal::clmm()}} for a single group-level term
-uses the other of these two links.
+uses the other of these two links. For the \code{\link[brms:categorical]{brms::categorical()}} family,
+\pkg{projpred} only supports \code{catCov = "free"} (see
+\code{\link[mclogit:mblogit]{mclogit::mblogit()}}).
 }
 \item Submodel without multilevel but additive terms: \code{\link[mgcv:gam]{mgcv::gam()}} (the returned
 object inherits from class \code{gam}).
