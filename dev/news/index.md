@@ -333,6 +333,14 @@
 - Fixed the term names of the L1 search if one model-matrix column name
   starts with another one. (GitHub:
   [\#615](https://github.com/stan-dev/projpred/issues/615))
+- [`get_refmodel()`](https://mc-stan.org/projpred/dev/reference/refmodel-init-get.md)
+  now stops with an error that names the missing variables and gives a
+  workaround. This applies to
+  [`rstanarm::stan_gamm4()`](https://mc-stan.org/rstanarm/reference/stan_gamm4.html)
+  fits with argument `random` and an expression in the formula, such as
+  `cbind(y, n - y)`. (GitHub:
+  [\#148](https://github.com/stan-dev/projpred/issues/148),
+  [\#634](https://github.com/stan-dev/projpred/issues/634))
 
 ## projpred 2.11.0
 
