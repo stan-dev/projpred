@@ -802,6 +802,22 @@ get_refmodel.default <- function(object, family = NULL, ...) {
                        ...))
 }
 
+# With argument `random`, rstanarm::stan_gamm4() stores the model frame as the
+# `data` element of the fit. For an expression in the formula (for example
+# `cbind(y, n - y)`), the model frame has a column for the expression, but no
+# column for the variables in the expression. This function returns the names
+# of these variables.
+gamm4_vars_miss <- function(object) {
+  data <- object$data
+  trms <- attr(data, "terms")
+  if (is.null(object$glmod) || !is.data.frame(data) || is.null(trms)) {
+    return(character())
+  }
+  vars <- as.list(attr(trms, "variables"))[-1]
+  vars_expr <- unlist(lapply(Filter(Negate(is.name), vars), all.vars))
+  return(setdiff(vars_expr, names(data)))
+}
+
 #' @rdname refmodel-init-get
 #' @export
 get_refmodel.stanreg <- function(object, latent = FALSE, dis = NULL,
@@ -894,6 +910,24 @@ get_refmodel.stanreg <- function(object, latent = FALSE, dis = NULL,
 
   if (inherits(object, "gamm4")) {
     formula <- formula.gamm4(object)
+    vars_miss <- gamm4_vars_miss(object)
+    if (length(vars_miss) > 0) {
+      stop("The `data` element of this rstanarm::stan_gamm4() fit (with ",
+           "argument `random`) lacks the variable(s) ",
+           paste0("`", vars_miss, "`", collapse = ", "), " of the model ",
+           "formula. This is rstanarm issue #545 ",
+           "(https://github.com/stan-dev/rstanarm/issues/545). To work around ",
+           "it, set `fit$data` to the data frame that you gave to ",
+           "stan_gamm4(), for example with `fit$data <- dat`. Use only the ",
+           "rows that the fit used. Then call get_refmodel() again. K-fold CV ",
+           "with the default `cvfun` still fails because of the same issue.")
+    }
+    if (!is.null(object$glmod) && nrow(data) != NROW(object$y)) {
+      stop("The `data` element of this rstanarm::stan_gamm4() fit has ",
+           nrow(data), " rows, but the fit has ", NROW(object$y),
+           " rows. Use only the rows that the fit used. The fit leaves out ",
+           "rows with missing values and rows outside of `subset`.")
+    }
   } else {
     formula <- formula(object)
   }
