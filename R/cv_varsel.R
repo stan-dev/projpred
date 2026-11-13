@@ -148,11 +148,15 @@
 #'   evaluations in case of `validate_search = TRUE`. (Note that in case of
 #'   \eqn{K}-fold CV, the \eqn{K} reference model refits are not affected by
 #'   argument `parallel`; only \pkg{projpred}'s CV is affected.) The
-#'   parallelization is powered by the \pkg{foreach} package. Thus, any parallel
-#'   (or sequential) backend compatible with \pkg{foreach} can be used, e.g.,
-#'   the backends from packages \pkg{doParallel}, \pkg{doMPI}, or
-#'   \pkg{doFuture}. For GLMs, this CV parallelization should work reliably, but
-#'   for other models (such as GLMMs), it may lead to excessive memory usage
+#'   parallelization uses the workers of the current plan of the
+#'   \pkg{future} package (set up with, e.g.,
+#'   `future::plan(future::multisession, workers = 4)`), see section
+#'   "Parallelization" in [projpred-package]. Without such workers, the CV
+#'   runs sequentially, with a warning. Each CV fold has its own random
+#'   number stream (also with `parallel = FALSE`), so for a given seed, the
+#'   results depend neither on argument `parallel` nor on the number of
+#'   workers. For GLMs, this CV parallelization should work reliably, but for
+#'   other models (such as GLMMs), it may lead to excessive memory usage
 #'   which in turn may crash the R session (on Unix systems, setting an
 #'   appropriate memory limit via `unix::rlimit_as()` may avoid crashing the
 #'   whole machine). However, the problem of excessive memory usage is less
@@ -789,8 +793,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
   perturb_ll <- NULL
   if (is.finite(perturb_alpha)) {
     perturb_seed <- perturb_base_seed()
-    # The parallel loop below has `loglik_forPSIS` in `.noexport`, so workers
-    # that do not fork the session do not get it. They get this copy.
+    # one_obs() does not hold `loglik_forPSIS`; it gets this copy.
     perturb_ll <- loglik_forPSIS
   }
 
@@ -1182,8 +1185,8 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
                    nprjdraws_eval = perf_eval_out[["nprjdraws"]],
                    perturb_failed))
     }
-    # Some parallel backends (e.g., doFuture) send the enclosing environment of
-    # one_obs() to the workers, so keep only the objects that one_obs() uses:
+    # The parallel workers get one_obs() with its enclosing environment, so
+    # keep only the objects that one_obs() uses:
     one_obs <- fun_with_objs(one_obs, c(
       "cl_pred", "cl_sel", "inds", "lw", "method", "n", "nclusters",
       "nclusters_pred", "ndraws", "ndraws_pred", "nloo", "nterms_max",
@@ -1192,16 +1195,13 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
       "search_out_rks_was_null", "search_terms", "verbose"
     ))
     if (!parallel) {
-      # Sequential case. Actually, we could simply use ``%do_projpred%` <-
-      # foreach::`%do%`` here and then proceed as in the parallel case, but that
-      # would require adding more "hard" dependencies (because packages
-      # 'foreach' and 'doRNG' would have to be moved from `Suggests:` to
-      # `Imports:`).
+      # Sequential case. Each fold gets its own RNG stream, as in the
+      # parallel case:
       if (verbose == 1L) {
         pb <- utils::txtProgressBar(min = 0, max = nloo, style = 3, initial = 0,
                                     file = stderr())
       }
-      res_cv <- lapply(seq_along(inds), function(run_index) {
+      res_cv <- seq_lapply_rng(length(inds), function(run_index) {
         if (verbose == 1L) {
           on.exit(utils::setTxtProgressBar(pb, run_index))
         }
@@ -1211,46 +1211,16 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
         close(pb)
       }
     } else {
-      # Parallel case.
-      if (!requireNamespace("foreach", quietly = TRUE)) {
-        stop("Please install the 'foreach' package.")
-      }
-      if (!requireNamespace("doRNG", quietly = TRUE)) {
-        stop("Please install the 'doRNG' package.")
-      }
-      if (verbose && use_progressr()) {
-        progressor_obj <- progressr::progressor(length(inds))
-      } else {
-        progressor_obj <- NULL
-      }
-      dot_args <- list(...)
-      `%do_projpred%` <- doRNG::`%dorng%`
-      # one_obs() holds all objects that the folds need (see fun_with_objs()),
-      # and the loop body uses only `.export` objects and base functions. So
-      # set doFuture to use only the `.export` objects (its "manual" mode).
-      # This skips its automatic search for further globals, which can take
-      # seconds for a large reference model. doFuture reads the option when
-      # the loop starts; restore it right after the loop (and on an error):
-      opts_old <- options(doFuture.foreach.export = ".export")
-      on.exit(options(opts_old), add = TRUE)
-      res_cv <- foreach::foreach(
-        run_index = seq_along(inds),
-        .packages = c("projpred"),
-        .export = c("one_obs", "dot_args", "progressor_obj",
-                    getOption("projpred.export_to_workers", character())),
-        .noexport = c("mu_offs_oscale", "loglik_forPSIS", "psisloo", "y_lat_E",
-                      "loo_ref_oscale", "validset", "loo_sub", "mu_sub",
-                      "loo_sub_oscale", "mu_sub_oscale"),
-        .errorhandling = getOption("projpred.foreach_errorhandling", "stop"),
-        .verbose = getOption("projpred.foreach_verbose", FALSE)
-      ) %do_projpred% {
-        out_one_obs <- do.call(one_obs, c(list(run_index = run_index,
-                                               verbose_obs = FALSE),
-                                          dot_args))
-        if (!is.null(progressor_obj)) progressor_obj()
-        return(out_one_obs)
-      }
-      options(opts_old)
+      # Parallel case. The workers get a copy of the reference model without
+      # its fits (see refmodel_for_folds()), and each fold gets its own RNG
+      # stream. Without parallel workers (par_backend() then gives `NULL` and
+      # a warning), par_lapply() runs the folds in this R session, with the
+      # same results:
+      assign("refmodel", refmodel_for_folds(refmodel),
+             envir = environment(one_obs))
+      res_cv <- par_lapply(seq_along(inds), one_obs, verbose_obs = FALSE, ...,
+                           .backend = par_backend(), .rng = TRUE,
+                           .progress = verbose > 0)
     }
     n_perturb_failed <- sum(vapply(res_cv, "[[", logical(1), "perturb_failed"))
     if (n_perturb_failed > 0) {
@@ -1477,11 +1447,6 @@ warn_pareto <- function(n07, n, khat_threshold = 0.7, warn_txt) {
 
 # K-fold CV ---------------------------------------------------------------
 
-# Needed to avoid a NOTE in `R CMD check`:
-utils::globalVariables("list_cv_k")
-utils::globalVariables("search_out_rks_k")
-utils::globalVariables("ks_k")
-
 kfold_varsel <- function(refmodel, method, nterms_max, ndraws, nclusters,
                          ndraws_pred, nclusters_pred, refit_prj, penalty,
                          verbose, search_control, K, cvfits, validate_search,
@@ -1582,13 +1547,9 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws, nclusters,
       verbose_txt_add = vtxt_fold_k, ...
     )
 
-    # Performance evaluation for the reference model of the current fold:
-    eta_test <- fold$refmodel$ref_predfun(
-      fold$refmodel$fit,
-      newdata = refmodel$fetch_data(obs = fold$omitted),
-      excl_offs = FALSE
-    )
-    mu_test <- fold$refmodel$family$linkinv(eta_test)
+    # Performance evaluation for the reference model of the current fold
+    # (`fold$eta_test` holds its predictions for the left-out observations):
+    mu_test <- fold$refmodel$family$linkinv(fold$eta_test)
     summaries_ref <- weighted_summary_means(
       y_wobs_test = y_wobs_test[fold$omitted, , drop = FALSE],
       data_aux_test = refmodel$fetch_data(obs = fold$omitted),
@@ -1599,7 +1560,7 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws, nclusters,
       cl_ref = seq_along(fold$refmodel$wdraws_ref),
       # The linear predictor gives the exact log-likelihood where the inverse
       # link clamps `mu_test` (as in `loglik_forPSIS` of loo_varsel()):
-      eta = if (!fold$refmodel$family$for_latent) eta_test
+      eta = if (!fold$refmodel$family$for_latent) fold$eta_test
     )
 
     return(nlist(predictor_ranking = search_path[["predictor_ranking"]],
@@ -1607,25 +1568,48 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws, nclusters,
                  summaries_ref, clust_used_eval = perf_eval_out[["clust_used"]],
                  nprjdraws_eval = perf_eval_out[["nprjdraws"]]))
   }
-  # Some parallel backends (e.g., doFuture) send the enclosing environment of
-  # one_fold() to the workers, so keep only the objects that one_fold() uses
-  # (in particular not `list_cv`; each iteration gets its own fold):
+  # The parallel workers get one_fold() with its enclosing environment, so
+  # keep only the objects that one_fold() uses (in particular not `list_cv`;
+  # each task gets only its folds):
   one_fold <- fun_with_objs(one_fold, c(
     "K", "method", "nclusters", "nclusters_pred", "ndraws", "ndraws_pred",
     "nterms_max", "penalty", "refit_prj", "refmodel", "search_control",
     "search_out_rks_was_null", "search_path_fulldata", "search_terms",
     "validate_search", "verbose", "y_wobs_test"
   ))
+  # The folds need the reference model fits only for the predictions of the
+  # fold reference models for the left-out observations, so compute these
+  # here (also in the sequential case, so that both cases use the random
+  # numbers in the same way). In the parallel case, the workers then get the
+  # fold reference models and the full-data reference model without their
+  # fits (see refmodel_for_folds()), and the formulas of the fold reference
+  # models without the other objects of their environments (see
+  # formula_for_folds()):
+  list_cv <- lapply(list_cv, function(fold) {
+    fold$eta_test <- fold$refmodel$ref_predfun(
+      fold$refmodel$fit,
+      newdata = refmodel$fetch_data(obs = fold$omitted),
+      excl_offs = FALSE
+    )
+    if (parallel) {
+      fold$refmodel <- refmodel_for_folds(
+        fold$refmodel, formula_env = environment(refmodel$formula)
+      )
+    }
+    return(fold)
+  })
+  if (parallel) {
+    assign("refmodel", refmodel_for_folds(refmodel),
+           envir = environment(one_fold))
+  }
   if (!parallel) {
-    # Sequential case. Actually, we could simply use ``%do_projpred%` <-
-    # foreach::`%do%`` here and then proceed as in the parallel case, but that
-    # would require adding more "hard" dependencies (because packages 'foreach'
-    # and 'doRNG' would have to be moved from `Suggests:` to `Imports:`).
+    # Sequential case. Each fold gets its own RNG stream, as in the parallel
+    # case:
     if (verbose == 1L) {
       pb <- utils::txtProgressBar(min = 0, max = K, style = 3, initial = 0,
                                   file = stderr())
     }
-    res_cv <- lapply(seq_len(K), function(k) {
+    res_cv <- seq_lapply_rng(K, function(k) {
       if (verbose == 1L) {
         on.exit(utils::setTxtProgressBar(pb, k))
       }
@@ -1635,49 +1619,15 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws, nclusters,
       close(pb)
     }
   } else {
-    # Parallel case.
-    if (!requireNamespace("foreach", quietly = TRUE)) {
-      stop("Please install the 'foreach' package.")
-    }
-    if (!requireNamespace("doRNG", quietly = TRUE)) {
-      stop("Please install the 'doRNG' package.")
-    }
-    if (verbose && use_progressr()) {
-      progressor_obj <- progressr::progressor(K)
-    } else {
-      progressor_obj <- NULL
-    }
-    dot_args <- list(...)
-    `%do_projpred%` <- doRNG::`%dorng%`
-    # one_fold() holds all objects that the folds need (see fun_with_objs()),
-    # and the loop body uses only `.export` objects, base functions and the
-    # exported do_call(). So set doFuture to use only the `.export` objects
-    # (its "manual" mode). This skips its automatic search for further
-    # globals, which can take seconds for a large reference model. doFuture
-    # reads the option when the loop starts; restore it right after the loop
-    # (and on an error):
-    opts_old <- options(doFuture.foreach.export = ".export")
-    on.exit(options(opts_old), add = TRUE)
-    res_cv <- foreach::foreach(
-      list_cv_k = list_cv,
-      search_out_rks_k = search_out_rks,
-      ks_k = seq_len(K),
-      .packages = c("projpred"),
-      .export = c("one_fold", "dot_args", "progressor_obj",
-                  getOption("projpred.export_to_workers", character())),
-      .noexport = c("list_cv", "search_out_rks"),
-      .errorhandling = getOption("projpred.foreach_errorhandling", "stop"),
-      .verbose = getOption("projpred.foreach_verbose", FALSE)
-    ) %do_projpred% {
-      out_one_fold <- do_call(one_fold, c(list(fold = list_cv_k,
-                                               rk = search_out_rks_k,
-                                               k = ks_k,
-                                               verbose_fold = FALSE),
-                                          dot_args))
-      if (!is.null(progressor_obj)) progressor_obj()
-      return(out_one_fold)
-    }
-    options(opts_old)
+    # Parallel case. Each fold gets its own RNG stream. Without parallel
+    # workers (par_backend() then gives `NULL` and a warning), par_lapply()
+    # runs the folds in this R session, with the same results:
+    args_folds <- lapply(seq_len(K), function(k) {
+      list(fold = list_cv[[k]], rk = search_out_rks[[k]], k = k)
+    })
+    res_cv <- par_lapply(args_folds, call_with_args, .fun = one_fold,
+                         verbose_fold = FALSE, ..., .backend = par_backend(),
+                         .rng = TRUE, .progress = verbose > 0)
   }
   verb_out("-----", verbose = verbose)
   predictor_ranking_cv <- do.call(rbind,

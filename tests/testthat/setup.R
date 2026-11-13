@@ -84,79 +84,19 @@ if (run_snaps && !requireNamespace("vdiffr", quietly = TRUE)) {
 if (run_snaps) {
   testthat_ed_max2 <- edition_get() <= 2
 }
-# Run tests for the parallelization of the projection?:
+# Run the tests that need parallel workers (see test_parallel.R)?:
 # Notes:
-#   * Throughout the tests, the terms "parallelization" and "parallel" refer to
-#   the parallelization of the projection ("projection parallelization"), not
-#   the parallelization of the CV ("CV parallelization").
-#   * We don't run the parallel tests on CRAN or continuous integration (CI)
-#   systems because parallelization might require special care there.
-#   * Currently, parallelization on Windows takes longer than running
-#   sequentially. This makes parallelization impractical on Windows, so we
-#   don't run the tests on Windows by default.
-#   * Currently, parallelization only works reliably for GLMs (because of
-#   memory issues for more complex models like GLMMs, GAMs and GAMMs).
-#   Therefore, we will only test GLMs here.
+#   * We don't run these tests on CRAN or continuous integration (CI) systems
+#   because parallelization might require special care there.
+#   * The parallelization is not tested on Windows.
 run_prll <- identical(Sys.getenv("NOT_CRAN"), "true") &&
   !identical(toupper(Sys.getenv("CI")), "TRUE") &&
   !identical(.Platform$OS.type, "windows")
 if (run_prll) {
-  ncores <- parallel::detectCores(logical = FALSE)
-  if (ncores == 1) {
+  if (parallel::detectCores(logical = FALSE) == 1) {
     warning("Deactivating the parallel tests because only a single worker ",
             "could be detected.")
     run_prll <- FALSE
-  }
-  # Do not run on more than 2 cores if requested so:
-  if (identical(Sys.getenv("_R_CHECK_LIMIT_CORES_"), "TRUE")) {
-    ncores <- min(ncores, 2L)
-  }
-  # Use the 'doParallel' package on all platforms except Windows. For Windows,
-  # the 'doFuture' package provides a faster alternative via the 'future.callr'
-  # package (which is still slower than a sequential run, though):
-  if (!identical(.Platform$OS.type, "windows")) {
-    if (!requireNamespace("doParallel", quietly = TRUE)) {
-      warning("Package 'doParallel' is needed for the parallel tests, but ",
-              "could not be found. Deactivating the parallel tests now.")
-      run_prll <- FALSE
-    } else {
-      dopar_backend <- "doParallel"
-    }
-  } else {
-    # This case (which should not be possible by default) is only included
-    # here to demonstrate how parallelization should be used on Windows (but
-    # currently, this makes no sense, as explained above).
-    if (!requireNamespace("doFuture", quietly = TRUE)) {
-      warning("Package 'doFuture' is needed for the parallel tests, but ",
-              "could not be found. Deactivating the parallel tests now.")
-      run_prll <- FALSE
-    } else {
-      dopar_backend <- "doFuture"
-    }
-    if (!requireNamespace("future", quietly = TRUE)) {
-      warning("Package 'future' is needed for the parallel tests, but ",
-              "could not be found. Deactivating the parallel tests now.")
-      run_prll <- FALSE
-    }
-    if (!identical(.Platform$OS.type, "windows")) {
-      # This case (which should not be possible by default) is only included
-      # here to demonstrate how other systems should be used with the 'doFuture'
-      # package.
-      future_plan <- "multicore"
-    } else {
-      ### Not used in this case because the 'future.callr' package provides a
-      ### faster alternative on Windows (which is still slower than a sequential
-      ### run, though):
-      # future_plan <- "multisession"
-      ###
-      if (!requireNamespace("future.callr", quietly = TRUE)) {
-        warning("Package 'future.callr' is needed for the parallel tests, but ",
-                "could not be found. Deactivating the parallel tests now.")
-        run_prll <- FALSE
-      } else {
-        future_plan <- "callr"
-      }
-    }
   }
 }
 # Run all test scripts (following this setup script) in a completely random RNG
