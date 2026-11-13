@@ -16,9 +16,9 @@
 - Faster repeated forward searches, as in
   [`cv_varsel()`](https://mc-stan.org/projpred/dev/reference/cv_varsel.md)
   with `validate_search = TRUE`: the results of the term-label and
-  formula code are cached within the R session (R \>= 4.2.0). For
-  example, LOO CV with validated search is about 12-18 % faster.
-  (GitHub: [\#599](https://github.com/stan-dev/projpred/issues/599))
+  formula code are cached within the R session. For example, LOO CV with
+  validated search is about 12-18 % faster. (GitHub:
+  [\#599](https://github.com/stan-dev/projpred/issues/599))
 - Less formula and model-matrix work in the forward search and in the
   projections: the candidate submodels are selected from precomputed
   term labels, and the predictions for the training data use the stored
@@ -165,6 +165,16 @@
 
 ### Minor changes
 
+- projpred now requires R \>= 4.4.0 (previously R \>= 3.6.0). (GitHub:
+  [\#605](https://github.com/stan-dev/projpred/issues/605))
+- **posterior** is now a required package (previously suggested), so the
+  [`as_draws()`](https://mc-stan.org/posterior/reference/draws.html) and
+  [`as_draws_matrix()`](https://mc-stan.org/posterior/reference/draws_matrix.html)
+  methods for projections work without an extra installation. (GitHub:
+  [\#605](https://github.com/stan-dev/projpred/issues/605))
+- **loo** \>= 2.10.1, **posterior** \>= 1.7.0 and **gamm4** \>= 0.3-0
+  are now required, and **gtools** is no longer needed. (GitHub:
+  [\#605](https://github.com/stan-dev/projpred/issues/605))
 - [`get_refmodel.stanreg()`](https://mc-stan.org/projpred/dev/reference/refmodel-init-get.md)
   has new arguments `cvfun` and `cvrefbuilder` for K-fold CV. For
   example, a custom `cvrefbuilder` lets custom latent-projection

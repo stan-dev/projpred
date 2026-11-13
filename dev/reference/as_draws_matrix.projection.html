@@ -122,7 +122,15 @@ weights, <code><a href="https://mc-stan.org/posterior/reference/weight_draws.htm
     </div>
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
-    <p>In case of the augmented-data projection for a multilevel submodel
+    <p>For a multilevel submodel, the group-level variance components
+follow the naming scheme and the parametrization of the corresponding
+package: With <code>nm_scheme = "rstanarm"</code>, the columns
+<code>Sigma[&lt;group&gt;:&lt;a&gt;,&lt;a&gt;]</code> and <code>Sigma[&lt;group&gt;:&lt;b&gt;,&lt;a&gt;]</code> contain the
+group-level variances and covariances (per group, the lower triangle of
+the covariance matrix in column-major order). With <code>nm_scheme = "brms"</code>,
+the columns <code>sd_&lt;group&gt;__&lt;a&gt;</code> and <code>cor_&lt;group&gt;__&lt;a&gt;__&lt;b&gt;</code> contain the
+group-level standard deviations and correlations.</p>
+<p>In case of the augmented-data projection for a multilevel submodel
 of a <code><a href="https://paulbuerkner.com/brms/reference/brmsfamily.html" class="external-link">brms::categorical()</a></code> reference model, the multilevel parameters (and
 therefore also their names) slightly differ from those in the <span class="pkg">brms</span>
 reference model fit (see section "Augmented-data projection" in
