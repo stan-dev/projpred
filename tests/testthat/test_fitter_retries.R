@@ -64,9 +64,51 @@ test_that(paste(
 
   m <- mock_fitter(lme4::glmer, msg_pd)
   testthat::local_mocked_bindings(glmer = m$fun, .package = "lme4")
-  expect_error(fit_glmer_retry(y ~ x + (1 | g)),
-               "cannot fix this automatically anymore")
+  err <- expect_error(fit_glmer_retry(y ~ x + (1 | g)),
+                      "cannot fix this automatically anymore")
+  # This error of the refit is not wrapped:
+  expect_no_match(conditionMessage(err), "refit with optimx")
   expect_length(m$calls(), 2L)
+})
+
+test_that(paste(
+  "fit_glmer_callback() stops with both errors if the optimx refit after a",
+  "`not positive definite` error fails with another error"
+), {
+  skip_if_not_installed("optimx")
+  msg_pd <- "Downdated VtV is not positive definite"
+  # The error of lme4 if `nlminb` fails and optimx returns `NA` parameters:
+  msg_na <- "missing value where TRUE/FALSE needed"
+  msg_exp <- paste0("cannot fix this automatically: the refit with optimx ",
+                    "and `nlminb` failed, too.*The lme4 error was: Downdated ",
+                    "VtV is not positive definite\\. The error of the refit ",
+                    "was: missing value")
+  m <- mock_fitter(lme4::glmer, c(msg_pd, msg_na))
+  testthat::local_mocked_bindings(glmer = m$fun, .package = "lme4")
+  expect_error(fit_glmer_retry(y ~ x + (1 | g)), msg_exp)
+  expect_length(m$calls(), 2L)
+  # The Gaussian submodels use lme4::lmer() (the mock does not use the data):
+  m <- mock_fitter(lme4::lmer, c(msg_pd, msg_na))
+  testthat::local_mocked_bindings(lmer = m$fun, .package = "lme4")
+  expect_error(
+    fit_glmer_callback(y ~ x + (1 | g), projpred_formula_no_random = y ~ x,
+                       projpred_random = ~ (1 | g), family = gaussian(),
+                       data = dat_retry()),
+    msg_exp
+  )
+  calls <- m$calls()
+  expect_length(calls, 2L)
+  expect_identical(calls[[1]]$control$optimizer, "nloptwrap")
+  expect_identical(calls[[2]]$control$optimizer, "optimx")
+  expect_identical(calls[[2]]$control$optCtrl$method, "nlminb")
+  # Other retries still run inside the refit; here a PIRLS retry succeeds:
+  m <- mock_fitter(lme4::glmer, c(msg_pd, msg_pirls, NA))
+  testthat::local_mocked_bindings(glmer = m$fun, .package = "lme4")
+  expect_identical(fit_glmer_retry(y ~ x + (1 | g)), "fit")
+  calls <- m$calls()
+  expect_length(calls, 3L)
+  expect_identical(calls[[3]]$control$optimizer, c("optimx", "optimx"))
+  expect_identical(calls[[3]]$nAGQ, 20L)
 })
 
 test_that(paste(
@@ -180,11 +222,24 @@ test_that(paste(
   skip_if_not_installed("optimx")
   m <- mock_fitter(gamm4::gamm4, "Downdated VtV is not positive definite")
   testthat::local_mocked_bindings(gamm4 = m$fun, .package = "gamm4")
-  expect_error(fit_gamm_retry(), "cannot fix this automatically anymore")
+  err <- expect_error(fit_gamm_retry(),
+                      "cannot fix this automatically anymore")
+  expect_no_match(conditionMessage(err), "refit with optimx")
   calls <- m$calls()
   expect_length(calls, 2L)
   expect_identical(calls[[2]]$control$optimizer, c("optimx", "optimx"))
   expect_identical(calls[[2]]$control$optCtrl$method, "nlminb")
+
+  # The optimx refit fails with another error:
+  m <- mock_fitter(gamm4::gamm4, c("Downdated VtV is not positive definite",
+                                   "missing value where TRUE/FALSE needed"))
+  testthat::local_mocked_bindings(gamm4 = m$fun, .package = "gamm4")
+  expect_error(fit_gamm_retry(),
+               paste0("refit with optimx and `nlminb` failed, too.*gamm4 ",
+                      "tuning parameters.*The lme4 error was: Downdated VtV ",
+                      "is not positive definite\\. The error of the refit ",
+                      "was: missing value"))
+  expect_length(m$calls(), 2L)
 })
 
 test_that(paste(

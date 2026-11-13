@@ -1096,17 +1096,19 @@ fit_gamm_callback <- function(formula, projpred_formula_no_random,
              "optimizer, but cannot find the optimx package. Please install ",
              "it to be able to try this fix.")
       }
-      return(fit_gamm_callback(
-        formula = formula,
-        projpred_formula_no_random = projpred_formula_no_random,
-        projpred_random = projpred_random,
-        data = data,
-        family = family,
-        control = control_callback(family,
-                                   optimizer = "optimx",
-                                   optCtrl = list(method = "nlminb")),
-        ...
-      ))
+      return(refit_optimx(function() {
+        fit_gamm_callback(
+          formula = formula,
+          projpred_formula_no_random = projpred_formula_no_random,
+          projpred_random = projpred_random,
+          data = data,
+          family = family,
+          control = control_callback(family,
+                                     optimizer = "optimx",
+                                     optCtrl = list(method = "nlminb")),
+          ...
+        )
+      }, e_first = e, pkg = "gamm4"))
     } else if (grepl("pwrssUpdate", as.character(e))) {
       # lme4's PIRLS could not reduce the deviance any further, so relax the
       # convergence tolerance for the PIRLS step by a factor of 10 and retry
@@ -1137,6 +1139,28 @@ fit_gamm_callback <- function(formula, projpred_formula_no_random,
   fit$formula <- projpred_formula_no_random
   class(fit) <- c("gamm4")
   return(fit)
+}
+
+# Calls `refit()`, the refit with optimx and `nlminb` after the `not positive
+# definite` error `e_first` of lme4. If this refit fails with an error that is
+# not a "cannot fix this automatically" error, stop with a message that
+# contains both error messages. (If `nlminb` fails, optimx returns `NA`
+# parameters, and lme4 then stops with "missing value where TRUE/FALSE
+# needed".) `pkg` is the package of the tuning parameters in the message.
+refit_optimx <- function(refit, e_first, pkg) {
+  tryCatch(refit(), error = function(e) {
+    if (grepl("cannot fix this automatically", conditionMessage(e))) {
+      stop(e)
+    }
+    msg_first <- trimws(conditionMessage(e_first))
+    if (!grepl("\\.$", msg_first)) msg_first <- paste0(msg_first, ".")
+    stop("Encountering the `not positive definite` error while running the ",
+         "lme4 fitting procedure, but cannot fix this automatically: the ",
+         "refit with optimx and `nlminb` failed, too. You will probably have ",
+         "to tweak ", pkg, " tuning parameters manually (via `...`). The lme4 ",
+         "error was: ", msg_first, " The error of the refit was: ",
+         conditionMessage(e))
+  })
 }
 
 # Use package "lme4" to fit multilevel submodels:
@@ -1274,16 +1298,18 @@ fit_glmer_callback <- function(formula, projpred_formula_no_random,
              "optimizer, but cannot find the optimx package. Please install ",
              "it to be able to try this fix.")
       }
-      return(fit_glmer_callback(
-        formula = formula,
-        projpred_formula_no_random = projpred_formula_no_random,
-        projpred_random = projpred_random,
-        family = family,
-        control = control_callback(family,
-                                   optimizer = "optimx",
-                                   optCtrl = list(method = "nlminb")),
-        ...
-      ))
+      return(refit_optimx(function() {
+        fit_glmer_callback(
+          formula = formula,
+          projpred_formula_no_random = projpred_formula_no_random,
+          projpred_random = projpred_random,
+          family = family,
+          control = control_callback(family,
+                                     optimizer = "optimx",
+                                     optCtrl = list(method = "nlminb")),
+          ...
+        )
+      }, e_first = e, pkg = "lme4"))
     } else if (grepl("PIRLS", as.character(e))) {
       # `nAGQ` from `...` (not the `nAGQ = 0` that the code above sets for
       # non-integer binomial data):
