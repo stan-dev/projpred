@@ -341,7 +341,7 @@ refmodel_tester <- function(
     "fit", "formula", "div_minimizer", "family", "eta", "mu", "mu_offs", "dis",
     "y", "fetch_data", "wobs", "wdraws_ref", "offset", "cvfun", "cvfits",
     "extract_model_data", "ref_predfun", "mu_fun", "cvrefbuilder", "y_oscale",
-    "nobs"
+    "nobs", "contrasts"
   )
   refmod_class_expected <- "refmodel"
   if (is_datafit) {
@@ -797,7 +797,7 @@ outdmin_tester_trad <- function(
       }
     }
     subfit_nms <- c("alpha", "beta", "w", "formula", "x", "y", "xlvls",
-                    "terms")
+                    "terms", "contrasts")
     if (from_vsel_L1_search) {
       subfit_nms <- setdiff(subfit_nms, "y")
     }
@@ -1723,10 +1723,11 @@ projection_tester <- function(p,
   } else {
     augdat_cats_crr <- NULL
   }
+  # As proj_to_submodl(), with the contrasts of the reference model:
   outdmin_tester(p$outdmin,
                  nprjdraws_expected = nprjdraws_expected,
                  sub_formul = sub_formul_crr,
-                 sub_data = sub_data_crr,
+                 sub_data = set_contrasts(sub_data_crr, p$refmodel$contrasts),
                  sub_fam = p$refmodel$family$family,
                  wobs_expected = wobs_expected_crr,
                  prd_trms_vsel_L1_search = prd_trms_vsel_L1_search_crr,
@@ -2160,11 +2161,12 @@ vsel_tester <- function(
     } else {
       augdat_cats_crr <- NULL
     }
+    # As proj_to_submodl(), with the contrasts of the reference model:
     outdmin_tester(
       vs$search_path$outdmins[[i]],
       nprjdraws_expected = nprjdraws_search_expected,
       sub_formul = sub_formul_crr,
-      sub_data = sub_data_crr,
+      sub_data = set_contrasts(sub_data_crr, vs$refmodel$contrasts),
       sub_fam = vs$refmodel$family$family,
       wobs_expected = wobs_expected_crr,
       prd_trms_vsel_L1_search = prd_trms_vsel_L1_search_crr,
