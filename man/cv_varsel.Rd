@@ -206,7 +206,7 @@ or \code{!is.null(nclusters_pred)}), for subsampling PSIS-LOO CV folds (if
 \code{nloo} is smaller than the number of observations), for sampling the folds
 in \eqn{K}-fold CV, for the weights of the weight perturbation (see section
 "Note"), and for drawing new group-level effects when predicting from a
-multilevel submodel (however, not yet in case of a GAMM).}
+multilevel submodel.}
 
 \item{search_terms}{Only relevant for forward search. A custom character
 vector of predictor term blocks to consider for the search. Section
@@ -373,7 +373,7 @@ results depend neither on argument \code{parallel} nor on the number of
 workers. For GLMs, this CV parallelization should work reliably, but for
 other models (such as GLMMs), it may lead to excessive memory usage
 which in turn may crash the R session (on Unix systems, setting an
-appropriate memory limit via \code{\link[unix:rlimit_as]{unix::rlimit_as()}} may avoid crashing the
+appropriate memory limit via \code{unix::rlimit_as()} may avoid crashing the
 whole machine). However, the problem of excessive memory usage is less
 pronounced for the CV parallelization than for the projection
 parallelization described in \link{projpred-package}. In that regard, the CV

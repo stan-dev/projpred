@@ -100,6 +100,14 @@ all_finite <- function(x) {
 # of the dispersion moves in the same way. `ll` is the S x n log-likelihood
 # matrix of the reference draws. Returns `NULL` if the shifted linear
 # predictors, means (with and without offsets) or dispersions are not finite.
+#
+# With the identity link (`linkinv` returns its argument) and without offsets
+# (Gaussian and latent projection), the shifted `eta`, `mu` and `mu_offs` are
+# all `eta + delta`. Then the draws
+# are not shifted here: `mu` and `mu_offs` are set to `eta`, and the element
+# `draws_shift` holds `delta`. .select() passes it to get_p_clust(), which adds
+# it to the cluster means. Code that uses `eta`, `mu` or `mu_offs` of the
+# result in another way must add `draws_shift` first.
 perturb_refmodel <- function(refmodel, i, ll, lw_i, alpha, seed) {
   n <- ncol(ll)
   w <- perturb_weights(n, alpha, seed)
@@ -112,7 +120,43 @@ perturb_refmodel <- function(refmodel, i, ll, lw_i, alpha, seed) {
   if (!all(is.finite(cd))) {
     return(NULL)
   }
-  refmodel$eta <- refmodel$eta + drop(refmodel$eta %*% cd)
+  shift <- drop(refmodel$eta %*% cd)
+  fam <- refmodel$family
+  if (identical(fam$link, "identity") && !isTRUE(fam$for_augdat) &&
+      all(refmodel$offset == 0)) {
+    # Each shifted draw is between min(eta) + min(shift) and max(eta) +
+    # max(shift), so it is finite if these two sums are. (The check can also
+    # reject finite shifted draws, but only for values near 1e308.)
+    if (length(refmodel$eta) > 0 &&
+        !(is.finite(min(refmodel$eta) + min(shift)) &&
+          is.finite(max(refmodel$eta) + max(shift)))) {
+      return(NULL)
+    }
+    refmodel$mu <- refmodel$eta
+    refmodel$mu_offs <- refmodel$eta
+    refmodel$draws_shift <- shift
+  } else {
+    refmodel <- perturb_draws(refmodel, shift)
+    if (is.null(refmodel)) {
+      return(NULL)
+    }
+  }
+  if (!any(is.na(refmodel$dis)) && all(refmodel$dis > 0)) {
+    ldis <- log(refmodel$dis)
+    refmodel$dis <- exp(ldis + sum(ldis * cd))
+  }
+  if (!any(is.na(refmodel$dis)) && !all(is.finite(refmodel$dis))) {
+    return(NULL)
+  }
+  refmodel$wobs <- refmodel$wobs * w
+  refmodel
+}
+
+# Adds `shift` (one value per observation) to each draw of the linear predictor
+# of `refmodel` and computes `mu` and `mu_offs` again. Returns `NULL` if a
+# value is not finite.
+perturb_draws <- function(refmodel, shift) {
+  refmodel$eta <- refmodel$eta + shift
   # With a bounded inverse link (logit, probit), an infinite `eta` gives a
   # finite `mu`, so check `eta` itself:
   if (!all_finite(refmodel$eta)) {
@@ -130,14 +174,6 @@ perturb_refmodel <- function(refmodel, i, ll, lw_i, alpha, seed) {
   } else {
     refmodel$mu_offs <- refmodel$mu
   }
-  if (!any(is.na(refmodel$dis)) && all(refmodel$dis > 0)) {
-    ldis <- log(refmodel$dis)
-    refmodel$dis <- exp(ldis + sum(ldis * cd))
-  }
-  if (!any(is.na(refmodel$dis)) && !all(is.finite(refmodel$dis))) {
-    return(NULL)
-  }
-  refmodel$wobs <- refmodel$wobs * w
   refmodel
 }
 
@@ -548,7 +584,16 @@ eta_for_kmeans <- function(eta, rank_max = floor(min(dim(eta)) / 4),
 get_p_clust <- function(family, eta, mu, mu_offs, dis, nclusters = 10,
                         wobs = rep(1, dim(mu)[1]),
                         wdraws = rep(1, dim(mu)[2]), cl = NULL,
-                        clust_used_forced = NULL, as_moments = FALSE) {
+                        clust_used_forced = NULL, as_moments = FALSE,
+                        draws_shift = NULL) {
+  # `draws_shift` (from perturb_refmodel()): the draws of `eta`, `mu` and
+  # `mu_offs` are the given ones plus `draws_shift` (one value per
+  # observation). If each cluster has at least one draw and a finite nonzero
+  # weight sum, at least one cluster has several draws, and
+  # `family$predvar_mix` is used, then the cluster means move by the shift, and
+  # the within-cluster variances do not change. In the other cases, the shifted
+  # draws are computed here.
+  #
   # With `as_moments = TRUE`, the function returns `NULL` or, for a given `cl`
   # with one draw per cluster, finite nonzero weights and a
   # `family$predvar_mix`, a list without the observations x clusters matrices
@@ -560,9 +605,11 @@ get_p_clust <- function(family, eta, mu, mu_offs, dis, nclusters = 10,
   # wrong (see `mu_var` below). perf_eval_gauss() detects them with the
   # weighted sums of squares and then uses the full result.
   # (The names do not start with "mu" or "var", because `$` matches partial
-  # names.)
-  if (as_moments && is.null(cl)) {
-    # Do not run kmeans() twice (here and in the call without `as_moments`):
+  # names.) With `draws_shift`, the function returns `NULL`: the callers of
+  # `as_moments` do not use `draws_shift`.
+  if (as_moments && (is.null(cl) || !is.null(draws_shift))) {
+    # Without `cl`, do not run kmeans() twice (here and in the call without
+    # `as_moments`):
     return(NULL)
   }
   # cluster the draws in the latent space if no clustering provided
@@ -570,6 +617,9 @@ get_p_clust <- function(family, eta, mu, mu_offs, dis, nclusters = 10,
     # Note: A seed is not set here because this function is not exported and has
     # a calling stack at the beginning of which a seed is set.
 
+    if (!is.null(draws_shift)) {
+      eta <- eta + draws_shift
+    }
     out <- kmeans(eta_for_kmeans(eta), nclusters, iter.max = 50)
     cl <- out$cluster # cluster indices for each draw
   } else if (typeof(cl) == "list") {
@@ -602,6 +652,26 @@ get_p_clust <- function(family, eta, mu, mu_offs, dis, nclusters = 10,
   need_var <- use_mix && !isFALSE(attr(family$predvar_mix, "uses_moments"))
   if (as_moments && !all(lengths(ind_by_cl) == 1L)) {
     return(NULL)
+  }
+  wsum_cl <- NULL
+  if (!is.null(draws_shift)) {
+    ndraws_cl <- lengths(ind_by_cl)
+    wsum_cl <- vapply(ind_by_cl, function(ind) sum(wdraws[ind]), numeric(1),
+                      USE.NAMES = FALSE)
+    if (!(use_mix && any(ndraws_cl > 1L) && all(ndraws_cl > 0L) &&
+          all(is.finite(wsum_cl) & wsum_cl != 0))) {
+      # `eta` is used only by kmeans() above. Without offsets, `mu` and
+      # `mu_offs` are one object (identical() then returns at once), and one
+      # shifted matrix is sufficient:
+      if (identical(mu_offs, mu)) {
+        mu <- mu + draws_shift
+        mu_offs <- mu
+      } else {
+        mu <- mu + draws_shift
+        mu_offs <- mu_offs + draws_shift
+      }
+      draws_shift <- NULL
+    }
   }
   if (all(lengths(ind_by_cl) == 1L)) {
     # One draw per cluster (thinned draws, or as many clusters as draws). This
@@ -661,14 +731,21 @@ get_p_clust <- function(family, eta, mu, mu_offs, dis, nclusters = 10,
   } else {
     # Several draws in a cluster: weighted moments of the draws in compiled
     # code. The results differ from the cluster loop only by rounding.
-    wcluster <- vapply(ind_by_cl, function(ind) sum(wdraws[ind]), numeric(1),
-                       USE.NAMES = FALSE)
+    wcluster <- wsum_cl %||%
+      vapply(ind_by_cl, function(ind) sum(wdraws[ind]), numeric(1),
+             USE.NAMES = FALSE)
     wn <- as.numeric(wdraws) / wcluster[cl_ind]
     wn[is.na(cl_ind)] <- 0
     mom <- clust_moments_c(
       mu, mu_offs, as.numeric(dis)[seq_along(cl)], wn,
       ifelse(is.na(cl_ind), -1L, cl_ind - 1L), nclusters, need_var
     )
+    if (!is.null(draws_shift)) {
+      # The weights sum to 1 within each cluster, so the means move by the
+      # shift, and the variances do not change:
+      mom$mu <- mom$mu + draws_shift
+      mom$mu_offs <- mom$mu_offs + draws_shift
+    }
     centers <- mom$mu * (1 - eps)
     centers_offs <- mom$mu_offs * (1 - eps)
     dis_agg <- mom$dis * (1 - eps)
@@ -774,13 +851,6 @@ nlist <- function(...) {
     names(dots)[!has_name] <- nms[!has_name]
   }
   dots
-}
-
-# The `%||%` special binary (infix) operator from brms (equivalent to the
-# `%ORifNULL%` operator from rstanarm):
-`%||%` <- function(x, y) {
-  if (is.null(x)) x <- y
-  x
 }
 
 #' Execute a function call
@@ -1132,12 +1202,24 @@ all_ia_perms <- function(ia, is_split = FALSE) {
   } else {
     ia_split <- strsplit(ia, ":")[[1]]
   }
-  ia_perms_split <- gtools::permutations(n = length(ia_split),
-                                         r = length(ia_split),
-                                         v = ia_split, set = FALSE)
+  ia_perms_split <- matrix(ia_split[perm_idxs(length(ia_split))],
+                           ncol = length(ia_split))
   return(unlist(
     apply(ia_perms_split, 1, paste, collapse = ":", simplify = FALSE)
   ))
+}
+
+# All permutations of `seq_len(n)` as the rows of a matrix, in lexicographic
+# order (a matrix with one row and no columns for `n = 0`).
+perm_idxs <- function(n) {
+  if (n <= 1L) {
+    return(matrix(seq_len(n), nrow = 1L, ncol = n))
+  }
+  sub_perms <- perm_idxs(n - 1L)
+  return(do.call(rbind, lapply(seq_len(n), function(i) {
+    cbind(i, matrix(seq_len(n)[-i][sub_perms], ncol = n - 1L),
+          deparse.level = 0)
+  })))
 }
 
 # Reorders the main-effect terms involved in a single interaction term `ia`
@@ -1699,4 +1781,75 @@ verbose_from_deprecated_option <- function(verbose, with_cv = FALSE,
     )
   }
   return(verbose)
+}
+
+# The contrast matrices of the factor columns `vars` of `data` that have a
+# `contrasts` attribute (for example, set by brms or by the user). The matrices
+# are evaluated now, so a later change of `options("contrasts")` does not change
+# them. Returns `NULL` if no such column has this attribute.
+contrasts_from_data <- function(data, vars = names(data)) {
+  nms <- intersect(vars, names(data))
+  # contrasts() needs at least two levels:
+  has_contr <- vapply(nms, function(nm) {
+    is.factor(data[[nm]]) && nlevels(data[[nm]]) >= 2 &&
+      !is.null(attr(data[[nm]], "contrasts"))
+  }, logical(1))
+  if (!any(has_contr)) {
+    return(NULL)
+  }
+  return(lapply(setNames(nm = nms[has_contr]), function(nm) {
+    ctr <- as.matrix(contrasts(data[[nm]]))
+    rownames(ctr) <- levels(data[[nm]])
+    ctr
+  }))
+}
+
+# Removes the `contrasts` attributes of the columns of `data`. Fitters store the
+# contrasts that they used and use them for new data, but new data with such an
+# attribute give the warning "contrasts dropped from factor <name>".
+strip_contrasts <- function(data) {
+  if (!is.data.frame(data)) {
+    return(data)
+  }
+  for (nm in names(data)) {
+    if (!is.null(attr(data[[nm]], "contrasts"))) {
+      attr(data[[nm]], "contrasts") <- NULL
+    }
+  }
+  return(data)
+}
+
+# Sets the contrast matrices `ctrs` (from contrasts_from_data()) as attribute
+# `contrasts` of the factor columns of `data`, so that the submodel fitters use
+# them. A column with other levels than its matrix, or with a level that no row
+# has, keeps the default contrasts (model.frame() with `drop.unused.levels =
+# TRUE` would drop the attribute with a warning).
+set_contrasts <- function(data, ctrs) {
+  if (length(ctrs) == 0 || !is.data.frame(data)) {
+    return(data)
+  }
+  for (nm in intersect(names(ctrs), names(data))) {
+    if (is.factor(data[[nm]]) &&
+        identical(levels(data[[nm]]), rownames(ctrs[[nm]])) &&
+        all(tabulate(data[[nm]], nbins = nlevels(data[[nm]])) > 0)) {
+      attr(data[[nm]], "contrasts") <- ctrs[[nm]]
+    }
+  }
+  return(data)
+}
+
+# The contrast matrices (see contrasts_from_data()) of the factors in the
+# left-hand sides of the group-level terms of `random` (a formula such as
+# `~ (1 + f | g)`), as set in `data`. The grouping variables are left out. A
+# factor with a level that no row has is left out, because model.frame() with
+# `drop.unused.levels = TRUE` drops its `contrasts` attribute.
+re_contrasts <- function(data, random) {
+  vars <- unlist(lapply(reformulas::findbars(random), function(bar) {
+    all.vars(bar[[2]])
+  }))
+  vars <- Filter(function(nm) {
+    x <- data[[nm]]
+    !is.factor(x) || all(tabulate(x, nbins = nlevels(x)) > 0)
+  }, intersect(unique(vars), names(data)))
+  return(contrasts_from_data(data, vars = vars))
 }

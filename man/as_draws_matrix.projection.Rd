@@ -35,14 +35,30 @@ these weights (safer in contrast to the matrix returned by
 \code{\link[posterior:resample_draws]{posterior::resample_draws()}} (see section "Examples" below).
 }
 \details{
+For a multilevel submodel, the group-level variance components
+follow the naming scheme and the parametrization of the corresponding
+package: With \code{nm_scheme = "rstanarm"}, the columns
+\verb{Sigma[<group>:<a>,<a>]} and \verb{Sigma[<group>:<b>,<a>]} contain the
+group-level variances and covariances (per group, the lower triangle of
+the covariance matrix in column-major order). With \code{nm_scheme = "brms"},
+the columns \verb{sd_<group>__<a>} and \verb{cor_<group>__<a>__<b>} contain the
+group-level standard deviations and correlations.
+
 In case of the augmented-data projection for a multilevel submodel
 of a \code{\link[brms:categorical]{brms::categorical()}} reference model, the multilevel parameters (and
 therefore also their names) slightly differ from those in the \pkg{brms}
 reference model fit (see section "Augmented-data projection" in
 \code{\link[=extend_family]{extend_family()}}'s documentation).
+
+For a submodel with smooth terms (fitted with \code{\link[mgcv:gam]{mgcv::gam()}}), the columns
+of the smooth terms are the coefficients in the basis of \code{gam()}. The
+reference model fit can use another basis (\code{\link[rstanarm:stan_gamm4]{rstanarm::stan_gamm4()}} and
+\pkg{brms} do so for \code{s()} terms). Then these columns do not match the
+reference model parameters. For a submodel with smooth and group-level
+terms (GAMM), the projected draws cannot be extracted yet (error).
 }
 \examples{
-\dontshow{if (requireNamespace("rstanarm", quietly = TRUE) && requireNamespace("posterior", quietly = TRUE)) withAutoprint(\{ # examplesIf}
+\dontshow{if (requireNamespace("rstanarm", quietly = TRUE)) withAutoprint(\{ # examplesIf}
 # Data:
 dat_gauss <- data.frame(y = df_gaussian$y, df_gaussian$x)
 

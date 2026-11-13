@@ -7,6 +7,8 @@
 #' @import ggplot2
 #' @importFrom rstantools posterior_linpred
 #' @importFrom loo kfold
+#' @importFrom methods as
+#' @importFrom posterior as_draws as_draws_matrix
 #'
 #' @description
 #'
@@ -161,7 +163,7 @@
 #' objects of multilevel and additive submodels are quite big,
 #' which---when running in parallel---may lead to excessive memory usage
 #' which in turn may crash the R session (on Unix systems, setting an
-#' appropriate memory limit via [unix::rlimit_as()] may avoid crashing the
+#' appropriate memory limit via `unix::rlimit_as()` may avoid crashing the
 #' whole machine). The workers also need time to return these objects to the
 #' main R session: in our experiments with 16 workers of
 #' `future::multisession`, this took longer than a sequential run, whereas
@@ -294,7 +296,7 @@
 #'
 #' The following global options are for internal use:
 #' * `projpred.mssg_ndraws`, `projpred.mssg_cut_search`, `projpred.mssg_time`,
-#' `projpred.warn_wobs_ppd`, `projpred.warn_additive_experimental`,
+#' `projpred.mssg_smooth_linear`, `projpred.warn_wobs_ppd`, `projpred.warn_additive_experimental`,
 #' `projpred.warn_allrandom_dis`, `projpred.warn_instable_projections`,
 #' `projpred.warn_cvrefbuilder_NULL`, `projpred.warn_kfold_refits`: A single
 #' logical value indicating whether to throw certain messages or warnings

@@ -159,7 +159,7 @@ projections of their folds in parallel. Note that the fitted submodel
 objects of multilevel and additive submodels are quite big,
 which---when running in parallel---may lead to excessive memory usage
 which in turn may crash the R session (on Unix systems, setting an
-appropriate memory limit via \code{\link[unix:rlimit_as]{unix::rlimit_as()}} may avoid crashing the
+appropriate memory limit via \code{unix::rlimit_as()} may avoid crashing the
 whole machine). The workers also need time to return these objects to the
 main R session: in our experiments with 16 workers of
 \code{future::multisession}, this took longer than a sequential run, whereas

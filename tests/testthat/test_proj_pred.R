@@ -311,10 +311,6 @@ test_that("`newdata` and `integrated` work (even in edge cases)", {
     }
     dat_crr <- get_dat(tstsetup)
     for (nobsv_crr in nobsv_tst) {
-      if (args_prj[[tstsetup]]$mod_nm == "gamm") {
-        # TODO (GAMMs): Fix this.
-        next
-      }
       if (args_prj[[tstsetup]]$prj_nm == "augdat") {
         ncats_nlats_expected_crr <- length(
           refmods[[args_prj[[tstsetup]]$tstsetup_ref]]$family$cats
@@ -949,10 +945,6 @@ test_that(paste(
 ), {
   skip_if_not(run_prj)
   for (tstsetup in grep("\\.clust$", names(prjs), value = TRUE)) {
-    if (args_prj[[tstsetup]]$mod_nm == "gamm") {
-      # TODO (GAMMs): Fix this.
-      next
-    }
     if (grepl("\\.with_wobs|\\.binom", tstsetup)) {
       wobs_crr <- head(wobs_tst, 1)
     } else {
@@ -1014,7 +1006,6 @@ test_that(paste(
   "posterior::weight_draws()"
 ), {
   skip_if_not(run_prj)
-  skip_if_not_installed("posterior")
   for (tstsetup in names(prjs)) {
     ndr_ncl <- ndr_ncl_dtls(args_prj[[tstsetup]])
     for (transf_crr in c(FALSE, TRUE)) {
@@ -1349,10 +1340,6 @@ test_that("`newdata` and `nresample_clusters` work (even in edge cases)", {
   skip_if_not(run_prj)
   for (tstsetup in names(prjs)) {
     for (nobsv_crr in nobsv_tst) {
-      if (args_prj[[tstsetup]]$mod_nm == "gamm") {
-        # TODO (GAMMs): Fix this.
-        next
-      }
       if (grepl("\\.with_wobs|\\.binom", tstsetup)) {
         wobs_crr <- head(prjs[[tstsetup]]$refmodel$wobs, nobsv_crr)
       } else {
@@ -1736,10 +1723,6 @@ test_that(paste(
 ), {
   skip_if_not(run_prj)
   for (tstsetup in grep("\\.clust$", names(prjs), value = TRUE)) {
-    if (args_prj[[tstsetup]]$mod_nm == "gamm") {
-      # TODO (GAMMs): Fix this.
-      next
-    }
     if (grepl("\\.with_wobs|\\.binom", tstsetup)) {
       wobs_crr <- head(wobs_tst, 1)
     } else {
@@ -1780,7 +1763,6 @@ test_that(paste(
 
 test_that("`return_draws_matrix` causes a conversion of the output type", {
   skip_if_not(run_prj)
-  skip_if_not_installed("posterior")
   for (tstsetup in names(prjs)) {
     for (r_oscale_crr in c(FALSE, TRUE)) {
       if (!r_oscale_crr && args_prj[[tstsetup]]$prj_nm != "latent") next

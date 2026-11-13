@@ -153,13 +153,214 @@ test_that(paste(
   v <- v / sum(v)
   mean_exact <- drop(refm$eta %*% v)
   mean_fold <- drop(refm$eta %*% om)
-  mean_shifted <- drop(rp$eta %*% om)
+  # Identity link without offsets: the draws are not shifted, and
+  # `draws_shift` holds the shift.
+  expect_identical(rp$eta, refm$eta)
+  expect_false(is.null(rp$draws_shift))
+  mean_shifted <- drop((rp$eta + rp$draws_shift) %*% om)
   expect_lt(max(abs(mean_shifted - mean_exact)),
             0.05 * max(abs(mean_exact - mean_fold)))
   expect_gt(max(abs(mean_exact - mean_fold)), 0)
-  expect_equal(rp$mu, rp$eta)
+  expect_identical(rp$mu, rp$eta)
+  expect_identical(rp$mu_offs, rp$eta)
   expect_equal(rp$wobs, refm$wobs * w)
   expect_identical(rp$wobs[i], 0)
+  # The shift is the first-order change of the draws:
+  cc <- drop(ll %*% dw)
+  cd <- om * (cc - sum(om * cc))
+  expect_equal(rp$draws_shift, drop(refm$eta %*% cd), tolerance = 1e-14)
+  # With offsets, the draws are shifted, and there is no `draws_shift`:
+  refm_o <- refm
+  refm_o$offset <- rep(0.1, r$n)
+  rp_o <- perturb_refmodel(refm_o, i = i, ll = ll, lw_i = lw[, i],
+                           alpha = alpha, seed = 99L)
+  expect_null(rp_o$draws_shift)
+  expect_identical(rp_o$eta, refm$eta + rp$draws_shift)
+  expect_identical(rp_o$mu_offs, rp_o$eta + 0.1)
+  expect_identical(rp_o$dis, rp$dis)
+})
+
+# Evaluates `expr` and counts the calls of search_forward_gauss() and
+# perf_eval_gauss() that returned a result (not `NULL`).
+with_gauss_counts <- function(expr) {
+  calls <- new.env()
+  calls$search <- 0L
+  calls$eval <- 0L
+  ns <- asNamespace("projpred")
+  fns <- c(search = "search_forward_gauss", eval = "perf_eval_gauss")
+  withr::defer(suppressMessages(for (fn in fns) untrace(fn, where = ns)))
+  for (nm in names(fns)) {
+    suppressMessages(trace(
+      fns[[nm]], where = ns, print = FALSE,
+      exit = bquote(if (!is.null(returnValue(NULL))) {
+        assign(.(nm), get(.(nm), envir = .(calls)) + 1L, envir = .(calls))
+      })
+    ))
+  }
+  value <- expr
+  return(list(value = value, search = calls$search, eval = calls$eval))
+}
+
+# Evaluates `expr` and counts the get_p_clust() calls that added `draws_shift`
+# to the cluster means (and did not shift the draws).
+with_shift_count <- function(expr) {
+  calls <- new.env()
+  calls$n <- 0L
+  ns <- asNamespace("projpred")
+  withr::defer(suppressMessages(untrace("get_p_clust", where = ns)))
+  suppressMessages(trace(
+    "get_p_clust", where = ns, print = FALSE,
+    exit = bquote(if (!is.null(draws_shift)) {
+      assign("n", get("n", envir = .(calls)) + 1L, envir = .(calls))
+    })
+  ))
+  value <- expr
+  return(list(value = value, n = calls$n))
+}
+
+test_that(paste(
+  "get_p_clust() with `draws_shift` gives the results for the shifted",
+  "draws"
+), {
+  r <- cre_ref_wp()
+  refm <- r$ref
+  S <- r$S
+  withr::local_seed(3104)
+  shift <- rnorm(r$n)
+  w <- exp(rnorm(S))
+  w_special <- w
+  w_special[c(3, 8)] <- c(0, Inf)
+  # A user-defined `predvar` turns off `family$predvar_mix`:
+  fam_nomix <- refm$family
+  fam_nomix$predvar <- function(mu, dis, wdraws = 1) {
+    refm$family$predvar(mu, dis, wdraws)
+  }
+  cl_several <- rep(1:5, length.out = S)
+  # The traced function is in the namespace (devtools::load_all() also puts an
+  # untraced copy into the search path):
+  get_p_clust_ns <- function(...) {
+    get("get_p_clust", envir = asNamespace("projpred"))(...)
+  }
+  # `n_shift`: the number of calls that add the shift to the cluster means.
+  cases <- list(
+    several = list(cl = cl_several, w = w, n_shift = 1L),
+    several_thinned = list(cl = replace(cl_several, 1:3, NA), w = w,
+                           n_shift = 1L),
+    student_t = list(cl = cl_several, w = w, n_shift = 1L,
+                     family = extend_family(Student_t(nu = 4))),
+    latent = list(cl = cl_several, w = w, n_shift = 1L,
+                  family = extend_family(binomial(), latent = TRUE)),
+    several_special = list(cl = cl_several, w = w_special, n_shift = 0L),
+    nan_weight = list(cl = cl_several, w = replace(w, 4, NaN), n_shift = 0L),
+    zero_weight_sum = list(cl = c(1, 1, rep(2, S - 2)),
+                           w = replace(w, 1:2, 0), n_shift = 0L),
+    empty_cluster = list(cl = c(1, rep(3, S - 1)), w = w, n_shift = 0L),
+    one_draw = list(cl = seq_len(S), w = w, n_shift = 0L),
+    thinned = list(cl = replace(rep(NA, S), c(2, 9, 30), 1:3), w = w,
+                   n_shift = 0L),
+    no_predvar_mix = list(cl = cl_several, w = w, n_shift = 0L,
+                          family = fam_nomix)
+  )
+  for (case_name in names(cases)) {
+    cs <- cases[[case_name]]
+    args <- list(family = cs$family %||% refm$family, eta = refm$eta,
+                 mu = refm$mu, mu_offs = refm$mu_offs, dis = refm$dis,
+                 wdraws = cs$w, cl = cs$cl)
+    res <- with_shift_count(do.call(get_p_clust_ns,
+                                    c(args, list(draws_shift = shift))))
+    expect_identical(res$n, cs$n_shift, info = case_name)
+    args_ref <- modifyList(args, list(eta = refm$eta + shift,
+                                      mu = refm$mu + shift,
+                                      mu_offs = refm$mu_offs + shift))
+    expect_equal(res$value, do.call(get_p_clust, args_ref),
+                 tolerance = 1e-12, info = case_name)
+  }
+  # With the clustering in get_p_clust() (no `cl`):
+  set.seed(77)
+  res <- with_shift_count(get_p_clust_ns(
+    refm$family, refm$eta, refm$mu, refm$mu_offs, refm$dis, nclusters = 4,
+    draws_shift = shift
+  ))
+  expect_identical(res$n, 1L)
+  set.seed(77)
+  ref <- get_p_clust(refm$family, refm$eta + shift, refm$mu + shift,
+                     refm$mu_offs + shift, refm$dis, nclusters = 4)
+  expect_equal(res$value, ref, tolerance = 1e-12)
+  # `as_moments = TRUE` returns the moments for one draw per cluster. With
+  # `draws_shift`, it returns `NULL`: the callers of `as_moments` do not use
+  # `draws_shift`.
+  args_mom <- list(family = refm$family, eta = refm$eta, mu = refm$mu,
+                   mu_offs = refm$mu_offs, dis = refm$dis, wdraws = w,
+                   cl = seq_len(S), as_moments = TRUE)
+  expect_identical(do.call(get_p_clust, args_mom)$moments_only, TRUE)
+  expect_null(do.call(get_p_clust, c(args_mom, list(draws_shift = shift))))
+})
+
+test_that(paste(
+  "LOO validated search with weight perturbation gives the same results with",
+  "the shift in get_p_clust() and with shifted draws"
+), {
+  skip_on_cran()
+  ns <- asNamespace("projpred")
+  # A latent projection (binomial reference model) and a Gaussian one:
+  withr::local_seed(7392)
+  n <- 30
+  S <- 40
+  dat <- data.frame(x1 = rnorm(n), x2 = rnorm(n), x3 = rnorm(n))
+  dat$y <- rbinom(n, 1, plogis(0.9 * dat$x1 - 0.6 * dat$x2))
+  fit <- list(beta = c(0, 0.9, -0.6, 0) +
+                matrix(rnorm(4 * S, sd = 0.1), 4), data = dat)
+  ref_lat <- suppressWarnings(init_refmodel(
+    fit, data = dat, formula = y ~ x1 + x2 + x3, family = binomial(),
+    ref_predfun = function(fit, newdata = NULL) {
+      model.matrix(~ x1 + x2 + x3, newdata %||% fit$data) %*% fit$beta
+    },
+    dis = rep(1, S), latent = TRUE
+  ))
+  expect_true(ref_lat$family$for_latent)
+  refs <- list(gaussian = cre_ref_wp()$ref, latent = ref_lat)
+  # Several draws per search cluster, so that get_p_clust() uses the shift:
+  run_cv <- function(ref) {
+    suppressWarnings(cv_varsel(
+      ref, cv_method = "LOO", validate_search = TRUE, method = "forward",
+      nclusters = 5, ndraws_pred = 40, loo_perturb_alpha = 10, seed = 11,
+      verbose = FALSE
+    ))
+  }
+  res_shift <- lapply(refs, function(ref) {
+    res <- with_gauss_counts(with_shift_count(run_cv(ref)))
+    c(res$value, list(n_gauss = c(res$search, res$eval)))
+  })
+  # The reference: .select() gets the shifted draws.
+  withr::defer(suppressMessages(untrace(".select", where = ns)))
+  suppressMessages(trace(".select", where = ns, print = FALSE, tracer = quote({
+    if (!is.null(refmodel$draws_shift)) {
+      refmodel <- perturb_draws(refmodel, refmodel$draws_shift)
+      refmodel$draws_shift <- NULL
+    }
+  })))
+  res_full <- lapply(refs, function(ref) {
+    res <- with_gauss_counts(with_shift_count(run_cv(ref)))
+    c(res$value, list(n_gauss = c(res$search, res$eval)))
+  })
+  for (nm in names(refs)) {
+    expect_identical(res_shift[[nm]]$n, as.integer(nrow(refs[[nm]]$mu)),
+                     info = nm)
+    expect_identical(res_full[[nm]]$n, 0L, info = nm)
+    # The full-data search and each fold-wise search (with the shifted cluster
+    # means) use the cross-product search. The evaluation (without the shift)
+    # uses the cross-product evaluation in each fold. Both runs use the same
+    # paths:
+    nobs <- as.integer(nrow(refs[[nm]]$mu))
+    expect_identical(res_shift[[nm]]$n_gauss, c(nobs + 1L, nobs), info = nm)
+    expect_identical(res_full[[nm]]$n_gauss, res_shift[[nm]]$n_gauss,
+                     info = nm)
+    expect_identical(ranking(res_shift[[nm]]$value),
+                     ranking(res_full[[nm]]$value), info = nm)
+    expect_equal(res_shift[[nm]]$value$summaries$sub,
+                 res_full[[nm]]$value$summaries$sub, tolerance = 1e-10,
+                 info = nm)
+  }
 })
 
 test_that(paste(
@@ -303,27 +504,6 @@ test_that(paste(
   )))
   expect_identical(cvvs_s2$loo_perturb_alpha, 4)
 })
-
-# Evaluates `expr` and counts the calls of search_forward_gauss() and
-# perf_eval_gauss() that returned a result (not `NULL`).
-with_gauss_counts <- function(expr) {
-  calls <- new.env()
-  calls$search <- 0L
-  calls$eval <- 0L
-  ns <- asNamespace("projpred")
-  fns <- c(search = "search_forward_gauss", eval = "perf_eval_gauss")
-  withr::defer(suppressMessages(for (fn in fns) untrace(fn, where = ns)))
-  for (nm in names(fns)) {
-    suppressMessages(trace(
-      fns[[nm]], where = ns, print = FALSE,
-      exit = bquote(if (!is.null(returnValue(NULL))) {
-        assign(.(nm), get(.(nm), envir = .(calls)) + 1L, envir = .(calls))
-      })
-    ))
-  }
-  value <- expr
-  return(list(value = value, search = calls$search, eval = calls$eval))
-}
 
 test_that(paste(
   "weight perturbation gives the same results with and without the Gaussian",

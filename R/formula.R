@@ -60,19 +60,28 @@ expand_formula <- function(formula, data) {
   return(formula(terms(formula, data = data)))
 }
 
-remove_duplicates <- function(formula) {
+# Returns the arguments of a smooth term, for example c("x", "z") for
+# "s(x, z)". projpred does not allow other arguments of s() and t2() (see
+# parse_additive_terms()).
+smooth_args <- function(smooth) {
+  cl <- str2lang(smooth)
+  return(unname(vapply(as.list(cl)[-1], deparse_combine, character(1))))
+}
+
+# Returns the linear terms of `formula` that are also an argument of a smooth
+# term, for example `x` next to `s(x)`. With the default bases of mgcv, the smooth term
+# contains the linear term, so the coefficient of the linear term is not
+# identifiable. Interaction terms (such as `x:z` next to `t2(x, z)`) are not
+# checked.
+smooth_covered_terms <- function(formula) {
   terms <- extract_terms_response(formula)
   linear <- terms$individual_terms
-  additive <- unlist(regmatches(
-    terms$additive_terms,
-    gregexpr("(?<=\\().*?(?=\\))",
-             terms$additive_terms,
-             perl = TRUE)
-  ))
-  additive <- trimws(unique(unlist(
-    strsplit(paste0(additive, collapse = ","), ",")
-  )))
-  dups <- linear[!is.na(match(linear, additive))]
+  covered <- unique(unlist(lapply(terms$additive_terms, smooth_args)))
+  return(linear[linear %in% covered])
+}
+
+remove_duplicates <- function(formula) {
+  dups <- smooth_covered_terms(formula)
   if (length(dups) > 0) {
     update(formula, as.formula(paste0(
       ". ~ . - ",
@@ -110,10 +119,17 @@ extract_response <- function(response) {
 # @return Character vector of parsed group terms, but as extracted by
 #   labels(terms()), i.e., lacking the surrounding parentheses.
 parse_group_terms <- function(group_terms) {
+  if (any(grepl("\\|\\|", group_terms))) {
+    stop("projpred does not support group terms with `||` (uncorrelated ",
+         "group-level effects) yet. You can write `(x || g)` as ",
+         "`(1 | g) + (0 + x | g)`, but then the submodels merge these terms ",
+         "into one term with correlations.")
+  }
   has_call <- sapply(strsplit(group_terms, "\\|"), function(grp_trm_split) {
     if (length(grp_trm_split) != 2) {
-      stop("Unexpected number of `|` characters in group terms. Please ",
-           "notify the package maintainer.")
+      stop("projpred does not support group terms with more than one `|` ",
+           "character (except for `(<terms> |<ID>| <group>)` in the ",
+           "reference model formula) or a `|` inside a function call.")
     }
     grepl("\\(", grp_trm_split[2])
   })
@@ -122,6 +138,69 @@ parse_group_terms <- function(group_terms) {
          "character are not allowed.")
   }
   return(group_terms)
+}
+
+# Remove the correlation IDs of brms group terms: `(<terms> |<ID>| <group>)`
+# becomes `(<terms> | <group>)`. R parses `a |id| g` as `(a | id) | g`. Only
+# the `+`, `-` and `(` calls of the right-hand side are searched, so a `|`
+# inside another call (for example `I(a | b | c)`) does not change. With
+# `verbose = TRUE`, a message names the removed IDs. The output is a list with
+# the new `formula` and `grp_fctrs_shared_id`, the grouping factors with more
+# than one term, all with the same ID (brms correlates these terms).
+rm_group_ids <- function(formula, verbose = TRUE) {
+  ids <- character()
+  fctrs <- character()
+  # As in the term labels of terms(): one string, with backticks:
+  dprs <- function(x) {
+    paste(deparse(x, width.cutoff = 500L, backtick = TRUE), collapse = " ")
+  }
+  rm_id <- function(e) {
+    if (!is.call(e)) {
+      return(e)
+    }
+    if (identical(e[[1]], as.name("|")) && length(e) == 3 &&
+        is.call(e[[2]]) && identical(e[[2]][[1]], as.name("|")) &&
+        length(e[[2]]) == 3) {
+      ids <<- c(ids, dprs(e[[2]][[3]]))
+      fctrs <<- c(fctrs, dprs(e[[3]]))
+      e[[2]] <- e[[2]][[2]]
+      return(e)
+    }
+    if (identical(e[[1]], as.name("|")) && length(e) == 3) {
+      # A group term without an ID:
+      ids <<- c(ids, "")
+      fctrs <<- c(fctrs, dprs(e[[3]]))
+      return(e)
+    }
+    if (as.character(e[[1]])[1] %in% c("+", "-", "(")) {
+      for (i in seq_along(e)[-1]) {
+        e[[i]] <- rm_id(e[[i]])
+      }
+    }
+    return(e)
+  }
+  formula[[length(formula)]] <- rm_id(formula[[length(formula)]])
+  if (any(nzchar(ids)) && verbose) {
+    message("Removing the correlation ID(s) ",
+            paste0("`", unique(ids[nzchar(ids)]), "`", collapse = ", "),
+            " from the group terms of the reference model formula. The ",
+            "submodels contain only the predictor of the response, so they ",
+            "do not have correlations with the group terms of other ",
+            "responses or distributional parameters.")
+  }
+  # The grouping factors with more than one term, all with the same ID:
+  shared <- vapply(split(ids, fctrs), function(ids_f) {
+    length(ids_f) > 1 && all(nzchar(ids_f)) && length(unique(ids_f)) == 1
+  }, logical(1))
+  return(list(formula = formula,
+              grp_fctrs_shared_id = names(shared)[shared]))
+}
+
+# The grouping factors that have more than one group term. `group_terms` as in
+# parse_group_terms().
+grp_fctrs_multi <- function(group_terms) {
+  grp_fctrs <- trimws(sub("^.*\\|", "", group_terms))
+  return(unique(grp_fctrs[duplicated(grp_fctrs)]))
 }
 
 ## Parse additive terms (smooth terms) from a list of individual terms. See
@@ -663,9 +742,9 @@ count_terms_in_group_term <- function(term) {
 # Cache for results that depend only on strings (term labels, formula text).
 # The fold-wise searches of cv_varsel() and the steps of a search use the same
 # strings again, so these results are computed once. The cache is a
-# utils::hashtab() (R >= 4.2.0; older R versions compute without the cache),
-# so the keys can be any character vectors (with names and `NA`). The cache is
-# emptied when it has `max_n` entries; otherwise it stays for the R session.
+# utils::hashtab(), so a key can be any character vector (with names and `NA`)
+# or a list of atomic vectors. The cache is emptied when it has `max_n`
+# entries; otherwise it stays for the R session.
 string_cache <- new.env(parent = emptyenv())
 
 # The value of `compute()` for `key` (a character vector or a list of atomic
@@ -674,15 +753,6 @@ string_cache <- new.env(parent = emptyenv())
 cached_by_strings <- function(type, key, compute, max_n = 10000L) {
   tab <- string_cache$tab
   if (is.null(tab)) {
-    # The version check once per session (getRversion() takes long compared
-    # to a cache lookup):
-    if (isFALSE(string_cache$available)) {
-      return(compute())
-    }
-    string_cache$available <- getRversion() >= "4.2.0"
-    if (!string_cache$available) {
-      return(compute())
-    }
     tab <- utils::hashtab("identical")
     string_cache$tab <- tab
   }
@@ -746,7 +816,7 @@ norm_term_labels <- function(labels) {
 
 # For each search term: its term labels (see norm_term_labels()) and, for a
 # search term with one label, the string that select_possible_terms_size()
-# returns for it. Cached (R >= 4.2.0) for each set of search terms, so that
+# returns for it. Cached for each set of search terms, so that
 # select_possible_terms_size() does not parse the same formulas again for each
 # candidate and step. Returns `NULL` if a search term has a smooth, group-level
 # or offset term or no intercept (the fast path does not cover these cases).
@@ -990,11 +1060,8 @@ lhs <- function(x) {
 #   first column in `path`. These terms occur in `formula`; an element of `path`
 #   that is not a column (for example `NA`) is returned as it is.
 collapse_ranked_predictors <- function(path, formula, data) {
-  # TODO: In the following model.matrix() call, allow user-specified contrasts
-  # to be passed to argument `contrasts.arg`. The `contrasts.arg` default
-  # (`NULL`) uses `options("contrasts")` internally, but it might be more
-  # convenient to let users specify contrasts directly. At that occasion,
-  # contrasts should also be tested thoroughly (not done until now).
+  # `data` is the model frame of search_L1(), with the contrasts of the
+  # reference model:
   x <- model.matrix(formula, data = data)
   # Match the columns to the terms by the "assign" attribute (0: the
   # intercept), not by the text of the column names:
@@ -1042,14 +1109,10 @@ formula.gamm4 <- function(x, ...) {
     paste0("(", t, ")")
   }))
   ref <- paste(ref, collapse = " + ")
-  updated <- update(formula, paste(". ~ . + ", ref))
-  form <- flatten_formula(update(
-    updated,
-    paste(
-      ". ~",
-      paste(split_formula(updated), collapse = " + ")
-    )
-  ))
+  # Keep only the terms of the model, as for a model without group-level
+  # terms. The search adds the linear terms of the smooth variables as
+  # candidates.
+  form <- flatten_formula(update(formula, paste(". ~ . + ", ref)))
   # TODO (GAMMs): Once rstanarm issue #253 has been resolved, we probably need
   # to include offset terms here (in the output of formula.gamm4()) as well.
   return(form)

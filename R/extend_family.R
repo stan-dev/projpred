@@ -291,6 +291,14 @@ extend_family <- function(family,
     # If the family was already extended using this function, then return as-is:
     return(family)
   }
+  # brms families with `trials()` other than binomial(). projpred cannot use
+  # more than one trial per observation for them, and with one trial they
+  # reduce to the Bernoulli family:
+  if (isTRUE(family$family %in% c("beta_binomial", "zero_inflated_binomial",
+                                  "zero_inflated_beta_binomial"))) {
+    stop("Currently, projpred does not support the brms family `",
+         family$family, "()`.", call. = FALSE)
+  }
   if (latent) {
     family_oscale_tmp <- family$family
     link_oscale_tmp <- family$link

@@ -85,10 +85,9 @@
 #'   `NA`, then the PRNG state is reset (to the state before calling
 #'   [proj_linpred()], [proj_epred()], or [proj_predict()]) upon exiting
 #'   [proj_linpred()], [proj_epred()], or [proj_predict()]. Here, `.seed` is
-#'   used for drawing new group-level effects
-#'   in case of a multilevel submodel (however, not yet in case of a GAMM) and
-#'   for drawing from the predictive distributions of the submodel(s) in case of
-#'   [proj_predict()]. If a clustered projection was performed, then in
+#'   used for drawing new group-level effects in case of a multilevel submodel
+#'   and for drawing from the predictive distributions of the submodel(s) in
+#'   case of [proj_predict()]. If a clustered projection was performed, then in
 #'   [proj_predict()], `.seed` is also used for drawing from the set of
 #'   projected clusters of posterior draws (see argument `nresample_clusters`).
 #'   If [project()] is called internally with `seed = NA` (or with `seed` being
@@ -640,9 +639,7 @@ proj_predict_aux <- function(proj, newdata, offsetnew, weightsnew,
 }
 
 # Needed to avoid a NOTE in `R CMD check`:
-if (getRversion() >= package_version("2.15.1")) {
-  utils::globalVariables("fontsize")
-}
+utils::globalVariables("fontsize")
 
 #' Plot predictive performance
 #'
@@ -2020,11 +2017,8 @@ replace_population_names <- function(population_effects, nm_scheme) {
       names(population_effects),
       nm_scheme = nm_scheme
     )
-    if (length(population_effects) > 0) {
-      # We could also use `recycle0 = TRUE` here, but that would
-      # require R >= 4.0.1.
-      names(population_effects) <- paste0("b_", names(population_effects))
-    }
+    names(population_effects) <- paste0("b_", names(population_effects),
+                                        recycle0 = TRUE)
   }
   return(population_effects)
 }
@@ -2223,9 +2217,30 @@ coef.subfit <- function(object, ...) {
   )))
 }
 
-# To process the multilevel variance components (from a submodel fit):
-proc_VarCorr <- function(group_vc_raw, nms_lats = NULL, ...) {
+# To process the multilevel variance components (from a submodel fit). With
+# `nm_scheme = "brms"`, the output holds the standard deviations and the
+# correlations. With `nm_scheme = "rstanarm"`, it holds the variances and the
+# covariances, as rstanarm does: per group, the lower triangle of the
+# covariance matrix (diagonal included) in column-major order.
+proc_VarCorr <- function(group_vc_raw, nms_lats = NULL, nm_scheme, ...) {
   group_vc <- unlist(lapply(group_vc_raw, function(vc_obj) {
+    if (nm_scheme == "rstanarm" && is.null(nms_lats)) {
+      cov_mat <- matrix(as.vector(unclass(vc_obj)), nrow = nrow(vc_obj),
+                        ncol = ncol(vc_obj))
+      coef_nms_vc <- rownames(vc_obj)
+      # Note: which() returns the indices in column-major order.
+      idxs <- which(lower.tri(cov_mat, diag = TRUE), arr.ind = TRUE)
+      # The names use the keys "sd" (diagonal) and "cor" (off-diagonal) that
+      # mknms_VarCorr() expects, although the values are the variances and the
+      # covariances:
+      nms_vc <- ifelse(
+        idxs[, "row"] == idxs[, "col"],
+        paste0("sd.", coef_nms_vc[idxs[, "row"]]),
+        paste0("cor.", coef_nms_vc[idxs[, "col"]], ".",
+               coef_nms_vc[idxs[, "row"]])
+      )
+      return(setNames(cov_mat[idxs], nms_vc))
+    }
     # The vector of standard deviations:
     if (is.null(nms_lats)) {
       vc_out <- c("sd" = attr(vc_obj, "stddev"))
@@ -2264,7 +2279,8 @@ proc_VarCorr <- function(group_vc_raw, nms_lats = NULL, ...) {
     }
     return(vc_out)
   }))
-  names(group_vc) <- mknms_VarCorr(names(group_vc), nms_lats = nms_lats, ...)
+  names(group_vc) <- mknms_VarCorr(names(group_vc), nms_lats = nms_lats,
+                                   nm_scheme = nm_scheme, ...)
   return(group_vc)
 }
 
@@ -2370,7 +2386,11 @@ get_subparams.glmerMod <- function(x, ...) {
 #' @noRd
 #' @export
 get_subparams.gamm4 <- function(x, ...) {
-  return(get_subparams.lm(x, ...))
+  # coef() of a gamm4 fit is `NULL`, so get_subparams.lm() would return no
+  # parameters:
+  stop("as.matrix.projection() and as_draws_matrix.projection() do not ",
+       "support submodels with smooth and group-level terms (GAMMs) yet.",
+       call. = FALSE)
 }
 
 #' @noRd
@@ -2478,11 +2498,27 @@ get_subparams.mmblogit <- function(x, ...) {
 #'   the returned matrix).
 #' @param ... Currently ignored.
 #'
-#' @details In case of the augmented-data projection for a multilevel submodel
+#' @details For a multilevel submodel, the group-level variance components
+#'   follow the naming scheme and the parametrization of the corresponding
+#'   package: With `nm_scheme = "rstanarm"`, the columns
+#'   `Sigma[<group>:<a>,<a>]` and `Sigma[<group>:<b>,<a>]` contain the
+#'   group-level variances and covariances (per group, the lower triangle of
+#'   the covariance matrix in column-major order). With `nm_scheme = "brms"`,
+#'   the columns `sd_<group>__<a>` and `cor_<group>__<a>__<b>` contain the
+#'   group-level standard deviations and correlations.
+#'
+#'   In case of the augmented-data projection for a multilevel submodel
 #'   of a [brms::categorical()] reference model, the multilevel parameters (and
 #'   therefore also their names) slightly differ from those in the \pkg{brms}
 #'   reference model fit (see section "Augmented-data projection" in
 #'   [extend_family()]'s documentation).
+#'
+#'   For a submodel with smooth terms (fitted with [mgcv::gam()]), the columns
+#'   of the smooth terms are the coefficients in the basis of `gam()`. The
+#'   reference model fit can use another basis ([rstanarm::stan_gamm4()] and
+#'   \pkg{brms} do so for `s()` terms). Then these columns do not match the
+#'   reference model parameters. For a submodel with smooth and group-level
+#'   terms (GAMM), the projected draws cannot be extracted yet (error).
 #'
 #' @return An \eqn{S_{\mathrm{prj}} \times Q}{S_prj x Q} matrix of projected
 #'   draws, with \eqn{S_{\mathrm{prj}}}{S_prj} denoting the number of projected
@@ -2516,12 +2552,10 @@ get_subparams.mmblogit <- function(x, ...) {
 #' # Since the draws have all the same weight here, we can treat them like
 #' # ordinary MCMC draws, e.g., we can summarize them using the `posterior`
 #' # package:
-#' if (requireNamespace("posterior", quietly = TRUE)) {
-#'   print(posterior::summarize_draws(
-#'     posterior::as_draws_matrix(prj_mat),
-#'     "median", "mad", function(x) quantile(x, probs = c(0.025, 0.975))
-#'   ))
-#' }
+#' print(posterior::summarize_draws(
+#'   posterior::as_draws_matrix(prj_mat),
+#'   "median", "mad", function(x) quantile(x, probs = c(0.025, 0.975))
+#' ))
 #' # Or visualize them using the `bayesplot` package:
 #' if (requireNamespace("bayesplot", quietly = TRUE)) {
 #'   print(bayesplot::mcmc_intervals(prj_mat))
@@ -2588,7 +2622,7 @@ as.matrix.projection <- function(x, nm_scheme = NULL,
 #'   \eqn{Q} the number of parameters. If the projected draws have nonconstant
 #'   weights, [posterior::weight_draws()] is applied internally.
 #'
-#' @examplesIf requireNamespace("rstanarm", quietly = TRUE) && requireNamespace("posterior", quietly = TRUE)
+#' @examplesIf requireNamespace("rstanarm", quietly = TRUE)
 #' # Data:
 #' dat_gauss <- data.frame(y = df_gaussian$y, df_gaussian$x)
 #'
@@ -2646,9 +2680,6 @@ as_draws.projection <- function(x, ...) {
 # argument `wdraws_prj`) to a `draws_matrix` (which will be weighted if `xmat`
 # possesses an argument `wdraws_prj`).
 mat2drmat <- function(xmat) {
-  if (!requireNamespace("posterior", quietly = TRUE)) {
-    stop("Please install the 'posterior' package.")
-  }
   drmat <- posterior::as_draws_matrix(structure(xmat, wdraws_prj = NULL))
   wdr <- attr(xmat, "wdraws_prj")
   if (!is.null(wdr)) {
