@@ -278,11 +278,12 @@ test_that("fit_categ_mlvl() uses categ_pql_fit() for augmented data", {
   local({
     local_mocked_bindings(mblogit = function(...) {
       cat("converged\n")
-      "mblogit() called"
+      list(called = "mblogit()")
     }, .package = "mclogit")
     expect_identical(
-      do.call(fit_categ_mlvl, c(args, list(break.on.increase = TRUE))),
-      "mblogit() called"
+      do.call(fit_categ_mlvl,
+              c(args, list(break.on.increase = TRUE)))$called,
+      "mblogit()"
     )
   })
   # The parts of the fit that projpred uses have the same structure:
@@ -305,6 +306,73 @@ test_that("global option `projpred.categ_mlvl_mblogit` selects mblogit()", {
     do.call(fit_categ_mlvl, categ_pql_aug_args(categ_pql_test_data()))
   )
   expect_identical(fit$response.type, "factor")
+})
+
+# A factor `f` with 3 levels in the group-level term `(1 + f | g)`, with
+# treatment contrasts and with sum contrasts set in the training data:
+expect_factor_slope_ok <- function(use_mblogit, n = 300, n_g = 8) {
+  set.seed(4417)
+  dat <- data.frame(f = factor(rep_len(c("a", "b", "c"), n)), x = rnorm(n),
+                    g = factor(paste0("g", rep_len(seq_len(n_g), n))))
+  b <- matrix(rnorm(n_g * 4, sd = 1.5), n_g, 4)
+  eta <- cbind(0,
+               c(a = 0, b = 0.8, c = -0.6)[as.character(dat$f)] +
+                 0.5 * dat$x + b[dat$g, 1] + b[dat$g, 2] * (dat$f == "b"),
+               -0.3 * dat$x + b[dat$g, 3] + b[dat$g, 4] * (dat$f == "c"))
+  P <- exp(eta) / rowSums(exp(eta))
+  opts_old <- options(projpred.categ_mlvl_mblogit = use_mblogit)
+  on.exit(options(opts_old), add = TRUE)
+  for (ctr_sum in c(FALSE, TRUE)) {
+    info_crr <- paste("contr.sum:", ctr_sum)
+    dat_fit <- dat
+    if (ctr_sum) contrasts(dat_fit$f) <- contr.sum(3)
+    dat_aug <- dat_fit[rep(seq_len(n), 3), ]
+    dat_aug$y <- factor(rep(c("1", "2", "3"), each = n))
+    fit <- suppressWarnings(fit_categ_mlvl(
+      formula = y ~ f + x + (1 + f | g),
+      projpred_formula_no_random = y ~ f + x,
+      projpred_random = ~ (1 + f | g), data = dat_aug,
+      family = list(link = "logit"), weights = as.vector(P)
+    ))
+    expect_identical(fit$response.type,
+                     if (use_mblogit) "factor" else "matrix", info = info_crr)
+    # Three group-level coefficients per latent category and group:
+    subparams <- get_subparams(fit, nm_scheme = "brms")
+    expect_false(anyDuplicated(names(subparams)) > 0, info = info_crr)
+    expect_identical(length(grep("^r_g__mu", names(subparams))),
+                     as.integer(n_g * 2 * 3), info = info_crr)
+    # The names of the group-level effects match their values:
+    vc_nms <- colnames(fit$VarCov[[1]])
+    for (vc_nm in vc_nms[c(3, 6)]) {
+      lat_coef <- strsplit(vc_nm, "~", fixed = TRUE)[[1]]
+      expect_equal(
+        unname(subparams[paste0("r_g__mu", lat_coef[1], "[g2,", lat_coef[2],
+                                "]")]),
+        unname(fit$random.effects[[1]][paste0(vc_nm, "|g2"), 1]),
+        info = info_crr
+      )
+    }
+    # The predictions for the training data (without the `contrasts`
+    # attributes, as projpred passes new data) are the fitted linear
+    # predictors:
+    lpreds <- predict(fit, newdata = dat, conditional = FALSE) +
+      repair_re(fit, newdata = dat)
+    lpreds_fit <- matrix(fit$linear.predictors, ncol = 3,
+                         byrow = TRUE)[seq_len(n), -1]
+    expect_equal(unname(lpreds), lpreds_fit, tolerance = 1e-10,
+                 info = info_crr)
+  }
+}
+
+test_that(paste("categ_pql_fit(): repair_re() and get_subparams() handle a",
+                "factor in a group-level term"), {
+  expect_factor_slope_ok(use_mblogit = FALSE)
+})
+
+test_that(paste("mblogit(): repair_re() and get_subparams() handle a factor",
+                "in a group-level term"), {
+  skip_on_cran()
+  expect_factor_slope_ok(use_mblogit = TRUE)
 })
 
 test_that("categ_mat_resp() needs the augmented-data layout", {

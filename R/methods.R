@@ -2460,16 +2460,8 @@ get_subparams.mmblogit <- function(x, ...) {
   subparams <- c(setNames(as.vector(coefs), nms), group_vc)
 
   if (!getOption("projpred.mlvl_pred_new", FALSE)) {
-    if (utils::packageVersion("mclogit") < "0.9") {
-      ncoefs_all <- length(all.vars(x$random$formula)) + 1L
-    } else {
-      ncoefs_all <- sapply(
-        setNames(x$random, names(x$groups)),
-        function(re_info_i) {
-          length(all.vars(re_info_i$formula)) + 1L
-        }
-      )
-    }
+    # The number of group-level coefficients per latent category:
+    ncoefs_all <- vapply(group_vc_raw, ncol, integer(1)) %/% ncol(x$D)
     group_ef <- proc_ranef(setNames(x$random.effects, names(x$groups)),
                            nms_lats = colnames(x$D),
                            ncoefs = ncoefs_all,
