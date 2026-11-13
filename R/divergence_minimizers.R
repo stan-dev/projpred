@@ -2,11 +2,6 @@
 
 ## Traditional (and latent) projection ------------------------------------
 
-# Needed to avoid a NOTE in `R CMD check`:
-utils::globalVariables("formula_s")
-utils::globalVariables("projpred_var_s")
-utils::globalVariables("projpred_formula_no_random_s")
-
 divmin <- function(
     formula,
     projpred_var,
@@ -1446,7 +1441,6 @@ control_callback <- function(family, ...) {
 ## Augmented-data projection ----------------------------------------------
 
 # Needed to avoid a NOTE in `R CMD check`:
-utils::globalVariables("projpred_w_aug_s")
 utils::globalVariables("projpred_internal_w_aug")
 
 divmin_augdat <- function(

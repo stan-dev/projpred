@@ -1447,11 +1447,6 @@ warn_pareto <- function(n07, n, khat_threshold = 0.7, warn_txt) {
 
 # K-fold CV ---------------------------------------------------------------
 
-# Needed to avoid a NOTE in `R CMD check`:
-utils::globalVariables("list_cv_k")
-utils::globalVariables("search_out_rks_k")
-utils::globalVariables("ks_k")
-
 kfold_varsel <- function(refmodel, method, nterms_max, ndraws, nclusters,
                          ndraws_pred, nclusters_pred, refit_prj, penalty,
                          verbose, search_control, K, cvfits, validate_search,
