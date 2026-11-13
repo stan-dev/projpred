@@ -422,3 +422,33 @@ test_that(paste(
   lbls <- attr(terms(as.formula(paste("~ z +", long_i))), "term.labels")
   expect_identical(norm_term_labels(lbls), c("z", long_i))
 })
+
+test_that(paste(
+  "smooth_covered_terms() finds the linear terms next to a smooth term of the",
+  "same variable, and flatten_formula() drops them with `duplicates = FALSE`"
+), {
+  expect_identical(smooth_covered_terms(y ~ x + s(x) + z), "x")
+  expect_identical(smooth_covered_terms(y ~ x + z + t2(x, z)), c("x", "z"))
+  expect_identical(smooth_covered_terms(y ~ x + s(log(z), x)), "x")
+  expect_identical(smooth_covered_terms(y ~ x + s(z)), character(0))
+  expect_identical(smooth_covered_terms(y ~ x + z), character(0))
+  expect_identical(
+    labels(terms(flatten_formula(y ~ x + s(x) + z + (1 | g),
+                                 duplicates = FALSE))),
+    c("z", "s(x)", "1 | g")
+  )
+})
+
+test_that(paste(
+  "formula.gamm4() for an rstanarm::stan_gamm4() fit does not add the",
+  "variables of the smooth terms as linear terms"
+), {
+  # The elements of an rstanarm::stan_gamm4() fit that formula.gamm4() uses:
+  fit <- structure(list(formula = y ~ x + s(z),
+                        glmod = list(formula = y ~ x + s(z) + (1 + x | g))),
+                   class = "gamm4")
+  expect_setequal(labels(terms(formula(fit))), c("x", "s(z)", "x | g"))
+  # Without group-level terms, the formula does not change:
+  fit$glmod <- NULL
+  expect_identical(formula(fit), y ~ x + s(z))
+})

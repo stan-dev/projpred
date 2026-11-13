@@ -291,6 +291,14 @@ extend_family <- function(family,
     # If the family was already extended using this function, then return as-is:
     return(family)
   }
+  # brms families with `trials()` other than binomial(). projpred cannot use
+  # more than one trial per observation for them, and with one trial they
+  # reduce to the Bernoulli family:
+  if (isTRUE(family$family %in% c("beta_binomial", "zero_inflated_binomial",
+                                  "zero_inflated_beta_binomial"))) {
+    stop("Currently, projpred does not support the brms family `",
+         family$family, "()`.", call. = FALSE)
+  }
   if (latent) {
     family_oscale_tmp <- family$family
     link_oscale_tmp <- family$link
@@ -471,9 +479,17 @@ extend_family <- function(family,
     family$predvar <- function(mu, dis, wdraws = 1) {
       return(rep(NA, NROW(mu)))
     }
+    fam_nm_augdat <- family$family
+    link_nm_augdat <- family$link
     family$ll_fun <- function(mu, dis = NULL, y, weights = 1, eta = NULL) {
       mu_arr <- augmat2arr(mu)
-      return(ll_cats(mu_arr, y = y, wobs = weights))
+      ll <- ll_cats(mu_arr, y = y, wobs = weights)
+      if (!is.null(eta)) {
+        ll <- ll_eta_augdat(ll, mu_arr = mu_arr, eta = eta, y = y,
+                            wobs = weights, fam_nm = fam_nm_augdat,
+                            link_nm = link_nm_augdat)
+      }
+      return(ll)
     }
     family$ppd <- function(mu, dis, weights = 1) {
       mu_arr <- augmat2arr(augvec2augmat(mu))

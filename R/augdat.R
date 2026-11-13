@@ -230,6 +230,190 @@ ll_cats <- function(mu_arr, margin_draws = 3, y, wobs = 1) {
   })))
 }
 
+# The log-likelihood of the augmented-data projection from the linear predictor.
+# ll_cats() bounds the probabilities below by `.Machine$double.eps`, and a
+# difference of two cumulative probabilities close to 1 loses digits, so
+# ll_eta_augdat() computes the log probabilities from `eta` in log space.
+#
+# @param ll The N x S output of ll_cats() (`margin_draws = 3`).
+# @param mu_arr The N x C_cat x S array of probabilities that gave `ll`.
+# @param eta The linear predictor (offsets included) for `mu_arr`: an
+#   augmented-rows matrix with C_lat = C_cat - 1 row blocks.
+# @param y, wobs As for ll_cats().
+# @param fam_nm, link_nm `family$family` and `family$link`.
+#
+# @return An N x S matrix. This is `ll` if augdat_log_prbs() has no formula
+#   for `fam_nm` and `link_nm`, or (with a warning) if the probabilities from
+#   `eta` do not match `mu_arr` (for example, for a custom `augdat_ilink`).
+#   Where `eta` is `NA` or log(p) is not finite, the entries of `ll` are kept.
+ll_eta_augdat <- function(ll, mu_arr, eta, y, wobs, fam_nm, link_nm) {
+  dim_arr <- dim(mu_arr)
+  n_obs <- dim_arr[1]
+  n_draws <- dim_arr[3]
+  if (!is.matrix(eta) || ncol(eta) != n_draws ||
+      nrow(eta) != n_obs * (dim_arr[2] - 1L) ||
+      !identical(dim(ll), c(n_obs, n_draws))) {
+    stop("Unexpected dimensions of `eta`. Please notify the package ",
+         "maintainer.")
+  }
+  eta_arr <- array(eta, dim = c(n_obs, dim_arr[2] - 1L, n_draws))
+  lp_arr <- augdat_log_prbs(eta_arr, fam_nm = fam_nm, link_nm = link_nm)
+  if (is.null(lp_arr)) {
+    return(ll)
+  }
+  # Observations and draws with an `NA` in `eta`:
+  na_os <- matrix(FALSE, nrow = n_obs, ncol = n_draws)
+  for (k in seq_len(dim_arr[2] - 1L)) {
+    na_os <- na_os | is.na(matrix(eta_arr[, k, ], nrow = n_obs))
+  }
+  na_arr <- aperm(array(na_os, dim = c(n_obs, n_draws, dim_arr[2])),
+                  c(1, 3, 2))
+  # The probabilities from `eta` must be equal to `mu_arr` where these are not
+  # small (the absolute rounding error of `mu_arr` is about 2e-16):
+  chk <- which(!na_arr & mu_arr > 1e-6)
+  if (any(!is.finite(lp_arr[chk])) ||
+      any(abs(exp(lp_arr[chk]) - mu_arr[chk]) > 1e-8 * mu_arr[chk])) {
+    warning("The response probabilities of the augmented-data projection ",
+            "differ from those of the standard inverse link of family '",
+            fam_nm, "' (link '", link_nm, "'), so projpred computes the ",
+            "log-likelihood from the probabilities (with the lower bound ",
+            "`.Machine$double.eps`).", call. = FALSE)
+    return(ll)
+  }
+  if (length(wobs) == 0) {
+    wobs <- rep(1, n_obs)
+  } else if (length(wobs) == 1) {
+    wobs <- rep(wobs, n_obs)
+  } else if (length(wobs) != n_obs) {
+    stop("Argument `wobs` needs to be of length 0, 1, or `length(y)`.")
+  }
+  stopifnot(is.factor(y), length(y) == n_obs)
+  idx_obs <- cbind(rep(seq_len(n_obs), n_draws),
+                   rep(as.integer(y), n_draws),
+                   rep(seq_len(n_draws), each = n_obs))
+  lp_obs <- matrix(lp_arr[idx_obs], nrow = n_obs, ncol = n_draws)
+  ll_out <- ll_xlogp(as.vector(wobs), lp_obs)
+  # Keep `ll` where `eta` is `NA` and where log(p) is not finite: p is 0 (equal
+  # thresholds) or below the smallest double, where `ll` has the finite lower
+  # bound (loo::psis() needs finite values). For thresholds that are not
+  # ordered, both are `NaN`.
+  keep <- na_os | !is.finite(ll_out)
+  ll_out[keep] <- ll[keep]
+  dimnames(ll_out) <- dimnames(ll)
+  return(ll_out)
+}
+
+# Log probabilities of the C_cat response categories from the N x C_lat x S
+# array `eta_arr`, for the inverse links augdat_ilink_cumul() (families
+# `cumulative` and `cumulative_rstanarm`), augdat_ilink_binom() (family
+# `binomial`) and the softmax with the first category as the reference category
+# (family `categorical`). The result is an N x C_cat x S array, or `NULL` if
+# there is no formula for the family and the link.
+augdat_log_prbs <- function(eta_arr, fam_nm, link_nm) {
+  if (is.null(fam_nm) || is.null(link_nm)) {
+    return(NULL)
+  }
+  link_nm <- switch(link_nm, logistic = "logit", probit_approx = "probit",
+                    link_nm)
+  n_lat <- dim(eta_arr)[2]
+  dim_out <- dim(eta_arr) + c(0L, 1L, 0L)
+  if (fam_nm == "categorical") {
+    if (link_nm != "logit") {
+      return(NULL)
+    }
+    # Log-softmax with the latent predictor 0 for the reference category (N x
+    # S matrices per category):
+    eta_k <- c(list(matrix(0, nrow = dim_out[1], ncol = dim_out[3])),
+               lapply(seq_len(n_lat), function(k) {
+                 matrix(eta_arr[, k, ], nrow = dim_out[1])
+               }))
+    eta_max <- do.call(pmax, eta_k)
+    sum_exp <- Reduce(`+`, lapply(eta_k, function(e) exp(e - eta_max)))
+    lse <- eta_max + log(sum_exp)
+    lp_arr <- array(NA_real_, dim = dim_out)
+    for (k in seq_along(eta_k)) {
+      lp_arr[, k, ] <- eta_k[[k]] - lse
+    }
+    return(lp_arr)
+  }
+  if (!link_nm %in% c("logit", "probit", "cauchit", "cloglog")) {
+    return(NULL)
+  }
+  lp_arr <- array(NA_real_, dim = dim_out)
+  if (fam_nm == "binomial") {
+    if (n_lat != 1) {
+      return(NULL)
+    }
+    lp_arr[, 1, ] <- log_cdf_link(eta_arr[, 1, ], link_nm, lower = FALSE)
+    lp_arr[, 2, ] <- log_cdf_link(eta_arr[, 1, ], link_nm, lower = TRUE)
+    return(lp_arr)
+  }
+  if (!fam_nm %in% c("cumulative", "cumulative_rstanarm")) {
+    return(NULL)
+  }
+  lp_arr[, 1, ] <- log_cdf_link(eta_arr[, 1, ], link_nm, lower = TRUE)
+  for (k in seq_len(n_lat - 1L) + 1L) {
+    lp_arr[, k, ] <- log_diff_cdf(eta_arr[, k - 1L, ], eta_arr[, k, ],
+                                  link_nm)
+  }
+  lp_arr[, n_lat + 1L, ] <- log_cdf_link(eta_arr[, n_lat, ], link_nm,
+                                         lower = FALSE)
+  return(lp_arr)
+}
+
+# log(F(x)) (`lower = TRUE`) or log(1 - F(x)) (`lower = FALSE`) for the inverse
+# link F of a binomial() link:
+log_cdf_link <- function(x, link_nm, lower = TRUE) {
+  switch(
+    link_nm,
+    logit = plogis(x, lower.tail = lower, log.p = TRUE),
+    probit = pnorm(x, lower.tail = lower, log.p = TRUE),
+    cauchit = pcauchy(x, lower.tail = lower, log.p = TRUE),
+    # F(x) = 1 - exp(-exp(x)); for x < -20, log(F(x)) = x - exp(x) / 2 up to
+    # exp(2 * x) / 24 (exp(x) underflows for x < -745):
+    cloglog = if (lower) {
+      ifelse(x < -20, x - exp(x) / 2, log1mexp(exp(x)))
+    } else {
+      -exp(x)
+    },
+    stop("Unexpected link '", link_nm, "'. Please notify the package ",
+         "maintainer.")
+  )
+}
+
+# log(F(b) - F(a)) for a <= b (elementwise). The lower-tail form is used if
+# F(a) <= 0.5, the upper-tail form otherwise, so the difference does not lose
+# digits. The result is `-Inf` if F(b) (lower tail) or 1 - F(a) (upper tail)
+# underflows, and `NaN` for a > b.
+log_diff_cdf <- function(a, b, link_nm) {
+  lFa <- log_cdf_link(a, link_nm, lower = TRUE)
+  lFb <- log_cdf_link(b, link_nm, lower = TRUE)
+  out <- lFb + log1mexp(lFb - lFa)
+  out[which(lFb == -Inf)] <- -Inf
+  up <- which(lFa > log(0.5))
+  if (length(up) > 0) {
+    lSa <- log_cdf_link(a[up], link_nm, lower = FALSE)
+    lSb <- log_cdf_link(b[up], link_nm, lower = FALSE)
+    out_up <- lSa + log1mexp(lSa - lSb)
+    out_up[which(lSa == -Inf)] <- -Inf
+    out[up] <- out_up
+  }
+  return(out)
+}
+
+# log(1 - exp(-z)) for z >= 0 (elementwise; `NaN` for z < 0 or an `NA` z),
+# accurate for small and large z (Maechler, 2012, "Accurately computing
+# log(1 - exp(-|a|))"):
+log1mexp <- function(z) {
+  out <- z
+  out[] <- NaN
+  small <- which(z >= 0 & z <= log(2))
+  large <- which(z > log(2))
+  out[small] <- log(-expm1(-z[small]))
+  out[large] <- log1p(-exp(-z[large]))
+  return(out)
+}
+
 # Helper function for drawing from the posterior(-projection) predictive
 # distribution if the response distribution has finite support (as is the case
 # in augmented-data projection, for example).

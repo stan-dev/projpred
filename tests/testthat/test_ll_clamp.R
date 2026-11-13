@@ -175,21 +175,19 @@ refm_extreme <- function(family, n = 40, ndraws = 60, seed = 5523,
                 orhs = orhs %||% if (offset) ~ offs else NULL,
                 resp_form = if (extract_y) ~ y else NULL)
   }
-  # The tests do not use K-fold CV, so the default `cvrefbuilder` is fine:
-  withCallingHandlers(
-    init_refmodel(list(beta = beta, data = dat), data = dat, formula = fml,
-                  family = family, ref_predfun = ref_predfun,
-                  extract_model_data = extract_model_data),
-    warning = function(w) {
-      if (grepl("`cvrefbuilder` was `NULL`", conditionMessage(w),
-                fixed = TRUE)) {
-        invokeRestart("muffleWarning")
-      }
-    }
-  )
+  # For K-fold CV, each fold gets the full-data draws:
+  fit <- list(beta = beta, data = dat)
+  make_refm <- function(fit_k) {
+    init_refmodel(fit_k, data = dat, formula = fml, family = family,
+                  ref_predfun = ref_predfun,
+                  extract_model_data = extract_model_data,
+                  cvfun = function(folds) rep(list(fit), max(folds)),
+                  cvrefbuilder = make_refm)
+  }
+  make_refm(fit)
 }
 
-test_that("reference model LOO and predict() are exact for a large |eta|", {
+test_that("reference model lppd is exact for a large |eta| (predict, CV)", {
   for (fam in list(binomial(), poisson())) for (offset in c(FALSE, TRUE)) {
     info <- paste(fam$family, "offset:", offset)
     # The exact log-likelihood (N x S) of the draws of `refm`:
@@ -212,6 +210,18 @@ test_that("reference model LOO and predict() are exact for a large |eta|", {
     lpd_exact <- apply(ll_exact_of(refm_all), 1, log_sum_exp) -
       log(ncol(refm_all$eta))
     expect_equal(lpd, lpd_exact, tolerance = 1e-10, info = info)
+    # varsel() with the training data, and K-fold CV (each fold has the
+    # full-data draws, see refm_extreme()):
+    vs <- suppressWarnings(varsel(refm_all, nterms_max = 1, method = "forward",
+                                  verbose = FALSE))
+    expect_equal(vs$summaries$ref$lppd, lpd_exact, tolerance = 1e-10,
+                 info = info)
+    cvvs_k <- suppressWarnings(cv_varsel(
+      refm_all, cv_method = "kfold", K = 2, nterms_max = 1, method = "forward",
+      verbose = FALSE
+    ))
+    expect_equal(cvvs_k$summaries$ref$lppd, lpd_exact, tolerance = 1e-10,
+                 info = info)
     # The PSIS-LOO values of the reference model in cv_varsel() (10 of the
     # draws with a large |eta|):
     refm <- refm_extreme(fam, offset = offset)

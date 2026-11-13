@@ -28,17 +28,20 @@
 #   function that receives them should treat them as unnormalized. Draws that
 #   should be dropped (e.g., because of thinning by `ndraws` or `ndraws_pred`)
 #   can (but must not necessarily) have an `NA` in `wdraws_ref`.
+# @param eta `NULL` or the linear predictor (offsets included) that gives `mu`,
+#   passed to `family$ll_fun()`.
 #
 # @return A `list` with elements `mu` and `lppd` which are both vectors
 #   containing the values for the quantities from the description above.
 weighted_summary_means <- function(y_wobs_test, data_aux_test, family, wdraws,
                                    mu, dis, cl_ref,
-                                   wdraws_ref = rep(1, length(cl_ref))) {
+                                   wdraws_ref = rep(1, length(cl_ref)),
+                                   eta = NULL) {
   if (!is.matrix(mu) || any(dim(mu) == 0)) {
     stop("Unexpected structure for `mu`. Do the return values of ",
          "`proj_predfun` and `ref_predfun` have the correct structure?")
   }
-  loglik <- family$ll_fun(mu, dis, y_wobs_test$y, y_wobs_test$wobs)
+  loglik <- family$ll_fun(mu, dis, y_wobs_test$y, y_wobs_test$wobs, eta = eta)
   if (!is.matrix(loglik) || any(dim(loglik) == 0)) {
     stop("Unexpected structure for `loglik`. Please notify the package ",
          "maintainer.")
