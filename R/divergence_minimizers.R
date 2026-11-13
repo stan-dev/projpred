@@ -1440,9 +1440,6 @@ control_callback <- function(family, ...) {
 
 ## Augmented-data projection ----------------------------------------------
 
-# Needed to avoid a NOTE in `R CMD check`:
-utils::globalVariables("projpred_internal_w_aug")
-
 divmin_augdat <- function(
     formula,
     data,
