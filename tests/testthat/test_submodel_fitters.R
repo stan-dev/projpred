@@ -956,3 +956,77 @@ test_that(paste(
     }
   }
 })
+
+# A gradient tolerance that no fit meets, so that lme4::checkConv() warns:
+cc_grad_tight <- function() {
+  lme4::.makeCC("warning", tol = 1e-12, relTol = NULL)
+}
+
+test_that(paste(
+  "gamm_check_conv() gives the lme4::checkConv() result of glmer() and",
+  "lmer() for a gamm4() fit with only group-level terms"
+), {
+  d <- dat_fitters(n_grp = 10, n_per = 20)
+  withr::local_seed(2)
+  d$yb <- rbinom(nrow(d), 1, plogis(d$eta))
+  d$yg <- d$eta + rnorm(nrow(d), sd = 0.5)
+  for (fam_nm in c("binomial", "gaussian")) {
+    if (fam_nm == "binomial") {
+      ctrl <- lme4::glmerControl(optimizer = "bobyqa",
+                                 check.conv.grad = cc_grad_tight())
+      fit_ref <- suppressWarnings(lme4::glmer(
+        yb ~ x + (1 | g), data = d, family = binomial(), control = ctrl
+      ))
+      fit_gamm <- gamm4::gamm4(yb ~ x, random = ~ (1 | g), data = d,
+                               family = binomial(), control = ctrl)
+    } else {
+      ctrl <- lme4::lmerControl(check.conv.grad = cc_grad_tight())
+      fit_ref <- suppressWarnings(lme4::lmer(yg ~ x + (1 | g), data = d,
+                                             control = ctrl))
+      fit_gamm <- gamm4::gamm4(yg ~ x, random = ~ (1 | g), data = d,
+                               control = ctrl)
+    }
+    class(fit_gamm) <- "gamm4"
+    expect_true(check_conv_s(fit_gamm), info = fam_nm)
+    expect_warning(fit_gamm <- gamm_check_conv(fit_gamm, control = ctrl),
+                   "failed to converge", info = fam_nm)
+    cc <- fit_gamm$mer@optinfo$conv$lme4
+    expect_identical(cc$code, -1L, info = fam_nm)
+    expect_identical(cc, fit_ref@optinfo$conv$lme4, info = fam_nm)
+    expect_false(check_conv_s(fit_gamm), info = fam_nm)
+  }
+})
+
+test_that(paste(
+  "divmin() warns about a gamm4() submodel fit that does not meet the",
+  "gradient tolerance of lme4::checkConv()"
+), {
+  d <- dat_fitters(n_grp = 10, n_per = 20)
+  withr::local_seed(3)
+  mu <- d$eta + rnorm(nrow(d), sd = 0.3)
+  fam <- extend_family(gaussian())
+  expect_warning(
+    divmin_tst("s(z) + x + (1 | g)", d, fam, mu, check_conv = TRUE,
+               control = lme4::lmerControl(check.conv.grad = cc_grad_tight())),
+    "might not have converged"
+  )
+  expect_no_warning(
+    divmin_tst("s(z) + x + (1 | g)", d, fam, mu, check_conv = TRUE)
+  )
+})
+
+test_that(paste(
+  "fit_gamm_callback() does not report the smooth term of a linear function",
+  "as a singular fit"
+), {
+  d <- dat_fitters(n_grp = 10, n_per = 20)
+  withr::local_seed(4)
+  d$y <- d$eta - sin(2 * d$z) + 0.5 * d$z + rnorm(nrow(d), sd = 0.3)
+  expect_no_message(fit <- fit_gamm_callback(
+    formula = y ~ s(z) + x + (1 | g), projpred_formula_no_random = y ~ s(z) + x,
+    projpred_random = ~ (1 | g), data = d, family = extend_family(gaussian())
+  ))
+  # The variance of the smooth term is zero (the fit is singular):
+  expect_true(any(lme4::getME(fit$mer, "theta") == 0))
+  expect_true(check_conv_s(fit))
+})
