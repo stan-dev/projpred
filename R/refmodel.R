@@ -1467,9 +1467,9 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
       if (excl_offs) {
         # Observation weights are not needed here, so use the default
         # `wrhs = NULL` (weights of 1 would cause a warning in newer brms
-        # versions). Only for a 2-column response, the internal default
-        # `extract_model_data` gets weights of 1, so that it does not need the
-        # response columns in `newdata`:
+        # versions). The internal default `extract_model_data` gets weights of 1
+        # only for a 2-column response, so that it does not need the response
+        # columns in `newdata`:
         offs <- extract_model_data(
           fit, newdata = newdata,
           wrhs = if (emd_default && !is.null(wrhs_2col)) {
