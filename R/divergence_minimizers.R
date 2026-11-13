@@ -572,11 +572,13 @@ filter_mssgs_warns <- function(mssgs_warns_capt) {
   return(mssgs_warns_capt)
 }
 
-# Finds the levels of factor-like fixed-effect predictors that occur only in
-# the removed rows (`!keep`). Factor-like means a factor, character or logical
-# variable, or a numeric variable that the fixed-effects part of `formula` uses
-# only inside factor(), as.factor(), ordered() or as.ordered(). Grouping
-# factors are left out, because repair_re() treats a lost group as a new group.
+# Finds the levels of factor-like predictors that occur only in the removed rows
+# (`!keep`). The predictors are those of the population-level part of `formula`
+# and of the left-hand sides of its group-level terms. Factor-like means a
+# factor, character or logical variable, or a numeric variable that `formula`
+# uses only inside factor(), as.factor(), ordered() or as.ordered() (not, for
+# example, also as a group-level slope). Grouping factors are left out, because
+# repair_re() treats a lost group as a new group.
 # For each variable, returns the lost levels and the reference level (the first
 # level that remains). Returns `NULL` if no level is lost.
 #
@@ -594,10 +596,14 @@ filter_mssgs_warns <- function(mssgs_warns_capt) {
 # level comes from the ridge solution of glm_ridge().
 lost_levels <- function(data, keep, formula) {
   fml_fixed <- reformulas::nobars(formula)
-  rhs_fixed <- fml_fixed[[length(fml_fixed)]]
-  grp_nms <- unlist(lapply(reformulas::findbars(formula), function(bar) {
-    all.vars(bar[[3]])
-  }))
+  bars <- reformulas::findbars(formula)
+  grp_nms <- unlist(lapply(bars, function(bar) all.vars(bar[[3]])))
+  # The population-level part and the left-hand sides of the group-level terms
+  # (lme4::mkNewReTrms() stops for a level that the fit does not know):
+  rhs_all <- as.call(c(
+    list(as.name("+"), fml_fixed[[length(fml_fixed)]]),
+    lapply(bars, function(bar) bar[[2]])
+  ))
   # Variables inside factor() and similar calls, and variables elsewhere:
   fac_fns <- c("factor", "as.factor", "ordered", "as.ordered")
   find_vars <- function(e) {
@@ -615,9 +621,9 @@ lost_levels <- function(data, keep, formula) {
     }
     return(list(inside = character(), outside = character()))
   }
-  vars_rhs <- find_vars(rhs_fixed)
+  vars_rhs <- find_vars(rhs_all)
   fac_only <- setdiff(vars_rhs$inside, vars_rhs$outside)
-  x_nms <- setdiff(intersect(all.vars(rhs_fixed), names(data)), grp_nms)
+  x_nms <- setdiff(intersect(all.vars(rhs_all), names(data)), grp_nms)
   out <- lapply(setNames(nm = x_nms), function(x_nm) {
     x <- data[[x_nm]]
     if (!(is.factor(x) || is.character(x) || is.logical(x) ||
