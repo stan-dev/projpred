@@ -1478,11 +1478,9 @@ warn_pareto <- function(n07, n, khat_threshold = 0.7, warn_txt) {
 # K-fold CV ---------------------------------------------------------------
 
 # Needed to avoid a NOTE in `R CMD check`:
-if (getRversion() >= package_version("2.15.1")) {
-  utils::globalVariables("list_cv_k")
-  utils::globalVariables("search_out_rks_k")
-  utils::globalVariables("ks_k")
-}
+utils::globalVariables("list_cv_k")
+utils::globalVariables("search_out_rks_k")
+utils::globalVariables("ks_k")
 
 kfold_varsel <- function(refmodel, method, nterms_max, ndraws, nclusters,
                          ndraws_pred, nclusters_pred, refit_prj, penalty,

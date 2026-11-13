@@ -639,9 +639,7 @@ proj_predict_aux <- function(proj, newdata, offsetnew, weightsnew,
 }
 
 # Needed to avoid a NOTE in `R CMD check`:
-if (getRversion() >= package_version("2.15.1")) {
-  utils::globalVariables("fontsize")
-}
+utils::globalVariables("fontsize")
 
 #' Plot predictive performance
 #'
