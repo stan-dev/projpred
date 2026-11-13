@@ -227,6 +227,14 @@ In multilevel (group-level) terms, function calls on the right-hand side of
 the \code{|} character (e.g., \code{(1 | gr(group_variable))}, which is possible in
 \pkg{brms}) are currently not allowed in \pkg{projpred}.
 
+Group terms with a \pkg{brms} correlation ID, such as \code{(1 + x |p| g)}, are
+used without the ID (here \code{(1 + x | g)}), and a message tells about this.
+Group terms with \code{||} (uncorrelated group-level effects) are currently not
+supported. If a grouping factor has more than one group term, such as
+\code{(1 | g) + (0 + x | g)}, the submodels merge these terms into one term with
+correlations (here \code{(x | g)}), and \code{\link[=init_refmodel]{init_refmodel()}} gives a warning (no
+warning if all these terms have the same \pkg{brms} correlation ID).
+
 For additive models (still an experimental feature), only \code{\link[mgcv:s]{mgcv::s()}} and
 \code{\link[mgcv:t2]{mgcv::t2()}} are currently supported as smooth terms. Furthermore, these need
 to be called without any arguments apart from the predictor names (symbols).

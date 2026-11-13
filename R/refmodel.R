@@ -158,6 +158,14 @@
 #' the `|` character (e.g., `(1 | gr(group_variable))`, which is possible in
 #' \pkg{brms}) are currently not allowed in \pkg{projpred}.
 #'
+#' Group terms with a \pkg{brms} correlation ID, such as `(1 + x |p| g)`, are
+#' used without the ID (here `(1 + x | g)`), and a message tells about this.
+#' Group terms with `||` (uncorrelated group-level effects) are currently not
+#' supported. If a grouping factor has more than one group term, such as
+#' `(1 | g) + (0 + x | g)`, the submodels merge these terms into one term with
+#' correlations (here `(x | g)`), and [init_refmodel()] gives a warning (no
+#' warning if all these terms have the same \pkg{brms} correlation ID).
+#'
 #' For additive models (still an experimental feature), only [mgcv::s()] and
 #' [mgcv::t2()] are currently supported as smooth terms. Furthermore, these need
 #' to be called without any arguments apart from the predictor names (symbols).
@@ -1190,7 +1198,8 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
   stopifnot(inherits(formula, "formula"))
   data <- na.fail(data)
   stopifnot(is.data.frame(data))
-  formula <- expand_formula(formula, data)
+  fml_ids <- rm_group_ids(formula, verbose = !called_from_cvrefbuilder)
+  formula <- expand_formula(fml_ids$formula, data)
   if (!as.logical(attr(terms(formula), "intercept"))) {
     # Add an intercept to `formula` so that we always project onto submodels
     # *including* an intercept (see the discussion at #96):
@@ -1238,6 +1247,19 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
                !called_from_cvrefbuilder) {
       warning("Support for additive models is still experimental.")
     }
+  }
+  # Terms of one grouping factor with the same brms ID are one correlated block
+  # in brms, so merging them does not add correlations:
+  grp_fctrs_mult <- setdiff(grp_fctrs_multi(grp_trms),
+                            fml_ids$grp_fctrs_shared_id)
+  if (length(grp_fctrs_mult) > 0 && !called_from_cvrefbuilder) {
+    warning("The reference model formula has more than one group term for ",
+            "the grouping factor(s) ",
+            paste0("`", grp_fctrs_mult, "`", collapse = ", "), ". The ",
+            "submodels merge the group terms of a grouping factor into one ",
+            "term with correlations (for example, `(1 | g) + (0 + x | g)` ",
+            "becomes `(x | g)`), so they can have correlations that the ",
+            "reference model does not have.")
   }
   if (length(grp_trms) > 0 &&
       getOption("projpred.warn_instable_projections", TRUE) &&
