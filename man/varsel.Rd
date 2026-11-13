@@ -161,7 +161,7 @@ results can be obtained again if needed. Passed to argument \code{seed} of
 upon exiting \code{\link[=varsel]{varsel()}}. Here, \code{seed} is used for clustering the reference
 model's posterior draws (if \code{!is.null(nclusters)} or
 \code{!is.null(nclusters_pred)}) and for drawing new group-level effects when
-predicting from a multilevel submodel (however, not yet in case of a GAMM).}
+predicting from a multilevel submodel.}
 }
 \value{
 An object of class \code{vsel}. The elements of this object are not meant
