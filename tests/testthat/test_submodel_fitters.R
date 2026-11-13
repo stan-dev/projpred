@@ -602,6 +602,17 @@ test_that(paste(
 })
 
 test_that(paste(
+  "as.matrix.projection() stops for a gamm4() submodel (its parameter",
+  "extraction get_subparams() stops)"
+), {
+  d <- dat_fitters()
+  fit_gamm <- divmin_tst("s(z) + x + (1 | g)", d, extend_family(gaussian()),
+                         d$eta)[[1]]
+  expect_error(get_subparams(fit_gamm, nm_scheme = "rstanarm"),
+               "do not support submodels with smooth and group-level terms")
+})
+
+test_that(paste(
   "the traditional and the augmented-data form of a binomial gamm4()",
   "submodel give the same fit"
 ), {
