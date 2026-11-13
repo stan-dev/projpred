@@ -197,6 +197,24 @@ test_that("extra arguments in s() or t2() terms fail", {
   )
 })
 
+test_that(paste(
+  "the formula of an rstanarm GAMM reference model has no linear terms for",
+  "the variables of the smooth terms, as for an rstanarm GAM"
+), {
+  skip_if_no_setups(refmods)
+  skip_if_not(run_additive)
+  tstsetups <- grep("^rstanarm\\.gam{1,2}\\.", names(refmods), value = TRUE)
+  expect_true(any(grepl("^rstanarm\\.gamm\\.", tstsetups)))
+  for (tstsetup in tstsetups) {
+    fml <- refmods[[tstsetup]]$formula
+    expect_identical(smooth_covered_terms(fml), character(0), info = tstsetup)
+    expect_true(formula_contains_additive_terms(fml), info = tstsetup)
+    if (grepl("^rstanarm\\.gamm\\.", tstsetup)) {
+      expect_true(formula_contains_group_terms(fml), info = tstsetup)
+    }
+  }
+})
+
 test_that("get_refmodel() is idempotent", {
   skip_if_no_setups(refmods)
   for (tstsetup in names(refmods)) {

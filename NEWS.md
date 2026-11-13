@@ -57,6 +57,8 @@ If you read this from a place other than <https://mc-stan.org/projpred/news/inde
 * Fixed the log-likelihood of reference model draws with small response category probabilities in the augmented-data projection (cumulative, categorical and binomial families). (GitHub: #618)
 * With lme4 versions before 2.1-1, binomial submodels with multilevel terms (and no additive terms) now use `nAGQ = 0` in `lme4::glmer()` for non-integer responses or weights, unless `nAGQ` is set via `...`. Their coefficients were fitted to rounded data before. (GitHub: #616)
 * Removed line breaks from the names of search terms above about 500 characters in `ranking()`, `summary()` and `plot()`. (GitHub: #607)
+* The projection now drops the linear term from a submodel with a smooth term of the same variable (such as `x` and `s(x)`), and `project()` gives a message. The coefficient of such a linear term is not identifiable. (GitHub: #150, #626)
+* The reference model formula of an **rstanarm** GAMM no longer has extra linear terms for the variables of its smooth terms, as in an **rstanarm** GAM. The search candidates do not change. (GitHub: #384, #626)
 * Fixed wrong predictions and errors of additive multilevel submodels (`gamm4::gamm4()`) for new data, and wrong predictions with group-level slopes. New group levels now get drawn group-level effects, and option `projpred.mlvl_pred_new` now applies. (GitHub: #239, #623)
 * Fixed the term names of the L1 search if one model-matrix column name starts with another one. (GitHub: #615)
 

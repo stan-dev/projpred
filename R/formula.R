@@ -60,19 +60,28 @@ expand_formula <- function(formula, data) {
   return(formula(terms(formula, data = data)))
 }
 
-remove_duplicates <- function(formula) {
+# Returns the arguments of a smooth term, for example c("x", "z") for
+# "s(x, z)". projpred does not allow other arguments of s() and t2() (see
+# parse_additive_terms()).
+smooth_args <- function(smooth) {
+  cl <- str2lang(smooth)
+  return(unname(vapply(as.list(cl)[-1], deparse_combine, character(1))))
+}
+
+# Returns the linear terms of `formula` that are also an argument of a smooth
+# term, for example `x` next to `s(x)`. With the default bases of mgcv, the smooth term
+# contains the linear term, so the coefficient of the linear term is not
+# identifiable. Interaction terms (such as `x:z` next to `t2(x, z)`) are not
+# checked.
+smooth_covered_terms <- function(formula) {
   terms <- extract_terms_response(formula)
   linear <- terms$individual_terms
-  additive <- unlist(regmatches(
-    terms$additive_terms,
-    gregexpr("(?<=\\().*?(?=\\))",
-             terms$additive_terms,
-             perl = TRUE)
-  ))
-  additive <- trimws(unique(unlist(
-    strsplit(paste0(additive, collapse = ","), ",")
-  )))
-  dups <- linear[!is.na(match(linear, additive))]
+  covered <- unique(unlist(lapply(terms$additive_terms, smooth_args)))
+  return(linear[linear %in% covered])
+}
+
+remove_duplicates <- function(formula) {
+  dups <- smooth_covered_terms(formula)
   if (length(dups) > 0) {
     update(formula, as.formula(paste0(
       ". ~ . - ",
@@ -1042,14 +1051,10 @@ formula.gamm4 <- function(x, ...) {
     paste0("(", t, ")")
   }))
   ref <- paste(ref, collapse = " + ")
-  updated <- update(formula, paste(". ~ . + ", ref))
-  form <- flatten_formula(update(
-    updated,
-    paste(
-      ". ~",
-      paste(split_formula(updated), collapse = " + ")
-    )
-  ))
+  # Keep only the terms of the model, as for a model without group-level
+  # terms. The search adds the linear terms of the smooth variables as
+  # candidates.
+  form <- flatten_formula(update(formula, paste(". ~ . + ", ref)))
   # TODO (GAMMs): Once rstanarm issue #253 has been resolved, we probably need
   # to include offset terms here (in the output of formula.gamm4()) as well.
   return(form)

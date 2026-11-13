@@ -927,6 +927,8 @@ meth_tst <- list(
 options(projpred.mssg_cut_search = FALSE)
 # Suppress the message for the runtime of the forward search:
 options(projpred.mssg_time = FALSE)
+# Suppress the message for a linear term next to a smooth term:
+options(projpred.mssg_smooth_linear = FALSE)
 # Suppress the PSIS warnings:
 options(projpred.warn_psis = FALSE)
 # Suppress the warnings for the K reference model refits in case of K-fold CV:
