@@ -1166,12 +1166,11 @@ fit_gamm_callback <- function(formula, projpred_formula_no_random,
                      family = family_gamm)
   # Call the submodel fitter:
   fit <- tryCatch({
-    fit_raw <- do.call(gamm4::gamm4, c(
+    gamm_check_conv(do.call(gamm4::gamm4, c(
       list(formula = projpred_formula_no_random, random = projpred_random,
            data = data, family = family_gamm, control = control_gamm),
       dot_args
-    ))
-    gamm_check_conv(fit_raw, control = control_gamm)
+    )), control = control_gamm)
   }, error = function(e) {
     if (grepl("not positive definite", as.character(e))) {
       if ("optimx" %in% control$optimizer &&
@@ -1648,37 +1647,58 @@ glmer_scalar_re <- function(formula, data = NULL) {
   return(is.na(n_col) || n_col == 1L)
 }
 
-# Runs lme4::checkConv() for the lme4 part `fit$mer` of a gamm4::gamm4() fit,
-# as lme4::lmer() and lme4::glmer() do (gamm4::gamm4() does not), and stores
-# the result in `fit$mer@optinfo$conv$lme4` for check_conv_s(). checkConv()
-# signals its warnings as in lme4. As in lme4::glmer(), the lower bounds of the
-# fixed effects are `-Inf`. The smoothing parameters are variance parameters of
-# `fit$mer`, and a smooth term of a linear function has variance zero, so the
-# message about singular fits is switched off. At such a boundary, checkConv()
-# does not check the gradient and the Hessian.
+# Checks the gradient of the lme4 part `fit$mer` of a gamm4::gamm4() fit at the
+# optimum (gamm4::gamm4() does not call lme4::checkConv()), and stores a
+# failure in `fit$mer@optinfo$conv$lme4` for check_conv_s(). The rule is that
+# of lme4::checkConv(): the smaller of the absolute gradient and the absolute
+# gradient scaled by the Hessian must be below the tolerance of
+# `check.conv.grad`, and fits at a boundary or above `check.conv.nobsmax` or
+# `check.conv.nparmax` are not checked. Unlike lme4::checkConv(), the Hessian is
+# not checked, and the unscaled gradient is used if the Hessian is not positive
+# definite: the smoothing parameters are variance parameters of `fit$mer`, and
+# the finite-difference Hessian of large variance parameters is too inexact. As
+# in lme4::glmer(), the lower bounds of the fixed effects are `-Inf`.
 gamm_check_conv <- function(fit, control) {
   mer <- fit$mer
   ctrl <- control$checkConv
-  if (!inherits(mer, "merMod") || is.null(ctrl)) {
+  derivs <- if (inherits(mer, "merMod")) mer@optinfo$derivs
+  ctrl_grad <- ctrl$check.conv.grad
+  if (is.null(derivs) || is.null(ctrl_grad$tol) ||
+      identical(ctrl_grad$action, "ignore") ||
+      !is.null(mer@optinfo$conv$lme4)) {
     return(fit)
   }
-  ctrl$check.conv.singular$action <- "ignore"
   coefs <- mer@optinfo$val
   lbound <- c(mer@lower, rep(-Inf, length(coefs) - length(mer@lower)))
-  # Same name as in lme4, so that the warnings are the same. lme4 1.1-x has no
-  # arguments `nobs` and `ndim`:
-  checkConv <- "lme4" %:::% "checkConv"
-  derivs <- mer@optinfo$derivs
-  if (all(c("nobs", "ndim") %in% names(formals(checkConv)))) {
-    cc <- checkConv(derivs, coefs, ctrl = ctrl, lbound = lbound,
-                    nobs = nrow(mer@frame), ndim = length(coefs))
+  if (min(coefs - lbound) < (ctrl$check.conv.singular$tol %||% 1e-4) ||
+      nrow(mer@frame) > (ctrl$check.conv.nobsmax %||% Inf) ||
+      length(coefs) > (ctrl$check.conv.nparmax %||% Inf)) {
+    return(fit)
+  }
+  grad <- derivs$gradient
+  if (anyNA(grad)) {
+    cc <- list(code = -5L, messages = "Gradient contains NAs")
   } else {
-    cc <- checkConv(derivs, coefs, ctrl = ctrl, lbound = lbound)
+    scgrad <- tryCatch(solve(chol(derivs$Hessian), grad),
+                       error = function(e) NULL)
+    mingrad <- abs(grad)
+    if (!is.null(scgrad) && !anyNA(scgrad)) {
+      mingrad <- pmin(abs(scgrad), mingrad)
+    }
+    if (max(mingrad) <= ctrl_grad$tol) {
+      return(fit)
+    }
+    cc <- list(code = -1L, messages = sprintf(
+      "Model failed to converge with max|grad| = %g (tol = %g, component %d)",
+      max(mingrad), ctrl_grad$tol, which.max(mingrad)
+    ))
   }
-  if (!is.null(cc)) {
-    mer@optinfo$conv$lme4 <- cc
-    fit$mer <- mer
+  if (identical(ctrl_grad$action, "stop")) {
+    stop(cc$messages, call. = FALSE)
   }
+  warning(cc$messages, call. = FALSE)
+  mer@optinfo$conv$lme4 <- cc
+  fit$mer <- mer
   return(fit)
 }
 
@@ -2567,7 +2587,7 @@ check_conv_s <- function(fit_s) {
   } else if (inherits(fit_s, "gamm4")) {
     # Element `fit_s$gam` has no convergence information. The smoothing
     # parameters are variance parameters of `fit_s$mer`, which also has the
-    # lme4::checkConv() result of gamm_check_conv():
+    # result of gamm_check_conv():
     return(check_conv_s(fit_s$mer))
   } else if (inherits(fit_s, "glmmPQL")) {
     # MASS::glmmPQL() stores no convergence information: nlme::lme() throws an

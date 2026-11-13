@@ -957,14 +957,14 @@ test_that(paste(
   }
 })
 
-# A gradient tolerance that no fit meets, so that lme4::checkConv() warns:
+# A gradient tolerance that no fit meets:
 cc_grad_tight <- function() {
   lme4::.makeCC("warning", tol = 1e-12, relTol = NULL)
 }
 
 test_that(paste(
-  "gamm_check_conv() gives the lme4::checkConv() result of glmer() and",
-  "lmer() for a gamm4() fit with only group-level terms"
+  "gamm_check_conv() flags the gradient of a gamm4() fit with only",
+  "group-level terms as lme4::checkConv() in glmer() and lmer() does"
 ), {
   d <- dat_fitters(n_grp = 10, n_per = 20)
   withr::local_seed(2)
@@ -991,15 +991,67 @@ test_that(paste(
     expect_warning(fit_gamm <- gamm_check_conv(fit_gamm, control = ctrl),
                    "failed to converge", info = fam_nm)
     cc <- fit_gamm$mer@optinfo$conv$lme4
+    cc_ref <- fit_ref@optinfo$conv$lme4
     expect_identical(cc$code, -1L, info = fam_nm)
-    expect_identical(cc, fit_ref@optinfo$conv$lme4, info = fam_nm)
+    expect_identical(cc_ref$code, -1L, info = fam_nm)
+    # lme4 adds a line with help pages:
+    expect_identical(cc$messages, sub("\n.*$", "", cc_ref$messages[1]),
+                     info = fam_nm)
     expect_false(check_conv_s(fit_gamm), info = fam_nm)
   }
 })
 
 test_that(paste(
+  "gamm_check_conv() uses the unscaled gradient for a Hessian that is not",
+  "positive definite, and does not check fits at a boundary"
+), {
+  d <- dat_fitters(n_grp = 10, n_per = 20)
+  withr::local_seed(5)
+  d$yb <- rbinom(nrow(d), 1, plogis(d$eta))
+  ctrl <- lme4::glmerControl(optimizer = "bobyqa")
+  fit0 <- gamm4::gamm4(yb ~ x, random = ~ (1 | g), data = d,
+                       family = binomial(), control = ctrl)
+  class(fit0) <- "gamm4"
+  # Parameters: theta, then 2 fixed effects (one of them negative, which needs
+  # the lower bound `-Inf`):
+  set_derivs <- function(grad, val = c(0.5, -1, 1)) {
+    fit <- fit0
+    fit$mer@optinfo$val <- val
+    fit$mer@optinfo$derivs <- list(gradient = grad, Hessian = -diag(3))
+    fit
+  }
+  tol <- ctrl$checkConv$check.conv.grad$tol
+  expect_no_warning(fit <- gamm_check_conv(set_derivs(rep(tol / 2, 3)), ctrl))
+  expect_true(check_conv_s(fit))
+  expect_warning(fit <- gamm_check_conv(set_derivs(c(0, 2 * tol, 0)), ctrl),
+                 "max|grad| = 0.004 (tol = 0.002, component 2)", fixed = TRUE)
+  expect_identical(fit$mer@optinfo$conv$lme4$code, -1L)
+  expect_false(check_conv_s(fit))
+  expect_warning(fit <- gamm_check_conv(set_derivs(c(NA, 0, 0)), ctrl),
+                 "Gradient contains NAs")
+  expect_identical(fit$mer@optinfo$conv$lme4$code, -5L)
+  # A variance parameter at its lower bound:
+  expect_no_warning(fit <- gamm_check_conv(
+    set_derivs(rep(1, 3), val = c(0, -1, 1)), ctrl
+  ))
+  expect_true(check_conv_s(fit))
+  # The action of `check.conv.grad`:
+  ctrl_act <- ctrl
+  ctrl_act$checkConv$check.conv.grad$action <- "ignore"
+  expect_no_warning(gamm_check_conv(set_derivs(rep(1, 3)), ctrl_act))
+  ctrl_act$checkConv$check.conv.grad$action <- "stop"
+  expect_error(gamm_check_conv(set_derivs(rep(1, 3)), ctrl_act),
+               "failed to converge")
+  # An existing result of lme4::checkConv() is kept:
+  fit <- set_derivs(rep(1, 3))
+  fit$mer@optinfo$conv$lme4 <- list()
+  expect_no_warning(fit <- gamm_check_conv(fit, ctrl))
+  expect_identical(fit$mer@optinfo$conv$lme4, list())
+})
+
+test_that(paste(
   "divmin() warns about a gamm4() submodel fit that does not meet the",
-  "gradient tolerance of lme4::checkConv()"
+  "gradient tolerance"
 ), {
   d <- dat_fitters(n_grp = 10, n_per = 20)
   withr::local_seed(3)
@@ -1013,6 +1065,22 @@ test_that(paste(
   expect_no_warning(
     divmin_tst("s(z) + x + (1 | g)", d, fam, mu, check_conv = TRUE)
   )
+})
+
+test_that(paste(
+  "divmin() does not warn about Gaussian gamm4() submodel fits with several",
+  "smooth terms and a response without noise"
+), {
+  # For such fits, the finite-difference Hessian of lme4::checkConv() is not
+  # positive definite although the fits converged.
+  d <- dat_fitters(n_grp = 50, n_per = 20)
+  withr::local_seed(6)
+  d$v <- rnorm(nrow(d))
+  mu <- d$eta + cos(d$v) + 0.3 * d$x^2
+  expect_no_warning(divmin_tst(
+    "s(z) + s(v) + s(x) + (1 | g)", d, extend_family(gaussian()), mu,
+    check_conv = TRUE
+  ))
 })
 
 test_that(paste(
