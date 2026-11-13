@@ -471,9 +471,17 @@ extend_family <- function(family,
     family$predvar <- function(mu, dis, wdraws = 1) {
       return(rep(NA, NROW(mu)))
     }
+    fam_nm_augdat <- family$family
+    link_nm_augdat <- family$link
     family$ll_fun <- function(mu, dis = NULL, y, weights = 1, eta = NULL) {
       mu_arr <- augmat2arr(mu)
-      return(ll_cats(mu_arr, y = y, wobs = weights))
+      ll <- ll_cats(mu_arr, y = y, wobs = weights)
+      if (!is.null(eta)) {
+        ll <- ll_eta_augdat(ll, mu_arr = mu_arr, eta = eta, y = y,
+                            wobs = weights, fam_nm = fam_nm_augdat,
+                            link_nm = link_nm_augdat)
+      }
+      return(ll)
     }
     family$ppd <- function(mu, dis, weights = 1) {
       mu_arr <- augmat2arr(augvec2augmat(mu))
