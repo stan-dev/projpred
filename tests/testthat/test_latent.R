@@ -316,3 +316,117 @@ test_that(paste0(
     expect_equal(refpred_cens_dummy, rep(log(0.5), nrow(dat_cens_dummy)))
   }
 })
+
+## Observation weights ----------------------------------------------------
+
+test_that(paste(
+  "the latent and the augmented-data projection stop for binomial trials > 1",
+  "and name the workarounds"
+), {
+  set.seed(5301)
+  n <- 30
+  ndraws <- 20
+  dat <- data.frame(x1 = rnorm(n), trials = sample(2:10, n, replace = TRUE))
+  dat$y <- rbinom(n, dat$trials, plogis(0.5 * dat$x1))
+  fit <- list(beta = rbind(rnorm(ndraws, 0, 0.1), rnorm(ndraws, 0.5, 0.1)),
+              data = dat)
+  ref_predfun <- function(fit, newdata = NULL) {
+    nd <- if (is.null(newdata)) fit$data else newdata
+    model.matrix(~ x1, nd) %*% fit$beta
+  }
+  extract_model_data <- function(object, newdata, wrhs = NULL, orhs = NULL,
+                                 extract_y = TRUE) {
+    y_wobs_offs(newdata = newdata, wrhs = wrhs %||% ~ trials, orhs = orhs,
+                resp_form = if (extract_y) ~ y else NULL)
+  }
+  withr::local_options(projpred.warn_cvrefbuilder_NULL = FALSE)
+  # Trials as observation weights (as in a brms model with `trials()`):
+  expect_error(
+    init_refmodel(
+      fit, data = dat, formula = y ~ x1, family = binomial(),
+      ref_predfun = ref_predfun, extract_model_data = extract_model_data,
+      dis = rep(1, ndraws), latent = TRUE
+    ),
+    paste("latent projection may not be combined with observation weights",
+          "\\(other than 1\\)\\. For the binomial family,",
+          ".*\\(`latent = FALSE`\\).*de-aggregate")
+  )
+  # Trials in a 2-column response. The message does not name the traditional
+  # projection, which reads only the first column with the default
+  # `extract_model_data`:
+  err_2col <- tryCatch(
+    init_refmodel(
+      fit, data = dat, formula = cbind(y, trials - y) ~ x1,
+      family = binomial(), ref_predfun = ref_predfun, dis = rep(1, ndraws),
+      latent = TRUE
+    ),
+    error = function(e) conditionMessage(e)
+  )
+  expect_match(err_2col, paste(
+    "latent projection may not be combined with a 2-column response\\.",
+    "As a workaround, de-aggregate"
+  ))
+  expect_no_match(err_2col, "traditional", fixed = TRUE)
+  # The same for the augmented-data projection:
+  err_2col_aug <- tryCatch(
+    init_refmodel(
+      fit, data = dat, formula = cbind(y, trials - y) ~ x1,
+      family = binomial(), ref_predfun = ref_predfun,
+      augdat_y_unqs = c("0", "1"), augdat_link = augdat_link_binom,
+      augdat_ilink = augdat_ilink_binom
+    ),
+    error = function(e) conditionMessage(e)
+  )
+  expect_match(err_2col_aug, paste(
+    "augmented-data projection may not be combined with a 2-column",
+    "response\\. As a workaround, de-aggregate"
+  ))
+  expect_no_match(err_2col_aug, "traditional", fixed = TRUE)
+})
+
+test_that(paste(
+  "check_wobs_aug_lat() names the workarounds only for the binomial family"
+), {
+  wobs <- c(1, 3)
+  fam_lat_binom <- extend_family(binomial(), latent = TRUE)
+  fam_lat_poiss <- extend_family(poisson(), latent = TRUE)
+  fam_aug_binom <- extend_family(binomial(),
+                                 augdat_y_unqs = c("0", "1"),
+                                 augdat_link = augdat_link_binom,
+                                 augdat_ilink = augdat_ilink_binom)
+  fam_trad_binom <- extend_family(binomial())
+  expect_error(check_wobs_aug_lat(fam_lat_binom, wobs),
+               "latent projection .*`latent = FALSE`.*de-aggregate")
+  err_aug <- tryCatch(check_wobs_aug_lat(fam_aug_binom, wobs),
+                      error = function(e) conditionMessage(e))
+  expect_match(err_aug, "augmented-data projection .*traditional .*de-aggregate")
+  expect_no_match(err_aug, "latent = FALSE", fixed = TRUE)
+  err_poiss <- tryCatch(check_wobs_aug_lat(fam_lat_poiss, wobs),
+                        error = function(e) conditionMessage(e))
+  expect_match(err_poiss, "latent projection may not be combined",
+               fixed = TRUE)
+  expect_no_match(err_poiss, "de-aggregate", fixed = TRUE)
+  expect_true(check_wobs_aug_lat(fam_lat_binom, c(1, 1)))
+  expect_true(check_wobs_aug_lat(fam_trad_binom, wobs))
+})
+
+test_that(paste(
+  "extend_family() stops for the brms families with `trials()` other than",
+  "binomial(), in the latent and in the traditional projection"
+), {
+  for (fam_nm in c("beta_binomial", "zero_inflated_binomial",
+                   "zero_inflated_beta_binomial")) {
+    # A family object with the brms family name is sufficient, because the
+    # check reads only `family$family`:
+    fam <- binomial()
+    fam$family <- fam_nm
+    for (latent in c(FALSE, TRUE)) {
+      expect_error(
+        extend_family(fam, latent = latent),
+        paste0("Currently, projpred does not support the brms family `",
+               fam_nm, "()`."),
+        fixed = TRUE, info = paste(fam_nm, "latent:", latent)
+      )
+    }
+  }
+})
