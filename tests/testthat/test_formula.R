@@ -444,7 +444,8 @@ test_that(paste(
   "position"
 ), {
   for (st in c("s(x, by = g)", "s(by = g, x)", "s(k = 5, x)", "s(x = x1)",
-               "t2(x, z, k = 4)", "t2(k = 4, x, z)", "log(s(x, k = 5))")) {
+               "t2(x, z, k = 4)", "t2(k = 4, x, z)", "log(s(x, k = 5))",
+               "s(poly(x, degree = 2))")) {
     expect_error(parse_additive_terms(c("z", st)),
                  "arguments other than predictors are not allowed",
                  info = st)

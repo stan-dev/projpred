@@ -227,18 +227,21 @@ parse_additive_terms <- function(terms) {
   return(smooth)
 }
 
-# Checks whether a call to s() or t2() in the expression `e` has a named
-# argument (for example `k = 5` or `by = g`), at any position.
-has_named_smooth_arg <- function(e) {
+# Checks whether a call to s() or t2() in the expression `e` contains a named
+# argument (for example `k = 5` or `by = g`) at any position, also in a call
+# inside the s() or t2() call (for example `s(poly(x, degree = 2))`).
+has_named_smooth_arg <- function(e, in_smooth = FALSE) {
   if (!is.call(e)) {
     return(FALSE)
   }
   fn <- e[[1]]
-  if (is.name(fn) && as.character(fn) %in% c("s", "t2") &&
-      any(nzchar(names(e)[-1]))) {
+  in_smooth <- in_smooth ||
+    (is.name(fn) && as.character(fn) %in% c("s", "t2"))
+  if (in_smooth && any(nzchar(names(e)[-1]))) {
     return(TRUE)
   }
-  return(any(vapply(as.list(e)[-1], has_named_smooth_arg, logical(1))))
+  return(any(vapply(as.list(e)[-1], has_named_smooth_arg, logical(1),
+                    in_smooth = in_smooth)))
 }
 
 make_function_regexp <- function(fname) {
