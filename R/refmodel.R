@@ -1465,14 +1465,16 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
       linpred_out <- unname(linpred_out)
 
       if (excl_offs) {
-        # Observation weights are not needed here, so we can use the default of
-        # `wrhs = NULL` (using something like `wrhs = rep(1, nrow(newdata %||%
-        # data))` would cause a warning in newer brms versions). The internal
-        # default `extract_model_data` gets weights of 1, so that it does not
-        # need the response columns of a 2-column response in `newdata`:
+        # Observation weights are not needed here, so use the default
+        # `wrhs = NULL` (weights of 1 would cause a warning in newer brms
+        # versions). The internal default `extract_model_data` gets weights of 1
+        # only for a 2-column response, so that it does not need the response
+        # columns in `newdata`:
         offs <- extract_model_data(
           fit, newdata = newdata,
-          wrhs = if (emd_default) rep(1, nrow(newdata %||% data)),
+          wrhs = if (emd_default && !is.null(wrhs_2col)) {
+            rep(1, nrow(newdata %||% data))
+          },
           extract_y = FALSE
         )$offset
         stopifnot(length(offs) %in% c(1L, n_obs))
