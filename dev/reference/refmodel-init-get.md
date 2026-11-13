@@ -169,12 +169,18 @@ init_refmodel(
 - data:
 
   A `data.frame` containing the data to use for the projection
-  predictive variable selection. Any `contrasts` attributes of the
-  dataset's columns are silently removed. For custom reference models,
-  the columns of `data` do not necessarily have to coincide with those
-  of the dataset used for fitting the reference model, but keep in mind
-  that a row-subset of `data` is used for argument `newdata` of
-  `ref_predfun` during \\K\\-fold CV.
+  predictive variable selection. The `contrasts` attributes of the
+  factor columns (see
+  [`contrasts()`](https://rdrr.io/r/stats/contrasts.html)) set the
+  contrasts of these predictors in the submodels; for other factors, the
+  submodels use `options("contrasts")`. The `stanreg` method of
+  `get_refmodel()` takes the contrasts from the rstanarm fit (except for
+  [`rstanarm::stan_gamm4()`](https://mc-stan.org/rstanarm/reference/stan_gamm4.html),
+  which does not store them), and brms sets these attributes. For custom
+  reference models, the columns of `data` do not necessarily have to
+  coincide with those of the dataset used for fitting the reference
+  model, but keep in mind that a row-subset of `data` is used for
+  argument `newdata` of `ref_predfun` during \\K\\-fold CV.
 
 - formula:
 
@@ -280,6 +286,15 @@ does not need to hold for the submodels.
 In multilevel (group-level) terms, function calls on the right-hand side
 of the `|` character (e.g., `(1 | gr(group_variable))`, which is
 possible in brms) are currently not allowed in projpred.
+
+Group terms with a brms correlation ID, such as `(1 + x |p| g)`, are
+used without the ID (here `(1 + x | g)`), and a message tells about
+this. Group terms with `||` (uncorrelated group-level effects) are
+currently not supported. If a grouping factor has more than one group
+term, such as `(1 | g) + (0 + x | g)`, the submodels merge these terms
+into one term with correlations (here `(x | g)`), and `init_refmodel()`
+gives a warning (no warning if all these terms have the same brms
+correlation ID).
 
 For additive models (still an experimental feature), only
 [`mgcv::s()`](https://rdrr.io/pkg/mgcv/man/s.html) and

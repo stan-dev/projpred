@@ -72,6 +72,15 @@ section "Augmented-data projection" in
 [`extend_family()`](https://mc-stan.org/projpred/dev/reference/extend_family.md)'s
 documentation).
 
+For a submodel with smooth terms (fitted with
+[`mgcv::gam()`](https://rdrr.io/pkg/mgcv/man/gam.html)), the columns of
+the smooth terms are the coefficients in the basis of `gam()`. The
+reference model fit can use another basis
+([`rstanarm::stan_gamm4()`](https://mc-stan.org/rstanarm/reference/stan_gamm4.html)
+and brms do so for `s()` terms). Then these columns do not match the
+reference model parameters. For a submodel with smooth and group-level
+terms (GAMM), the projected draws cannot be extracted yet (error).
+
 ## Examples
 
 ``` r

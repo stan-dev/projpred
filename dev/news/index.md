@@ -311,6 +311,20 @@
   [`summary()`](https://rdrr.io/r/base/summary.html) and
   [`plot()`](https://rdrr.io/r/graphics/plot.default.html). (GitHub:
   [\#607](https://github.com/stan-dev/projpred/issues/607))
+- Group terms with a **brms** correlation ID, such as `(1 |p| g)`, now
+  work: projpred removes the ID with a message. Group terms with `||`
+  give an error that explains the limitation, and several group terms of
+  one grouping factor give a warning. (GitHub:
+  [\#435](https://github.com/stan-dev/projpred/issues/435),
+  [\#495](https://github.com/stan-dev/projpred/issues/495),
+  [\#628](https://github.com/stan-dev/projpred/issues/628))
+- [`as.matrix()`](https://rdrr.io/r/base/matrix.html) and
+  [`as_draws_matrix()`](https://mc-stan.org/posterior/reference/draws_matrix.html)
+  of a projection onto a submodel with smooth and group-level terms
+  (GAMM) now stop with an error. Before, they returned only `sigma`
+  (Gaussian family) or no parameters (other families). (GitHub:
+  [\#131](https://github.com/stan-dev/projpred/issues/131),
+  [\#627](https://github.com/stan-dev/projpred/issues/627))
 - The projection now drops the linear term from a submodel with a smooth
   term of the same variable (such as `x` and `s(x)`), and
   [`project()`](https://mc-stan.org/projpred/dev/reference/project.md)
@@ -333,6 +347,12 @@
 - Fixed the term names of the L1 search if one model-matrix column name
   starts with another one. (GitHub:
   [\#615](https://github.com/stan-dev/projpred/issues/615))
+- The submodels now use the contrasts of the reference model for factor
+  predictors instead of `options("contrasts")`. This changes the
+  projected coefficients and can change the L1 search and LOO
+  predictions for a level of one observation. (GitHub:
+  [\#283](https://github.com/stan-dev/projpred/issues/283),
+  [\#619](https://github.com/stan-dev/projpred/issues/619))
 - [`get_refmodel()`](https://mc-stan.org/projpred/dev/reference/refmodel-init-get.md)
   now stops with an error that names the missing variables and gives a
   workaround. This applies to

@@ -245,8 +245,13 @@ functions that depend on the posterior draws (see <code><a href="extend_family.h
 
 <dt id="arg-data">data<a class="anchor" aria-label="anchor" href="#arg-data"></a></dt>
 <dd><p>A <code>data.frame</code> containing the data to use for the projection
-predictive variable selection. Any <code>contrasts</code> attributes of the dataset's
-columns are silently removed. For custom reference models, the columns of
+predictive variable selection. The <code>contrasts</code> attributes of the factor
+columns (see <code><a href="https://rdrr.io/r/stats/contrasts.html" class="external-link">contrasts()</a></code>) set the contrasts of these predictors in the
+submodels; for other factors, the submodels use <code>options("contrasts")</code>.
+The <code>stanreg</code> method of <code>get_refmodel()</code> takes the contrasts from the
+<span class="pkg">rstanarm</span> fit (except for <code><a href="https://mc-stan.org/rstanarm/reference/stan_gamm4.html" class="external-link">rstanarm::stan_gamm4()</a></code>, which does not
+store them), and <span class="pkg">brms</span> sets these attributes. For custom reference
+models, the columns of
 <code>data</code> do not necessarily have to coincide with those of the dataset used
 for fitting the reference model, but keep in mind that a row-subset of
 <code>data</code> is used for argument <code>newdata</code> of <code>ref_predfun</code> during \(K\)-fold
@@ -343,6 +348,13 @@ submodels.</p>
 <p>In multilevel (group-level) terms, function calls on the right-hand side of
 the <code>|</code> character (e.g., <code>(1 | gr(group_variable))</code>, which is possible in
 <span class="pkg">brms</span>) are currently not allowed in <span class="pkg">projpred</span>.</p>
+<p>Group terms with a <span class="pkg">brms</span> correlation ID, such as <code>(1 + x |p| g)</code>, are
+used without the ID (here <code>(1 + x | g)</code>), and a message tells about this.
+Group terms with <code>||</code> (uncorrelated group-level effects) are currently not
+supported. If a grouping factor has more than one group term, such as
+<code>(1 | g) + (0 + x | g)</code>, the submodels merge these terms into one term with
+correlations (here <code>(x | g)</code>), and <code>init_refmodel()</code> gives a warning (no
+warning if all these terms have the same <span class="pkg">brms</span> correlation ID).</p>
 <p>For additive models (still an experimental feature), only <code><a href="https://rdrr.io/pkg/mgcv/man/s.html" class="external-link">mgcv::s()</a></code> and
 <code><a href="https://rdrr.io/pkg/mgcv/man/t2.html" class="external-link">mgcv::t2()</a></code> are currently supported as smooth terms. Furthermore, these need
 to be called without any arguments apart from the predictor names (symbols).
