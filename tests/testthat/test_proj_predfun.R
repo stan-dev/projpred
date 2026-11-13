@@ -994,3 +994,115 @@ test_that(paste(
   expect_equal(unname(subprd(list(fit_pois), newdata = dat[rows, ])[, 1]),
                unname(lpreds_all[rows]), tolerance = 1e-12)
 })
+
+test_that(paste(
+  "subprd() of the GAMM fits of several draws gives the predictions of",
+  "predict.gamm4() for each fit, also for new group levels"
+), {
+  withr::local_seed(4917)
+  n <- 120L
+  dat <- data.frame(
+    x = runif(n), z = rnorm(n),
+    g = factor(paste0("g", rep(1:8, length.out = n))),
+    h = factor(paste0("h", rep(1:5, each = 24)))
+  )
+  fit_draws <- function(d, fml = y ~ s(x) + z, rnd = ~ (1 + z | g),
+                        family = gaussian(), n_draws = 3L) {
+    lapply(seq_len(n_draws), function(s) {
+      d$y <- sin(2 * pi * d$x) + 0.3 * d$z + rnorm(nrow(d), sd = 0.4)
+      d$y_pois <- rpois(nrow(d), exp(0.3 + sin(2 * pi * d$x)))
+      fit_gamm_callback(formula = fml, projpred_formula_no_random = fml,
+                        projpred_random = rnd, data = d, family = family)
+    })
+  }
+  # Count the calls of predict.gamm4() (the draw-by-draw path of subprd()):
+  calls <- new.env()
+  calls$n <- 0L
+  ns <- asNamespace("projpred")
+  suppressMessages(trace(
+    "predict.gamm4", where = ns, print = FALSE,
+    tracer = bquote(
+      assign("n", get("n", envir = .(calls)) + 1L, envir = .(calls))
+    )
+  ))
+  on.exit(suppressMessages(untrace("predict.gamm4", where = ns)), add = TRUE)
+  subprd_n_pred <- function(fits, nd) {
+    n_bef <- calls$n
+    set.seed(5521)
+    prd <- subprd(fits, newdata = nd)
+    list(prd = prd, n_pred = calls$n - n_bef)
+  }
+  # Compare with predict.gamm4() for each fit (with the same random numbers for
+  # new group levels). subprd() must predict all draws at once:
+  expect_drawwise <- function(fits, nd, info) {
+    nd_icpt <- cbind(`(Intercept)` = rep(1, nrow(nd)), nd)
+    res <- subprd_n_pred(fits, nd)
+    prd <- res$prd
+    expect_identical(res$n_pred, 0L, info = info)
+    set.seed(5521)
+    prd_expected <- do.call(cbind, lapply(fits, function(fit) {
+      predict(fit, newdata = nd_icpt)
+    }))
+    expect_equal(prd, prd_expected, tolerance = 1e-12, info = info)
+    return(invisible(prd))
+  }
+  # Independent of the code of predict.gamm4() for the group-level part (only
+  # for group levels that occur in the fits): the population-level part from the
+  # `gam` component plus the group-level effects from ranef():
+  lpreds_man <- function(fits, nd) {
+    do.call(cbind, lapply(fits, function(fit) {
+      re <- lme4::ranef(fit$mer, condVar = FALSE)
+      lp <- unname(as.vector(predict(fit$gam, newdata = nd)))
+      for (vnm in all.vars(fit$random)) {
+        if (!vnm %in% names(re)) next
+        lvls <- as.character(nd[[vnm]])
+        for (cnm in colnames(re[[vnm]])) {
+          x_cnm <- if (cnm == "(Intercept)") 1 else nd[[cnm]]
+          lp <- lp + re[[vnm]][lvls, cnm] * x_cnm
+        }
+      }
+      lp
+    }))
+  }
+
+  fits <- fit_draws(dat)
+  prd <- expect_drawwise(fits, dat, "training data")
+  expect_equal(prd, lpreds_man(fits, dat), tolerance = 1e-12)
+  expect_drawwise(fits, dat[c(5, 3, 40), ], "subset")
+  fits_lost <- fit_draws(droplevels(dat[dat$g != "g1", ]))
+  expect_drawwise(fits_lost, dat[dat$g %in% c("g1", "g2"), ], "new level")
+  withr::with_options(
+    list(projpred.mlvl_pred_new = TRUE),
+    expect_drawwise(fits, dat[1:30, ], "projpred.mlvl_pred_new")
+  )
+  fits_two <- fit_draws(dat, rnd = ~ (1 | g) + (1 | h))
+  nd_two <- dat[c(1, 2, 50, 99), ]
+  prd <- expect_drawwise(fits_two, nd_two, "two grouping variables")
+  expect_equal(prd, lpreds_man(fits_two, nd_two), tolerance = 1e-12)
+  fits_two_lost <- fit_draws(droplevels(dat[dat$h != "h1", ]),
+                             rnd = ~ (1 | g) + (1 | h))
+  expect_drawwise(fits_two_lost, nd_two, "two grouping variables, new level")
+  fits_pois <- fit_draws(dat, fml = y_pois ~ s(x), rnd = ~ (1 | g),
+                         family = poisson())
+  expect_drawwise(fits_pois, dat, "Poisson")
+
+  # Fits of different submodels or with different group levels go through
+  # predict.gamm4() one by one:
+  nd <- dat[dat$g %in% c("g1", "g2"), ]
+  nd_icpt <- cbind(`(Intercept)` = rep(1, nrow(nd)), nd)
+  fits_other <- list(
+    terms = c(fits[1], fit_draws(dat, fml = y ~ s(x), n_draws = 1L)),
+    random = c(fits[1], fit_draws(dat, rnd = ~ (1 | g), n_draws = 1L)),
+    levels = c(fits[1], fits_lost[1])
+  )
+  for (nm in names(fits_other)) {
+    fits_nm <- fits_other[[nm]]
+    res <- subprd_n_pred(fits_nm, nd)
+    prd <- res$prd
+    expect_identical(res$n_pred, length(fits_nm), info = nm)
+    set.seed(5521)
+    prd_expected <- cbind(predict(fits_nm[[1]], newdata = nd_icpt),
+                          predict(fits_nm[[2]], newdata = nd_icpt))
+    expect_equal(prd, prd_expected, tolerance = 1e-12, info = nm)
+  }
+})
