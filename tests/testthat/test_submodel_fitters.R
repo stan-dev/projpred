@@ -994,9 +994,13 @@ test_that(paste(
     cc_ref <- fit_ref@optinfo$conv$lme4
     expect_identical(cc$code, -1L, info = fam_nm)
     expect_identical(cc_ref$code, -1L, info = fam_nm)
-    # lme4 adds a line with help pages:
-    expect_identical(cc$messages, sub("\n.*$", "", cc_ref$messages[1]),
-                     info = fam_nm)
+    # The component index of lme4 is always 1, so only the gradient value is
+    # compared:
+    grad_of <- function(msg) {
+      as.numeric(sub(".*max\\|grad\\| = ([^ ]+) .*", "\\1", msg[1]))
+    }
+    expect_equal(grad_of(cc$messages), grad_of(cc_ref$messages),
+                 tolerance = 1e-5, info = fam_nm)
     expect_false(check_conv_s(fit_gamm), info = fam_nm)
   }
 })
@@ -1027,9 +1031,10 @@ test_that(paste(
                  "max|grad| = 0.004 (tol = 0.002, component 2)", fixed = TRUE)
   expect_identical(fit$mer@optinfo$conv$lme4$code, -1L)
   expect_false(check_conv_s(fit))
-  expect_warning(fit <- gamm_check_conv(set_derivs(c(NA, 0, 0)), ctrl),
-                 "Gradient contains NAs")
+  # As in lme4::checkConv(), no warning for an NA gradient:
+  expect_no_warning(fit <- gamm_check_conv(set_derivs(c(NA, 0, 0)), ctrl))
   expect_identical(fit$mer@optinfo$conv$lme4$code, -5L)
+  expect_false(check_conv_s(fit))
   # A variance parameter at its lower bound:
   expect_no_warning(fit <- gamm_check_conv(
     set_derivs(rep(1, 3), val = c(0, -1, 1)), ctrl
@@ -1068,19 +1073,25 @@ test_that(paste(
 })
 
 test_that(paste(
-  "divmin() does not warn about Gaussian gamm4() submodel fits with several",
-  "smooth terms and a response without noise"
+  "divmin() does not warn about Gaussian gamm4() submodel fits with a",
+  "response without noise"
 ), {
-  # For such fits, the finite-difference Hessian of lme4::checkConv() is not
-  # positive definite although the fits converged.
-  d <- dat_fitters(n_grp = 50, n_per = 20)
-  withr::local_seed(6)
-  d$v <- rnorm(nrow(d))
-  mu <- d$eta + cos(d$v) + 0.3 * d$x^2
-  expect_no_warning(divmin_tst(
-    "s(z) + s(v) + s(x) + (1 | g)", d, extend_family(gaussian()), mu,
-    check_conv = TRUE
-  ))
+  # For these data sets, the finite-difference Hessian of lme4::checkConv() is
+  # not positive definite (with R 4.5.3, lme4 2.0.6, gamm4 0.3-0), although the
+  # fits converged.
+  for (seed in c(2, 6, 17)) {
+    withr::local_seed(seed)
+    n_grp <- 20
+    n_per <- 10
+    n <- n_grp * n_per
+    d <- data.frame(g = factor(rep(seq_len(n_grp), each = n_per)),
+                    x = rnorm(n), z = rnorm(n), v = rnorm(n))
+    mu <- -0.2 + 0.5 * d$x + sin(2 * d$z) + rnorm(n_grp, sd = 0.7)[d$g]
+    expect_no_warning(divmin_tst(
+      "s(z) + x + (1 | g)", d, extend_family(gaussian()), mu,
+      check_conv = TRUE
+    ))
+  }
 })
 
 test_that(paste(

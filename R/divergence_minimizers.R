@@ -1647,25 +1647,18 @@ glmer_scalar_re <- function(formula, data = NULL) {
   return(is.na(n_col) || n_col == 1L)
 }
 
-# Checks the gradient of the lme4 part `fit$mer` of a gamm4::gamm4() fit at the
-# optimum (gamm4::gamm4() does not call lme4::checkConv()), and stores a
-# failure in `fit$mer@optinfo$conv$lme4` for check_conv_s(). The rule is that
-# of lme4::checkConv(): the smaller of the absolute gradient and the absolute
-# gradient scaled by the Hessian must be below the tolerance of
-# `check.conv.grad`, and fits at a boundary or above `check.conv.nobsmax` or
-# `check.conv.nparmax` are not checked. Unlike lme4::checkConv(), the Hessian is
-# not checked, and the unscaled gradient is used if the Hessian is not positive
-# definite: the smoothing parameters are variance parameters of `fit$mer`, and
-# the finite-difference Hessian of large variance parameters is too inexact. As
-# in lme4::glmer(), the lower bounds of the fixed effects are `-Inf`.
+# lme4::checkConv() for the lme4 part `fit$mer` of a gamm4::gamm4() fit
+# (gamm4::gamm4() does not call it), with two differences: the Hessian is not
+# checked, and the unscaled gradient is used if the Hessian is not positive
+# definite. The smoothing parameters are variance parameters of `fit$mer`, and
+# the finite-difference Hessian of large variance parameters is too inexact.
+# The result goes to `fit$mer@optinfo$conv$lme4` for check_conv_s(). The lower
+# bounds of the fixed effects are `-Inf`, and the upper bounds are `Inf`.
 gamm_check_conv <- function(fit, control) {
   mer <- fit$mer
   ctrl <- control$checkConv
   derivs <- if (inherits(mer, "merMod")) mer@optinfo$derivs
-  ctrl_grad <- ctrl$check.conv.grad
-  if (is.null(derivs) || is.null(ctrl_grad$tol) ||
-      identical(ctrl_grad$action, "ignore") ||
-      !is.null(mer@optinfo$conv$lme4)) {
+  if (is.null(derivs) || is.null(ctrl) || !is.null(mer@optinfo$conv$lme4)) {
     return(fit)
   }
   coefs <- mer@optinfo$val
@@ -1676,9 +1669,14 @@ gamm_check_conv <- function(fit, control) {
     return(fit)
   }
   grad <- derivs$gradient
+  ctrl_grad <- ctrl$check.conv.grad
   if (anyNA(grad)) {
+    # As in lme4::checkConv(), without a warning:
     cc <- list(code = -5L, messages = "Gradient contains NAs")
   } else {
+    if (is.null(ctrl_grad$tol) || identical(ctrl_grad$action, "ignore")) {
+      return(fit)
+    }
     scgrad <- tryCatch(solve(chol(derivs$Hessian), grad),
                        error = function(e) NULL)
     mingrad <- abs(grad)
@@ -1692,11 +1690,11 @@ gamm_check_conv <- function(fit, control) {
       "Model failed to converge with max|grad| = %g (tol = %g, component %d)",
       max(mingrad), ctrl_grad$tol, which.max(mingrad)
     ))
+    if (identical(ctrl_grad$action, "stop")) {
+      stop(cc$messages, call. = FALSE)
+    }
+    warning(cc$messages, call. = FALSE)
   }
-  if (identical(ctrl_grad$action, "stop")) {
-    stop(cc$messages, call. = FALSE)
-  }
-  warning(cc$messages, call. = FALSE)
   mer@optinfo$conv$lme4 <- cc
   fit$mer <- mer
   return(fit)
