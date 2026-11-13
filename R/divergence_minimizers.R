@@ -2135,6 +2135,17 @@ fit_categ_mlvl <- function(formula, projpred_formula_no_random,
     stop("For the brms::categorical() family, projpred only supports the ",
          "logit link.")
   }
+  # repair_re() and get_subparams() for `mmblogit` objects need one covariance
+  # matrix per group-level term over all latent categories:
+  if (!is.null(dot_args$catCov)) {
+    cat_cov <- match.arg(dot_args$catCov, c("free", "diagonal", "single"))
+    if (cat_cov != "free") {
+      stop("For multilevel submodels of the brms::categorical() family, ",
+           "projpred only supports `catCov = \"free\"`.")
+    }
+    # categ_pql_fit() fits this model:
+    dot_args$catCov <- NULL
+  }
   # Handle offsets (but note that currently, offsets in the submodel fitter are
   # unexpected; this case could only occur in `test_div_minimizer.R`):
   trms <- terms(projpred_formula_no_random, data = data)

@@ -97,7 +97,9 @@
 #'     `cloglog` and `loglog` links, \pkg{projpred} always uses
 #'     `useMatrix = TRUE` (see [ordinal::clmm.control()]) and does not use
 #'     `ucminf()`. The code of [ordinal::clmm()] for a single group-level term
-#'     uses the other of these two links.
+#'     uses the other of these two links. For the [brms::categorical()] family,
+#'     \pkg{projpred} only supports `catCov = "free"` (see
+#'     [mclogit::mblogit()]).
 #' * Submodel without multilevel but additive terms: [mgcv::gam()] (the returned
 #' object inherits from class `gam`).
 #' * Submodel with multilevel and additive terms: [gamm4::gamm4()] (within

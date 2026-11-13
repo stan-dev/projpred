@@ -308,6 +308,20 @@ test_that("global option `projpred.categ_mlvl_mblogit` selects mblogit()", {
   expect_identical(fit$response.type, "factor")
 })
 
+test_that("fit_categ_mlvl() stops for `catCov` other than \"free\"", {
+  skip_if_not("catCov" %in% methods::formalArgs(mclogit::mblogit))
+  args <- categ_pql_aug_args(categ_pql_test_data())
+  for (cat_cov in c("diagonal", "single")) {
+    expect_error(do.call(fit_categ_mlvl, c(args, list(catCov = cat_cov))),
+                 "projpred only supports `catCov = \"free\"`", fixed = TRUE)
+  }
+  # "free" is the model of categ_pql_fit():
+  fit_free <- suppressWarnings(
+    do.call(fit_categ_mlvl, c(args, list(catCov = "free")))
+  )
+  expect_identical(fit_free$response.type, "matrix")
+})
+
 # A factor `f` with 3 levels in the group-level term `(1 + f | g)`, with
 # treatment contrasts and with sum contrasts set in the training data:
 expect_factor_slope_ok <- function(use_mblogit, n = 300, n_g = 8) {
