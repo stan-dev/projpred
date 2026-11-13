@@ -117,8 +117,13 @@ original call and with \code{called_from_cvrefbuilder = TRUE}. A custom
 functions that depend on the posterior draws (see \code{\link[=extend_family]{extend_family()}}).}
 
 \item{data}{A \code{data.frame} containing the data to use for the projection
-predictive variable selection. Any \code{contrasts} attributes of the dataset's
-columns are silently removed. For custom reference models, the columns of
+predictive variable selection. The \code{contrasts} attributes of the factor
+columns (see \code{\link[=contrasts]{contrasts()}}) set the contrasts of these predictors in the
+submodels; for other factors, the submodels use \code{options("contrasts")}.
+The \code{stanreg} method of \code{\link[=get_refmodel]{get_refmodel()}} takes the contrasts from the
+\pkg{rstanarm} fit (except for \code{\link[rstanarm:stan_gamm4]{rstanarm::stan_gamm4()}}, which does not
+store them), and \pkg{brms} sets these attributes. For custom reference
+models, the columns of
 \code{data} do not necessarily have to coincide with those of the dataset used
 for fitting the reference model, but keep in mind that a row-subset of
 \code{data} is used for argument \code{newdata} of \code{ref_predfun} during \eqn{K}-fold

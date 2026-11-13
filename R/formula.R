@@ -999,11 +999,8 @@ lhs <- function(x) {
 #   first column in `path`. These terms occur in `formula`; an element of `path`
 #   that is not a column (for example `NA`) is returned as it is.
 collapse_ranked_predictors <- function(path, formula, data) {
-  # TODO: In the following model.matrix() call, allow user-specified contrasts
-  # to be passed to argument `contrasts.arg`. The `contrasts.arg` default
-  # (`NULL`) uses `options("contrasts")` internally, but it might be more
-  # convenient to let users specify contrasts directly. At that occasion,
-  # contrasts should also be tested thoroughly (not done until now).
+  # `data` is the model frame of search_L1(), with the contrasts of the
+  # reference model:
   x <- model.matrix(formula, data = data)
   # Match the columns to the terms by the "assign" attribute (0: the
   # intercept), not by the text of the column names:

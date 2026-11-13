@@ -36,8 +36,13 @@
 #'   non-default methods of [get_refmodel()], an object of the corresponding
 #'   class.
 #' @param data A `data.frame` containing the data to use for the projection
-#'   predictive variable selection. Any `contrasts` attributes of the dataset's
-#'   columns are silently removed. For custom reference models, the columns of
+#'   predictive variable selection. The `contrasts` attributes of the factor
+#'   columns (see [contrasts()]) set the contrasts of these predictors in the
+#'   submodels; for other factors, the submodels use `options("contrasts")`.
+#'   The `stanreg` method of [get_refmodel()] takes the contrasts from the
+#'   \pkg{rstanarm} fit (except for [rstanarm::stan_gamm4()], which does not
+#'   store them), and \pkg{brms} sets these attributes. For custom reference
+#'   models, the columns of
 #'   `data` do not necessarily have to coincide with those of the dataset used
 #'   for fitting the reference model, but keep in mind that a row-subset of
 #'   `data` is used for argument `newdata` of `ref_predfun` during \eqn{K}-fold
@@ -853,6 +858,17 @@ get_refmodel.stanreg <- function(object, latent = FALSE, dis = NULL,
 
   data <- object$data
   stopifnot(is.data.frame(data))
+  # rstanarm stores the contrasts of the fit in `object$contrasts`, not as
+  # attributes of the factor columns (init_refmodel() takes them from these
+  # attributes). A matrix for other levels (for example, if the fit dropped an
+  # unused level) is left out:
+  for (nm in intersect(names(object$contrasts), names(data))) {
+    ctr <- object$contrasts[[nm]]
+    if (is.factor(data[[nm]]) && is.null(attr(data[[nm]], "contrasts")) &&
+        (!is.matrix(ctr) || nrow(ctr) == nlevels(data[[nm]]))) {
+      contrasts(data[[nm]]) <- ctr
+    }
+  }
 
   # Weights (for the observations):
   if (family$family == "binomial" && length(object$weights) > 0) {
@@ -1495,7 +1511,8 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
       # instead of building them again for every projection:
       pred_sub <- subprd_fitted(fits, nobs = nrow(data))
     }
-    newdata <- fetch_data(data, obs = obs, newdata = newdata)
+    # The submodel fits store their contrasts:
+    newdata <- strip_contrasts(fetch_data(data, obs = obs, newdata = newdata))
     if (is.null(offset)) {
       offset <- rep(0, nrow(newdata))
     } else {
@@ -1550,8 +1567,12 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
       cvrefbuilder <- function(cvfit) {
         init_refmodel(
           object = NULL,
-          data = fetch_data_wrapper(obs = setdiff(seq_len(nrow(data)),
-                                                  cvfit$omitted)),
+          data = set_contrasts(
+            fetch_data_wrapper(obs = setdiff(seq_len(nrow(data)),
+                                             cvfit$omitted)),
+            # Assigned below, before this function is called:
+            ctrs
+          ),
           formula = formula,
           family = family,
           div_minimizer = div_minimizer,
@@ -1668,14 +1689,12 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
     stop("For a `datafit`, offsets are not allowed.")
   }
 
-  # For avoiding the warning "contrasts dropped from factor <factor_name>" when
-  # predicting for each projected draw, e.g., for submodels fit with lm()/glm():
-  has_contr <- sapply(data, function(data_col) {
-    !is.null(attr(data_col, "contrasts"))
-  })
-  for (idx_col in which(has_contr)) {
-    attr(data[[idx_col]], "contrasts") <- NULL
-  }
+  # The contrasts of the factor predictors (`contrasts` attributes of the
+  # columns of `data`). The stored data have no such attributes, which avoids
+  # the warning "contrasts dropped from factor <factor_name>" in predictions.
+  # set_contrasts() sets them again where the submodels are fit:
+  ctrs <- contrasts_from_data(data, vars = all.vars(formula[[3]]))
+  data <- strip_contrasts(data)
 
   # Needed for rstanarm (and possibly custom) multilevel models with `:` between
   # grouping variables (reason: repair_re() currently requires a corresponding
@@ -1796,7 +1815,7 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
     fit = object, formula, div_minimizer, family, eta, mu, mu_offs, dis, y,
     fetch_data = fetch_data_wrapper, wobs = weights, wdraws_ref, offset, cvfun,
     cvfits, extract_model_data, ref_predfun, mu_fun, cvrefbuilder,
-    y_oscale = y_oscale %||% y, nobs = nrow(data)
+    y_oscale = y_oscale %||% y, nobs = nrow(data), contrasts = ctrs
   )
   if (proper_model) {
     class(refmodel) <- "refmodel"

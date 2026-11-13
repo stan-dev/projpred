@@ -1349,3 +1349,74 @@ verbose_from_deprecated_option <- function(verbose, with_cv = FALSE,
   }
   return(verbose)
 }
+
+# The contrast matrices of the factor columns `vars` of `data` that have a
+# `contrasts` attribute (for example, set by brms or by the user). The matrices
+# are evaluated now, so a later change of `options("contrasts")` does not change
+# them. Returns `NULL` if no such column has this attribute.
+contrasts_from_data <- function(data, vars = names(data)) {
+  nms <- intersect(vars, names(data))
+  # contrasts() needs at least two levels:
+  has_contr <- vapply(nms, function(nm) {
+    is.factor(data[[nm]]) && nlevels(data[[nm]]) >= 2 &&
+      !is.null(attr(data[[nm]], "contrasts"))
+  }, logical(1))
+  if (!any(has_contr)) {
+    return(NULL)
+  }
+  return(lapply(setNames(nm = nms[has_contr]), function(nm) {
+    ctr <- as.matrix(contrasts(data[[nm]]))
+    rownames(ctr) <- levels(data[[nm]])
+    ctr
+  }))
+}
+
+# Removes the `contrasts` attributes of the columns of `data`. Fitters store the
+# contrasts that they used and use them for new data, but new data with such an
+# attribute give the warning "contrasts dropped from factor <name>".
+strip_contrasts <- function(data) {
+  if (!is.data.frame(data)) {
+    return(data)
+  }
+  for (nm in names(data)) {
+    if (!is.null(attr(data[[nm]], "contrasts"))) {
+      attr(data[[nm]], "contrasts") <- NULL
+    }
+  }
+  return(data)
+}
+
+# Sets the contrast matrices `ctrs` (from contrasts_from_data()) as attribute
+# `contrasts` of the factor columns of `data`, so that the submodel fitters use
+# them. A column with other levels than its matrix, or with a level that no row
+# has, keeps the default contrasts (model.frame() with `drop.unused.levels =
+# TRUE` would drop the attribute with a warning).
+set_contrasts <- function(data, ctrs) {
+  if (length(ctrs) == 0 || !is.data.frame(data)) {
+    return(data)
+  }
+  for (nm in intersect(names(ctrs), names(data))) {
+    if (is.factor(data[[nm]]) &&
+        identical(levels(data[[nm]]), rownames(ctrs[[nm]])) &&
+        all(tabulate(data[[nm]], nbins = nlevels(data[[nm]])) > 0)) {
+      attr(data[[nm]], "contrasts") <- ctrs[[nm]]
+    }
+  }
+  return(data)
+}
+
+# The contrast matrices (see contrasts_from_data()) of the factors in the
+# left-hand sides of the group-level terms of `random` (a formula such as
+# `~ (1 + f | g)`), as set in `data`. The grouping variables are left out. A
+# factor with a level that no row has is left out, because model.frame() with
+# `drop.unused.levels = TRUE` drops its `contrasts` attribute.
+re_contrasts <- function(data, random) {
+  vars <- unlist(lapply(reformulas::findbars(random), function(bar) {
+    all.vars(bar[[2]])
+  }))
+  vars <- Filter(function(nm) {
+    x <- data[[nm]]
+    !is.factor(x) || all(tabulate(x, nbins = nlevels(x)) > 0)
+  }, intersect(unique(vars), names(data)))
+  return(contrasts_from_data(data, vars = vars))
+}
