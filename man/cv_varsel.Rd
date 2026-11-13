@@ -206,7 +206,7 @@ or \code{!is.null(nclusters_pred)}), for subsampling PSIS-LOO CV folds (if
 \code{nloo} is smaller than the number of observations), for sampling the folds
 in \eqn{K}-fold CV, for the weights of the weight perturbation (see section
 "Note"), and for drawing new group-level effects when predicting from a
-multilevel submodel (however, not yet in case of a GAMM).}
+multilevel submodel.}
 
 \item{search_terms}{Only relevant for forward search. A custom character
 vector of predictor term blocks to consider for the search. Section
