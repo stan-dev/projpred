@@ -131,7 +131,9 @@ test_that(paste(
   fit_trad <- fit_mlvl_tst(y ~ x + (1 | g), d, binomial())
   fit_aug <- fit_mlvl_tst(y ~ x + (1 | g), d_aug, binomial(),
                           weights = c(d$y, 1 - d$y))
-  expect_equal(fit_aug$coefficients, fit_trad$coefficients, tolerance = 1e-5)
+  # The two objectives differ by a constant, so the optimizer stops at slightly
+  # different points (relative difference 2.3e-5 on one platform):
+  expect_equal(fit_aug$coefficients, fit_trad$coefficients, tolerance = 1e-4)
   expect_equal(fit_aug$sd, fit_trad$sd, tolerance = 1e-4)
   # A factor response, as in the augmented-data projection (first level:
   # failure):
