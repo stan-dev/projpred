@@ -449,9 +449,28 @@ test_that("the multilevel screen drops a factor level of a zero-weight observati
 
 test_that("the multilevel screen uses the contrasts of the reference model", {
   skip_on_cran()
+  # The screen fit uses the `contrasts` attribute: with a reduced contrast
+  # matrix, the RSS of `x1 + f` is that of the regression on (1, x1, ctr[f, ]),
+  # and it is larger than with the default contrasts.
+  dat <- dat_lat(64, seed = 3)
+  dat$.projpred_eta <- dat$x1 + c(a = 0, b = 1, c = -1)[as.character(dat$f)] +
+    rnorm(64, sd = 0.3)
+  dat$.projpred_w <- runif(64, 0.5, 2)
+  fml_base <- .projpred_eta ~ 1
+  ctr <- contr.sum(levels(dat$f))[, 1, drop = FALSE]
+  rss_dflt <- latent_mlvl_rss(c("1", "x1", "f"), dat, fml_base)
+  attr(dat$f, "contrasts") <- ctr
+  rss_ctr <- latent_mlvl_rss(c("1", "x1", "f"), dat, fml_base)
+  fit_ctr <- lm.wfit(cbind(1, dat$x1, ctr[as.integer(dat$f), ]),
+                     dat$.projpred_eta, dat$.projpred_w)
+  expect_equal(rss_ctr, sum(dat$.projpred_w * fit_ctr$residuals^2))
+  expect_gt(rss_ctr - rss_dflt, 1e-6)
+
+  # The screen passes the contrasts of the reference model to its fits. The
+  # weight 0 of observation 1 (as in a fold of the LOO CV) checks the path with
+  # removed rows; the other observations have all levels of `f`:
   refm <- refm_latml(fml = y ~ x1 + x2 + x6 + x7 + f + (1 | g))
-  # A reduced contrast matrix changes the screen fit of `f`. Observation 1
-  # gets weight 0 (as in a fold of the LOO CV) and keeps all levels of `f`:
+  expect_true(all(table(refm$fetch_data()$f[-1]) > 0))
   ctr <- contr.sum(levels(refm$fetch_data()$f))[, 1, drop = FALSE]
   refm$contrasts <- list(f = ctr)
   refm$wobs[1] <- 0

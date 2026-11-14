@@ -223,8 +223,11 @@ search_forward_latent_mlvl <- function(p_ref, refmodel, nterms_max, verbose,
   # The screen fits use the observations with a positive weight (a fold of
   # LOO CV sets the weight of the left-out observation to zero):
   dat <- droplevels(dat[wobs > 0, , drop = FALSE])
-  # The contrasts of the reference model, as in the projections (a factor with
-  # a dropped level keeps the default contrasts, see set_contrasts()):
+  # The contrasts of the reference model, as in proj_to_submodl() and
+  # drop_lost_levels(): a factor with a dropped level keeps the default
+  # contrasts (see set_contrasts()). The projection of a submodel without
+  # group-level terms keeps the zero-weight rows and their levels, so there a
+  # reduced contrast matrix can give another column space than the screen fit:
   dat <- set_contrasts(dat, refmodel$contrasts)
   fml_base <- stats::as.formula(".projpred_eta ~ 1",
                                 env = environment(refmodel$formula))
