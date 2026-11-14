@@ -299,16 +299,6 @@ test_that(paste(
   skip_if_not(run_vs)
   withr::local_preserve_seed()
   tstsetups <- names(vss)
-  ### TODO (GAMMs): Currently, the following test setups (can) lead to the error
-  ### ```
-  ### Error in t(as.matrix(b$reTrms$Zt[ii, ])) %*%
-  ### as.matrix(c(as.matrix(ranef[[i]]))) :
-  ###   non-conformable arguments
-  ### ```
-  ### thrown by predict.gamm4(). This needs to be fixed. For now, exclude these
-  ### test setups:
-  tstsetups <- grep("\\.gamm\\.", tstsetups, value = TRUE, invert = TRUE)
-  ###
   for (tstsetup in tstsetups) {
     args_vs_i <- args_vs[[tstsetup]]
     tstsetup_ref <- args_vs_i$tstsetup_ref
@@ -1646,9 +1636,14 @@ test_that("`validate_search` works", {
     if (identical(args_cvvs_i$cv_method, "kfold")) {
       vsel_nms_valsearch_crr <- setdiff(vsel_nms_valsearch_crr, "ce")
     }
-    expect_equal(cvvs_valsearch[setdiff(vsel_nms, vsel_nms_valsearch_crr)],
-                 cvvss[[tstsetup]][setdiff(vsel_nms, vsel_nms_valsearch_crr)],
+    # Element `loo_perturb_alpha` differs only for LOO CV with
+    # `refit_prj = TRUE`, so the test checks it separately:
+    vsel_nms_eq <- setdiff(vsel_nms,
+                           c(vsel_nms_valsearch_crr, "loo_perturb_alpha"))
+    expect_equal(cvvs_valsearch[vsel_nms_eq], cvvss[[tstsetup]][vsel_nms_eq],
                  info = tstsetup)
+    # Without fold-wise searches, no search uses the weight perturbation:
+    expect_identical(cvvs_valsearch$loo_perturb_alpha, Inf, info = tstsetup)
     expect_identical(cvvs_valsearch$summaries$ref,
                      cvvss[[tstsetup]]$summaries$ref,
                      info = tstsetup)

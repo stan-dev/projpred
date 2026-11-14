@@ -74,6 +74,12 @@ from class \code{glmerMod}) for all other families. For \code{\link[lme4:glmer]{
 so both optimization stages use BOBYQA. A \code{control} argument in \code{...}
 replaces this default in the first fit. After some \pkg{lme4} errors,
 \pkg{projpred} refits with its own settings and ignores this \code{control}.
+For the \code{\link[=binomial]{binomial()}} family, \pkg{lme4} versions before 2.1-1 round
+non-integer responses and weights in the objective of \code{\link[lme4:glmer]{lme4::glmer()}}
+with \code{nAGQ >= 1}. With these \pkg{lme4} versions, \pkg{projpred} uses
+\code{nAGQ = 0} for such submodels unless \code{nAGQ} is set via \code{...}. Then the
+fixed effects and the group-level effects do not depend on the rounded
+objective; the group-level standard deviations still do.
 \item For the augmented-data projection: \code{\link[ordinal:clmm]{ordinal::clmm()}} (the returned
 object inherits from class \code{clmm}) for the \code{\link[brms:cumulative]{brms::cumulative()}} family,
 \code{\link[mclogit:mblogit]{mclogit::mblogit()}} (the returned object inherits from class \code{mmblogit})
@@ -82,7 +88,11 @@ group-level term \verb{(1 | <group>)}, \pkg{projpred} uses
 \code{method = "ucminf"} and \code{grad = "forward"} (see
 \code{\link[ordinal:clmm.control]{ordinal::clmm.control()}}). If this fit fails or does not converge,
 \pkg{projpred} refits with the default settings of \code{\link[ordinal:clmm]{ordinal::clmm()}}. An
-argument \code{method} or \code{control} in \code{...} replaces this default.
+argument \code{method} or \code{control} in \code{...} replaces this default. For the
+\code{cloglog} and \code{loglog} links, \pkg{projpred} always uses
+\code{useMatrix = TRUE} (see \code{\link[ordinal:clmm.control]{ordinal::clmm.control()}}) and does not use
+\code{ucminf()}. The code of \code{\link[ordinal:clmm]{ordinal::clmm()}} for a single group-level term
+uses the other of these two links.
 }
 \item Submodel without multilevel but additive terms: \code{\link[mgcv:gam]{mgcv::gam()}} (the returned
 object inherits from class \code{gam}).
@@ -129,7 +139,7 @@ projection if the submodel has no multilevel or additive predictor terms),
 but for all other types of submodels, the fitted submodel objects are quite
 big, which---when running in parallel---may lead to excessive memory usage
 which in turn may crash the R session (on Unix systems, setting an
-appropriate memory limit via \code{\link[unix:rlimit_as]{unix::rlimit_as()}} may avoid crashing the whole
+appropriate memory limit via \code{unix::rlimit_as()} may avoid crashing the whole
 machine). Thus, we currently cannot recommend parallelizing projections onto
 submodels which are GLMs (in this context, the latent projection onto a
 submodel without multilevel and without additive terms may be regarded as a
