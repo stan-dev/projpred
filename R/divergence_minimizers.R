@@ -1496,32 +1496,30 @@ glmer_family <- function(family) {
 # glmer_family(). lme4 >= 2.1-0 computes a correction for the estimation of the
 # dispersion of a family with another name than "binomial" and "poisson". It is
 # not used for a fixed dispersion, but its computation (a QR decomposition) can
-# take long or fail. Other lme4 versions do not read `disp_dof_correction`.
+# take long or fail. lme4::glmer() passes a plain list to lme4::glmerControl(),
+# so the element is added only if glmerControl() has this argument.
 glmer_control <- function(control, family) {
   if (family$family %in% c("binomial_projpred", "poisson_projpred") &&
-      is.list(control)) {
+      is.list(control) &&
+      "disp_dof_correction" %in% names(formals(lme4::glmerControl))) {
     control$disp_dof_correction <- FALSE
   }
   return(control)
 }
 
-# The data for the family from glmer_family(). lme4 accepts a factor or logical
-# response (augmented-data projection) only for the family name "binomial". As
-# in binomial()$initialize, the first factor level is a failure and all other
+# The data for the family from glmer_family(). lme4 accepts a factor response
+# (augmented-data projection) only for the family name "binomial". As in
+# binomial()$initialize, the first factor level is a failure and all other
 # levels are successes.
 glmer_data <- function(data, formula, family) {
-  if (!identical(family$family, "binomial_projpred") || is.null(data)) {
+  if (!identical(family$family, "binomial_projpred") || is.null(data) ||
+      length(formula) != 3 || !is.name(formula[[2]])) {
     return(data)
   }
-  y_nm <- all.vars(formula[[2]])
-  if (length(y_nm) != 1 || !y_nm %in% names(data)) {
-    return(data)
-  }
-  y <- data[[y_nm]]
-  if (is.factor(y)) {
+  y_nm <- as.character(formula[[2]])
+  if (is.factor(data[[y_nm]])) {
+    y <- data[[y_nm]]
     data[[y_nm]] <- as.numeric(y != levels(y)[1])
-  } else if (is.logical(y)) {
-    data[[y_nm]] <- as.numeric(y)
   }
   return(data)
 }

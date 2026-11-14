@@ -58,7 +58,7 @@ If you read this from a place other than <https://mc-stan.org/projpred/news/inde
 * Fixed the log-likelihood of binomial (logit) and Poisson (log) reference model draws with a large linear predictor, where the inverse link clamped the mean. (GitHub: #614)
 * With `nm_scheme = "rstanarm"`, the `Sigma[...]` columns of `as.matrix.projection()` now hold the group-level variances and covariances in the rstanarm order, as in rstanarm. (GitHub: #622)
 * Fixed the log-likelihood of reference model draws with small response category probabilities in the augmented-data projection (cumulative, categorical and binomial families). (GitHub: #618)
-* With lme4 versions before 2.1-1, binomial submodels with multilevel terms (and no additive terms) now use `nAGQ = 0` in `lme4::glmer()` for non-integer responses or weights, unless `nAGQ` is set via `...`. Their coefficients were fitted to rounded data before. (GitHub: #616)
+* With lme4 versions before 2.0-1, binomial submodels with multilevel terms (and no additive terms) now use `nAGQ = 0` in `lme4::glmer()` for non-integer responses or weights, unless `nAGQ` is set via `...`. Their coefficients were fitted to rounded data before. (GitHub: #616)
 * Removed line breaks from the names of search terms above about 500 characters in `ranking()`, `summary()` and `plot()`. (GitHub: #607)
 * Group terms with a **brms** correlation ID, such as `(1 |p| g)`, now work: projpred removes the ID with a message. Group terms with `||` give an error that explains the limitation, and several group terms of one grouping factor give a warning. (GitHub: #435, #495, #628)
 * `as.matrix()` and `as_draws_matrix()` of a projection onto a submodel with smooth and group-level terms (GAMM) now stop with an error. Before, they returned only `sigma` (Gaussian family) or no parameters (other families). (GitHub: #131, #627)
@@ -68,8 +68,8 @@ If you read this from a place other than <https://mc-stan.org/projpred/news/inde
 * Fixed the term names of the L1 search if one model-matrix column name starts with another one. (GitHub: #615)
 * The submodels now use the contrasts of the reference model for factor predictors instead of `options("contrasts")`. This changes the projected coefficients and can change the L1 search and LOO predictions for a level of one observation. (GitHub: #283, #619)
 * `get_refmodel()` now stops with an error that names the missing variables and gives a workaround. This applies to `rstanarm::stan_gamm4()` fits with argument `random` and an expression in the formula, such as `cbind(y, n - y)`. (GitHub: #148, #634)
-* With lme4 versions before 2.1-1, binomial submodels with multilevel and additive terms and non-integer data now skip the second optimization stage of `gamm4::gamm4()` (as `nAGQ = 0`). Their coefficients were fitted to rounded data before. (GitHub: #642)
-* With lme4 versions 2.0-1 to 2.1-0, binomial and Poisson submodels with multilevel terms (also with additive terms) are now fitted without rounding the data. Before, the group-level standard deviations of Poisson submodels stayed at 1. (GitHub: #???)
+* With lme4 versions before 2.0-1, binomial submodels with multilevel and additive terms and non-integer data now skip the second optimization stage of `gamm4::gamm4()` (as `nAGQ = 0`). Their coefficients were fitted to rounded data before. (GitHub: #642)
+* With lme4 versions 2.0-1 to 2.1-0, binomial and Poisson submodels with multilevel terms (also with additive terms) are now fitted without rounding the data. Before, the group-level standard deviations of Poisson submodels stayed at 1, and binomial fits used `nAGQ = 0`. (GitHub: #???)
 
 
 # projpred 2.11.0

@@ -991,9 +991,12 @@ outdmin_tester_trad <- function(
         ]]
         if (!is.null(augdat_cats) && !is.factor(y_from_frame)) {
           # glmer_data() passes a 0/1 response instead of a factor:
-          y_from_frame <- as.factor(y_from_frame)
+          y_orig <- eval(str2lang(as.character(sub_formul[[j]])[2]), sub_data)
+          expect_equal(y_from_frame, as.numeric(y_orig != levels(y_orig)[1]),
+                       info = info_str)
+        } else {
+          expect_equal(y_from_frame, y_from_resp, info = info_str)
         }
-        expect_equal(y_from_frame, y_from_resp, info = info_str)
       }
       if (!is.null(wobs_expected)) {
         expect_equal(structure(outdmin_totest[[!!j]]@frame$`(weights)`,

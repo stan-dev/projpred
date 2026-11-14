@@ -383,17 +383,51 @@ test_that(paste(
     expect_identical(glmer_family(extend_family(poisson()))$family, "poisson"),
     lme4_needs_glmer_family = function() FALSE
   )
-  # The control and the data:
+  # The control (lme4 >= 2.1-0 has `disp_dof_correction`) and the data:
+  has_disp_dof <- "disp_dof_correction" %in%
+    names(formals(lme4::glmerControl))
   ctrl <- glmer_control(lme4::glmerControl(), family = fam_b)
-  expect_false(ctrl$disp_dof_correction)
+  expect_identical(isFALSE(ctrl$disp_dof_correction), has_disp_dof)
+  ctrl <- glmer_control(list(optimizer = "bobyqa"), family = fam_p)
+  expect_identical(names(ctrl),
+                   c("optimizer", if (has_disp_dof) "disp_dof_correction"))
   expect_identical(glmer_control(lme4::glmerControl(), family = binomial()),
                    lme4::glmerControl())
   d <- data.frame(y = factor(c("a", "b", "b")), x = 1:3)
   expect_identical(glmer_data(d, y ~ x, family = fam_b)$y, c(0, 1, 1))
-  d$y <- c(TRUE, FALSE, TRUE)
-  expect_identical(glmer_data(d, y ~ x, family = fam_b)$y, c(1, 0, 1))
+  expect_identical(glmer_data(d, relevel(y, "b") ~ x, family = fam_b), d)
   expect_identical(glmer_data(d, y ~ x, family = binomial()), d)
   expect_identical(glmer_data(d, y ~ x, family = fam_p), d)
+  d$y <- c(TRUE, FALSE, TRUE)
+  expect_identical(glmer_data(d, y ~ x, family = fam_b), d)
+})
+
+test_that(paste(
+  "the family from glmer_family() gives the fit of lme4's family for integer",
+  "data"
+), {
+  skip_if(lme4_rounds(), "lme4 < 2.0-1 scales VarCorr() by sigma()")
+  testthat::local_mocked_bindings(lme4_needs_glmer_family = function() TRUE)
+  d <- dat_fitters()
+  w1 <- rep(1, nrow(d))
+  withr::local_seed(2)
+  d$y_poisson <- rpois(nrow(d), exp(d$eta))
+  d$y_binomial <- rbinom(nrow(d), 1, plogis(d$eta))
+  for (nm in c("poisson", "binomial")) {
+    fml <- as.formula(paste0("y_", nm, " ~ x + (1 | g)"))
+    fam <- extend_family(get(nm)())
+    fit <- fit_glmer_test(fml, d, fam, weights = w1)
+    expect_identical(fit@resp$family$family, paste0(nm, "_projpred"))
+    fit_lme4 <- suppressMessages(lme4::glmer(
+      fml, data = d, family = get(nm)(),
+      control = lme4::glmerControl(optimizer = "bobyqa")
+    ))
+    expect_equal(pars_mer(fit), pars_mer(fit_lme4), tolerance = 1e-4,
+                 info = nm)
+    expect_equal(unname(lme4::VarCorr(fit)$g[1]),
+                 unname(lme4::VarCorr(fit_lme4)$g[1]), tolerance = 1e-4,
+                 info = nm)
+  }
 })
 
 test_that(paste(
@@ -409,7 +443,8 @@ test_that(paste(
   coef_glm <- coef(suppressWarnings(glm(y ~ x, data = d, family = poisson())))
   fit <- fit_glmer_test(y ~ x + (1 | g), d, extend_family(poisson()),
                         weights = rep(1, nrow(d)))
-  # With an infinite objective, theta stays at its start value 1:
+  # A singular fit (with lme4's Poisson objective, which is infinite for these
+  # data, theta stays at its start value 1):
   expect_lt(unname(lme4::getME(fit, "theta")), 1e-3)
   expect_equal(unname(lme4::fixef(fit)), unname(coef_glm), tolerance = 1e-4)
 })
@@ -448,7 +483,8 @@ test_that(paste(
   )))
   fit_glmer <- fit_glmer_test(y ~ x + (1 | g), d, fam, weights = w1)
   theta_gamm <- unname(lme4::getME(fit_gamm$mer, "theta"))
-  # With an infinite objective, theta stays at its start value 1:
+  # theta is estimated (with lme4's Poisson objective, which is infinite for
+  # these data, theta stays at its start value 1):
   expect_gt(abs(theta_gamm - 1), 1e-3)
   expect_equal(theta_gamm, unname(lme4::getME(fit_glmer, "theta")),
                tolerance = 1e-2)

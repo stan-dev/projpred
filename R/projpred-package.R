@@ -87,11 +87,15 @@
 #'     group-level standard deviations stay at their start values). With
 #'     \pkg{lme4} versions from 2.0-1 to 2.1-0, \pkg{projpred} passes a copy of
 #'     these families with another name (ending in `_projpred`) and an `aic`
-#'     function without rounding. With \pkg{lme4} versions before 2.0-1,
-#'     \pkg{projpred} uses `nAGQ = 0` for binomial submodels with non-integer
-#'     responses or weights unless `nAGQ` is set via `...`. Then the fixed
-#'     effects and the group-level effects do not depend on the rounded
-#'     objective; the group-level standard deviations still do.
+#'     function without rounding. The submodel fits then have this family
+#'     name, so for example [lme4::simulate.merMod()] does not work for them.
+#'     With \pkg{lme4} versions before 2.0-1, \pkg{projpred} uses `nAGQ = 0`
+#'     for binomial submodels with non-integer responses or weights unless
+#'     `nAGQ` is set via `...`. Then the fixed effects and the group-level
+#'     effects do not depend on the rounded objective; the group-level
+#'     standard deviations still do. With these \pkg{lme4} versions, the
+#'     group-level standard deviations of Poisson submodels are not estimated
+#'     (they stay at 1), so we recommend \pkg{lme4} 2.0-1 or later.
 #'     + For the augmented-data projection: [ordinal::clmm()] (the returned
 #'     object inherits from class `clmm`) for the [brms::cumulative()] family,
 #'     [mclogit::mblogit()] (the returned object inherits from class `mmblogit`)

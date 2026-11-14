@@ -81,11 +81,15 @@ the objective is infinite for non-integer Poisson responses (then the
 group-level standard deviations stay at their start values). With
 \pkg{lme4} versions from 2.0-1 to 2.1-0, \pkg{projpred} passes a copy of
 these families with another name (ending in \verb{_projpred}) and an \code{aic}
-function without rounding. With \pkg{lme4} versions before 2.0-1,
-\pkg{projpred} uses \code{nAGQ = 0} for binomial submodels with non-integer
-responses or weights unless \code{nAGQ} is set via \code{...}. Then the fixed
-effects and the group-level effects do not depend on the rounded
-objective; the group-level standard deviations still do.
+function without rounding. The submodel fits then have this family
+name, so for example \code{\link[lme4:simulate.merMod]{lme4::simulate.merMod()}} does not work for them.
+With \pkg{lme4} versions before 2.0-1, \pkg{projpred} uses \code{nAGQ = 0}
+for binomial submodels with non-integer responses or weights unless
+\code{nAGQ} is set via \code{...}. Then the fixed effects and the group-level
+effects do not depend on the rounded objective; the group-level
+standard deviations still do. With these \pkg{lme4} versions, the
+group-level standard deviations of Poisson submodels are not estimated
+(they stay at 1), so we recommend \pkg{lme4} 2.0-1 or later.
 \item For the augmented-data projection: \code{\link[ordinal:clmm]{ordinal::clmm()}} (the returned
 object inherits from class \code{clmm}) for the \code{\link[brms:cumulative]{brms::cumulative()}} family,
 \code{\link[mclogit:mblogit]{mclogit::mblogit()}} (the returned object inherits from class \code{mmblogit})
