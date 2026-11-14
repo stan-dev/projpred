@@ -70,3 +70,17 @@ test_that("the LOO CV with validated search works with a poly() term", {
   ))
   expect_length(ranking(cv)$fulldata, 3)
 })
+
+test_that("the L1 search ranks the terms for a poly() term with 10 columns", {
+  # The column "poly(x3, 10)1" is the start of the column "poly(x3, 10)10":
+  fml <- y ~ x1 + x2 + poly(x3, 10)
+  refm <- refm_predvars(fml)
+  vs <- varsel(refm, method = "L1", refit_prj = FALSE, seed = 3906,
+               verbose = FALSE)
+  rk <- ranking(vs)$fulldata
+  expect_length(rk, 3L)
+  expect_setequal(rk, c("x1", "x2", "poly(x3, 10)"))
+  # The largest submodel of the search has all columns:
+  x_all <- model.matrix(fml, refm$fetch_data())
+  expect_identical(ncol(vs$search_path$outdmins[[4]][[1]]$x), ncol(x_all) - 1L)
+})
