@@ -80,11 +80,17 @@
 #'     so both optimization stages use BOBYQA. A `control` argument in `...`
 #'     replaces this default in the first fit. After some \pkg{lme4} errors,
 #'     \pkg{projpred} refits with its own settings and ignores this `control`.
-#'     For the [binomial()] family, \pkg{lme4} versions before 2.1-1 round
-#'     non-integer responses and weights in the objective of [lme4::glmer()]
-#'     with `nAGQ >= 1`. With these \pkg{lme4} versions, \pkg{projpred} uses
-#'     `nAGQ = 0` for such submodels unless `nAGQ` is set via `...`. Then the
-#'     fixed effects and the group-level effects do not depend on the rounded
+#'     \pkg{lme4} versions before 2.1-1 evaluate the objective of
+#'     [lme4::glmer()] for the [binomial()] and the [poisson()] family with
+#'     rounding: they round non-integer binomial responses and weights, and
+#'     the objective is infinite for non-integer Poisson responses (then the
+#'     group-level standard deviations stay at their start values). With
+#'     \pkg{lme4} versions from 2.0-1 to 2.1-0, \pkg{projpred} passes a copy of
+#'     these families with another name (ending in `_projpred`) and an `aic`
+#'     function without rounding. With \pkg{lme4} versions before 2.0-1,
+#'     \pkg{projpred} uses `nAGQ = 0` for binomial submodels with non-integer
+#'     responses or weights unless `nAGQ` is set via `...`. Then the fixed
+#'     effects and the group-level effects do not depend on the rounded
 #'     objective; the group-level standard deviations still do.
 #'     + For the augmented-data projection: [ordinal::clmm()] (the returned
 #'     object inherits from class `clmm`) for the [brms::cumulative()] family,
@@ -103,8 +109,10 @@
 #' object inherits from class `gam`).
 #' * Submodel with multilevel and additive terms: [gamm4::gamm4()] (within
 #' \pkg{projpred}, the returned object inherits from class `gamm4`). For the
-#' [binomial()] family with non-integer responses or weights and \pkg{lme4}
-#' versions before 2.1-1, \pkg{projpred} gives
+#' [binomial()] and the [poisson()] family, \pkg{projpred} passes the same
+#' family as to [lme4::glmer()] (see above). For the [binomial()] family with
+#' non-integer responses or weights and \pkg{lme4} versions before 2.0-1,
+#' \pkg{projpred} gives
 #' [gamm4::gamm4()] an optimizer that skips its second optimization stage, so
 #' the fit is that of `nAGQ = 0` in [lme4::glmer()] (see the paragraph on
 #' [lme4::glmer()] above), up to the optimizer. The first stage uses the

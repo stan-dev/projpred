@@ -1080,17 +1080,21 @@ fit_gamm_callback <- function(formula, projpred_formula_no_random,
       methods::formalArgs(lme4::lFormula),
       methods::formalArgs(lme4::glFormula))
   )]
+  # As in fit_glmer_callback(). The error handler below reads `family` and
+  # `control`, so the changed family and control are copies:
+  family_gamm <- glmer_family(family)
+  control_gamm <- glmer_control(control, family = family_gamm)
+  data <- glmer_data(data, formula = projpred_formula_no_random,
+                     family = family_gamm)
   # gamm4::gamm4() has no `nAGQ = 0`: after stage 1 (as `nAGQ = 0` in
   # lme4::glmer()), it always runs stage 2, which optimizes the fixed effects
-  # with the Laplace objective. lme4 < 2.1-1 rounds non-integer binomial data
-  # in this objective (see glmer_rounds_binomial()). gamm4::gamm4() uses
+  # with the Laplace objective. Some lme4 versions round non-integer binomial
+  # data in this objective (see glmer_rounds_binomial()). gamm4::gamm4() uses
   # `control$optimizer[[1]]` in both stages, so gamm_stage1_optimizer() can
-  # skip stage 2. The error handler below reads `control`, so the changed
-  # control is a copy. gamm4::gamm4() does not call lme4::checkConv(), so the
+  # skip stage 2. gamm4::gamm4() does not call lme4::checkConv(), so the
   # derivatives are not used:
-  control_gamm <- control
   if (inherits(control, "glmerControl") &&
-      glmer_rounds_binomial(projpred_formula_no_random, family = family,
+      glmer_rounds_binomial(projpred_formula_no_random, family = family_gamm,
                             data = data, weights = dot_args[["weights"]])) {
     opt_stage1 <- gamm_stage1_optimizer(control$optimizer[[1]],
                                         opt_ctrl = control$optCtrl)
@@ -1103,7 +1107,7 @@ fit_gamm_callback <- function(formula, projpred_formula_no_random,
   fit <- tryCatch({
     do.call(gamm4::gamm4, c(
       list(formula = projpred_formula_no_random, random = projpred_random,
-           data = data, family = family, control = control_gamm),
+           data = data, family = family_gamm, control = control_gamm),
       dot_args
     ))
   }, error = function(e) {
@@ -1261,19 +1265,26 @@ fit_glmer_callback <- function(formula, projpred_formula_no_random,
         names(dot_args),
         methods::formalArgs(lme4::glmer)
       )]
-      # lme4 < 2.1-1 rounds non-integer binomial data in the objective of
-      # `nAGQ >= 1`. With `nAGQ = 0`, the fixed effects and the group-level
-      # effects do not depend on this objective (the group-level standard
-      # deviations still do):
+      # For the binomial and the Poisson family, glmer_family() gives a family
+      # that lme4 evaluates without rounding:
+      family_glmer <- glmer_family(family)
+      control_glmer <- glmer_control(control, family = family_glmer)
+      dot_args$data <- glmer_data(dot_args$data, formula = formula,
+                                  family = family_glmer)
+      # Other lme4 versions round non-integer binomial data in the objective of
+      # `nAGQ >= 1` (see glmer_rounds_binomial()). With `nAGQ = 0`, the fixed
+      # effects and the group-level effects do not depend on this objective
+      # (the group-level standard deviations still do):
       if (is.null(dot_args$nAGQ) &&
-          glmer_rounds_binomial(formula, family = family,
+          glmer_rounds_binomial(formula, family = family_glmer,
                                 data = dot_args$data,
                                 weights = dot_args$weights)) {
         dot_args$nAGQ <- 0L
       }
       # Call the submodel fitter:
-      return(do.call(lme4::glmer, c(list(formula = formula, family = family,
-                                         control = control),
+      return(do.call(lme4::glmer, c(list(formula = formula,
+                                         family = family_glmer,
+                                         control = control_glmer),
                                     dot_args)))
     }
   }, error = function(e) {
@@ -1433,12 +1444,95 @@ fit_glmer_callback <- function(formula, projpred_formula_no_random,
   })
 }
 
+# Whether glmer_family() renames the binomial and the Poisson family. lme4 <
+# 2.1-1 evaluates the log density of these two family names in C++: it rounds
+# non-integer binomial responses and weights, and its Poisson objective is
+# infinite for non-integer responses (then the group-level parameters stay at
+# their start values). lme4 2.0-x estimates a dispersion parameter (sigma())
+# for a family with another name. The fit does not use it, and VarCorr() of a
+# GLMM does not use it either. gamm4::gamm4() uses it as the scale of `sp`,
+# `sig2` and `Vp` of the `gam` part (not of the coefficients); projpred does
+# not use these. lme4 < 2.0-1 scales VarCorr() by sigma(), so these versions
+# keep the original family.
+lme4_needs_glmer_family <- function() {
+  lme4_version <- utils::packageVersion("lme4")
+  return(lme4_version >= "2.0.1" && lme4_version < "2.1.1")
+}
+
+# The family that fit_glmer_callback() and fit_gamm_callback() pass to lme4. For
+# another family name, lme4 calls the R function `aic` of the family. So for
+# the lme4 versions of lme4_needs_glmer_family(), this function renames the
+# binomial and the Poisson family and gives them an `aic` with the continuous
+# extension of the log density (lgamma() instead of the factorial), as lme4 >=
+# 2.1-1 uses. For integer data, `aic` does not change. For lme4 >= 2.1-0,
+# `dispersion = 1` marks the dispersion as fixed.
+glmer_family <- function(family) {
+  if (!isTRUE(family$family %in% c("binomial", "poisson")) ||
+      !lme4_needs_glmer_family()) {
+    return(family)
+  }
+  # The terms with a zero count are 0, also for `mu` at the bounds:
+  if (family$family == "binomial") {
+    family$aic <- function(y, n, mu, wt, dev) {
+      m <- if (any(n > 1)) n else wt
+      k <- m * y
+      ll <- lgamma(m + 1) - lgamma(k + 1) - lgamma(m - k + 1) +
+        ifelse(k == 0, 0, k * log(mu)) +
+        ifelse(m - k == 0, 0, (m - k) * log1p(-mu))
+      -2 * sum(ifelse(m > 0, wt / m, 0) * ll)
+    }
+  } else {
+    family$aic <- function(y, n, mu, wt, dev) {
+      -2 * sum(wt * (ifelse(y == 0, 0, y * log(mu)) - mu - lgamma(y + 1)))
+    }
+  }
+  environment(family$aic) <- baseenv()
+  family$family <- paste0(family$family, "_projpred")
+  family$dispersion <- 1
+  return(family)
+}
+
+# The control of lme4::glmer() and gamm4::gamm4() for the family from
+# glmer_family(). lme4 >= 2.1-0 computes a correction for the estimation of the
+# dispersion of a family with another name than "binomial" and "poisson". It is
+# not used for a fixed dispersion, but its computation (a QR decomposition) can
+# take long or fail. Other lme4 versions do not read `disp_dof_correction`.
+glmer_control <- function(control, family) {
+  if (family$family %in% c("binomial_projpred", "poisson_projpred") &&
+      is.list(control)) {
+    control$disp_dof_correction <- FALSE
+  }
+  return(control)
+}
+
+# The data for the family from glmer_family(). lme4 accepts a factor or logical
+# response (augmented-data projection) only for the family name "binomial". As
+# in binomial()$initialize, the first factor level is a failure and all other
+# levels are successes.
+glmer_data <- function(data, formula, family) {
+  if (!identical(family$family, "binomial_projpred") || is.null(data)) {
+    return(data)
+  }
+  y_nm <- all.vars(formula[[2]])
+  if (length(y_nm) != 1 || !y_nm %in% names(data)) {
+    return(data)
+  }
+  y <- data[[y_nm]]
+  if (is.factor(y)) {
+    data[[y_nm]] <- as.numeric(y != levels(y)[1])
+  } else if (is.logical(y)) {
+    data[[y_nm]] <- as.numeric(y)
+  }
+  return(data)
+}
+
 # Whether lme4::glmer() would fit a binomial submodel to rounded data: lme4 <
 # 2.1-1 computes the objective of `nAGQ >= 1` with binomial()$aic(), which
 # rounds non-integer numbers of successes and trials. The traditional
 # projection has non-integer responses, and the augmented-data projection has
-# non-integer weights. `TRUE` also if the data cannot be checked (then
-# `nAGQ = 0` is used for data that may be integer).
+# non-integer weights. `FALSE` for the family from glmer_family(). `TRUE` also
+# if the data cannot be checked (then `nAGQ = 0` is used for data that may be
+# integer).
 glmer_rounds_binomial <- function(formula, family, data, weights) {
   if (!identical(family$family, "binomial") ||
       utils::packageVersion("lme4") >= "2.1.1") {

@@ -986,14 +986,14 @@ outdmin_tester_trad <- function(
                        model.frame(outdmin_totest[[!!j]]),
                        info = info_str)
       if (check_y_from_resp) {
-        expect_equal(
-          outdmin_totest[[!!j]]@frame[[
-            grep("y_|ybinprop", names(outdmin_totest[[!!j]]@frame),
-                 value = TRUE)
-          ]],
-          y_from_resp,
-          info = info_str
-        )
+        y_from_frame <- outdmin_totest[[j]]@frame[[
+          grep("y_|ybinprop", names(outdmin_totest[[j]]@frame), value = TRUE)
+        ]]
+        if (!is.null(augdat_cats) && !is.factor(y_from_frame)) {
+          # glmer_data() passes a 0/1 response instead of a factor:
+          y_from_frame <- as.factor(y_from_frame)
+        }
+        expect_equal(y_from_frame, y_from_resp, info = info_str)
       }
       if (!is.null(wobs_expected)) {
         expect_equal(structure(outdmin_totest[[!!j]]@frame$`(weights)`,

@@ -74,11 +74,17 @@ from class \code{glmerMod}) for all other families. For \code{\link[lme4:glmer]{
 so both optimization stages use BOBYQA. A \code{control} argument in \code{...}
 replaces this default in the first fit. After some \pkg{lme4} errors,
 \pkg{projpred} refits with its own settings and ignores this \code{control}.
-For the \code{\link[=binomial]{binomial()}} family, \pkg{lme4} versions before 2.1-1 round
-non-integer responses and weights in the objective of \code{\link[lme4:glmer]{lme4::glmer()}}
-with \code{nAGQ >= 1}. With these \pkg{lme4} versions, \pkg{projpred} uses
-\code{nAGQ = 0} for such submodels unless \code{nAGQ} is set via \code{...}. Then the
-fixed effects and the group-level effects do not depend on the rounded
+\pkg{lme4} versions before 2.1-1 evaluate the objective of
+\code{\link[lme4:glmer]{lme4::glmer()}} for the \code{\link[=binomial]{binomial()}} and the \code{\link[=poisson]{poisson()}} family with
+rounding: they round non-integer binomial responses and weights, and
+the objective is infinite for non-integer Poisson responses (then the
+group-level standard deviations stay at their start values). With
+\pkg{lme4} versions from 2.0-1 to 2.1-0, \pkg{projpred} passes a copy of
+these families with another name (ending in \verb{_projpred}) and an \code{aic}
+function without rounding. With \pkg{lme4} versions before 2.0-1,
+\pkg{projpred} uses \code{nAGQ = 0} for binomial submodels with non-integer
+responses or weights unless \code{nAGQ} is set via \code{...}. Then the fixed
+effects and the group-level effects do not depend on the rounded
 objective; the group-level standard deviations still do.
 \item For the augmented-data projection: \code{\link[ordinal:clmm]{ordinal::clmm()}} (the returned
 object inherits from class \code{clmm}) for the \code{\link[brms:cumulative]{brms::cumulative()}} family,
@@ -98,8 +104,10 @@ uses the other of these two links.
 object inherits from class \code{gam}).
 \item Submodel with multilevel and additive terms: \code{\link[gamm4:gamm4]{gamm4::gamm4()}} (within
 \pkg{projpred}, the returned object inherits from class \code{gamm4}). For the
-\code{\link[=binomial]{binomial()}} family with non-integer responses or weights and \pkg{lme4}
-versions before 2.1-1, \pkg{projpred} gives
+\code{\link[=binomial]{binomial()}} and the \code{\link[=poisson]{poisson()}} family, \pkg{projpred} passes the same
+family as to \code{\link[lme4:glmer]{lme4::glmer()}} (see above). For the \code{\link[=binomial]{binomial()}} family with
+non-integer responses or weights and \pkg{lme4} versions before 2.0-1,
+\pkg{projpred} gives
 \code{\link[gamm4:gamm4]{gamm4::gamm4()}} an optimizer that skips its second optimization stage, so
 the fit is that of \code{nAGQ = 0} in \code{\link[lme4:glmer]{lme4::glmer()}} (see the paragraph on
 \code{\link[lme4:glmer]{lme4::glmer()}} above), up to the optimizer. The first stage uses the
