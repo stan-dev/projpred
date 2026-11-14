@@ -491,7 +491,9 @@ test_that(paste(
   expect_equal(unname(lme4::fixef(fit_gamm$mer)),
                unname(lme4::fixef(fit_glmer)), tolerance = 1e-3)
   # With a smooth term:
-  fit_s <- divmin_tst("s(z) + x + (1 | g)", d, fam, d$y)[[1]]
+  fit_s <- suppressWarnings(
+    divmin_tst("s(z) + x + (1 | g)", d, fam, d$y)
+  )[[1]]
   theta_s <- lme4::getME(fit_s$mer, "theta")
   theta_g <- unname(theta_s[grep("^g\\.", names(theta_s))])
   expect_length(theta_g, 1)
@@ -850,7 +852,9 @@ test_that(paste(
   suffix <- if (lme4_needs_glmer_family()) "_projpred" else ""
   expect_identical(fam_used$family, paste0("poisson", suffix))
   expect_identical(isFALSE(ctrl$disp_dof_correction),
-                   lme4_needs_glmer_family())
+                   lme4_needs_glmer_family() &&
+                     "disp_dof_correction" %in%
+                       names(formals(lme4::glmerControl)))
   ctrl <- fit_gamm_mocked(fam_binom, plogis(d$eta))
   expect_identical(fam_used$family, paste0("binomial", suffix))
   ctrl <- fit_gamm_mocked(extend_family(gaussian()), d$eta)
