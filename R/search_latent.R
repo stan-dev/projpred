@@ -223,6 +223,9 @@ search_forward_latent_mlvl <- function(p_ref, refmodel, nterms_max, verbose,
   # The screen fits use the observations with a positive weight (a fold of
   # LOO CV sets the weight of the left-out observation to zero):
   dat <- droplevels(dat[wobs > 0, , drop = FALSE])
+  # The contrasts of the reference model, as in the projections (a factor with
+  # a dropped level keeps the default contrasts, see set_contrasts()):
+  dat <- set_contrasts(dat, refmodel$contrasts)
   fml_base <- stats::as.formula(".projpred_eta ~ 1",
                                 env = environment(refmodel$formula))
   verb_out("Screening the candidates of each step with one multilevel fit ",

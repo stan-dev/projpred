@@ -447,6 +447,38 @@ test_that("the multilevel screen drops a factor level of a zero-weight observati
   expect_identical(rss_na, 0L)
 })
 
+test_that("the multilevel screen uses the contrasts of the reference model", {
+  skip_on_cran()
+  refm <- refm_latml(fml = y ~ x1 + x2 + x6 + x7 + f + (1 | g))
+  # A reduced contrast matrix changes the screen fit of `f`. Observation 1
+  # gets weight 0 (as in a fold of the LOO CV) and keeps all levels of `f`:
+  ctr <- contr.sum(levels(refm$fetch_data()$f))[, 1, drop = FALSE]
+  refm$contrasts <- list(f = ctr)
+  refm$wobs[1] <- 0
+  set.seed(5521)
+  p_ref <- get_refdist(refm, nclusters = 2)
+  ctrs_seen <- list()
+  rss_orig <- latent_mlvl_rss
+  testthat::local_mocked_bindings(
+    latent_mlvl_rss = function(terms_, dat, ...) {
+      ctrs_seen <<- c(ctrs_seen, list(attr(dat$f, "contrasts")))
+      rss_orig(terms_, dat, ...)
+    },
+    .package = "projpred"
+  )
+  out <- muffle_lat(search_forward_latent_mlvl(
+    p_ref = p_ref, refmodel = refm, nterms_max = 2, verbose = FALSE,
+    search_terms = union("1", split_formula(refm$formula,
+                                              data = refm$fetch_data())),
+    screen_m = 2L
+  ))
+  expect_false(is.null(out))
+  expect_gt(length(ctrs_seen), 0)
+  for (ctr_seen in ctrs_seen) {
+    expect_identical(ctr_seen, ctr)
+  }
+})
+
 test_that("the multilevel screen returns `NULL` outside its conditions", {
   skip_on_cran()
   fun <- "search_forward_latent_mlvl"
