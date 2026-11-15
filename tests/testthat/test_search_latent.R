@@ -303,6 +303,140 @@ test_that("cv_varsel() with validated search runs the cumulative screen", {
                performances(cv_fwd, deltas = FALSE))
 })
 
+# Records the searches of cv_varsel() with LOO CV and validated search for the
+# screen `screen_fun` (name of a projpred function) in the returned
+# environment: the results of perturb_refmodel() (`prt`, one per fold), the
+# get_p_clust() calls with a shift of the draws (`pclust`: the result, and the
+# result without the shift) and, for each search, an environment with its
+# reference model, `p_ref` and result (`searches`, the full-data search
+# first). The recorders of a test add to the environment of the current search
+# (cur_search()).
+local_fold_recorder <- function(screen_fun, .env = parent.frame()) {
+  rec <- new.env()
+  rec$prt <- list()
+  rec$pclust <- list()
+  rec$searches <- list()
+  ns <- asNamespace("projpred")
+  perturb_orig <- get("perturb_refmodel", ns)
+  pclust_orig <- get("get_p_clust", ns)
+  screen_orig <- get(screen_fun, ns)
+  mocks <- list(
+    perturb_refmodel = function(...) {
+      out <- perturb_orig(...)
+      rec$prt <- c(rec$prt, list(out))
+      out
+    },
+    get_p_clust = function(..., draws_shift = NULL) {
+      out <- pclust_orig(..., draws_shift = draws_shift)
+      if (!is.null(draws_shift)) {
+        rec$pclust <- c(rec$pclust, list(list(
+          out = out, unshifted = pclust_orig(..., draws_shift = NULL)
+        )))
+      }
+      out
+    }
+  )
+  mocks[[screen_fun]] <- function(p_ref, refmodel, ...) {
+    cur <- new.env()
+    cur$refmodel <- refmodel
+    cur$p_ref <- p_ref
+    rec$searches <- c(rec$searches, list(cur))
+    cur$out <- screen_orig(p_ref = p_ref, refmodel = refmodel, ...)
+    cur$out
+  }
+  do.call(testthat::local_mocked_bindings,
+          c(mocks, list(.package = "projpred", .env = .env)))
+  return(rec)
+}
+
+cur_search <- function(rec) rec$searches[[length(rec$searches)]]
+
+# cv_varsel() with LOO CV, validated search in `nloo` folds (sequential) and
+# `search_screen = 2`.
+cv_lat_folds <- function(refm, nloo) {
+  muffle_lat(cv_varsel(refm, cv_method = "LOO", nloo = nloo,
+                       validate_search = TRUE, search_screen = 2,
+                       nclusters = 2, ndraws_pred = 10, nterms_max = 2,
+                       seed = 5521, parallel = FALSE, verbose = FALSE))
+}
+
+# Expects that `rec` (see local_fold_recorder()) has the screened full-data
+# search with the reference model `refm` and one screened search per fold with
+# the perturbed reference model of the fold. `shift` is where this reference
+# model has the shift of the draws: in `mu` (shifted draws) or in
+# `draws_shift` (get_p_clust() adds it to `p_ref`).
+expect_fold_searches_perturbed <- function(rec, refm, nloo, shift) {
+  expect_length(rec$prt, nloo)
+  expect_false(any(vapply(rec$prt, is.null, logical(1))))
+  expect_length(rec$searches, nloo + 1L)
+  expect_false(any(vapply(rec$searches, function(cur) is.null(cur$out),
+                          logical(1))))
+  expect_equal(rec$searches[[1]]$refmodel$wobs, refm$wobs)
+  expect_null(rec$searches[[1]]$refmodel$draws_shift)
+  expect_length(rec$pclust, if (shift == "draws_shift") nloo else 0L)
+  for (k in seq_len(nloo)) {
+    cur <- rec$searches[[k + 1L]]
+    prt <- rec$prt[[k]]
+    info <- paste("fold", k)
+    # Weights with a zero for the left-out observation:
+    expect_identical(cur$refmodel$wobs, prt$wobs, info = info)
+    expect_identical(sum(prt$wobs == 0), 1L, info = info)
+    expect_false(isTRUE(all.equal(prt$wobs, refm$wobs)), info = info)
+    if (shift == "mu") {
+      expect_identical(cur$refmodel$mu, prt$mu, info = info)
+      expect_false(isTRUE(all.equal(prt$mu, refm$mu)), info = info)
+    } else {
+      expect_identical(cur$refmodel$draws_shift, prt$draws_shift,
+                       info = info)
+      expect_true(any(prt$draws_shift != 0), info = info)
+      expect_identical(cur$p_ref, rec$pclust[[k]]$out, info = info)
+    }
+  }
+}
+
+test_that(paste(
+  "the cumulative screen in the fold searches of LOO CV uses the perturbed",
+  "observation weights and draws"
+), {
+  skip_on_cran()
+  refm <- refm_latcum(n = 40)
+  rec <- local_fold_recorder("search_forward_latent_cum")
+  resp_orig <- latent_cum_response
+  gains_orig <- latent_cum_gains
+  testthat::local_mocked_bindings(
+    latent_cum_response = function(p_arr, wobs, link) {
+      cur <- cur_search(rec)
+      cur$p_arr <- p_arr
+      cur$wobs <- wobs
+      resp_orig(p_arr = p_arr, wobs = wobs, link = link)
+    },
+    latent_cum_gains = function(...) {
+      cur <- cur_search(rec)
+      cur$n_gains <- (cur$n_gains %||% 0L) + 1L
+      gains_orig(...)
+    },
+    .package = "projpred"
+  )
+  nloo <- 4L
+  cv_lat_folds(refm, nloo)
+  expect_fold_searches_perturbed(rec, refm, nloo, shift = "mu")
+  for (k in seq_len(nloo)) {
+    cur <- rec$searches[[k + 1L]]
+    info <- paste("fold", k)
+    # The screen uses the perturbed weights and the probabilities of the
+    # search's `p_ref` (observations x 4 categories x projected draws), and
+    # its criterion runs:
+    expect_identical(cur$wobs, rec$prt[[k]]$wobs, info = info)
+    expect_identical(
+      cur$p_arr,
+      array(unclass(cur$p_ref$mu),
+            dim = c(refm$nobs, 4L, length(cur$p_ref$wdraws_prj))),
+      info = info
+    )
+    expect_gt(cur$n_gains %||% 0L, 0)
+  }
+})
+
 # Latent projection with group-level terms --------------------------------
 
 test_that("latent_mlvl_formula() combines the group-level terms of a factor", {
@@ -538,4 +672,45 @@ test_that("cv_varsel() with validated search runs the multilevel screen", {
   expect_identical(ranking(res$value), ranking(cv_fwd))
   expect_equal(performances(res$value, deltas = FALSE),
                performances(cv_fwd, deltas = FALSE))
+})
+
+test_that(paste(
+  "the multilevel screen in the fold searches of LOO CV uses the perturbed",
+  "observation weights and draws"
+), {
+  skip_on_cran()
+  refm <- refm_latml(n = 48)
+  rec <- local_fold_recorder("search_forward_latent_mlvl")
+  rss_orig <- latent_mlvl_rss
+  testthat::local_mocked_bindings(
+    latent_mlvl_rss = function(terms_, dat, fml_base) {
+      cur <- cur_search(rec)
+      cur$n_rss <- (cur$n_rss %||% 0L) + 1L
+      if (is.null(cur$dat)) cur$dat <- dat
+      rss_orig(terms_, dat, fml_base)
+    },
+    .package = "projpred"
+  )
+  nloo <- 4L
+  cv_lat_folds(refm, nloo)
+  expect_fold_searches_perturbed(rec, refm, nloo, shift = "draws_shift")
+  for (k in seq_len(nloo)) {
+    cur <- rec$searches[[k + 1L]]
+    prt <- rec$prt[[k]]
+    info <- paste("fold", k)
+    # The screen fits run, with the perturbed weights (without the left-out
+    # observation):
+    expect_gt(cur$n_rss %||% 0L, 0)
+    keep <- prt$wobs > 0
+    expect_equal(unname(cur$dat$.projpred_w), unname(prt$wobs[keep]),
+                 info = info)
+    # Their response is the mean latent predictor of `p_ref` without the
+    # shift, plus the shift:
+    p_unshifted <- rec$pclust[[k]]$unshifted
+    wd <- p_unshifted$wdraws_prj
+    eta_unshifted <- drop(unclass(p_unshifted$mu) %*% (wd / sum(wd)))
+    expect_equal(unname(cur$dat$.projpred_eta - eta_unshifted[keep]),
+                 unname(prt$draws_shift[keep]), tolerance = 1e-8,
+                 info = info)
+  }
 })
