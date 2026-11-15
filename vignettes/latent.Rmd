@@ -201,7 +201,7 @@ In order to decide for a submodel size, we first inspect the `plot()` results.
 In contrast to the main vignette where we used the mean log predictive density (MLPD) as predictive performance statistic for a `gaussian()` family reference model (and `gaussian()` submodels), we have a discrete family (`poisson()`) here, so it makes sense to exponentiate the MLPD to obtain the geometric mean predictive density (GMPD; in case of a discrete response, the predictive density values are actually predictive *probabilities* and hence the GMPD is bounded by 0 and 1).
 As in the main vignette, we plot with `deltas = TRUE` (in case of the GMPD, this means that the *ratio* of the submodel GMPD vs. the reference model GMPD is shown).
 Via global option `projpred.plot_vsel_size_position`, we set argument `size_position` of `plot.vsel()` to `"secondary_x"` to make the submodel sizes readable in all of the plots in this vignette.
-```{r plot_vsel_lat, fig.alt="Plot of the ratio of the geometric mean predictive density (GMPD) of each submodel to the GMPD of the reference model against the submodel size, with uncertainty intervals, for the latent projection of the Poisson model. A dashed horizontal line at 1 marks the reference model."}
+```{r plot_vsel_lat, fig.alt="Plot of the ratio of the geometric mean predictive density (GMPD) of each submodel to the GMPD of the reference model against the submodel size, with uncertainty intervals, for the latent projection of the Poisson model. A dashed horizontal line at 1 marks the reference model. The ratio is close to 0 up to size 10 and is above 1 from size 11 on."}
 options(projpred.plot_vsel_size_position = "secondary_x")
 ( gg_lat <- plot(vs_lat, stats = "gmpd", deltas = TRUE) )
 ```
@@ -401,7 +401,7 @@ Again, the message telling that `<refmodel>$dis` consists of only `NA`s will not
 The message concerning `latent_ilink` can be safely ignored here (the internal default based on `family$linkinv` works correctly in this case).
 
 Again, we first inspect the `plot()` results to decide for a submodel size:
-```{r plot_vsel_nebin, fig.alt="Plot of the GMPD ratio of each submodel to the reference model against the submodel size, with uncertainty intervals, for the latent projection of the negative binomial model. A dashed horizontal line at 1 marks the reference model."}
+```{r plot_vsel_nebin, fig.alt="Plot of the GMPD ratio of each submodel to the reference model against the submodel size, with uncertainty intervals, for the latent projection of the negative binomial model. A dashed horizontal line at 1 marks the reference model. The ratio increases with the size and levels off from size 11 on."}
 ( gg_nebin <- plot(vs_nebin, stats = "gmpd", deltas = TRUE) )
 ```
 
