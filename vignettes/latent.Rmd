@@ -201,7 +201,7 @@ In order to decide for a submodel size, we first inspect the `plot()` results.
 In contrast to the main vignette where we used the mean log predictive density (MLPD) as predictive performance statistic for a `gaussian()` family reference model (and `gaussian()` submodels), we have a discrete family (`poisson()`) here, so it makes sense to exponentiate the MLPD to obtain the geometric mean predictive density (GMPD; in case of a discrete response, the predictive density values are actually predictive *probabilities* and hence the GMPD is bounded by 0 and 1).
 As in the main vignette, we plot with `deltas = TRUE` (in case of the GMPD, this means that the *ratio* of the submodel GMPD vs. the reference model GMPD is shown).
 Via global option `projpred.plot_vsel_size_position`, we set argument `size_position` of `plot.vsel()` to `"secondary_x"` to make the submodel sizes readable in all of the plots in this vignette.
-```{r plot_vsel_lat}
+```{r plot_vsel_lat, fig.alt="Plot of the ratio of the geometric mean predictive density (GMPD) of each submodel to the GMPD of the reference model against the submodel size, with uncertainty intervals, for the latent projection of the Poisson model. A dashed horizontal line at 1 marks the reference model."}
 options(projpred.plot_vsel_size_position = "secondary_x")
 ( gg_lat <- plot(vs_lat, stats = "gmpd", deltas = TRUE) )
 ```
@@ -258,7 +258,7 @@ time_trad <- system.time(vs_trad <- varsel(
 options(warn_instable_orig)
 rm(warn_instable_orig)
 ```
-```{r post_vs_trad}
+```{r post_vs_trad, fig.alt="The same plot for the traditional projection of the Poisson model. Several noise terms enter the predictor ranking before relevant ones, and the submodels reach the GMPD of the reference model only at submodel size 28."}
 print(time_trad)
 ( gg_trad <- plot(vs_trad, stats = "gmpd", deltas = TRUE) )
 ```
@@ -401,7 +401,7 @@ Again, the message telling that `<refmodel>$dis` consists of only `NA`s will not
 The message concerning `latent_ilink` can be safely ignored here (the internal default based on `family$linkinv` works correctly in this case).
 
 Again, we first inspect the `plot()` results to decide for a submodel size:
-```{r plot_vsel_nebin}
+```{r plot_vsel_nebin, fig.alt="Plot of the GMPD ratio of each submodel to the reference model against the submodel size, with uncertainty intervals, for the latent projection of the negative binomial model. A dashed horizontal line at 1 marks the reference model."}
 ( gg_nebin <- plot(vs_nebin, stats = "gmpd", deltas = TRUE) )
 ```
 
@@ -587,13 +587,13 @@ In this case, we will ignore the warnings about high Pareto-$\hat{k}$ values bec
 We will also ignore the warning that SIS is used (instead of PSIS) because this is due to `nclusters_pred = 20` which we used only to speed up the building of the vignette.
 
 Plot the results:
-```{r weibull_plot_cvvs}
+```{r weibull_plot_cvvs, fig.alt="Plot of the MLPD difference between each submodel and the reference model against the submodel size, with uncertainty intervals, for the Weibull model with right-censored observations. A dashed horizontal line at zero marks the reference model."}
 plot(cvvs_weib, stats = "mlpd", deltas = TRUE)
 ```
 Hence, the truly relevant predictors are identified correctly.
 
 Project onto the submodel consisting of the first `n_pred_truth` predictors and perform a "posterior-projection predictive check" (PPPC):
-```{r weibull_pppc}
+```{r weibull_pppc, fig.alt="Kaplan-Meier overlay plot for the Weibull submodel: the Kaplan-Meier estimate of the survival function of the observed times as a dark line, and the Kaplan-Meier estimates of the predictive draws from proj_predict() as light lines. The light lines are close to the dark line."}
 predictors_final_weib <- head(ranking(cvvs_weib)[["fulldata"]], n_pred_truth)
 prj_weib <- project(refm_weib, predictor_terms = predictors_final_weib)
 prj_predict_weib <- proj_predict(prj_weib)
@@ -730,13 +730,13 @@ In this case, we will ignore the warnings about high Pareto-$\hat{k}$ values bec
 We will also ignore the warning that SIS is used (instead of PSIS) because this is due to `nclusters_pred = 20` which we used only to speed up the building of the vignette.
 
 Plot the results:
-```{r lognormal_plot_cvvs}
+```{r lognormal_plot_cvvs, fig.alt="Plot of the MLPD difference between each submodel and the reference model against the submodel size, with uncertainty intervals, for the log-normal model with right-censored observations. A dashed horizontal line at zero marks the reference model."}
 plot(cvvs_lnorm, stats = "mlpd", deltas = TRUE)
 ```
 Hence, the truly relevant predictors are identified correctly.
 
 Project onto the submodel consisting of the first `n_pred_truth` predictors and perform a "posterior-projection predictive check" (PPPC):
-```{r lognormal_pppc}
+```{r lognormal_pppc, fig.alt="Kaplan-Meier overlay plot for the log-normal submodel: the Kaplan-Meier estimate of the survival function of the observed times as a dark line, and the Kaplan-Meier estimates of the predictive draws from proj_predict() as light lines. The light lines are close to the dark line."}
 predictors_final_lnorm <- head(ranking(cvvs_lnorm)[["fulldata"]], n_pred_truth)
 prj_lnorm <- project(refm_lnorm, predictor_terms = predictors_final_lnorm)
 prj_predict_lnorm <- proj_predict(prj_lnorm)

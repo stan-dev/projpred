@@ -152,7 +152,7 @@ cvvs_fast <- cv_varsel(
 To find a suitable value for `nterms_max` in subsequent `cv_varsel()` runs, we take a look at a plot of at least one predictive performance statistic in dependence of the submodel size.
 Here, we choose the mean log predictive density (MLPD; see the documentation for argument `stats` of `summary.vsel()` for details) as the only performance statistic.
 Since we will be using the following plot only to determine `nterms_max` for subsequent `cv_varsel()` runs, we can omit the predictor ranking from the plot by setting `ranking_nterms_max` to `NA` (which requires `size_position = "primary_x_bottom"`, which we set here via its global option, just like argument `text_angle`):
-```{r plot_vsel_fast}
+```{r plot_vsel_fast, fig.alt="Line plot of the mean log predictive density (MLPD) of the submodels against the submodel size from 0 to 20, from the preliminary L1 search with refit_prj = FALSE. A dashed horizontal line shows the MLPD of the reference model. The submodel MLPD increases with the size and levels off from size 8 on."}
 options(projpred.plot_vsel_size_position = "primary_x_bottom")
 options(projpred.plot_vsel_text_angle = 0)
 plot(cvvs_fast, stats = "mlpd", ranking_nterms_max = NA)
@@ -176,7 +176,7 @@ cvvs_fast_refit <- cv_varsel(
 Here, we ignore the warning that SIS is used (instead of PSIS) because this is due to `nclusters_pred = 20` which we used only to speed up the building of the vignette.
 
 With the `refit_prj = TRUE` results, the predictive performance plot from above now looks as follows:
-```{r plot_vsel_fast_refit}
+```{r plot_vsel_fast_refit, fig.alt="The same plot as the previous one, from the preliminary run with refit_prj = TRUE. The submodel MLPD changes little after size 8."}
 plot(cvvs_fast_refit, stats = "mlpd", ranking_nterms_max = NA)
 ```
 This refined plot confirms that the submodel MLPD does not change much after submodel size 8, so in our final `cv_varsel()` run, we set `nterms_max` to a value slightly higher than 8 (here: 9) to ensure that we see the MLPD leveling off.
@@ -237,7 +237,7 @@ By default, the performance statistics are plotted on their actual scale and the
 *   With `deltas = "mixed"`, the performance statistics (i.e., their point estimates) are plotted on the actual scale, but the uncertainty bars visualize the difference-scale uncertainty.
 
 Since the difference-scale uncertainty is usually more helpful than the actual-scale uncertainty (at least with regard to the decision for a final submodel size), we plot with `deltas = TRUE` here (`deltas = "mixed"` would be another good choice). We also set `show_cv_proportions = TRUE` (via its global option) for illustrative purposes, which becomes clearer in section ["Predictor ranking(s) from final `cv_varsel()` run and identification of the selected submodel"](#rksel):
-```{r plot_vsel}
+```{r plot_vsel, fig.alt="Plot of the MLPD difference between each submodel and the reference model against the submodel size from 0 to 9, with uncertainty intervals. The x-axis labels show the size, the predictor that the full-data search added at that size, and its ranking proportion over the CV folds. A dashed horizontal line at zero marks the reference model. The difference comes close to zero and levels off from size 7 on."}
 options(projpred.plot_vsel_show_cv_proportions = TRUE)
 plot(cvvs, stats = "mlpd", deltas = TRUE)
 ```
@@ -313,7 +313,7 @@ This is the same as column `ranking_fulldata` in the `summary.vsel()` output abo
 Note that we have cut off the search at `nterms_max = 9` (which is smaller than the number of predictor terms in the full model, 20 here), so the ranking proportions in the `pr_rk` matrix do not need to sum to 100&nbsp;% (neither column-wise nor row-wise).
 
 The *transposed* matrix of ranking proportions can be visualized via `plot.cv_proportions()`:
-```{r plot_cv_proportions}
+```{r plot_cv_proportions, fig.alt="Heat map of the ranking proportions. The y-axis shows the predictors in the order of the full-data predictor ranking, the x-axis shows the ranking positions 1 to 9, and the color and the number of each tile give the proportion of CV folds that have the predictor at that position."}
 plot(pr_rk)
 ```
 Apart from visualizing the variability in the ranking of the predictors (here, this is of little use because of `K = 2`), this plot will be helpful later.
@@ -323,7 +323,7 @@ To retrieve the predictor terms of the final submodel (except for the intercept 
 ( predictors_final <- head(rk[["fulldata"]], size_decided) )
 ```
 At this place, it is again helpful to take the ranking proportions into account, but now in a cumulated fashion:
-```{r plot_cv_proportions_cumul}
+```{r plot_cv_proportions_cumul, fig.alt="Heat map of the cumulated ranking proportions. For each predictor (y-axis) and each position j (x-axis, labeled <=j), the color and the number of the tile give the proportion of CV folds that have the predictor among their first j predictors. In the column <=7, the tiles of the first 7 predictors are at 100 %."}
 plot(cv_proportions(rk, cumulate = TRUE))
 ```
 This plot shows that the two fold-wise searches (as well as the full-data search, whose predictor ranking determines the order of the predictors on the y-axis) agree on the *set* of the 7 most relevant predictors: When looking at `<=7` on the x-axis, all tiles above and including the 7^th^ main diagonal element are at 100&nbsp;%.
@@ -400,7 +400,7 @@ A visualization of the projected posterior can be achieved with the [**bayesplot
 ```{r bayesplot_attach, message=FALSE}
 library(bayesplot)
 ```
-```{r bayesplot_prj}
+```{r bayesplot_prj, fig.alt="Interval plot of the marginals of the projected posterior for the intercept, the coefficients of the 7 selected predictors and sigma. Each parameter has a point for the median, a thick line for the 50 % interval and a thin line for the 90 % interval."}
 bayesplot_theme_set(ggplot2::theme_bw())
 mcmc_intervals(prj_mat) +
   ggplot2::coord_cartesian(xlim = c(-1.5, 1.6))
@@ -410,7 +410,7 @@ Note that we only visualize the *1-dimensional* marginals of the projected poste
 To gain a more complete picture, we would have to visualize at least some *2-dimensional* marginals of the projected posterior (i.e., marginals for pairs of parameters).
 
 For comparison, consider the marginal posteriors of the corresponding parameters in the reference model:
-```{r bayesplot_ref}
+```{r bayesplot_ref, fig.alt="The same interval plot for the marginal posteriors of the same parameters in the reference model. The intervals differ only slightly from those of the projected posterior."}
 refm_mat <- as.matrix(refm_fit)
 mcmc_intervals(refm_mat, pars = colnames(prj_mat)) +
   ggplot2::coord_cartesian(xlim = c(-1.5, 1.6))
@@ -443,7 +443,7 @@ If `dat_gauss_new` also contained response values (i.e., `y` values in this exam
 With `proj_predict()`, we can obtain draws from predictive distributions based on the final submodel.
 In contrast to `proj_linpred(<...>, integrated = FALSE)`, this encompasses not only the uncertainty arising from parameter estimation, but also the uncertainty arising from the observation (or "sampling") model for the response^[In case of the Gaussian family we are using here, the uncertainty arising from the observation model is the uncertainty due to the residual standard deviation.].
 This is useful for what is usually termed a posterior predictive check (PPC), but would have to be termed something like a posterior-projection predictive check (PPPC) here:
-```{r proj_predict}
+```{r proj_predict, fig.alt="Density overlay plot: the density of the observed response y as a dark line, and the densities of the predictive draws from proj_predict() as many light lines. The light lines are close to the dark line."}
 prj_predict <- proj_predict(prj)
 # Using the 'bayesplot' package:
 ppc_dens_overlay(y = dat_gauss$y, yrep = prj_predict)
