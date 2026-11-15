@@ -88,12 +88,10 @@ prj_mat <- as.matrix(prj)
 # Since the draws have all the same weight here, we can treat them like
 # ordinary MCMC draws, e.g., we can summarize them using the `posterior`
 # package:
-if (requireNamespace("posterior", quietly = TRUE)) {
-  print(posterior::summarize_draws(
-    posterior::as_draws_matrix(prj_mat),
-    "median", "mad", function(x) quantile(x, probs = c(0.025, 0.975))
-  ))
-}
+print(posterior::summarize_draws(
+  posterior::as_draws_matrix(prj_mat),
+  "median", "mad", function(x) quantile(x, probs = c(0.025, 0.975))
+))
 # Or visualize them using the `bayesplot` package:
 if (requireNamespace("bayesplot", quietly = TRUE)) {
   print(bayesplot::mcmc_intervals(prj_mat))
