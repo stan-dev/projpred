@@ -26,7 +26,7 @@ If you read this from a place other than <https://mc-stan.org/projpred/news/inde
 * Faster reweighting of the clusters of the reference model draws in `cv_varsel()` with `validate_search = TRUE`. For example, `cv_varsel()` with `validate_search = TRUE` and 400 clusters is about 2 times faster for a Gaussian model with 382 observations. (GitHub: #601)
 * New argument `loo_perturb_alpha` of `cv_varsel()`. With LOO, `validate_search = TRUE` and `refit_prj = TRUE`, the fold-wise searches use observation weight perturbation, so the LOO estimates jump less between submodel sizes. This changes the default results. (GitHub: #603, #620)
 * Faster weight perturbation in `cv_varsel()` with `validate_search = TRUE` for Gaussian models and the latent projection. For example, `cv_varsel()` with 400 clusters is about 9 % faster for a Gaussian model with 382 observations. (GitHub: #621)
-* New argument `search_screen` of `varsel()` and `cv_varsel()`: a faster forward search for binomial (logit) and Poisson (log) submodels, which projects only the `search_screen` best candidates per step, ranked by a score statistic. (GitHub: #???)
+* New argument `search_screen` of `varsel()` and `cv_varsel()`: a faster forward search for binomial (logit) and Poisson (log) submodels, which projects only the `search_screen` best candidates per step, ranked by a score statistic. (GitHub: #646)
 
 ## Minor changes
 
