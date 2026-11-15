@@ -294,6 +294,18 @@ two candidates. At the last model size of 3, \code{y ~ x1 + x2 + x3} would be
 the only candidate. As another example, to exclude \code{x1} from the search,
 specify \code{search_terms = c("x2", "x3", "x2 + x3")} (or, in a simpler way
 that leads to the same results, \code{search_terms = c("x2", "x3")}).
+
+The elements of \code{search_terms} are not exclusive alternatives. A
+candidate model consists of the \code{chosen} predictor terms and the terms of
+one element, so terms from different elements can end up in the same
+submodel. For example, consider a reference model with formula \code{y ~ x1 + x2 + x3 + x4} and \code{search_terms = c("x1 + x2", "x1 + x3", "x1 + x2 + x4")}. The first candidates are \code{y ~ x1 + x2} and \code{y ~ x1 + x3}. If the
+search selects \code{x1 + x3}, the next candidate is \code{y ~ x1 + x3 + x2} (from
+element \code{"x1 + x2"}, because \code{x1} is already chosen), and the candidate
+after that is \code{y ~ x1 + x3 + x2 + x4} (from element \code{"x1 + x2 + x4"}).
+The predictor ranking is then \code{x1 + x3}, \code{x2}, \code{x4}. A search that
+selects either \code{x1 + x2 + x4} or \code{x1 + x3} (but not terms of both) is not
+possible with \code{search_terms}; for this, run one search for each set of
+terms.
 }
 \note{
 If \code{validate_search} is \code{FALSE}, the search is not included in the CV

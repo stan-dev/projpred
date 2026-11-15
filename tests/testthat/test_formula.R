@@ -311,6 +311,41 @@ test_that("select_possible_terms_size() works for non-redundant models", {
   )
 })
 
+test_that(paste(
+  "select_possible_terms_size() combines the terms of different search terms",
+  "(the example in the documentation of `search_terms`)"
+), {
+  allterms <- c("1", "x1 + x2", "x1 + x3", "x1 + x2 + x4")
+  for (use_info in c(FALSE, TRUE)) {
+    info_txt <- paste0("use_term_info = ", use_info)
+    # `size` counts the intercept:
+    expect_null(
+      select_possible_terms_size("1", allterms, size = 2,
+                                 use_term_info = use_info),
+      info = info_txt
+    )
+    expect_setequal(
+      select_possible_terms_size("1", allterms, size = 3,
+                                 use_term_info = use_info),
+      c("x1 + x2", "x1 + x3")
+    )
+    chosen <- c("1", "x1 + x3")
+    expect_identical(
+      select_possible_terms_size(chosen, allterms, size = 4,
+                                 use_term_info = use_info),
+      "x2",
+      info = info_txt
+    )
+    chosen <- c(chosen, "x2")
+    expect_identical(
+      select_possible_terms_size(chosen, allterms, size = 5,
+                                 use_term_info = use_info),
+      "x4",
+      info = info_txt
+    )
+  }
+})
+
 test_that("split_plus() splits term strings only at the `+` between terms", {
   expect_identical(split_plus("x1"), "x1")
   expect_identical(split_plus(c("x1 + x2", "x3")), c("x1", "x2", "x3"))
