@@ -329,6 +329,13 @@ test_that(paste(
                                  use_term_info = use_info),
       c("x1 + x2", "x1 + x3")
     )
+    # After `x1 + x2`, `x3` is still a candidate (expect_setequal() has no
+    # `info` argument):
+    expect_setequal(
+      select_possible_terms_size(c("1", "x1 + x2"), allterms, size = 4,
+                                 use_term_info = use_info),
+      c("x3", "x4")
+    )
     chosen <- c("1", "x1 + x3")
     expect_identical(
       select_possible_terms_size(chosen, allterms, size = 4,

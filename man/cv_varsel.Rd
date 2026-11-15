@@ -298,14 +298,14 @@ that leads to the same results, \code{search_terms = c("x2", "x3")}).
 The elements of \code{search_terms} are not exclusive alternatives. A
 candidate model consists of the \code{chosen} predictor terms and the terms of
 one element, so terms from different elements can end up in the same
-submodel. For example, consider a reference model with formula \code{y ~ x1 + x2 + x3 + x4} and \code{search_terms = c("x1 + x2", "x1 + x3", "x1 + x2 + x4")}. The first candidates are \code{y ~ x1 + x2} and \code{y ~ x1 + x3}. If the
-search selects \code{x1 + x3}, the next candidate is \code{y ~ x1 + x3 + x2} (from
-element \code{"x1 + x2"}, because \code{x1} is already chosen), and the candidate
-after that is \code{y ~ x1 + x3 + x2 + x4} (from element \code{"x1 + x2 + x4"}).
-The predictor ranking is then \code{x1 + x3}, \code{x2}, \code{x4}. A search that
-selects either \code{x1 + x2 + x4} or \code{x1 + x3} (but not terms of both) is not
-possible with \code{search_terms}; for this, run one search for each set of
-terms.
+submodel. For example, consider a reference model with formula \code{y ~ x1 + x2 + x3 + x4} and \code{search_terms = c("x1 + x2", "x1 + x3", "x1 + x2 + x4")}. After \code{y ~ 1}, the candidates are \code{y ~ x1 + x2} and \code{y ~ x1 + x3}. If the search selects \code{x1 + x3}, the only candidate in the next step
+is \code{y ~ x1 + x3 + x2} (from element \code{"x1 + x2"}, because \code{x1} is already
+chosen), and the only candidate in the step after that is \code{y ~ x1 + x3 + x2 + x4} (from element \code{"x1 + x2 + x4"}). The predictor ranking is then
+\code{x1 + x3}, \code{x2}, \code{x4}. If the search selects \code{x1 + x2} instead, the
+candidates in the next step are \code{y ~ x1 + x2 + x3} and \code{y ~ x1 + x2 + x4}, so \code{x3} is still possible. Thus, a search that selects either \code{x1 + x2 + x4} or \code{x1 + x3} (but not terms of both) is not possible with one
+\code{search_terms} vector. For this, run one search for each set of terms,
+for example with \code{search_terms = c("x1 + x2", "x1 + x2 + x4")} and with
+\code{search_terms = "x1 + x3"}.
 }
 \note{
 If \code{validate_search} is \code{FALSE}, the search is not included in the CV
