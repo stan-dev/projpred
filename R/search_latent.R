@@ -48,7 +48,8 @@ latent_project_best <- function(chosen, cands, fit_idx, p_ref, refmodel,
 # divergence minimizer. For projected draw s, let p_c be the reference
 # probabilities of the categories and z_c = F^-1(P(y <= c)) with the link F.
 # The latent predictor is eta_ref = -mean_c z_c (the mean over the C - 1
-# thresholds; equal to eta up to a constant), and the Fisher information of the cumulative model for eta is
+# thresholds; equal to eta up to a constant), and the Fisher information of
+# the cumulative model for eta is
 #   V = w * sum_c (f(z_c) - f(z_{c-1}))^2 / p_c
 # with f the density of F, f(z_0) = f(z_C) = 0 and the observation weights w.
 # The approximate gain of a candidate with the new column x_J at the submodel
@@ -148,7 +149,8 @@ latent_cum_response <- function(p_arr, wobs, link) {
   for (s in seq_len(n_draws)) {
     p <- pmax(matrix(p_arr[, , s], n_obs, n_cat), 1e-12)
     p <- p / rowSums(p)
-    p_cum <- matrix(t(apply(p, 1, cumsum)), n_obs, n_cat)[, -n_cat, drop = FALSE]
+    p_cum <- matrix(t(apply(p, 1, cumsum)), n_obs, n_cat)
+    p_cum <- p_cum[, -n_cat, drop = FALSE]
     z <- q_fun(pmin(pmax(p_cum, 1e-12), 1 - 1e-12))
     dens <- cbind(0, d_fun(z), 0)
     dp <- dens[, -1, drop = FALSE] - dens[, -(n_cat + 1L), drop = FALSE]
