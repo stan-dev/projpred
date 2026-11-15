@@ -28,7 +28,7 @@ If you read this from a place other than <https://mc-stan.org/projpred/news/inde
 * Faster weight perturbation in `cv_varsel()` with `validate_search = TRUE` for Gaussian models and the latent projection. For example, `cv_varsel()` with 400 clusters is about 9 % faster for a Gaussian model with 382 observations. (GitHub: #621)
 * Faster binomial (logit) and Poisson (log) multilevel submodels with group-level intercepts only: projpred's own Laplace fit (class `projpred_mlvl`). `cv_varsel()` with `validate_search = TRUE` is about 8 times faster. (GitHub: #644)
 * The fits of these submodels (for example, in element `outdmin` of `project()` output) have class `projpred_mlvl` instead of `glmerMod`. The new function `as_glmerMod()` converts such a fit to class `glmerMod`. (GitHub: #644)
-* Faster multilevel submodels of the `brms::cumulative()` family with a single group-level intercept term: projpred's own Laplace fit (class `projpred_mlvl_cumul`) instead of `ordinal::clmm()`. `cv_varsel()` with `validate_search = TRUE` is about 6 times faster. (GitHub: #PR)
+* Faster multilevel submodels of the `brms::cumulative()` family with a single group-level intercept term: projpred's own Laplace fit (class `projpred_mlvl_cumul`) instead of `ordinal::clmm()`. `cv_varsel()` with `validate_search = TRUE` is about 6 times faster. (GitHub: #645)
 
 ## Minor changes
 
