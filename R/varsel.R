@@ -536,7 +536,8 @@ varsel.refmodel <- function(
                   method == "forward" && is.null(search_control)
                 ) list(...) else search_control,
                 penalty,
-                search_terms = if (search_terms_was_null) NULL else search_terms,
+                search_terms =
+                  if (search_terms_was_null) NULL else search_terms,
                 search_screen
               ),
               clust_used_search = search_path$p_sel$clust_used,
