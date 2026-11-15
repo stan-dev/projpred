@@ -323,6 +323,77 @@ test_that(paste(
 })
 
 test_that(paste(
+  "the screened fold searches of LOO CV use the perturbed observation weights",
+  "and draws"
+), {
+  refm <- refm_screen()
+  # Records the results of perturb_refmodel() (one per fold) and, for each
+  # screened search, its reference model, `p_ref` and the screen_gains() inputs:
+  rec <- new.env()
+  rec$prt <- list()
+  rec$searches <- list()
+  perturb_orig <- perturb_refmodel
+  screen_orig <- search_forward_screen
+  gains_orig <- screen_gains
+  testthat::local_mocked_bindings(
+    perturb_refmodel = function(...) {
+      out <- perturb_orig(...)
+      rec$prt <- c(rec$prt, list(out))
+      out
+    },
+    search_forward_screen = function(p_ref, refmodel, ...) {
+      cur <- new.env()
+      cur$refmodel <- refmodel
+      cur$p_ref <- p_ref
+      cur$gains <- list()
+      rec$searches <- c(rec$searches, list(cur))
+      cur$out <- screen_orig(p_ref = p_ref, refmodel = refmodel, ...)
+      cur$out
+    },
+    screen_gains = function(mu_ref, wobs, ...) {
+      cur <- rec$searches[[length(rec$searches)]]
+      cur$gains <- c(cur$gains, list(list(mu_ref = mu_ref, wobs = wobs)))
+      gains_orig(mu_ref = mu_ref, wobs = wobs, ...)
+    },
+    .package = "projpred"
+  )
+  nloo <- 4L
+  muffle_known(cv_varsel(
+    refm, cv_method = "LOO", nloo = nloo, validate_search = TRUE,
+    search_screen = 1, nclusters = 3, ndraws_pred = 20, nterms_max = 3,
+    seed = 5521, parallel = FALSE, verbose = FALSE
+  ))
+  # The weight perturbation ran in each fold:
+  expect_length(rec$prt, nloo)
+  expect_false(any(vapply(rec$prt, is.null, logical(1))))
+  # The full-data search and one search per fold, in this order, each with a
+  # result of the screened search:
+  expect_length(rec$searches, nloo + 1L)
+  expect_false(any(vapply(rec$searches, function(cur) is.null(cur$out),
+                          logical(1))))
+  expect_equal(rec$searches[[1]]$refmodel$wobs, refm$wobs)
+  for (k in seq_len(nloo)) {
+    cur <- rec$searches[[k + 1L]]
+    prt <- rec$prt[[k]]
+    info <- paste("fold", k)
+    # The search gets the perturbed reference model: weights with a zero for
+    # the left-out observation, and shifted draws:
+    expect_identical(cur$refmodel$wobs, prt$wobs, info = info)
+    expect_identical(cur$refmodel$mu, prt$mu, info = info)
+    expect_identical(sum(prt$wobs == 0), 1L, info = info)
+    expect_false(isTRUE(all.equal(prt$wobs, refm$wobs)), info = info)
+    expect_false(isTRUE(all.equal(prt$mu, refm$mu)), info = info)
+    # The score statistic runs and uses these weights and the reference means
+    # of the search:
+    expect_gt(length(cur$gains), 0)
+    for (g in cur$gains) {
+      expect_identical(g$wobs, prt$wobs, info = info)
+      expect_identical(g$mu_ref, unclass(cur$p_ref$mu), info = info)
+    }
+  }
+})
+
+test_that(paste(
   "screen_gains() equals the one-step reduction computed with solve()",
   "(binomial with trials, weighted draws, single and multi-column candidates)"
 ), {
