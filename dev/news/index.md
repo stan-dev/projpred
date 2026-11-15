@@ -347,6 +347,11 @@
   **rstanarm** GAM. The search candidates do not change. (GitHub:
   [\#384](https://github.com/stan-dev/projpred/issues/384),
   [\#626](https://github.com/stan-dev/projpred/issues/626))
+- A named argument of an `s()` or `t2()` term now gives an error also if
+  it comes before the predictors or is the only argument, such as
+  `s(by = g, x)`. (GitHub:
+  [\#626](https://github.com/stan-dev/projpred/issues/626),
+  [\#636](https://github.com/stan-dev/projpred/issues/636))
 - Fixed wrong predictions and errors of additive multilevel submodels
   ([`gamm4::gamm4()`](https://rdrr.io/pkg/gamm4/man/gamm4.html)) for new
   data, and wrong predictions with group-level slopes. New group levels
