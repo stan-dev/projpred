@@ -100,7 +100,7 @@ refm_fit <- stan_glm(
   prior = hs(global_scale = tau0),
   ### Only for the sake of speed (not recommended in general):
   chains = 2, iter = 1000,
-  ### In general use defaults or explicitly define
+  ### In general, use defaults or explicitly define
   ### chains = 4, iter = 4000,
   ###
   refresh = 0
@@ -141,6 +141,7 @@ This run takes only a few seconds.
 The code below also shows how **projpred**'s CV can be parallelized with the **future** package (we disable the parallelization for the vignette build).
 The LOO folds are then split among the parallel workers.
 For a model as small as this one, the parallelization overhead can be larger than the runtime gain.
+We recommend the workers of the **future.mirai** package: in our experiments, the first parallel call was faster with them than with `future::multisession` (see section "Parallelization" in the general package documentation available [online](https://mc-stan.org/projpred/reference/projpred-package.html) or by typing `` ?`projpred-package` ``).
 
 If PSIS-LOO CV is not reliable (for example, if many Pareto $\hat{k}$ values are high), $K$-fold CV (`cv_method = "kfold"`) is an alternative.
 Then `run_cvfun()` can run the $K$ reference model refits once, so that several `cv_varsel()` calls can use them (see argument `cvfits` of `cv_varsel()`).
@@ -149,7 +150,7 @@ Then `run_cvfun()` can run the $K$ reference model refits once, so that several 
 # Note: Parallel processing is disabled during package building to avoid issues
 use_parallel <- FALSE  # Set to TRUE for actual parallel processing
 if (use_parallel) {
-  future::plan(future::multisession, workers = ncores)
+  future::plan(future.mirai::mirai_multisession, workers = ncores)
 }
 cvvs <- cv_varsel(
   refm_obj,
@@ -298,7 +299,7 @@ By the following `project()` call, we project the reference model onto the final
 <!-- There, we also explain for which types of submodels the parallelization of the projection is useful (see also section ["Supported types of models"](#modtypes) below). -->
 <!-- ```{r prll_prj_prep} -->
 <!-- if (!identical(.Platform$OS.type, "windows")) { -->
-<!--   future::plan(future::multisession, workers = ncores) -->
+<!--   future::plan(future.mirai::mirai_multisession, workers = ncores) -->
 <!--   trigger_default <- options(projpred.parallel_proj_trigger = 200) -->
 <!-- } -->
 <!-- ``` -->
@@ -561,7 +562,7 @@ Some speed-up possibilities are:
     In case of forward search, this issue does not exist.
 
 1.  Parallelizing the CV folds of `cv_varsel()` with the **future** package (see the example above and argument `parallel` of `cv_varsel()`).
-    The parallel workers are set up with `future::plan()`, for example `future::plan(future::multisession, workers = 4)`.
+    The parallel workers are set up with `future::plan()`, for example `future::plan(future.mirai::mirai_multisession, workers = 4)` (recommended) or `future::plan(future::multisession, workers = 4)`.
     When using `project()`, parallelizing the projection might also help (see the general package documentation available [online](https://mc-stan.org/projpred/reference/projpred-package.html) or by typing `` ?`projpred-package` ``).
 
 1.  Using `varsel.vsel()` or `cv_varsel.vsel()` to re-use previous search results for new performance evaluation(s).
