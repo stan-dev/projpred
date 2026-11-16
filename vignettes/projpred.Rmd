@@ -507,7 +507,7 @@ According to the simulation-based case study from [#353](https://github.com/stan
 For multilevel Poisson models, the traditional projection may take very long, see [#353](https://github.com/stan-dev/projpred/pull/353).
 According to the simulation-based case study from [#353](https://github.com/stan-dev/projpred/pull/353), the latent projection might help in that case.
 
-Finally, as illustrated in the [Poisson example of the latent-projection vignette](https://mc-stan.org/projpred/articles/latent.html#example-poisson-distribution), the latent projection can be beneficial for non-multilevel models with a (non-Gaussian) family that is also supported by the traditional projection, at least in case of the Poisson family.
+Finally, the [Poisson example of the latent-projection vignette](https://mc-stan.org/projpred/articles/latent.html#example-poisson-distribution) shows that the latent projection can be beneficial for non-multilevel models with a (non-Gaussian) family that the traditional projection also supports.
 In that example, the latent projection gave a better predictor ranking with L1 search, and it was much faster with forward search.
 
 ### Issues with the augmented-data projection
