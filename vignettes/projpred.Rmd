@@ -100,6 +100,8 @@ refm_fit <- stan_glm(
   prior = hs(global_scale = tau0),
   ### Only for the sake of speed (not recommended in general):
   chains = 2, iter = 1000,
+  ### In general use defaults or explicitly define
+  ### chains = 4, iter = 4000,
   ###
   refresh = 0
 )
@@ -134,9 +136,7 @@ It can also help to choose argument `nterms_max` (the largest submodel size of t
 
 Here, we run `cv_varsel()` with its defaults: PSIS-LOO CV (`cv_method = "LOO"`), validated search (`validate_search = TRUE`) and forward search (`method = "forward"`).
 For a Gaussian reference model with the identity link and without multilevel or additive terms, like this one, **projpred** computes the forward search and the LOO CV with validated search from cross-products of the model matrix.
-Therefore, this run takes only a few seconds.
-In LOO CV with validated search, the search of each fold uses random observation weights (see argument `loo_perturb_alpha` of `cv_varsel()`).
-This makes the estimated predictive performance change more smoothly between submodel sizes.
+This run takes only a few seconds.
 
 The code below also shows how **projpred**'s CV can be parallelized with the **future** package (we disable the parallelization for the vignette build).
 The LOO folds are then split among the parallel workers.
@@ -166,7 +166,7 @@ if (use_parallel) {
 
 #### Predictive performance plot from the `cv_varsel()` run {#plotfinal}
 
-We can now select a final submodel size by looking at a predictive performance plot.
+We can now select a submodel size by looking at a predictive performance plot.
 By default, the performance statistics are plotted on their actual scale and the uncertainty bars match this scale, but argument `deltas` of `plot.vsel()` offers two more options:
 
 *   With `deltas = TRUE`, the performance statistics are plotted on *difference scale*, i.e., as differences^[For the geometric mean predictive density (GMPD; see argument `stats` of `summary.vsel()` and `plot.vsel()`), `deltas = TRUE` estimates the GMPD *ratio* (not difference) vs. the baseline model.] from the baseline model^[For the definition of the baseline model, see argument `baseline` of `summary.vsel()` and `plot.vsel()`; in the most common cases, the default baseline model is the reference model.] and the uncertainty bars match this scale,
@@ -244,10 +244,10 @@ To compute these ranking proportions, we use `cv_proportions()`:
 ```
 The main diagonal of this matrix is contained in column `cv_proportions_diag` of the `summary.vsel()` output and is also shown in the third line of the x-axis tick labels of the predictive performance plot from section ["Predictive performance plot from the `cv_varsel()` run"](#plotfinal) (due to `show_cv_proportions = TRUE` set via its global option).
 
-Here, 93&nbsp;% of the LOO CV folds have `X1` at position 1 and `X14` at position 2.
+Here, 93% of the LOO CV folds have `X1` at position 1 and `X14` at position 2.
 The other folds have these two predictors in the opposite order.
-At each of positions 3 to 8, at least 96&nbsp;% of the folds have the same predictor as the full-data predictor ranking at that position.
-From position 9 on, the proportions are below 40&nbsp;%, so the ranking of the remaining predictors varies between the folds.
+At each of positions 3 to 8, at least 96% of the folds have the same predictor as the full-data predictor ranking at that position.
+From position 9 on, the proportions are below 40%, so the ranking of the remaining predictors varies between the folds.
 Since the column names of the matrix returned by `cv_proportions()` follow the full-data predictor ranking, we can infer that `X1` and `X14` are also the most relevant predictor terms (in this order) in the full-data predictor ranking.
 To see this more explicitly, we can access element `fulldata` of the `ranking()` output:
 ```{r ranking_fulldata}
@@ -256,7 +256,7 @@ rk[["fulldata"]]
 This is the same as column `ranking_fulldata` in the `summary.vsel()` output above (apart from the intercept).
 
 We cut off the predictor rankings at 12 predictor terms, which is smaller than the number of predictor terms in the full model (20 here).
-Therefore, the ranking proportions in the `pr_rk` matrix do not need to sum to 100&nbsp;% (neither column-wise nor row-wise).
+Therefore, the ranking proportions in the `pr_rk` matrix do not need to sum to 100% (neither column-wise nor row-wise).
 
 The *transposed* matrix of ranking proportions can be visualized via `plot.cv_proportions()`:
 ```{r plot_cv_proportions, fig.alt="Heat map of the ranking proportions. The y-axis shows the predictors in the order of the full-data predictor ranking and the x-axis the ranking positions 1 to 12. Each tile gives the proportion of CV folds that have the predictor at that position."}
@@ -274,13 +274,13 @@ plot(cv_proportions(rk, cumulate = TRUE))
 ```
 This plot shows that all fold-wise searches and the full-data search agree on the *set* of the 7 most relevant predictors.
 (The full-data predictor ranking determines the order of the predictors on the y-axis.)
-At `<=7` on the x-axis, all tiles above and including the 7^th^ main diagonal element are at 100&nbsp;%.
+At `<=7` on the x-axis, all tiles above and including the 7^th^ main diagonal element are at 100%.
 The same holds for the set of the 8 most relevant predictors (`<=8`), but not for larger sets.
-For example, only 35&nbsp;% of the folds have `X10` among their first 9 predictors.
+For example, only 35% of the folds have `X10` among their first 9 predictors.
 
 The cumulated ranking proportions can also guide the decision for a submodel size.
 Here, they agree with our choice of size 7: all folds select the same 7 (and 8) predictors.
-A size of 9 would add `X10`, which only 35&nbsp;% of the folds have among their first 9 predictors.
+A size of 9 would add `X10`, which only 35% of the folds have among their first 9 predictors.
 
 In a real-world application, we might also be able to incorporate the full-data predictor ranking into our decision for a submodel size (usually, this requires to also take into account the variability of the predictor ranking, as reflected by the---possibly cumulated---ranking proportions).
 For example, the predictors might be associated with different measurement costs, so that we might want to select a costly predictor only if the submodel size at which it would be selected (according to the full-data predictor ranking, but taking into account that there might be variability in the ranking of the predictors) comes with a considerable increase in predictive performance.
@@ -349,7 +349,7 @@ A visualization of the projected posterior can be achieved with the [**bayesplot
 library(bayesplot)
 ```
 ```{r bayesplot_prj, fig.alt="Interval plot of the projected posterior, with one row for the intercept, each of the 7 selected predictors and sigma, and the parameter value on the x-axis. Each row has a point for the median, a thick line for the 50 % interval and a thin line for the 90 % interval."}
-bayesplot_theme_set(ggplot2::theme_bw())
+ggplot2::theme_set(bayesplot::theme_default(base_family = "sans"))
 mcmc_intervals(prj_mat) +
   ggplot2::coord_cartesian(xlim = c(-1.5, 1.6))
 ```
@@ -508,7 +508,6 @@ For multilevel Poisson models, the traditional projection may take very long, se
 According to the simulation-based case study from [#353](https://github.com/stan-dev/projpred/pull/353), the latent projection might help in that case.
 
 Finally, the [Poisson example of the latent-projection vignette](https://mc-stan.org/projpred/articles/latent.html#example-poisson-distribution) shows that the latent projection can be beneficial for non-multilevel models with a (non-Gaussian) family that the traditional projection also supports.
-In that example, the latent projection gave a better predictor ranking with L1 search, and it was much faster with forward search.
 
 ### Issues with the augmented-data projection
 
@@ -519,7 +518,7 @@ According to the simulation-based case study from [#353](https://github.com/stan
 ### Speed {#speed}
 
 For Gaussian models with the identity link and without multilevel or additive terms, and for the latent projection without such terms, **projpred** computes the forward search and the LOO CV with validated search from cross-products of the model matrix.
-Therefore, the defaults of `cv_varsel()` are usually fast for these models.
+The defaults of `cv_varsel()` are usually fast for these models.
 For other models, each projection is an iterative fit, and `cv_varsel()` with the defaults can take much longer.
 For binomial and Poisson models, the latent projection is an alternative that uses the same fast computations (see the [latent-projection vignette](https://mc-stan.org/projpred/articles/latent.html)).
 
