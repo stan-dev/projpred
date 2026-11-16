@@ -630,6 +630,15 @@ get_stat <- function(summaries, summaries_baseline = NULL,
     # Go back to linear scale
     lq <- exp(lq)
     uq <- exp(uq)
+  } else if (stat %in% c("acc", "pctcorr") && is.null(summaries_baseline) &&
+             isTRUE(value > 0 && value < 1)) {
+    # Normal approximation on the logit scale, with the standard error from the
+    # delta method. An estimate of 0 or 1 (or outside of (0, 1) with subsampled
+    # LOO-CV) uses the normal approximation below.
+    sd_logit <- value_se / (value * (1 - value))
+    lq <- plogis(qnorm(alpha_half, mean = qlogis(value), sd = sd_logit))
+    uq <- plogis(qnorm(one_minus_alpha_half, mean = qlogis(value),
+                       sd = sd_logit))
   } else if (stat %in% c("auc")) {
     lq <- lq_uq[1]
     uq <- lq_uq[2]
