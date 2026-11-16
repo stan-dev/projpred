@@ -363,11 +363,15 @@ parallel. Costly parts are the fold-wise searches and performance
 evaluations in case of \code{validate_search = TRUE}. (Note that in case of
 \eqn{K}-fold CV, the \eqn{K} reference model refits are not affected by
 argument \code{parallel}; only \pkg{projpred}'s CV is affected.) The
-parallelization is powered by the \pkg{foreach} package. Thus, any parallel
-(or sequential) backend compatible with \pkg{foreach} can be used, e.g.,
-the backends from packages \pkg{doParallel}, \pkg{doMPI}, or
-\pkg{doFuture}. For GLMs, this CV parallelization should work reliably, but
-for other models (such as GLMMs), it may lead to excessive memory usage
+parallelization uses the workers of the current plan of the
+\pkg{future} package (set up with, e.g.,
+\code{future::plan(future::multisession, workers = 4)}), see section
+"Parallelization" in \link{projpred-package}. Without such workers, the CV
+runs sequentially, with a warning. Each CV fold has its own random
+number stream (also with \code{parallel = FALSE}), so for a given seed, the
+results depend neither on argument \code{parallel} nor on the number of
+workers. For GLMs, this CV parallelization should work reliably, but for
+other models (such as GLMMs), it may lead to excessive memory usage
 which in turn may crash the R session (on Unix systems, setting an
 appropriate memory limit via \code{unix::rlimit_as()} may avoid crashing the
 whole machine). However, the problem of excessive memory usage is less

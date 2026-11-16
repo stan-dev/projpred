@@ -119,49 +119,82 @@ setting global option \code{projpred.check_convergence} to \code{FALSE}.
 }
 
 \section{Parallelization}{
-The projection of the reference model onto a submodel can be run in parallel
-(across the projected draws). This is powered by the \pkg{foreach} package.
-Thus, any parallel (or sequential) backend compatible with \pkg{foreach} can
-be used, e.g., the backends from packages \pkg{doParallel}, \pkg{doMPI}, or
-\pkg{doFuture}. Using the global option \code{projpred.parallel_proj_trigger}, the
-number of projected draws below which no parallelization is applied (even if
-a parallel backend is registered) can be modified. Such a "trigger" threshold
-exists because of the computational overhead of a parallelization which makes
-the projection parallelization only useful for a sufficiently large number of
-projected draws. By default, the projection parallelization is turned off,
-which can also be achieved by supplying \code{Inf} (or \code{NULL}) to option
-\code{projpred.parallel_proj_trigger}. Note that we cannot recommend the
-projection parallelization on Windows because in our experience, the
-parallelization overhead is larger there, causing a parallel run to take
-longer than a sequential run. Also note that the projection parallelization
-works well for submodels which are GLMs (and hence also for the latent
-projection if the submodel has no multilevel or additive predictor terms),
-but for all other types of submodels, the fitted submodel objects are quite
-big, which---when running in parallel---may lead to excessive memory usage
-which in turn may crash the R session (on Unix systems, setting an
-appropriate memory limit via \code{unix::rlimit_as()} may avoid crashing the whole
-machine). Thus, we currently cannot recommend parallelizing projections onto
-submodels which are GLMs (in this context, the latent projection onto a
-submodel without multilevel and without additive terms may be regarded as a
-projection onto a submodel which is a GLM). However, for \code{\link[=cv_varsel]{cv_varsel()}}, there
-is also a \emph{CV} parallelization (i.e., a parallelization of \pkg{projpred}'s
-cross-validation) which can be activated via argument \code{parallel} (which in
-turn can be controlled via global option \code{projpred.parallel_cv}).
+\pkg{projpred} can run two kinds of computations in parallel: the fold-wise
+computations of \code{\link[=cv_varsel]{cv_varsel()}} (the \emph{CV} parallelization, activated via
+argument \code{parallel} of \code{\link[=cv_varsel]{cv_varsel()}}, which in turn can be controlled via
+global option \code{projpred.parallel_cv}) and the projections of the single
+draws (or clusters) of the reference model onto a submodel (the
+\emph{projection} parallelization, see below).
 
-For the CV parallelization, global option \code{projpred.export_to_workers} may be
-set to a character vector of names of objects to export from the global
-environment to the parallel workers.
+Both use the parallel workers of the current plan of the \pkg{future}
+package, e.g., \code{future::plan(future::multisession, workers = 4)}. Plans
+from other packages for \pkg{future} can be used as well, e.g.,
+\code{future::plan(future.mirai::mirai_multisession, workers = 4)} from the
+\pkg{future.mirai} package. In our experiments with 8 workers, the first
+parallel call with the workers of \pkg{future.mirai} was faster than with
+those of \code{future::multisession}, and the workers of \pkg{future.mirai}
+returned big results faster (see the projection parallelization below).
+With the sequential plan of \pkg{future} (the default), a parallel run is
+not possible, so \pkg{projpred} then runs sequentially and
+throws a warning. The workers must be able to load the same
+\pkg{projpred} installation as the main R session; \pkg{projpred} checks
+this. (If the main R session uses \pkg{projpred} via
+\code{pkgload::load_all()} or \code{devtools::load_all()}, the workers need to load
+the same source directory in the same way.) The parallelization is not
+tested on Windows.
+
+The projection parallelization is controlled by global option
+\code{projpred.parallel_proj_trigger}: the number of projected draws below which
+the projections of the draws are not run in parallel (even if parallel
+workers are set up). Such a "trigger" threshold exists because of the
+computational overhead of a parallelization. By default, the projection
+parallelization is turned off, which can also be achieved by supplying
+\code{Inf} (or \code{NULL}) to option \code{projpred.parallel_proj_trigger}. The
+projection parallelization is mainly useful for submodels with multilevel
+or additive terms: for most other submodels, \pkg{projpred} fits all
+projected draws in a single call, which does not run in parallel. It is
+useful for \code{\link[=varsel]{varsel()}}, \code{\link[=project]{project()}}, and \code{\link[=cv_varsel]{cv_varsel()}} without fold-wise
+computations; with the CV parallelization, the workers do not run the
+projections of their folds in parallel. Note that the fitted submodel
+objects of multilevel and additive submodels are quite big,
+which---when running in parallel---may lead to excessive memory usage
+which in turn may crash the R session (on Unix systems, setting an
+appropriate memory limit via \code{unix::rlimit_as()} may avoid crashing the
+whole machine). The workers also need time to return these objects to the
+main R session: in our experiments with 16 workers of
+\code{future::multisession}, this took longer than a sequential run, whereas
+16 workers of \pkg{future.mirai} gave a clear speedup. So for the
+projection parallelization, we recommend the workers of
+\pkg{future.mirai}.
+
+In the fold-wise computations of \code{\link[=cv_varsel]{cv_varsel()}}, each CV fold has its own
+random number stream (L'Ecuyer-CMRG), which \pkg{projpred} derives from the
+random number generator of the main R session, with and without the CV
+parallelization. So for a given seed, the results depend neither on
+argument \code{parallel}, nor on the number of workers, nor on the plan of the
+\pkg{future} package.
+
+A function goes to a parallel worker with its enclosing environments up
+to, but not including, the global environment. So if a function of a
+custom reference model is defined in a script and uses other objects of
+the global environment, the workers need these objects.
+If the \pkg{globals} package is installed, \pkg{projpred} finds them from
+the code of such functions and sends them to the workers. This cannot find
+objects whose names the code creates at run time (e.g., with \code{\link[=get]{get()}}).
+Global option \code{projpred.export_to_workers} may be set to a character vector
+of names of such objects, to export them from the global environment to
+the parallel workers as well. Setting that option to \code{FALSE} turns off any
+export of objects of the global environment.
 
 During parallelization (either of the projection or the CV), progression
-updates can be received via the \pkg{progressr} package. This only works if
-the \pkg{doFuture} backend is used for parallelization, e.g., via
-\code{doFuture::registerDoFuture()} and \code{future::plan(future::multisession, workers = 4)}. In that case, the \pkg{progressr} package can be used, e.g.,
-by calling \code{progressr::handlers(global = TRUE)} before running the projection
-or the CV in parallel. The \pkg{projpred} package also offers the global
-option \code{projpred.use_progressr} for controlling whether to use the
-\pkg{progressr} package (\code{TRUE} or \code{FALSE}), but since that global option
-defaults to \code{requireNamespace("progressr", quietly = TRUE) && interactive() && identical(foreach::getDoParName(), "doFuture")}, it usually does not need
-to be set by the user.
+updates can be received via the \pkg{progressr} package, e.g., by calling
+\code{progressr::handlers(global = TRUE)} before running the projection or the
+CV in parallel. The \pkg{projpred} package also offers the global option
+\code{projpred.use_progressr} for controlling whether to use the \pkg{progressr}
+package (\code{TRUE} or \code{FALSE}), but since that global option defaults to
+\code{requireNamespace("progressr", quietly = TRUE) && interactive()}, it usually
+does not need to be set by the user. Messages and warnings from the workers
+are shown in the main R session.
 }
 
 \section{Multilevel models: "Integrating out" group-level effects}{
