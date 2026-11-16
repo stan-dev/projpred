@@ -171,7 +171,7 @@ known as solution path), i.e., the best submodel for each submodel size
 (number of predictor terms). The evaluation part determines the predictive
 performance of the submodels along the predictor ranking. A special method is
 \code{\link[=varsel.vsel]{varsel.vsel()}} which re-uses the search results from an earlier
-\code{\link[=varsel]{varsel()}} (or \code{\link[=cv_varsel]{cv_varsel()}}) run, as illustrated in the main vignette.
+\code{\link[=varsel]{varsel()}} (or \code{\link[=cv_varsel]{cv_varsel()}}) run (see section "Speed" of the main vignette).
 }
 \details{
 Arguments \code{ndraws}, \code{nclusters}, \code{nclusters_pred}, and \code{ndraws_pred}

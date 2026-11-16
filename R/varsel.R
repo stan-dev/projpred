@@ -6,7 +6,7 @@
 #' (number of predictor terms). The evaluation part determines the predictive
 #' performance of the submodels along the predictor ranking. A special method is
 #' [varsel.vsel()] which re-uses the search results from an earlier
-#' [varsel()] (or [cv_varsel()]) run, as illustrated in the main vignette.
+#' [varsel()] (or [cv_varsel()]) run (see section "Speed" of the main vignette).
 #'
 #' @param object An object of class `refmodel` (returned by [get_refmodel()] or
 #'   [init_refmodel()]) or an object that can be passed to argument `object` of
