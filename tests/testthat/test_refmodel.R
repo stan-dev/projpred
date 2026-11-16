@@ -188,19 +188,26 @@ test_that(paste(
   skip_if_not_installed("rstanarm")
   dat_dot <- data.frame(y = dat$y_glm_gauss, dat[c("xco.1", "xco.2", "xco.3")])
   dat_dot_o <- cbind(dat_dot, o = offs_tst)
-  fit_dot <- function(formula, data, ...) {
-    suppressWarnings(rstanarm::stan_glm(
-      formula, data = data, chains = 1L, iter = 200L, seed = seed_fit,
-      refresh = 0, ...
-    ))
-  }
-  fits_dot <- list(
-    weights = fit_dot(y ~ ., dat_dot, weights = wobs_tst),
-    offset_arg = fit_dot(y ~ ., dat_dot, offset = offs_tst),
-    offset_formula = fit_dot(y ~ . - o + offset(o), dat_dot_o),
-    weights_offset = fit_dot(y ~ ., dat_dot, weights = wobs_tst,
-                             offset = offs_tst)
-  )
+  # rstanarm evaluates `weights` and `offset` with model.frame(), so the calls
+  # cannot go through the `...` of a helper function:
+  fits_dot <- suppressWarnings(list(
+    weights = rstanarm::stan_glm(
+      y ~ ., data = dat_dot, weights = wobs_tst,
+      chains = 1L, iter = 200L, seed = seed_fit, refresh = 0
+    ),
+    offset_arg = rstanarm::stan_glm(
+      y ~ ., data = dat_dot, offset = offs_tst,
+      chains = 1L, iter = 200L, seed = seed_fit, refresh = 0
+    ),
+    offset_formula = rstanarm::stan_glm(
+      y ~ . - o + offset(o), data = dat_dot_o,
+      chains = 1L, iter = 200L, seed = seed_fit, refresh = 0
+    ),
+    weights_offset = rstanarm::stan_glm(
+      y ~ ., data = dat_dot, weights = wobs_tst, offset = offs_tst,
+      chains = 1L, iter = 200L, seed = seed_fit, refresh = 0
+    )
+  ))
   for (nm in names(fits_dot)) {
     refmod_dot <- get_refmodel(fits_dot[[nm]])
     expect_identical(sort(labels(terms(refmod_dot$formula))),
