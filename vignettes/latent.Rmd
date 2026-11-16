@@ -137,10 +137,8 @@ ncores <- parallel::detectCores(logical = FALSE)
 ncores <- min(ncores, 2L)
 ###
 options(mc.cores = ncores)
-refm_fml <- as.formula(paste("y", "~", paste(
-  grep("^x", names(dat_poiss_train), value = TRUE),
-  collapse = " + "
-)))
+# All other columns of the data are predictors:
+refm_fml <- y ~ .
 refm_fit_poiss <- stan_glm(
   formula = refm_fml,
   family = poisson(),

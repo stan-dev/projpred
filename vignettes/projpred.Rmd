@@ -191,7 +191,8 @@ Sometimes, the plot may be ambiguous because after reaching the reference model'
 In that case, one has to find a suitable trade-off between predictive performance (accuracy) and model size (sparsity) in the context of subject-matter knowledge.
 
 Here, we decide for a submodel size of 7 because it seems to provide the best trade-off between sparsity and accuracy (size 7 is the smallest size where the submodel MLPD is close enough to the reference model MLPD and from size 7 on, the submodel MLPD levels off).
-At sizes 7 to 10, the submodel MLPD is even slightly higher than the reference model MLPD, which is the case of submodels that perform better than the reference model mentioned above.
+At sizes 7 to 10, the submodels predict slightly better than the reference model.
+The reference model also includes 12 predictors with little or no effect, and their posterior uncertainty adds predictive variance, which the projection onto the smaller submodels removes.
 ```{r size_man}
 size_decided <- 7
 ```
