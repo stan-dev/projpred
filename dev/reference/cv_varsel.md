@@ -464,14 +464,20 @@ parallel. Costly parts are the fold-wise searches and performance
 evaluations in case of `validate_search = TRUE`. (Note that in case of
 \\K\\-fold CV, the \\K\\ reference model refits are not affected by
 argument `parallel`; only projpred's CV is affected.) The
-parallelization is powered by the foreach package. Thus, any parallel
-(or sequential) backend compatible with foreach can be used, e.g., the
-backends from packages doParallel, doMPI, or doFuture. For GLMs, this CV
-parallelization should work reliably, but for other models (such as
-GLMMs), it may lead to excessive memory usage which in turn may crash
-the R session (on Unix systems, setting an appropriate memory limit via
-[`unix::rlimit_as()`](https://jeroen.r-universe.dev/unix/reference/rlimit.html)
-may avoid crashing the whole machine). However, the problem of excessive
+parallelization uses the workers of the current plan of the future
+package (set up with, e.g.,
+`future::plan(future::multisession, workers = 4)`), see section
+"Parallelization" in
+[projpred-package](https://mc-stan.org/projpred/dev/reference/projpred-package.md).
+Without such workers, the CV runs sequentially, with a warning. Each CV
+fold has its own random number stream (also with `parallel = FALSE`), so
+for a given seed, the results depend neither on argument `parallel` nor
+on the number of workers. For GLMs, this CV parallelization should work
+reliably, but for other models (such as GLMMs), it may lead to excessive
+memory usage which in turn may crash the R session (on Unix systems,
+setting an appropriate memory limit via
+[`unix::rlimit_as()`](https://rdrr.io/pkg/unix/man/rlimit.html) may
+avoid crashing the whole machine). However, the problem of excessive
 memory usage is less pronounced for the CV parallelization than for the
 projection parallelization described in
 [projpred-package](https://mc-stan.org/projpred/dev/reference/projpred-package.md).

@@ -318,7 +318,7 @@ print(time_lat)
 ```
 
        user  system elapsed 
-      0.150   0.000   0.115 
+      0.311   0.001   0.212 
 
 The message telling that `<refmodel>$dis` consists of only `NA`s will
 not concern us here because we will only focus on response-scale
@@ -431,7 +431,7 @@ print(time_trad)
 ```
 
        user  system elapsed 
-      0.651   0.000   0.315 
+      0.902   0.000   0.509 
 
 ``` r
 
@@ -794,7 +794,7 @@ Run
 # Note: Parallel processing is disabled during package building to avoid issues
 use_parallel <- FALSE  # Set to TRUE for actual parallel processing
 if (use_parallel) {
-  doParallel::registerDoParallel(ncores)
+  future::plan(future::multisession, workers = ncores)
 }
 cvvs_weib <- cv_varsel(
   refm_weib,
@@ -813,18 +813,18 @@ cvvs_weib <- cv_varsel(
 
     Warning: Some Pareto k diagnostic values are too high. See help('pareto-k-diagnostic') for details.
 
-    Warning: Some (1 / 500) Pareto k's for the reference model's PSIS-LOO weights
+    Warning: Some (2 / 500) Pareto k's for the reference model's PSIS-LOO weights
     are > 0.7.
 
-    Warning: In the recalculation of the latent response values, some (5 / 500) expectation-specific Pareto k-values are > 0.7.
+    Warning: In the recalculation of the latent response values, some (6 / 500) expectation-specific Pareto k-values are > 0.7.
     In general, we recommend K-fold CV in this case.
 
     Warning: Some Pareto k diagnostic values are too high. See help('pareto-k-diagnostic') for details.
 
-    Warning: Some (1 / 500) Pareto k's for the reference model's PSIS-LOO weights
+    Warning: Some (2 / 500) Pareto k's for the reference model's PSIS-LOO weights
     are > 0.7.
 
-    Warning: In the recalculation of the latent response values, some (5 / 500) expectation-specific Pareto k-values are > 0.7.
+    Warning: In the recalculation of the latent response values, some (6 / 500) expectation-specific Pareto k-values are > 0.7.
     In general, we recommend K-fold CV in this case.
 
     Using standard importance sampling (SIS) due to a small number of clusters.
@@ -833,8 +833,7 @@ cvvs_weib <- cv_varsel(
 
 # Tear down the CV parallelization setup:
 if (use_parallel) {
-  doParallel::stopImplicitCluster()
-  foreach::registerDoSEQ()
+  future::plan(future::sequential)
 }
 ```
 
@@ -1002,7 +1001,7 @@ Run
 # Note: Parallel processing is disabled during package building to avoid issues
 use_parallel <- FALSE  # Set to TRUE for actual parallel processing
 if (use_parallel) {
-  doParallel::registerDoParallel(ncores)
+  future::plan(future::multisession, workers = ncores)
 }
 cvvs_lnorm <- cv_varsel(
   refm_lnorm,
@@ -1041,8 +1040,7 @@ cvvs_lnorm <- cv_varsel(
 
 # Tear down the CV parallelization setup:
 if (use_parallel) {
-  doParallel::stopImplicitCluster()
-  foreach::registerDoSEQ()
+  future::plan(future::sequential)
 }
 ```
 

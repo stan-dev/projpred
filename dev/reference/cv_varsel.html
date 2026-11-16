@@ -491,13 +491,17 @@ parallel. Costly parts are the fold-wise searches and performance
 evaluations in case of <code>validate_search = TRUE</code>. (Note that in case of
 \(K\)-fold CV, the \(K\) reference model refits are not affected by
 argument <code>parallel</code>; only <span class="pkg">projpred</span>'s CV is affected.) The
-parallelization is powered by the <span class="pkg">foreach</span> package. Thus, any parallel
-(or sequential) backend compatible with <span class="pkg">foreach</span> can be used, e.g.,
-the backends from packages <span class="pkg">doParallel</span>, <span class="pkg">doMPI</span>, or
-<span class="pkg">doFuture</span>. For GLMs, this CV parallelization should work reliably, but
-for other models (such as GLMMs), it may lead to excessive memory usage
+parallelization uses the workers of the current plan of the
+<span class="pkg">future</span> package (set up with, e.g.,
+<code>future::plan(future::multisession, workers = 4)</code>), see section
+"Parallelization" in <a href="projpred-package.html">projpred-package</a>. Without such workers, the CV
+runs sequentially, with a warning. Each CV fold has its own random
+number stream (also with <code>parallel = FALSE</code>), so for a given seed, the
+results depend neither on argument <code>parallel</code> nor on the number of
+workers. For GLMs, this CV parallelization should work reliably, but for
+other models (such as GLMMs), it may lead to excessive memory usage
 which in turn may crash the R session (on Unix systems, setting an
-appropriate memory limit via <code><a href="https://jeroen.r-universe.dev/unix/reference/rlimit.html" class="external-link">unix::rlimit_as()</a></code> may avoid crashing the
+appropriate memory limit via <code><a href="https://rdrr.io/pkg/unix/man/rlimit.html" class="external-link">unix::rlimit_as()</a></code> may avoid crashing the
 whole machine). However, the problem of excessive memory usage is less
 pronounced for the CV parallelization than for the projection
 parallelization described in <a href="projpred-package.html">projpred-package</a>. In that regard, the CV

@@ -115,8 +115,14 @@ summary(
     classified observations. For this, the response category ("class")
     with highest probability (the probabilities are model-based) is
     taken as the prediction ("classification") for an observation. For
-    the corresponding uncertainty interval, a normal approximation is
-    used.
+    the corresponding uncertainty interval, a logit-normal approximation
+    is used if `deltas` is `FALSE`. The standard error on the logit
+    scale comes from the delta method. A normal approximation is used if
+    `deltas` is `TRUE` (or `"mixed"`, in case of
+    [`plot.vsel()`](https://mc-stan.org/projpred/dev/reference/plot.vsel.md)).
+    It is also used if `deltas` is `FALSE` and the estimate is not
+    strictly between 0 and 1 (an estimate outside of \[0, 1\] is
+    possible with subsampled LOO-CV).
 
   - `"auc"`: area under the ROC curve (only available in the situations
     mentioned in section "Details" below). For the corresponding

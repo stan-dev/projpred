@@ -154,6 +154,24 @@
   results. (GitHub:
   [\#603](https://github.com/stan-dev/projpred/issues/603),
   [\#620](https://github.com/stan-dev/projpred/issues/620))
+- The parallelization now uses the **future** package instead of
+  **foreach**. Set up the workers with, e.g.,
+  `future::plan(future::multisession, workers = 4)`; without workers, a
+  parallel run gives a warning and runs sequentially. A **foreach**
+  backend (e.g., from
+  [`doParallel::registerDoParallel()`](https://rdrr.io/pkg/doParallel/man/registerDoParallel.html))
+  has no effect anymore. (GitHub:
+  [\#629](https://github.com/stan-dev/projpred/issues/629))
+- Global options `projpred.foreach_errorhandling` and
+  `projpred.foreach_verbose` are removed. (GitHub:
+  [\#629](https://github.com/stan-dev/projpred/issues/629))
+- In
+  [`cv_varsel()`](https://mc-stan.org/projpred/dev/reference/cv_varsel.md),
+  each CV fold now has its own random number stream, so for a given
+  seed, the results depend neither on `parallel` nor on the number of
+  workers. Results of folds that draw random numbers (e.g., in
+  K-fold CV) differ from earlier versions. (GitHub:
+  [\#629](https://github.com/stan-dev/projpred/issues/629))
 - Faster weight perturbation in
   [`cv_varsel()`](https://mc-stan.org/projpred/dev/reference/cv_varsel.md)
   with `validate_search = TRUE` for Gaussian models and the latent
@@ -201,6 +219,25 @@
   [`cv_varsel()`](https://mc-stan.org/projpred/dev/reference/cv_varsel.md)
   with `validate_search = TRUE` sends less data to the workers. (GitHub:
   [\#611](https://github.com/stan-dev/projpred/issues/611))
+- The uncertainty interval of `stats = "acc"` with `deltas = FALSE` now
+  uses a logit-normal approximation instead of a normal approximation.
+  (GitHub: [\#503](https://github.com/stan-dev/projpred/issues/503),
+  [\#631](https://github.com/stan-dev/projpred/issues/631))
+- Faster parallel projections (global option
+  `projpred.parallel_proj_trigger`): the workers get only the objects
+  that the projection of a draw uses. (GitHub:
+  [\#629](https://github.com/stan-dev/projpred/issues/629))
+- The parallel LOO and K-fold CV of
+  [`cv_varsel()`](https://mc-stan.org/projpred/dev/reference/cv_varsel.md)
+  send the reference models without their fits to the workers, so the
+  workers do not load **brms** or **rstanarm** and need less memory.
+  (GitHub: [\#629](https://github.com/stan-dev/projpred/issues/629))
+- The parallel workers now get the objects of the global environment
+  that functions of a custom reference model use (found from the code,
+  with the **globals** package). Global option
+  `projpred.export_to_workers` can name more objects; `FALSE` turns this
+  off. (GitHub:
+  [\#629](https://github.com/stan-dev/projpred/issues/629))
 - Improved error message for a binomial model with more than one trial
   per observation. Latent projection now stops for the brms families
   `beta_binomial()`, `zero_inflated_binomial()` and
@@ -321,6 +358,15 @@
   [`summary()`](https://rdrr.io/r/base/summary.html) and
   [`plot()`](https://rdrr.io/r/graphics/plot.default.html). (GitHub:
   [\#607](https://github.com/stan-dev/projpred/issues/607))
+- [`project()`](https://mc-stan.org/projpred/dev/reference/project.md),
+  [`varsel()`](https://mc-stan.org/projpred/dev/reference/varsel.md) and
+  [`cv_varsel()`](https://mc-stan.org/projpred/dev/reference/cv_varsel.md)
+  now warn if the smoothing parameter optimization of a
+  [`mgcv::gam()`](https://rdrr.io/pkg/mgcv/man/gam.html) submodel fit
+  does not converge with `optimizer = c("outer", "bfgs")`,
+  `c("outer", "nlm")`, `c("outer", "optim")` or `"efs"`. (GitHub:
+  [\#479](https://github.com/stan-dev/projpred/issues/479),
+  [\#630](https://github.com/stan-dev/projpred/issues/630))
 - Group terms with a **brms** correlation ID, such as `(1 |p| g)`, now
   work: projpred removes the ID with a message. Group terms with `||`
   give an error that explains the limitation, and several group terms of

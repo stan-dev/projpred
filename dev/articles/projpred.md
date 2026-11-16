@@ -391,7 +391,7 @@ cv_fits <- run_cvfun(
 # Note: Parallel processing is disabled during package building to avoid issues
 use_parallel <- FALSE  # Set to TRUE for actual parallel processing
 if (use_parallel) {
-  doParallel::registerDoParallel(ncores)
+  future::plan(future::multisession, workers = ncores)
 }
 # Final cv_varsel() run:
 cvvs <- cv_varsel(
@@ -410,8 +410,7 @@ cvvs <- cv_varsel(
 )
 # Tear down the CV parallelization setup:
 if (use_parallel) {
-  doParallel::stopImplicitCluster()
-  foreach::registerDoSEQ()
+  future::plan(future::sequential)
 }
 ```
 
@@ -559,14 +558,14 @@ print(smmry, digits = 1)
      size ranking_fulldata cv_proportions_diag   mlpd mlpd.lower mlpd.upper
         0      (Intercept)                  NA -0.967      -1.04     -0.895
         1               X1                 1.0 -0.778      -0.86     -0.697
-        2              X14                 1.0 -0.549      -0.61     -0.483
+        2              X14                 1.0 -0.548      -0.61     -0.483
         3               X5                 0.5 -0.548      -0.63     -0.466
         4              X20                 0.0 -0.513      -0.60     -0.425
         5               X6                 0.0 -0.207      -0.26     -0.153
-        6               X3                 0.0 -0.196      -0.24     -0.156
-        7               X8                 0.5 -0.003      -0.02      0.015
-        8              X11                 0.0 -0.009      -0.03      0.009
-        9               X7                 0.0  0.002      -0.02      0.019
+        6               X3                 0.0 -0.196      -0.24     -0.155
+        7               X8                 0.5 -0.004      -0.02      0.015
+        8              X11                 0.0 -0.010      -0.03      0.009
+        9               X7                 0.0  0.001      -0.02      0.018
 
     Reference model performance evaluation summary with `deltas = TRUE`:
           mlpd mlpd.lower mlpd.upper 
@@ -591,8 +590,8 @@ str(perf)
     List of 2
      $ submodels      :'data.frame':    10 obs. of  4 variables:
       ..$ size      : num [1:10] 0 1 2 3 4 5 6 7 8 9
-      ..$ mlpd      : num [1:10] -0.967 -0.778 -0.549 -0.548 -0.513 ...
-      ..$ mlpd.lower: num [1:10] -1.039 -0.859 -0.614 -0.63 -0.6 ...
+      ..$ mlpd      : num [1:10] -0.967 -0.778 -0.548 -0.548 -0.513 ...
+      ..$ mlpd.lower: num [1:10] -1.039 -0.859 -0.614 -0.63 -0.601 ...
       ..$ mlpd.upper: num [1:10] -0.895 -0.697 -0.483 -0.466 -0.425 ...
      $ reference_model: Named num [1:3] 0 0 0
       ..- attr(*, "names")= chr [1:3] "mlpd" "mlpd.lower" "mlpd.upper"
