@@ -186,38 +186,43 @@ test_that(paste(
   "the observation weights and offsets"
 ), {
   skip_if_not_installed("rstanarm")
-  dat_dot <- data.frame(y = dat$y_glm_gauss, dat[c("xco.1", "xco.2", "xco.3")])
+  xco <- dat[c("xco.1", "xco.2", "xco.3")]
+  dat_dot <- data.frame(y = dat$y_glm_gauss, xco)
   dat_dot_o <- cbind(dat_dot, o = offs_tst)
+  dat_dot_b <- data.frame(ys = dat$y_glm_binom,
+                          nf = dat$wobs_col - dat$y_glm_binom, xco)
   # rstanarm evaluates `weights` and `offset` with model.frame(), so the calls
-  # cannot go through the `...` of a helper function:
-  fits_dot <- suppressWarnings(list(
-    weights = rstanarm::stan_glm(
+  # cannot go through the `...` of a helper function. Each case has the fit
+  # and the expected observation weights and offsets:
+  cases <- suppressWarnings(list(
+    weights = list(fit = rstanarm::stan_glm(
       y ~ ., data = dat_dot, weights = wobs_tst,
       chains = 1L, iter = 200L, seed = seed_fit, refresh = 0
-    ),
-    offset_arg = rstanarm::stan_glm(
+    ), wobs = wobs_tst, offs = rep(0, nobsv)),
+    offset_arg = list(fit = rstanarm::stan_glm(
       y ~ ., data = dat_dot, offset = offs_tst,
       chains = 1L, iter = 200L, seed = seed_fit, refresh = 0
-    ),
-    offset_formula = rstanarm::stan_glm(
+    ), wobs = rep(1, nobsv), offs = offs_tst),
+    offset_formula = list(fit = rstanarm::stan_glm(
       y ~ . - o + offset(o), data = dat_dot_o,
       chains = 1L, iter = 200L, seed = seed_fit, refresh = 0
-    ),
-    weights_offset = rstanarm::stan_glm(
+    ), wobs = rep(1, nobsv), offs = offs_tst),
+    weights_offset = list(fit = rstanarm::stan_glm(
       y ~ ., data = dat_dot, weights = wobs_tst, offset = offs_tst,
       chains = 1L, iter = 200L, seed = seed_fit, refresh = 0
-    )
+    ), wobs = wobs_tst, offs = offs_tst),
+    binom_2col_offset = list(fit = rstanarm::stan_glm(
+      cbind(ys, nf) ~ . - ys - nf, family = binomial(), data = dat_dot_b,
+      offset = offs_tst,
+      chains = 1L, iter = 200L, seed = seed_fit, refresh = 0
+    ), wobs = dat$wobs_col, offs = offs_tst)
   ))
-  for (nm in names(fits_dot)) {
-    refmod_dot <- get_refmodel(fits_dot[[nm]])
+  for (nm in names(cases)) {
+    refmod_dot <- get_refmodel(cases[[nm]]$fit)
     expect_identical(sort(labels(terms(refmod_dot$formula))),
                      c("xco.1", "xco.2", "xco.3"), info = nm)
-    expect_equal(refmod_dot$wobs,
-                 if (grepl("weights", nm)) wobs_tst else rep(1, nobsv),
-                 info = nm)
-    expect_equal(refmod_dot$offset,
-                 if (grepl("offset", nm)) offs_tst else rep(0, nobsv),
-                 info = nm)
+    expect_equal(refmod_dot$wobs, cases[[nm]]$wobs, info = nm)
+    expect_equal(refmod_dot$offset, cases[[nm]]$offs, info = nm)
   }
 })
 
