@@ -588,7 +588,7 @@ Run `cv_varsel()`:
 # Note: Parallel processing is disabled during package building to avoid issues
 use_parallel <- FALSE  # Set to TRUE for actual parallel processing
 if (use_parallel) {
-  future::plan(future::multisession, workers = ncores)
+  future::plan(future.mirai::mirai_multisession, workers = ncores)
 }
 cvvs_weib <- cv_varsel(
   refm_weib,
@@ -726,7 +726,7 @@ Run `cv_varsel()`:
 # Note: Parallel processing is disabled during package building to avoid issues
 use_parallel <- FALSE  # Set to TRUE for actual parallel processing
 if (use_parallel) {
-  future::plan(future::multisession, workers = ncores)
+  future::plan(future.mirai::mirai_multisession, workers = ncores)
 }
 cvvs_lnorm <- cv_varsel(
   refm_lnorm,
