@@ -26,6 +26,25 @@ expect_perf_equal <- function(vs, stat_builtin, cstat, type, info,
   }
 }
 
+# Check the interval of the built-in "acc" without `deltas`: logit-normal for
+# estimates in (0, 1), normal otherwise:
+expect_acc_interval <- function(value, se, lower, upper, alpha, info) {
+  value <- unname(value)
+  se <- unname(se)
+  lower <- unname(lower)
+  upper <- unname(upper)
+  lower_exp <- qnorm(alpha / 2, value, se)
+  upper_exp <- qnorm(1 - alpha / 2, value, se)
+  idx <- which(value > 0 & value < 1)
+  v <- value[idx]
+  sd_logit <- se[idx] / (v * (1 - v))
+  lower_exp[idx] <- plogis(qnorm(alpha / 2, qlogis(v), sd_logit))
+  upper_exp[idx] <- plogis(qnorm(1 - alpha / 2, qlogis(v), sd_logit))
+  expect_equal(lower, lower_exp, tolerance = 1e-10, info = info)
+  expect_equal(upper, upper_exp, tolerance = 1e-10, info = info)
+  expect_true(all(lower[idx] >= 0 & upper[idx] <= 1), info = info)
+}
+
 # All `vsel` objects from the setup:
 vsel_objs_all <- function() {
   objs <- list()
@@ -155,10 +174,22 @@ test_that("pointwise custom statistic reproduces \"acc\"", {
   expect_gt(length(objs), 0)
   for (tstsetup in names(objs)) {
     vs <- objs[[tstsetup]]
+    # Without `deltas`, the built-in "acc" has a logit-normal interval and the
+    # custom statistic a normal one, so the intervals are compared separately:
     expect_perf_equal(vs, "acc", cstat_acc,
-                      type = c("mean", "se", "lower", "upper", "diff",
-                               "diff.se", "diff.lower", "diff.upper"),
+                      type = c("mean", "se", "diff", "diff.se", "diff.lower",
+                               "diff.upper"),
                       info = tstsetup)
+    alpha <- 0.1
+    perf <- suppressMessages(
+      performances(vs, stats = "acc", type = c("mean", "se", "lower", "upper"),
+                   alpha = alpha)
+    )
+    for (el in c("submodels", "reference_model")) {
+      p <- as.list(perf[[el]])
+      expect_acc_interval(p$acc, p$acc.se, p$acc.lower, p$acc.upper,
+                          alpha = alpha, info = paste(tstsetup, el, sep = "__"))
+    }
     if (!is_datafit(vs)) {
       expect_perf_equal(vs, "acc", cstat_acc,
                         type = c("mean", "se", "lower", "upper"),
