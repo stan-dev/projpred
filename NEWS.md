@@ -25,6 +25,9 @@ If you read this from a place other than <https://mc-stan.org/projpred/news/inde
 * Faster projections onto additive submodels without group-level terms (`mgcv::gam()`): all projected draws share one setup of `mgcv::gam()`, and one linear-predictor matrix gives the predictions of all draws. For example, `varsel()` for an additive model is about 1.5 times faster. (GitHub: #584)
 * Faster reweighting of the clusters of the reference model draws in `cv_varsel()` with `validate_search = TRUE`. For example, `cv_varsel()` with `validate_search = TRUE` and 400 clusters is about 2 times faster for a Gaussian model with 382 observations. (GitHub: #601)
 * New argument `loo_perturb_alpha` of `cv_varsel()`. With LOO, `validate_search = TRUE` and `refit_prj = TRUE`, the fold-wise searches use observation weight perturbation, so the LOO estimates jump less between submodel sizes. This changes the default results. (GitHub: #603, #620)
+* The parallelization now uses the **future** package instead of **foreach**. Set up the workers with, e.g., `future::plan(future::multisession, workers = 4)`; without workers, a parallel run gives a warning and runs sequentially. A **foreach** backend (e.g., from `doParallel::registerDoParallel()`) has no effect anymore. (GitHub: #629)
+* Global options `projpred.foreach_errorhandling` and `projpred.foreach_verbose` are removed. (GitHub: #629)
+* In `cv_varsel()`, each CV fold now has its own random number stream, so for a given seed, the results depend neither on `parallel` nor on the number of workers. Results of folds that draw random numbers (e.g., in K-fold CV) differ from earlier versions. (GitHub: #629)
 * Faster weight perturbation in `cv_varsel()` with `validate_search = TRUE` for Gaussian models and the latent projection. For example, `cv_varsel()` with 400 clusters is about 9 % faster for a Gaussian model with 382 observations. (GitHub: #621)
 
 ## Minor changes
@@ -36,6 +39,10 @@ If you read this from a place other than <https://mc-stan.org/projpred/news/inde
 * New function `custom_stat()` defines a user-defined performance statistic for argument `stats` of `summary.vsel()`, `plot.vsel()` and `performances()`, and argument `stat` of `suggest_size()`. (GitHub: #566, #590)
 * Faster `cl_agg()` and conversion of arrays to augmented-rows matrices. For example, LOO CV with validated search for the latent projection with 4000 projected draws is about 3-4 times faster. (GitHub: #600)
 * The parallel `cv_varsel()` with `validate_search = TRUE` sends less data to the workers. (GitHub: #611)
+* The uncertainty interval of `stats = "acc"` with `deltas = FALSE` now uses a logit-normal approximation instead of a normal approximation. (GitHub: #503, #631)
+* Faster parallel projections (global option `projpred.parallel_proj_trigger`): the workers get only the objects that the projection of a draw uses. (GitHub: #629)
+* The parallel LOO and K-fold CV of `cv_varsel()` send the reference models without their fits to the workers, so the workers do not load **brms** or **rstanarm** and need less memory. (GitHub: #629)
+* The parallel workers now get the objects of the global environment that functions of a custom reference model use (found from the code, with the **globals** package). Global option `projpred.export_to_workers` can name more objects; `FALSE` turns this off. (GitHub: #629)
 * Improved error message for a binomial model with more than one trial per observation. Latent projection now stops for the brms families `beta_binomial()`, `zero_inflated_binomial()` and `zero_inflated_beta_binomial()`. (GitHub: #530, #624)
 
 ## Bug fixes and maintenance
@@ -60,6 +67,7 @@ If you read this from a place other than <https://mc-stan.org/projpred/news/inde
 * Fixed the log-likelihood of reference model draws with small response category probabilities in the augmented-data projection (cumulative, categorical and binomial families). (GitHub: #618)
 * With lme4 versions before 2.1-1, binomial submodels with multilevel terms (and no additive terms) now use `nAGQ = 0` in `lme4::glmer()` for non-integer responses or weights, unless `nAGQ` is set via `...`. Their coefficients were fitted to rounded data before. (GitHub: #616)
 * Removed line breaks from the names of search terms above about 500 characters in `ranking()`, `summary()` and `plot()`. (GitHub: #607)
+* `project()`, `varsel()` and `cv_varsel()` now warn if the smoothing parameter optimization of a `mgcv::gam()` submodel fit does not converge with `optimizer = c("outer", "bfgs")`, `c("outer", "nlm")`, `c("outer", "optim")` or `"efs"`. (GitHub: #479, #630)
 * Group terms with a **brms** correlation ID, such as `(1 |p| g)`, now work: projpred removes the ID with a message. Group terms with `||` give an error that explains the limitation, and several group terms of one grouping factor give a warning. (GitHub: #435, #495, #628)
 * `as.matrix()` and `as_draws_matrix()` of a projection onto a submodel with smooth and group-level terms (GAMM) now stop with an error. Before, they returned only `sigma` (Gaussian family) or no parameters (other families). (GitHub: #131, #627)
 * The projection now drops the linear term from a submodel with a smooth term of the same variable (such as `x` and `s(x)`), and `project()` gives a message. The coefficient of such a linear term is not identifiable. (GitHub: #150, #626)

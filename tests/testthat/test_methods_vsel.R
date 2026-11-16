@@ -791,3 +791,94 @@ test_that("the ggplot can be modified", {
     vdiffr::expect_doppelganger("plotprc_dummy_mod", plotprc_dummy_mod)
   }
 })
+
+# Interval of "acc" ---------------------------------------------------------
+
+test_that("\"acc\" has a logit-normal interval without a baseline", {
+  n <- 20
+  y <- c(rep(1, 18), rep(0, 2))
+  y_wobs_test <- list(y = y, wobs = rep(1, n))
+  # 18 of 20 observations classified correctly:
+  smmrs <- list(mu = rep(0.8, n), lppd = rep(-0.3, n))
+  alpha <- 0.1
+  value_exp <- 0.9
+  se_exp <- sd(y) / sqrt(n)
+  sd_logit <- se_exp / (value_exp * (1 - value_exp))
+  for (stat in c("acc", "pctcorr")) {
+    res <- get_stat(smmrs, y_wobs_test = y_wobs_test, stat = stat,
+                    alpha = alpha)
+    expect_equal(res$value, value_exp, tolerance = 1e-12, info = stat)
+    expect_equal(res$se, se_exp, tolerance = 1e-12, info = stat)
+    expect_equal(res$lq, plogis(qnorm(alpha / 2, qlogis(value_exp), sd_logit)),
+                 tolerance = 1e-12, info = stat)
+    expect_equal(res$uq,
+                 plogis(qnorm(1 - alpha / 2, qlogis(value_exp), sd_logit)),
+                 tolerance = 1e-12, info = stat)
+    # Values computed by hand:
+    expect_equal(c(res$lq, res$uq), c(0.7190, 0.9694), tolerance = 1e-4,
+                 info = stat)
+    # The normal approximation would exceed 1 here:
+    expect_gt(qnorm(1 - alpha / 2, value_exp, se_exp), 1)
+    expect_lt(res$uq, 1)
+  }
+
+  # All observations classified correctly or all wrongly:
+  res <- get_stat(list(mu = y, lppd = rep(-0.1, n)), y_wobs_test = y_wobs_test,
+                  stat = "acc", alpha = alpha)
+  expect_identical(c(res$value, res$se, res$lq, res$uq), c(1, 0, 1, 1))
+  res <- get_stat(list(mu = 1 - y, lppd = rep(-1, n)),
+                  y_wobs_test = y_wobs_test, stat = "acc", alpha = alpha)
+  expect_identical(c(res$value, res$se, res$lq, res$uq), c(0, 0, 0, 0))
+
+  # `NA` predictions (as for a `datafit`):
+  res <- get_stat(list(mu = rep(NA, n), lppd = rep(NA, n)),
+                  y_wobs_test = y_wobs_test, stat = "acc", alpha = alpha)
+  expect_true(all(is.na(c(res$value, res$lq, res$uq))))
+
+  # Subsampled LOO-CV with an estimate above 1 uses the normal approximation:
+  loo_inds <- seq(1, 19, by = 2)
+  mu_fast <- y
+  mu_fast[loo_inds[1:4]] <- 1 - y[loo_inds[1:4]]
+  res <- get_stat(list(mu = y, lppd = rep(-0.1, n)),
+                  summaries_fast = list(mu = mu_fast, lppd = rep(-0.1, n)),
+                  loo_inds = loo_inds, y_wobs_test = y_wobs_test, stat = "acc",
+                  alpha = alpha)
+  expect_equal(res$value, 1.2, tolerance = 1e-12)
+  expect_gt(res$se, 0)
+  expect_equal(res$lq, qnorm(alpha / 2, res$value, res$se), tolerance = 1e-12)
+  expect_equal(res$uq, qnorm(1 - alpha / 2, res$value, res$se),
+               tolerance = 1e-12)
+
+  # With a baseline, the interval of the difference is normal:
+  # (17 of 20 observations classified correctly)
+  smmrs_base <- list(mu = c(rep(1, 17), 0, 1, 1), lppd = rep(-0.4, n))
+  res <- get_stat(smmrs, summaries_baseline = smmrs_base,
+                  y_wobs_test = y_wobs_test, stat = "acc", alpha = alpha)
+  expect_equal(res$value, 0.05, tolerance = 1e-12)
+  expect_equal(res$lq, qnorm(alpha / 2, res$value, res$se), tolerance = 1e-12)
+  expect_equal(res$uq, qnorm(1 - alpha / 2, res$value, res$se),
+               tolerance = 1e-12)
+})
+
+test_that("plot.vsel() names the logit-normal interval of \"acc\"", {
+  skip_if_not(run_vs)
+  tstsetups <- Filter(function(tstsetup) {
+    fam <- vss[[tstsetup]]$refmodel$family
+    identical(fam$family, "binomial") && !fam$for_latent
+  }, names(vss))
+  skip_if(length(tstsetups) == 0, "no binomial `vsel` object in the setup")
+  vs <- vss[[tstsetups[1]]]
+  pp <- suppressMessages(plot(vs, stats = "acc", deltas = FALSE))
+  expect_match(pp$labels$subtitle, "logit-normal-approximation")
+  pp <- suppressMessages(plot(vs, stats = "acc", deltas = TRUE))
+  expect_match(pp$labels$subtitle, " normal-approximation")
+  expect_no_match(pp$labels$subtitle, "logit")
+  pp <- suppressMessages(plot(vs, stats = "acc", deltas = "mixed"))
+  expect_match(pp$labels$subtitle, " normal-approximation")
+  expect_no_match(pp$labels$subtitle, "logit")
+  for (stats in list(c("elpd", "acc"), c("mse", "acc"))) {
+    pp <- suppressMessages(plot(vs, stats = stats, deltas = FALSE))
+    expect_no_match(pp$labels$subtitle, "normal-approximation",
+                    info = paste(stats, collapse = ","))
+  }
+})

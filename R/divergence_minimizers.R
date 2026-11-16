@@ -2,11 +2,6 @@
 
 ## Traditional (and latent) projection ------------------------------------
 
-# Needed to avoid a NOTE in `R CMD check`:
-utils::globalVariables("formula_s")
-utils::globalVariables("projpred_var_s")
-utils::globalVariables("projpred_formula_no_random_s")
-
 divmin <- function(
     formula,
     projpred_var,
@@ -152,11 +147,12 @@ divmin <- function(
   } else {
     prll_prj_trigger <- getOption("projpred.parallel_proj_trigger", Inf)
   }
-  if (length(formulas) < prll_prj_trigger) {
-    # Sequential case. Actually, we could simply use ``%do_projpred%` <-
-    # foreach::`%do%`` here and then proceed as in the parallel case, but that
-    # would require adding more "hard" dependencies (because packages 'foreach'
-    # and 'iterators' would have to be moved from `Suggests:` to `Imports:`).
+  # The backend of the parallel case (`NULL` without parallel workers):
+  backend <- if (length(formulas) >= prll_prj_trigger) {
+    par_backend(warn_once = TRUE)
+  }
+  if (is.null(backend)) {
+    # Sequential case.
     if (verbose_divmin) {
       pb <- utils::txtProgressBar(min = 0, max = length(formulas), style = 3,
                                   initial = 0, file = stderr())
@@ -178,33 +174,11 @@ divmin <- function(
       return(nlist(soutdmin, mssgs_warns_capt))
     })
   } else {
-    # Parallel case.
-    if (!requireNamespace("foreach", quietly = TRUE)) {
-      stop("Please install the 'foreach' package.")
-    }
-    if (!requireNamespace("iterators", quietly = TRUE)) {
-      stop("Please install the 'iterators' package.")
-    }
-    if (verbose_divmin && use_progressr()) {
-      progressor_obj <- progressr::progressor(length(formulas))
-    } else {
-      progressor_obj <- NULL
-    }
-    `%do_projpred%` <- foreach::`%dopar%`
-    outdmin <- foreach::foreach(
-      formula_s = formulas,
-      projpred_var_s = iterators::iter(projpred_var, by = "column"),
-      projpred_formula_no_random_s = projpred_formulas_no_random,
-      .packages = c("projpred"),
-      .export = c("sdivmin", "projpred_random", "dot_args", "progressor_obj",
-                  "capt_fun"),
-      .noexport = c(
-        "object", "p_sel", "search_path", "p_ref", "refmodel", "formulas",
-        "projpred_var", "projpred_ws_aug", "projpred_formulas_no_random"
-      ),
-      .errorhandling = getOption("projpred.foreach_errorhandling", "stop"),
-      .verbose = getOption("projpred.foreach_verbose", FALSE)
-    ) %do_projpred% {
+    # Parallel case. The projection of one draw, in an environment with only
+    # the objects that it uses (see fun_with_objs()) and the projpred
+    # namespace as parent:
+    one_draw <- fun_with_objs(function(formula_s, projpred_var_s,
+                                       projpred_formula_no_random_s) {
       mssgs_warns_capt <- capt_fun(
         soutdmin <- do.call(
           sdivmin,
@@ -215,9 +189,15 @@ divmin <- function(
             dot_args)
         )
       )
-      if (!is.null(progressor_obj)) progressor_obj()
       return(nlist(soutdmin, mssgs_warns_capt))
-    }
+    }, c("sdivmin", "projpred_random", "dot_args", "capt_fun"))
+    args_draws <- lapply(seq_along(formulas), function(s) {
+      list(formula_s = formulas[[s]],
+           projpred_var_s = projpred_var[, s, drop = FALSE],
+           projpred_formula_no_random_s = projpred_formulas_no_random[[s]])
+    })
+    outdmin <- par_lapply(args_draws, call_with_args, .fun = one_draw,
+                          .backend = backend, .progress = verbose_divmin)
   }
   mssgs_warns_capts <- lapply(outdmin, "[[", "mssgs_warns_capt")
   outdmin <- lapply(outdmin, "[[", "soutdmin")
@@ -1460,10 +1440,6 @@ control_callback <- function(family, ...) {
 
 ## Augmented-data projection ----------------------------------------------
 
-# Needed to avoid a NOTE in `R CMD check`:
-utils::globalVariables("projpred_w_aug_s")
-utils::globalVariables("projpred_internal_w_aug")
-
 divmin_augdat <- function(
     formula,
     data,
@@ -1602,11 +1578,12 @@ divmin_augdat <- function(
   } else {
     prll_prj_trigger <- getOption("projpred.parallel_proj_trigger", Inf)
   }
-  if (ncol(projpred_ws_aug) < prll_prj_trigger) {
-    # Sequential case. Actually, we could simply use ``%do_projpred%` <-
-    # foreach::`%do%`` here and then proceed as in the parallel case, but that
-    # would require adding more "hard" dependencies (because packages 'foreach'
-    # and 'iterators' would have to be moved from `Suggests:` to `Imports:`).
+  # The backend of the parallel case (`NULL` without parallel workers):
+  backend <- if (ncol(projpred_ws_aug) >= prll_prj_trigger) {
+    par_backend(warn_once = TRUE)
+  }
+  if (is.null(backend)) {
+    # Sequential case.
     if (verbose_divmin) {
       pb <- utils::txtProgressBar(min = 0, max = ncol(projpred_ws_aug),
                                   style = 3, initial = 0, file = stderr())
@@ -1630,34 +1607,11 @@ divmin_augdat <- function(
       return(nlist(soutdmin, mssgs_warns_capt))
     })
   } else {
-    # Parallel case.
-    if (!requireNamespace("foreach", quietly = TRUE)) {
-      stop("Please install the 'foreach' package.")
-    }
-    if (!requireNamespace("iterators", quietly = TRUE)) {
-      stop("Please install the 'iterators' package.")
-    }
-    if (verbose_divmin && use_progressr()) {
-      progressor_obj <- progressr::progressor(ncol(projpred_ws_aug))
-    } else {
-      progressor_obj <- NULL
-    }
+    # Parallel case. The projection of one draw, in an environment with only
+    # the objects that it uses (see fun_with_objs()) and the projpred
+    # namespace as parent:
     dot_args <- list(...)
-    `%do_projpred%` <- foreach::`%dopar%`
-    outdmin <- foreach::foreach(
-      projpred_w_aug_s = iterators::iter(projpred_ws_aug, by = "column"),
-      .packages = c("projpred"),
-      .export = c(
-        "sdivmin", "formula", "data", "family", "projpred_formula_no_random",
-        "projpred_random", "dot_args", "progressor_obj"
-      ),
-      .noexport = c(
-        "object", "p_sel", "search_path", "p_ref", "refmodel", "projpred_var",
-        "projpred_ws_aug", "linkobjs"
-      ),
-      .errorhandling = getOption("projpred.foreach_errorhandling", "stop"),
-      .verbose = getOption("projpred.foreach_verbose", FALSE)
-    ) %do_projpred% {
+    one_draw <- fun_with_objs(function(projpred_w_aug_s) {
       mssgs_warns_capt <- capt_mssgs_warns(
         soutdmin <- do.call(
           sdivmin,
@@ -1670,9 +1624,14 @@ divmin_augdat <- function(
             dot_args)
         )
       )
-      if (!is.null(progressor_obj)) progressor_obj()
       return(nlist(soutdmin, mssgs_warns_capt))
-    }
+    }, c("sdivmin", "formula", "data", "family", "projpred_formula_no_random",
+         "projpred_random", "dot_args"))
+    ws_draws <- lapply(seq_len(ncol(projpred_ws_aug)), function(s) {
+      projpred_ws_aug[, s]
+    })
+    outdmin <- par_lapply(ws_draws, one_draw, .backend = backend,
+                          .progress = verbose_divmin)
   }
   mssgs_warns_capts <- lapply(outdmin, "[[", "mssgs_warns_capt")
   outdmin <- lapply(outdmin, "[[", "soutdmin")
@@ -2295,8 +2254,12 @@ check_conv_s <- function(fit_s) {
   } else if (inherits(fit_s, "polr")) {
     return(fit_s$convergence == 0)
   } else if (inherits(fit_s, "gam")) {
-    # TODO (GAMs): Is this correct?:
-    return(fit_s$converged && fit_s$mgcv.conv$fully.converged %||% TRUE)
+    # `converged`: P-IRLS iterations. `mgcv.conv`: smoothing parameter
+    # optimization with "magic". `outer.info`: smoothing parameter optimization
+    # with the other optimizers (see gam_outer_conv()).
+    return(isTRUE(fit_s$converged %||% TRUE) &&
+             isTRUE(fit_s$mgcv.conv$fully.converged %||% TRUE) &&
+             gam_outer_conv(fit_s$outer.info))
   } else if (inherits(fit_s, "gamm4")) {
     # TODO (GAMMs): I couldn't find any convergence-related information in
     # element `fit_s$gam`, so the GAM part is currently not checked for
@@ -2336,6 +2299,34 @@ check_conv_s <- function(fit_s) {
     warning("Unrecognized submodel fit. Please notify the package maintainer.")
     return(TRUE)
   }
+}
+
+# Convergence of the smoothing parameter optimization of a mgcv::gam() fit.
+# Argument `outer_info` is element `outer.info` of the fit. Its form depends on
+# the optimizer:
+# * "newton", "bfgs" and "efs": a list with string `conv` ("full convergence",
+#   "step failed" or "iteration limit reached").
+# * c("outer", "nlm"): the nlm() result, with `code`.
+# * c("outer", "optim"): the optim() result, with `convergence`.
+# * "magic" and fits without smoothing parameters: `NULL`.
+# For nlm() and optim(), only the iteration limit (nlm() code 4, optim() code 1)
+# is non-convergence. Other codes can occur at the optimum, for example nlm()
+# code 5 if a smoothing parameter goes to infinity (as for a smooth term of a
+# linear function). `[[` avoids the partial match of `$conv` to `convergence`.
+gam_outer_conv <- function(outer_info) {
+  if (!is.list(outer_info)) {
+    return(TRUE)
+  }
+  if (!is.null(outer_info[["conv"]])) {
+    return(identical(outer_info[["conv"]], "full convergence"))
+  }
+  if (!is.null(outer_info[["code"]])) {
+    return(!isTRUE(any(outer_info[["code"]] == 4)))
+  }
+  if (!is.null(outer_info[["convergence"]])) {
+    return(!isTRUE(any(outer_info[["convergence"]] == 1)))
+  }
+  return(TRUE)
 }
 
 # Prediction functions for submodels --------------------------------------
