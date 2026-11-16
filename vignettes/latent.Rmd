@@ -62,8 +62,8 @@ The families currently supported by **projpred**'s augmented-data projection are
 
 ## Example: Poisson distribution
 
-In this example, we will illustrate that in case of a family supported by **projpred**'s traditional projection (here the `poisson()` family), the latent projection can improve the runtime of the variable selection compared to **projpred**'s traditional projection.
-With L1 search (see argument `method` of `varsel()` and `cv_varsel()`), it can also improve the results.
+In this example, we will illustrate that in case of a family supported by **projpred**'s traditional projection (here the `poisson()` family), the latent projection can reduce the runtime of the variable selection compared to the traditional projection.
+With L1 search (see argument `method` of `varsel()` and `cv_varsel()`), the latent projection can also give a better predictor ranking.
 
 ### Data
 
@@ -268,11 +268,8 @@ More importantly however, the predictor ranking contains several noise terms bef
 
 ### Forward search
 
-Forward search is usually more accurate than L1 search (see section "Details" in `?varsel`).
+Forward search can be more accurate than L1 search (see section "Details" in `?varsel`).
 We now run `varsel()` with forward search (the default `method`) for both projections:
-```{r suppress_warn_poiss_fw, include=FALSE}
-warn_instable_orig <- options(projpred.warn_instable_projections = FALSE)
-```
 ```{r vs_fw_poiss}
 time_lat_fw <- system.time(vs_lat_fw <- varsel(
   refm_poiss,
@@ -281,7 +278,9 @@ time_lat_fw <- system.time(vs_lat_fw <- varsel(
   nclusters_pred = 20,
   ###
   nterms_max = 14,
+  ### In interactive use, we recommend not to deactivate the verbose mode:
   verbose = 0,
+  ###
   seed = 95930
 ))
 time_trad_fw <- system.time(vs_trad_fw <- varsel(
@@ -291,29 +290,29 @@ time_trad_fw <- system.time(vs_trad_fw <- varsel(
   nclusters_pred = 20,
   ###
   nterms_max = 14,
+  ### In interactive use, we recommend not to deactivate the verbose mode:
   verbose = 0,
+  ###
   seed = 95930
 ))
 rbind(latent = time_lat_fw, traditional = time_trad_fw)[, "elapsed"]
 ranking(vs_lat_fw)[["fulldata"]]
 ranking(vs_trad_fw)[["fulldata"]]
 ```
-```{r unsuppress_warn_poiss_fw, include=FALSE}
-options(warn_instable_orig)
-rm(warn_instable_orig)
-```
 With forward search, both projections rank the 11 truly relevant predictor terms first (in a slightly different order).
 The latent projection is much faster (see the elapsed times in seconds above).
 
 ### LOO CV with validated search
 
-Without a hold-out test dataset, we would use `cv_varsel()` with PSIS-LOO CV and validated search (the defaults of `cv_varsel()`).
+Without a hold-out test dataset, we use `cv_varsel()` with PSIS-LOO CV and validated search (the defaults of `cv_varsel()`).
 For the latent projection, this runs fast:
 ```{r cvvs_lat_poiss}
 time_cvvs_lat <- system.time(cvvs_lat_poiss <- cv_varsel(
   refm_poiss,
   nterms_max = 14,
+  ### In interactive use, we recommend not to deactivate the verbose mode:
   verbose = 0,
+  ###
   seed = 95930
 ))
 print(time_cvvs_lat)
@@ -326,15 +325,20 @@ suggest_size(cvvs_lat_poiss, stat = "gmpd")
 head(ranking(cvvs_lat_poiss)[["fulldata"]], 11)
 ```
 `suggest_size()` gives size 11, and the first 11 predictor terms of the full-data predictor ranking are the truly relevant ones.
+The warnings about high Pareto $\hat{k}$ values (19 of the 71 observations) mean that PSIS-LOO CV may not be reliable here, probably because of the small number of observations and the short MCMC run of this vignette.
+In a real analysis, we would then use $K$-fold CV (`cv_method = "kfold"`).
 
-For the traditional projection, each projection onto a Poisson submodel is an iterative fit, so the same call takes much longer.
-In a test run, it took about 390 seconds, compared to about 4 seconds for the latent projection above, and it ranked the same 11 truly relevant predictor terms first.
+For the traditional projection, each projection onto a Poisson submodel is an iterative fit, and validated search repeats the search for each of the 71 LOO CV folds, so the same call takes much longer.
+In a test run, the call took about 100 times as long as the latent projection (about 390 seconds compared to about 4 seconds).
+It ranked the same 11 truly relevant predictor terms first, and `suggest_size()` gave size 12.
 Therefore, we do not run it here:
 ```{r cvvs_trad_poiss, eval=FALSE}
 cvvs_trad_poiss <- cv_varsel(
   refm_fit_poiss,
   nterms_max = 14,
+  ### In interactive use, we recommend not to deactivate the verbose mode:
   verbose = 0,
+  ###
   seed = 95930
 )
 ```
@@ -343,13 +347,8 @@ cvvs_trad_poiss <- cv_varsel(
 
 This example showed that the latent projection can be advantageous also for families supported by **projpred**'s traditional projection.
 With L1 search, the latent projection gave a better predictor ranking.
-With forward search, both projections gave the same relevant predictor terms, but the latent projection was much faster, in particular in LOO CV with validated search.
-
-
-An important point is that we have used L1 search here.
-In case of the latent projection, a forward search would have given only slightly different results.
-However, in case of the traditional projection, a forward search would have given markedly better results (in particular, all of the noise terms would have been selected after the truly relevant ones).
-Thus, the conclusions made here for L1 search cannot be transmitted easily to forward search.
+With forward search, both projections ranked the 11 truly relevant predictor terms first.
+The latent projection was much faster, in particular in LOO CV with validated search.
 
 ## Example: Negative binomial distribution {#negbinex}
 
@@ -430,7 +429,7 @@ Again, the message telling that `<refmodel>$dis` consists of only `NA`s will not
 The message concerning `latent_ilink` can be safely ignored here (the internal default based on `family$linkinv` works correctly in this case).
 
 Again, we first inspect the `plot()` results to decide for a submodel size:
-```{r plot_vsel_nebin, fig.alt="The same kind of plot for the latent projection of the negative binomial model. The ratio increases with the size, reaches the reference model at size 9 or 10 and levels off from size 10 on. The first 11 predictors of the ranking are the 11 truly relevant ones."}
+```{r plot_vsel_nebin, fig.alt="The same kind of plot for the latent projection of the negative binomial model. The ratio increases with the size, is above 1 from size 9 on and levels off at about 1.2 from size 10 on. The first 11 predictors of the ranking are the 11 truly relevant ones."}
 ( gg_nebin <- plot(vs_nebin, stats = "gmpd", deltas = TRUE) )
 ```
 
@@ -749,7 +748,7 @@ if (use_parallel) {
 In this case, we will ignore the warnings about high Pareto-$\hat{k}$ values because we chose quite rough settings (e.g., only 2 MCMC chains) in this vignette (for technical reasons).
 
 Plot the results:
-```{r lognormal_plot_cvvs, fig.alt="The same kind of plot for the log-normal model with right-censored observations. The first 10 predictors are the 10 truly relevant ones. The difference comes close to zero (dashed line) at size 10."}
+```{r lognormal_plot_cvvs, fig.alt="The same kind of plot for the log-normal model with right-censored observations. The first 10 predictors are the 10 truly relevant ones. The difference comes close to zero (dashed line) from size 10 on."}
 plot(cvvs_lnorm, stats = "mlpd", deltas = TRUE)
 ```
 Hence, the truly relevant predictors are identified correctly.
