@@ -181,6 +181,39 @@ test_that(paste(
   expect_equal(refmod_cbind$wobs, dat$wobs_col)
 })
 
+test_that(paste(
+  "get_refmodel.stanreg() expands `.` in the formula without the columns for",
+  "the observation weights and offsets"
+), {
+  skip_if_not_installed("rstanarm")
+  dat_dot <- data.frame(y = dat$y_glm_gauss, dat[c("xco.1", "xco.2", "xco.3")])
+  dat_dot_o <- cbind(dat_dot, o = offs_tst)
+  fit_dot <- function(formula, data, ...) {
+    suppressWarnings(rstanarm::stan_glm(
+      formula, data = data, chains = 1L, iter = 200L, seed = seed_fit,
+      refresh = 0, ...
+    ))
+  }
+  fits_dot <- list(
+    weights = fit_dot(y ~ ., dat_dot, weights = wobs_tst),
+    offset_arg = fit_dot(y ~ ., dat_dot, offset = offs_tst),
+    offset_formula = fit_dot(y ~ . - o + offset(o), dat_dot_o),
+    weights_offset = fit_dot(y ~ ., dat_dot, weights = wobs_tst,
+                             offset = offs_tst)
+  )
+  for (nm in names(fits_dot)) {
+    refmod_dot <- get_refmodel(fits_dot[[nm]])
+    expect_identical(sort(labels(terms(refmod_dot$formula))),
+                     c("xco.1", "xco.2", "xco.3"), info = nm)
+    expect_equal(refmod_dot$wobs,
+                 if (grepl("weights", nm)) wobs_tst else rep(1, nobsv),
+                 info = nm)
+    expect_equal(refmod_dot$offset,
+                 if (grepl("offset", nm)) offs_tst else rep(0, nobsv),
+                 info = nm)
+  }
+})
+
 test_that("function calls in group terms fail", {
   tstsetup <- "brms.glmm.brnll.stdformul.without_wobs.without_offs"
   args_fit_i <- args_fit[[tstsetup]]
