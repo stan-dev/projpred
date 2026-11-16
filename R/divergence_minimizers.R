@@ -2,13 +2,6 @@
 
 ## Traditional (and latent) projection ------------------------------------
 
-# Needed to avoid a NOTE in `R CMD check`:
-if (getRversion() >= package_version("2.15.1")) {
-  utils::globalVariables("formula_s")
-  utils::globalVariables("projpred_var_s")
-  utils::globalVariables("projpred_formula_no_random_s")
-}
-
 divmin <- function(
     formula,
     projpred_var,
@@ -154,11 +147,12 @@ divmin <- function(
   } else {
     prll_prj_trigger <- getOption("projpred.parallel_proj_trigger", Inf)
   }
-  if (length(formulas) < prll_prj_trigger) {
-    # Sequential case. Actually, we could simply use ``%do_projpred%` <-
-    # foreach::`%do%`` here and then proceed as in the parallel case, but that
-    # would require adding more "hard" dependencies (because packages 'foreach'
-    # and 'iterators' would have to be moved from `Suggests:` to `Imports:`).
+  # The backend of the parallel case (`NULL` without parallel workers):
+  backend <- if (length(formulas) >= prll_prj_trigger) {
+    par_backend(warn_once = TRUE)
+  }
+  if (is.null(backend)) {
+    # Sequential case.
     if (verbose_divmin) {
       pb <- utils::txtProgressBar(min = 0, max = length(formulas), style = 3,
                                   initial = 0, file = stderr())
@@ -180,33 +174,11 @@ divmin <- function(
       return(nlist(soutdmin, mssgs_warns_capt))
     })
   } else {
-    # Parallel case.
-    if (!requireNamespace("foreach", quietly = TRUE)) {
-      stop("Please install the 'foreach' package.")
-    }
-    if (!requireNamespace("iterators", quietly = TRUE)) {
-      stop("Please install the 'iterators' package.")
-    }
-    if (verbose_divmin && use_progressr()) {
-      progressor_obj <- progressr::progressor(length(formulas))
-    } else {
-      progressor_obj <- NULL
-    }
-    `%do_projpred%` <- foreach::`%dopar%`
-    outdmin <- foreach::foreach(
-      formula_s = formulas,
-      projpred_var_s = iterators::iter(projpred_var, by = "column"),
-      projpred_formula_no_random_s = projpred_formulas_no_random,
-      .packages = c("projpred"),
-      .export = c("sdivmin", "projpred_random", "dot_args", "progressor_obj",
-                  "capt_fun"),
-      .noexport = c(
-        "object", "p_sel", "search_path", "p_ref", "refmodel", "formulas",
-        "projpred_var", "projpred_ws_aug", "projpred_formulas_no_random"
-      ),
-      .errorhandling = getOption("projpred.foreach_errorhandling", "stop"),
-      .verbose = getOption("projpred.foreach_verbose", FALSE)
-    ) %do_projpred% {
+    # Parallel case. The projection of one draw, in an environment with only
+    # the objects that it uses (see fun_with_objs()) and the projpred
+    # namespace as parent:
+    one_draw <- fun_with_objs(function(formula_s, projpred_var_s,
+                                       projpred_formula_no_random_s) {
       mssgs_warns_capt <- capt_fun(
         soutdmin <- do.call(
           sdivmin,
@@ -217,9 +189,15 @@ divmin <- function(
             dot_args)
         )
       )
-      if (!is.null(progressor_obj)) progressor_obj()
       return(nlist(soutdmin, mssgs_warns_capt))
-    }
+    }, c("sdivmin", "projpred_random", "dot_args", "capt_fun"))
+    args_draws <- lapply(seq_along(formulas), function(s) {
+      list(formula_s = formulas[[s]],
+           projpred_var_s = projpred_var[, s, drop = FALSE],
+           projpred_formula_no_random_s = projpred_formulas_no_random[[s]])
+    })
+    outdmin <- par_lapply(args_draws, call_with_args, .fun = one_draw,
+                          .backend = backend, .progress = verbose_divmin)
   }
   mssgs_warns_capts <- lapply(outdmin, "[[", "mssgs_warns_capt")
   outdmin <- lapply(outdmin, "[[", "soutdmin")
@@ -592,6 +570,8 @@ filter_mssgs_warns <- function(mssgs_warns_capt) {
 # * The reference level: the prediction is the mean of the predictions for the
 #   other levels, with weights p (1 - p), where p is the weighted share of a
 #   level. For two other levels, this is their midpoint.
+# With other contrasts (for example, sum contrasts), the prediction for a lost
+# level comes from the ridge solution of glm_ridge().
 lost_levels <- function(data, keep, formula) {
   fml_fixed <- reformulas::nobars(formula)
   rhs_fixed <- fml_fixed[[length(fml_fixed)]]
@@ -677,7 +657,12 @@ recode_lost_levels <- function(newdata, lost_lvls) {
 
 # Drops the levels that lost_levels() recorded from the factors in `data` (the
 # data without the removed rows), so that fitters which keep unused levels in
-# the model matrix do not get a column of zeros.
+# the model matrix do not get a column of zeros. factor() removes the
+# `contrasts` attribute, so the fit uses the default contrasts for such a
+# factor. A contrast matrix cannot in general be reduced to fewer levels. The
+# population-level predictions of these (multilevel, additive and
+# augmented-data) fitters do not depend on the contrasts; the group-level
+# predictions do not depend on them for an unstructured covariance matrix.
 drop_lost_levels <- function(data, lost_lvls) {
   for (x_nm in intersect(names(lost_lvls), names(data))) {
     x <- data[[x_nm]]
@@ -702,6 +687,7 @@ fit_glm_ridge_callback <- function(formula, data,
     # differs between the draws:
     x <- projpred_shared_x$x
     xlvls <- projpred_shared_x$xlvls
+    ctrs <- projpred_shared_x$contrasts
     # These terms come from the first draw-wise formula. The predictions for
     # new data use only their predictor variables:
     terms_train <- projpred_shared_x$terms
@@ -711,6 +697,7 @@ fit_glm_ridge_callback <- function(formula, data,
     xy <- glm_model_matrix(formula, data = data)
     x <- xy$x
     xlvls <- xy$xlvls
+    ctrs <- xy$contrasts
     terms_train <- xy$terms
     y <- xy$y
   }
@@ -736,7 +723,7 @@ fit_glm_ridge_callback <- function(formula, data,
   # `terms` keeps the data-dependent bases of the training data (attribute
   # "predvars"), for predictions for new data:
   sub <- nlist(alpha = fit$beta0, beta = fit$beta, w = fit$w, formula, x, y,
-               xlvls, terms = terms_train)
+               xlvls, terms = terms_train, contrasts = ctrs)
   class(sub) <- "subfit"
   return(sub)
 }
@@ -757,15 +744,13 @@ glm_model_matrix <- function(formula, data) {
   } else {
     xlvls <- NULL
   }
-  # TODO: In the following model.matrix() call, allow user-specified contrasts
-  # to be passed to argument `contrasts.arg`. The `contrasts.arg` default
-  # (`NULL`) uses `options("contrasts")` internally, but it might be more
-  # convenient to let users specify contrasts directly. At that occasion,
-  # contrasts should also be tested thoroughly (not done until now).
+  # The model frame keeps the `contrasts` attributes of `data` (see
+  # set_contrasts()), and model.matrix() uses them:
   x <- model.matrix(formula, data = fr)
+  ctrs <- attr(x, "contrasts")
   x <- x[, colnames(x) != "(Intercept)", drop = FALSE]
   return(list(x = x, xlvls = xlvls, y = model.response(fr), n_fr = nrow(fr),
-              terms = attr(fr, "terms")))
+              terms = attr(fr, "terms"), contrasts = ctrs))
 }
 
 # Model matrix shared by the draw-wise formulas `formulas` (which have to differ
@@ -796,7 +781,7 @@ shared_model_matrix <- function(formulas, data) {
   # The response names (as from model.response()) are also shared, so the
   # draw-wise responses do not each get their own copy:
   return(list(x = xy$x, xlvls = xy$xlvls, y_names = names(xy$y),
-              terms = xy$terms))
+              terms = xy$terms, contrasts = xy$contrasts))
 }
 
 # fit_glm_ridge_callback() with a fixed shared model matrix. The enclosing
@@ -930,7 +915,8 @@ glm_ridge_gauss_multi <- function(formulas, shared_x, dot_args, y = NULL) {
     # variables.
     structure(list(alpha = unname(beta0[s]), beta = beta_s, w = w,
                    formula = formulas[[s]], x = x, y = y_s,
-                   xlvls = shared_x$xlvls, terms = shared_x$terms),
+                   xlvls = shared_x$xlvls, terms = shared_x$terms,
+                   contrasts = shared_x$contrasts),
               class = "subfit")
   }))
 }
@@ -1006,7 +992,7 @@ glm_ridge_native_multi <- function(formulas, shared_x, dot_args, y = NULL) {
     structure(list(alpha = beta0[s], beta = beta_s,
                    w = out$w[, s, drop = FALSE], formula = formulas[[s]],
                    x = x, y = y_s, xlvls = shared_x$xlvls,
-                   terms = shared_x$terms),
+                   terms = shared_x$terms, contrasts = shared_x$contrasts),
               class = "subfit")
   })
   # As fit_glm_ridge_callback() turns the messages into one warning and
@@ -1135,6 +1121,8 @@ fit_gamm_callback <- function(formula, projpred_formula_no_random,
 
   fit$random <- projpred_random
   fit$formula <- projpred_formula_no_random
+  # Contrasts of the factors in the group-level terms, for repair_re.gamm4():
+  fit$re_contrasts <- re_contrasts(data, projpred_random)
   class(fit) <- c("gamm4")
   return(fit)
 }
@@ -1452,12 +1440,6 @@ control_callback <- function(family, ...) {
 
 ## Augmented-data projection ----------------------------------------------
 
-# Needed to avoid a NOTE in `R CMD check`:
-if (getRversion() >= package_version("2.15.1")) {
-  utils::globalVariables("projpred_w_aug_s")
-  utils::globalVariables("projpred_internal_w_aug")
-}
-
 divmin_augdat <- function(
     formula,
     data,
@@ -1596,11 +1578,12 @@ divmin_augdat <- function(
   } else {
     prll_prj_trigger <- getOption("projpred.parallel_proj_trigger", Inf)
   }
-  if (ncol(projpred_ws_aug) < prll_prj_trigger) {
-    # Sequential case. Actually, we could simply use ``%do_projpred%` <-
-    # foreach::`%do%`` here and then proceed as in the parallel case, but that
-    # would require adding more "hard" dependencies (because packages 'foreach'
-    # and 'iterators' would have to be moved from `Suggests:` to `Imports:`).
+  # The backend of the parallel case (`NULL` without parallel workers):
+  backend <- if (ncol(projpred_ws_aug) >= prll_prj_trigger) {
+    par_backend(warn_once = TRUE)
+  }
+  if (is.null(backend)) {
+    # Sequential case.
     if (verbose_divmin) {
       pb <- utils::txtProgressBar(min = 0, max = ncol(projpred_ws_aug),
                                   style = 3, initial = 0, file = stderr())
@@ -1624,34 +1607,11 @@ divmin_augdat <- function(
       return(nlist(soutdmin, mssgs_warns_capt))
     })
   } else {
-    # Parallel case.
-    if (!requireNamespace("foreach", quietly = TRUE)) {
-      stop("Please install the 'foreach' package.")
-    }
-    if (!requireNamespace("iterators", quietly = TRUE)) {
-      stop("Please install the 'iterators' package.")
-    }
-    if (verbose_divmin && use_progressr()) {
-      progressor_obj <- progressr::progressor(ncol(projpred_ws_aug))
-    } else {
-      progressor_obj <- NULL
-    }
+    # Parallel case. The projection of one draw, in an environment with only
+    # the objects that it uses (see fun_with_objs()) and the projpred
+    # namespace as parent:
     dot_args <- list(...)
-    `%do_projpred%` <- foreach::`%dopar%`
-    outdmin <- foreach::foreach(
-      projpred_w_aug_s = iterators::iter(projpred_ws_aug, by = "column"),
-      .packages = c("projpred"),
-      .export = c(
-        "sdivmin", "formula", "data", "family", "projpred_formula_no_random",
-        "projpred_random", "dot_args", "progressor_obj"
-      ),
-      .noexport = c(
-        "object", "p_sel", "search_path", "p_ref", "refmodel", "projpred_var",
-        "projpred_ws_aug", "linkobjs"
-      ),
-      .errorhandling = getOption("projpred.foreach_errorhandling", "stop"),
-      .verbose = getOption("projpred.foreach_verbose", FALSE)
-    ) %do_projpred% {
+    one_draw <- fun_with_objs(function(projpred_w_aug_s) {
       mssgs_warns_capt <- capt_mssgs_warns(
         soutdmin <- do.call(
           sdivmin,
@@ -1664,9 +1624,14 @@ divmin_augdat <- function(
             dot_args)
         )
       )
-      if (!is.null(progressor_obj)) progressor_obj()
       return(nlist(soutdmin, mssgs_warns_capt))
-    }
+    }, c("sdivmin", "formula", "data", "family", "projpred_formula_no_random",
+         "projpred_random", "dot_args"))
+    ws_draws <- lapply(seq_len(ncol(projpred_ws_aug)), function(s) {
+      projpred_ws_aug[, s]
+    })
+    outdmin <- par_lapply(ws_draws, one_draw, .backend = backend,
+                          .progress = verbose_divmin)
   }
   mssgs_warns_capts <- lapply(outdmin, "[[", "mssgs_warns_capt")
   outdmin <- lapply(outdmin, "[[", "soutdmin")
@@ -2289,8 +2254,12 @@ check_conv_s <- function(fit_s) {
   } else if (inherits(fit_s, "polr")) {
     return(fit_s$convergence == 0)
   } else if (inherits(fit_s, "gam")) {
-    # TODO (GAMs): Is this correct?:
-    return(fit_s$converged && fit_s$mgcv.conv$fully.converged %||% TRUE)
+    # `converged`: P-IRLS iterations. `mgcv.conv`: smoothing parameter
+    # optimization with "magic". `outer.info`: smoothing parameter optimization
+    # with the other optimizers (see gam_outer_conv()).
+    return(isTRUE(fit_s$converged %||% TRUE) &&
+             isTRUE(fit_s$mgcv.conv$fully.converged %||% TRUE) &&
+             gam_outer_conv(fit_s$outer.info))
   } else if (inherits(fit_s, "gamm4")) {
     # TODO (GAMMs): I couldn't find any convergence-related information in
     # element `fit_s$gam`, so the GAM part is currently not checked for
@@ -2330,6 +2299,34 @@ check_conv_s <- function(fit_s) {
     warning("Unrecognized submodel fit. Please notify the package maintainer.")
     return(TRUE)
   }
+}
+
+# Convergence of the smoothing parameter optimization of a mgcv::gam() fit.
+# Argument `outer_info` is element `outer.info` of the fit. Its form depends on
+# the optimizer:
+# * "newton", "bfgs" and "efs": a list with string `conv` ("full convergence",
+#   "step failed" or "iteration limit reached").
+# * c("outer", "nlm"): the nlm() result, with `code`.
+# * c("outer", "optim"): the optim() result, with `convergence`.
+# * "magic" and fits without smoothing parameters: `NULL`.
+# For nlm() and optim(), only the iteration limit (nlm() code 4, optim() code 1)
+# is non-convergence. Other codes can occur at the optimum, for example nlm()
+# code 5 if a smoothing parameter goes to infinity (as for a smooth term of a
+# linear function). `[[` avoids the partial match of `$conv` to `convergence`.
+gam_outer_conv <- function(outer_info) {
+  if (!is.list(outer_info)) {
+    return(TRUE)
+  }
+  if (!is.null(outer_info[["conv"]])) {
+    return(identical(outer_info[["conv"]], "full convergence"))
+  }
+  if (!is.null(outer_info[["code"]])) {
+    return(!isTRUE(any(outer_info[["code"]] == 4)))
+  }
+  if (!is.null(outer_info[["convergence"]])) {
+    return(!isTRUE(any(outer_info[["convergence"]] == 1)))
+  }
+  return(TRUE)
 }
 
 # Prediction functions for submodels --------------------------------------
@@ -2719,14 +2716,23 @@ predict.subfit <- function(object, newdata = NULL, ...) {
 # Model matrix (with intercept column) of a `subfit` object for new data, with
 # the columns in the order of the coefficients.
 subfit_newdata_x <- function(object, newdata) {
-  # TODO: In the following model.matrix() call, allow user-specified
-  # contrasts to be passed to argument `contrasts.arg`. The `contrasts.arg`
-  # default (`NULL`) uses `options("contrasts")` internally, but it might be
-  # more convenient to let users specify contrasts directly. At that
-  # occasion, contrasts should also be tested thoroughly (not done until
-  # now).
-  x <- model.matrix(subfit_terms_newdata(object), data = newdata,
-                    xlev = object$xlvls)
+  tt <- subfit_terms_newdata(object)
+  # The contrasts of the fit, not the `contrasts` attributes of `newdata` (with
+  # them, model.matrix() would warn "contrasts dropped from factor"). Also,
+  # model.matrix() warns about contrasts of variables that the terms do not
+  # have:
+  newdata <- strip_contrasts(newdata)
+  ctrs <- object$contrasts
+  if (length(ctrs) > 0) {
+    vars <- vapply(as.list(attr(tt, "variables"))[-1], deparse_combine,
+                   character(1))
+    ctrs <- ctrs[intersect(names(ctrs), vars)]
+    if (length(ctrs) == 0) {
+      ctrs <- NULL
+    }
+  }
+  x <- model.matrix(tt, data = newdata, xlev = object$xlvls,
+                    contrasts.arg = ctrs)
   # Need to ensure that the columns of `x` match the coefficients (note that
   # `rownames(beta)` is the same as `colnames(object$x)`, see the tests):
   nms_to_use <- c("(Intercept)", colnames(object$x))
@@ -2766,6 +2772,7 @@ subprd_subfit_shared <- function(fits, newdata) {
     inherits(fit, "subfit") && identical(fit$formula[[3]], rhs_1) &&
       identical(rownames(fit$beta), nms_1) &&
       identical(fit$xlvls, fit_1$xlvls) &&
+      identical(fit$contrasts, fit_1$contrasts) &&
       identical(predvars_predictors(fit$terms), pv_1)
   }, logical(1)))
   if (!is_shared) {
@@ -2788,33 +2795,19 @@ subprd_subfit_shared <- function(fits, newdata) {
   return(subfit_newdata_x(fit_1, newdata) %*% rbind(alphas, betas))
 }
 
+# Linear predictors of a gamm4::gamm4() fit. The population-level part
+# (parametric terms, smooths and offsets) comes from the `gam` component, so the
+# smooth bases are those of the training data. The group-level part comes from
+# repair_re.gamm4(). Without `newdata`, the training data are used.
 #' @noRd
 #' @export
 predict.gamm4 <- function(object, newdata = NULL, ...) {
   if (is.null(newdata)) {
-    newdata <- model.frame(object$mer)
+    newdata <- object$gam$model
   }
-  formula <- object$formula
-  random <- object$random
-  gamm_struct <- model.matrix_gamm4(delete.response(terms(formula)),
-                                    random = random, data = newdata)
-  ranef <- lme4::ranef(object$mer) # TODO (GAMMs): Add `, condVar = FALSE` here?
-  b <- gamm_struct$b
-  mf <- gamm_struct$mf
-
-  ## base pred only smooth and fixed effects
-  gamm_pred <- predict(object$mer, newdata = mf, re.form = NA)
-
-  ## gamm4 trick to replace dummy smooth variables with actual smooth terms
-  sn <- names(ranef)
-  tn <- names(b$reTrms$cnms)
-  ind <- seq_along(tn)
-  for (i in seq_along(tn)) { ## loop through random effect smooths
-    k <- ind[sn[i] == tn] ## which term should contain G$random[[i]]
-    ii <- (b$reTrms$Gp[k] + 1):b$reTrms$Gp[k + 1]
-    r_pred <- t(as.matrix(b$reTrms$Zt[ii, ])) %*%
-      as.matrix(c(as.matrix(ranef[[i]])))
-    gamm_pred <- gamm_pred + r_pred
+  gamm_pred <- as.vector(predict(object$gam, newdata = newdata))
+  if (!is.null(object$random)) {
+    gamm_pred <- gamm_pred + repair_re(object, newdata = newdata)
   }
   return(as.matrix(unname(gamm_pred)))
 }
@@ -2835,12 +2828,27 @@ empty_intersection <- function(x, el_nm = "new") {
 #
 # The license of lme4 version 1.1-28 is:
 # "GPL (>=2)" (see <https://CRAN.R-project.org/package=lme4>).
-mkNewReTrms_man <- function(re.form, newdata, xlevels, re, D = NULL) {
+mkNewReTrms_man <- function(re.form, newdata, xlevels, re, D = NULL,
+                            contrasts = NULL) {
   stopifnot(!is.null(newdata))
   tt <- terms(reformulas::subbars(re.form))
   rfd <- suppressWarnings(
     model.frame(tt, newdata, na.action = na.pass, xlev = xlevels)
   )
+  # The contrasts of the factors in the group-level terms of the fit (from
+  # re_contrasts()), as in lme4::mkNewReTrms():
+  for (nm in intersect(names(contrasts), names(rfd))) {
+    x <- factor(rfd[[nm]], levels = rownames(contrasts[[nm]]),
+                ordered = is.ordered(rfd[[nm]]))
+    is_new <- is.na(x) & !is.na(rfd[[nm]])
+    if (any(is_new)) {
+      stop("Factor `", nm, "` has new levels: ",
+           paste(unique(as.character(rfd[[nm]][is_new])), collapse = ", "),
+           ".")
+    }
+    contrasts(x) <- contrasts[[nm]]
+    rfd[[nm]] <- x
+  }
   ReTrms <- reformulas::mkReTrms(reformulas::findbars(re.form[[2]]), rfd)
   ns.re <- names(re)
   nRnms <- names(Rcnms <- ReTrms$cnms)
@@ -3068,6 +3076,91 @@ repair_re.clmm <- function(object, newdata) {
     }
   }
   return(-drop(as(ranefs_prep$b %*% ranefs_prep$Zt, "matrix")))
+}
+
+# For objects of class `gamm4`, the following repair_re() method works as
+# repair_re.clmm(): it re-uses the estimated group-level effects for existing
+# group levels and draws those for new group levels from a (multivariate)
+# Gaussian distribution, and option `projpred.mlvl_pred_new` determines whether
+# existing group levels are also considered as new group levels. It uses only
+# the grouping variables of `object$random`, because the lme4 fit `object$mer`
+# also has one grouping variable for each penalized smooth term.
+#
+# License/copyright notice: repair_re.gamm4() is inspired by and uses code
+# snippets from lme4:::predict.merMod() from lme4 version 1.1-28 (see
+# <https://CRAN.R-project.org/package=lme4>). See the `LICENSE` file in
+# projpred's root directory for details.
+#
+# The copyright statement for lme4 version 1.1-28 is:
+# Copyright (C) 2003-2022 The LME4 Authors (see
+# <https://CRAN.R-project.org/package=lme4>).
+#
+# The license of lme4 version 1.1-28 is:
+# "GPL (>=2)" (see <https://CRAN.R-project.org/package=lme4>).
+#' @noRd
+#' @export
+repair_re.gamm4 <- function(object, newdata) {
+  stopifnot(!is.null(newdata))
+  re_fml <- object$random
+  vnms <- unique(vapply(reformulas::findbars(re_fml), function(bar) {
+    deparse_combine(bar[[3]])
+  }, character(1)))
+  if (any(grepl("[/:]", vnms))) {
+    stop("The `/` and `:` syntax for grouping variables is currently not ",
+         "supported. Please write out (i.e., create corresponding columns in ",
+         "the dataset manually and then adapt the model formula) interaction ",
+         "terms.")
+  }
+  vnms_miss <- setdiff(vnms, names(newdata))
+  if (length(vnms_miss) > 0) {
+    stop("Could not find column `", vnms_miss[1], "` in `newdata`.")
+  }
+  ranef_tmp <- lme4::ranef(object$mer, condVar = FALSE)[vnms]
+  lvls_list <- lapply(setNames(nm = vnms), function(vnm) {
+    from_fit <- rownames(ranef_tmp[[vnm]])
+    from_new <- as.character(unique(newdata[[vnm]]))
+    list(comb = union(from_fit, from_new),
+         exist = intersect(from_new, from_fit),
+         new = from_new)
+  })
+  # In case of duplicated levels across group variables, later code would have
+  # to be adapted:
+  if (getOption("projpred.mlvl_pred_new", FALSE)) {
+    el_nm_gamm <- "new"
+  } else {
+    el_nm_gamm <- "comb"
+  }
+  if (length(lvls_list) >= 2 &&
+      !all(utils::combn(lvls_list, 2, empty_intersection,
+                        el_nm = el_nm_gamm))) {
+    stop("Currently, projpred requires all variables with group-level effects ",
+         "to have disjoint level sets.")
+  }
+  ranefs_prep <- mkNewReTrms_man(re.form = re_fml,
+                                 newdata = newdata,
+                                 xlevels = c(lapply(lvls_list, "[[", "comb"),
+                                             object$gam$xlevels),
+                                 re = ranef_tmp,
+                                 contrasts = object$re_contrasts)
+  names(ranefs_prep$b) <- rownames(ranefs_prep$Zt)
+
+  VarCorr_tmp <- lme4::VarCorr(object$mer)
+  for (vnm in vnms) {
+    lvls_new <- lvls_list[[vnm]]$new
+    if (!getOption("projpred.mlvl_pred_new", FALSE)) {
+      lvls_exist <- lvls_list[[vnm]]$exist
+      lvls_new <- setdiff(lvls_new, lvls_exist)
+    }
+    if (length(lvls_new) > 0) {
+      ranefs_prep$b[names(ranefs_prep$b) %in% lvls_new] <- t(mvtnorm::rmvnorm(
+        n = length(lvls_new),
+        # Add `[, , drop = FALSE]` to drop attributes:
+        sigma = VarCorr_tmp[[vnm]][, , drop = FALSE],
+        checkSymmetry = FALSE
+      ))
+    }
+  }
+  return(drop(as(ranefs_prep$b %*% ranefs_prep$Zt, "matrix")))
 }
 
 # For objects of class `mmblogit`, the following repair_re() method will re-use

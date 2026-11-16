@@ -37,7 +37,10 @@ instead.}
 \item{predictor_terms}{If not \code{NULL}, then this needs to be a character
 vector of predictor terms for the submodel onto which the projection will
 be performed. Argument \code{nterms} is ignored in that case. For an \code{object}
-which is not of class \code{vsel}, \code{predictor_terms} must not be \code{NULL}.}
+which is not of class \code{vsel}, \code{predictor_terms} must not be \code{NULL}. If a
+submodel has a linear term and a smooth term of the same variable (for
+example, \code{x} and \code{s(x)}), the projection drops the linear term and gives a
+message. The coefficient of this linear term is not identifiable.}
 
 \item{refit_prj}{A single logical value indicating whether to fit the
 submodels (again) (\code{TRUE}) or---if \code{object} is of class \code{vsel}---to re-use
@@ -64,9 +67,8 @@ results can be obtained again if needed. Passed to argument \code{seed} of
 \code{\link[=project]{project()}}) upon exiting \code{\link[=project]{project()}}. Here, \code{seed} is used for clustering
 the reference model's posterior draws (if \code{!is.null(nclusters)}) and for
 drawing new group-level effects when predicting from a multilevel submodel
-(however, not yet in case of a GAMM) and having global option
-\code{projpred.mlvl_pred_new} set to \code{TRUE}. (Such a prediction takes place when
-calculating output elements \code{dis} and \code{ce}.)}
+and having global option \code{projpred.mlvl_pred_new} set to \code{TRUE}. (Such a
+prediction takes place when calculating output elements \code{dis} and \code{ce}.)}
 
 \item{verbose}{A single integer value from the set \eqn{\{0, 1, 2\}}{{0, 1,
 2}} (if \code{!is.null(predictor_terms)}, \eqn{1} and \eqn{2} have the same
