@@ -212,7 +212,7 @@ test_that(paste(
       chains = 1L, iter = 200L, seed = seed_fit, refresh = 0
     ), wobs = wobs_tst, offs = offs_tst),
     binom_2col_offset = list(fit = rstanarm::stan_glm(
-      cbind(ys, nf) ~ . - ys - nf, family = binomial(), data = dat_dot_b,
+      cbind(ys, nf) ~ ., family = binomial(), data = dat_dot_b,
       offset = offs_tst,
       chains = 1L, iter = 200L, seed = seed_fit, refresh = 0
     ), wobs = dat$wobs_col, offs = offs_tst)
