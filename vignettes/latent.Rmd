@@ -226,6 +226,11 @@ rbind(latent = time_lat, traditional = time_trad)[, "elapsed"]
 suggest_size(cvvs_trad, stat = "gmpd")
 head(ranking(cvvs_trad)[["fulldata"]], size_decided_lat)
 ```
+
+```{r plot_vsel_trad, fig.alt="Plot of the ratio of the geometric mean predictive density (GMPD) of each submodel to that of the reference model, with uncertainty bars, for the traditional projection of the Poisson model. The top x-axis shows the submodel size and the bottom x-axis the predictor added at each size. A dashed horizontal line at 1 marks the reference model. The ratio increases with the size, reaches the reference model and then levels off."}
+( gg_trad <- plot(cvvs_trad, stats = "gmpd", deltas = TRUE) )
+```
+
 The traditional projection takes much longer than the latent projection (see the elapsed times in seconds above), although it uses the smaller settings.
 It selects the same `r if (!params$EVAL) character() else size_decided_lat` predictor terms first.
 
