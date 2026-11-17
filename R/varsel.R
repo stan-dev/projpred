@@ -661,16 +661,15 @@ parse_args_varsel <- function(refmodel, method, refit_prj, nterms_max,
   # The size of the largest submodel of the search (the submodel with all search
   # terms):
   nterms_all <- nterms_search_all(search_terms)
-  max_nv_possible <- nterms_all
   if (is.null(nterms_max)) {
     nterms_max <- 19
-    if (nterms_max < max_nv_possible &&
+    if (nterms_max < nterms_all &&
         getOption("projpred.mssg_cut_search", TRUE)) {
       message("Cutting off the search at size ", nterms_max, ". Use argument ",
               "`nterms_max` to customize this.")
     }
   }
-  nterms_max <- min(max_nv_possible, nterms_max)
+  nterms_max <- min(nterms_all, nterms_max)
 
   # The warning applies if the submodel with all search terms is reached and
   # has group-level terms:
