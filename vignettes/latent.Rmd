@@ -147,6 +147,8 @@ refm_fit_poiss <- stan_glm(
   prior = hs(global_scale = tau0, slab_df = 100, slab_scale = 1),
   ### Only for the sake of speed (not recommended in general):
   chains = 2, iter = 1000,
+  ### In general, use defaults or explicitly define
+  ### chains = 4, iter = 4000,
   ###
   refresh = 0
 )
@@ -195,13 +197,13 @@ time_lat <- system.time(vs_lat <- varsel(
 ```{r time_lat}
 print(time_lat)
 ```
-The message telling that `<refmodel>$dis` consists of only `NA`s will not concern us here because we will only focus on response-scale post-processing.
 
 In order to decide for a submodel size, we first inspect the `plot()` results.
 In contrast to the main vignette where we used the mean log predictive density (MLPD) as predictive performance statistic for a `gaussian()` family reference model (and `gaussian()` submodels), we have a discrete family (`poisson()`) here, so it makes sense to exponentiate the MLPD to obtain the geometric mean predictive density (GMPD; in case of a discrete response, the predictive density values are actually predictive *probabilities* and hence the GMPD is bounded by 0 and 1).
 As in the main vignette, we plot with `deltas = TRUE` (in case of the GMPD, this means that the *ratio* of the submodel GMPD vs. the reference model GMPD is shown).
 Via global option `projpred.plot_vsel_size_position`, we set argument `size_position` of `plot.vsel()` to `"secondary_x"` to make the submodel sizes readable in all of the plots in this vignette.
 ```{r plot_vsel_lat, fig.alt="Plot of the ratio of the geometric mean predictive density (GMPD) of each submodel to that of the reference model, with uncertainty bars, for the latent projection of the Poisson model. The top x-axis shows the submodel size and the bottom x-axis the predictor added at each size. A dashed horizontal line at 1 marks the reference model. The ratio is close to 0 at small sizes and then rises to the reference model."}
+ggplot2::theme_set(bayesplot::theme_default(base_family = "sans"))
 options(projpred.plot_vsel_size_position = "secondary_x")
 ( gg_lat <- plot(vs_lat, stats = "gmpd", deltas = TRUE) )
 ```
@@ -424,7 +426,6 @@ vs_nebin <- varsel(
   ###
 )
 ```
-Again, the message telling that `<refmodel>$dis` consists of only `NA`s will not concern us here because we will only focus on response-scale post-processing.
 The message concerning `latent_ilink` can be safely ignored here (the internal default based on `family$linkinv` works correctly in this case).
 
 Again, we first inspect the `plot()` results to decide for a submodel size:
@@ -577,7 +578,6 @@ refm_weib <- get_refmodel(
   latent_ppd_oscale = latent_ppd_oscale_weib
 )
 ```
-Again, the message telling that `<refmodel>$dis` consists of only `NA`s will not concern us here because we will only focus on response-scale post-processing.
 The message concerning `latent_ilink` can be safely ignored here (the internal default based on `family$linkinv` works correctly in this case).
 The functions above use the shape draws of the full-data fit (`refm_shape`).
 This is correct for `varsel()` and for the LOO CV that we use below.
@@ -619,7 +619,6 @@ Project onto the submodel consisting of the first `n_pred_truth` predictors and 
 predictors_final_weib <- head(ranking(cvvs_weib)[["fulldata"]], n_pred_truth)
 prj_weib <- project(refm_weib, predictor_terms = predictors_final_weib)
 prj_predict_weib <- proj_predict(prj_weib)
-bayesplot::bayesplot_theme_set(ggplot2::theme_bw())
 bayesplot::ppc_km_overlay(y = dat_sim_weib$yobs, yrep = prj_predict_weib,
                           status_y = 1 - dat_sim_weib$is_censored)
 ```
@@ -825,7 +824,7 @@ refm_nebin_kfold <- get_refmodel_nebin(
   }
 )
 ```
-As before, the messages concerning `<refmodel>$dis` and `latent_ilink` can be ignored here.
+As before, the message concerning `latent_ilink` can be ignored here.
 Then `cv_varsel(refm_nebin_kfold, cv_method = "kfold")` uses the `reciprocal_dispersion` draws of the fold-wise refit in each fold.
 We do not run K-fold CV here, because it refits the reference model $K$ times.
 For the Weibull example, define `refm_shape` inside such a function in the same way.
