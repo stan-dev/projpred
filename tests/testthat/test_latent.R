@@ -447,4 +447,14 @@ test_that(paste(
     message = "will consist of only `NA`s"
   )
   expect_true(all(is.na(refm$dis)))
+  # Without a latent dispersion, as.matrix() has no `sigma` column:
+  prj <- project(refm, predictor_terms = "x1", ndraws = 20, verbose = 0)
+  expect_false("sigma" %in% colnames(as.matrix(prj)))
+  # With a latent dispersion, it has one:
+  refm_dis <- suppressMessages(
+    get_refmodel(fit, latent = TRUE, dis = rep(1, length(refm$dis)))
+  )
+  prj_dis <- project(refm_dis, predictor_terms = "x1", ndraws = 20,
+                     verbose = 0)
+  expect_true("sigma" %in% colnames(as.matrix(prj_dis)))
 })
