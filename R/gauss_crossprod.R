@@ -65,7 +65,7 @@ gauss_crossprod_design <- function(refmodel, term_strings, regul) {
   # projections (for functions that the formula calls):
   tt <- terms(as.formula(paste("~", paste(terms_all, collapse = " + ")),
                          env = environment(refmodel$formula)))
-  data <- refmodel$fetch_data()
+  data <- set_contrasts(refmodel$fetch_data(), refmodel$contrasts)
   mf <- model.frame(tt, data = data, drop.unused.levels = TRUE)
   if (nrow(mf) != nrow(data)) {
     return(NULL)
@@ -79,6 +79,7 @@ gauss_crossprod_design <- function(refmodel, term_strings, regul) {
     return(NULL)
   }
   x <- model.matrix(tt, data = mf)
+  ctrs <- attr(x, "contrasts")
   assign_x <- attr(x, "assign")
   keep <- assign_x > 0
   x <- x[, keep, drop = FALSE]
@@ -104,7 +105,7 @@ gauss_crossprod_design <- function(refmodel, term_strings, regul) {
   # of the training data (attribute "predvars", for example of poly()):
   return(nlist(tt_pred = attr(mf, "terms"), xlev = .getXlevels(tt, mf), keep,
                x_c, x_cw, x_means, cols_by_term, g_mat, a_full, lambda_x,
-               wobs, sum_w))
+               wobs, sum_w, contrasts = ctrs))
 }
 
 # The term labels of a term string (see norm_term_labels()).
@@ -141,9 +142,10 @@ perf_eval_gauss <- function(search_path, nterms, refmodel, p_ref,
   }
   data_test <- newdata_test %||% refmodel_fulldata$fetch_data(obs = indices_test)
   x_test <- tryCatch({
-    mf_test <- model.frame(des$tt_pred, data = data_test, xlev = des$xlev,
-                           na.action = na.pass)
-    model.matrix(des$tt_pred, data = mf_test)[, des$keep, drop = FALSE]
+    mf_test <- model.frame(des$tt_pred, data = strip_contrasts(data_test),
+                           xlev = des$xlev, na.action = na.pass)
+    model.matrix(des$tt_pred, data = mf_test,
+                 contrasts.arg = des$contrasts)[, des$keep, drop = FALSE]
   }, error = function(e) NULL)
   if (is.null(x_test) || nrow(x_test) != nrow(data_test) || anyNA(x_test)) {
     return(NULL)

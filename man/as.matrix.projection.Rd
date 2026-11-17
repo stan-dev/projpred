@@ -54,6 +54,13 @@ of a \code{\link[brms:categorical]{brms::categorical()}} reference model, the mu
 therefore also their names) slightly differ from those in the \pkg{brms}
 reference model fit (see section "Augmented-data projection" in
 \code{\link[=extend_family]{extend_family()}}'s documentation).
+
+For a submodel with smooth terms (fitted with \code{\link[mgcv:gam]{mgcv::gam()}}), the columns
+of the smooth terms are the coefficients in the basis of \code{gam()}. The
+reference model fit can use another basis (\code{\link[rstanarm:stan_gamm4]{rstanarm::stan_gamm4()}} and
+\pkg{brms} do so for \code{s()} terms). Then these columns do not match the
+reference model parameters. For a submodel with smooth and group-level
+terms (GAMM), the projected draws cannot be extracted yet (error).
 }
 \examples{
 \dontshow{if (requireNamespace("rstanarm", quietly = TRUE)) withAutoprint(\{ # examplesIf}
@@ -81,12 +88,10 @@ prj_mat <- as.matrix(prj)
 # Since the draws have all the same weight here, we can treat them like
 # ordinary MCMC draws, e.g., we can summarize them using the `posterior`
 # package:
-if (requireNamespace("posterior", quietly = TRUE)) {
-  print(posterior::summarize_draws(
-    posterior::as_draws_matrix(prj_mat),
-    "median", "mad", function(x) quantile(x, probs = c(0.025, 0.975))
-  ))
-}
+print(posterior::summarize_draws(
+  posterior::as_draws_matrix(prj_mat),
+  "median", "mad", function(x) quantile(x, probs = c(0.025, 0.975))
+))
 # Or visualize them using the `bayesplot` package:
 if (requireNamespace("bayesplot", quietly = TRUE)) {
   print(bayesplot::mcmc_intervals(prj_mat))

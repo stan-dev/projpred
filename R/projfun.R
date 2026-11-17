@@ -37,6 +37,7 @@ proj_to_submodl <- function(predictor_terms, p_ref, refmodel,
       formula = refmodel$formula, terms_ = terms_,
       data = refmodel$fetch_data(), y = p_ref$mu, y_unqs = y_unqs_aug
     )
+    subset$data <- set_contrasts(subset$data, refmodel$contrasts)
     # A linear term next to a smooth term of the same variable (`x` and `s(x)`)
     # is dropped (see smooth_covered_terms()):
     fml_divmin <- flatten_formula(subset$formula, duplicates = FALSE)
@@ -76,6 +77,7 @@ proj_to_submodl <- function(predictor_terms, p_ref, refmodel,
         formula = refmodel$formula, terms_ = terms_,
         data = refmodel$fetch_data(), y = p_ref$mu, y_unqs = y_unqs_aug
       )
+      subset$data <- set_contrasts(subset$data, refmodel$contrasts)
     }
     projpred_ws_aug <- p_ref$mu
     if (refmodel$family$for_augdat && any(refmodel$wobs != 1)) {

@@ -196,6 +196,28 @@ test_that("function calls in group terms fail", {
   )
 })
 
+test_that(paste(
+  "get_refmodel() removes a brms correlation ID with a message and stops for",
+  "`||`"
+), {
+  tstsetup <- "brms.glmm.brnll.stdformul.without_wobs.without_offs"
+  args_fit_i <- args_fit[[tstsetup]]
+  skip_if_not(!is.null(args_fit_i))
+  fit_id <- fits[[tstsetup]]
+  fit_id$formula <- update(fit_id$formula,
+                           . ~ . - (xco.1 | z.1) + (xco.1 |p| z.1))
+  expect_message(refmod_id <- get_refmodel(fit_id),
+                 "correlation ID(s) `p`", fixed = TRUE, info = tstsetup)
+  expect_identical(extract_terms_response(refmod_id$formula)$group_terms,
+                   "xco.1 | z.1", info = tstsetup)
+  fit_dbar <- fits[[tstsetup]]
+  fit_dbar$formula <- update(fit_dbar$formula,
+                             . ~ . - (xco.1 | z.1) + (xco.1 || z.1))
+  expect_error(get_refmodel(fit_dbar),
+               "does not support group terms with `||`", fixed = TRUE,
+               info = tstsetup)
+})
+
 test_that("extra arguments in s() or t2() terms fail", {
   args_fit_i <- args_fit$rstanarm.gam.gauss.spclformul.with_wobs.without_offs
   skip_if_not(!is.null(args_fit_i))

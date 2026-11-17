@@ -639,9 +639,7 @@ proj_predict_aux <- function(proj, newdata, offsetnew, weightsnew,
 }
 
 # Needed to avoid a NOTE in `R CMD check`:
-if (getRversion() >= package_version("2.15.1")) {
-  utils::globalVariables("fontsize")
-}
+utils::globalVariables("fontsize")
 
 #' Plot predictive performance
 #'
@@ -1204,7 +1202,10 @@ plot.vsel <- function(
     ci_type <- "exponentiated normal-approximation "
   } else if (all(stats %in% c("mse", "rmse")) && isFALSE(deltas)) {
     ci_type <- "log-normal-approximation "
-  } else if (all(!stats %in% c(stats_bs_ci, "gmpd", "mse", "rmse")) ||
+  } else if (all(stats %in% c("acc", "pctcorr")) && isFALSE(deltas)) {
+    ci_type <- "logit-normal-approximation "
+  } else if (all(!stats %in% c(stats_bs_ci, "gmpd", "mse", "rmse", "acc",
+                               "pctcorr")) ||
              (all(!stats %in% c(stats_bs_ci, "gmpd")) &&
               (identical(deltas, "mixed") || isTRUE(deltas)))) {
     ci_type <- "normal-approximation "
@@ -1353,7 +1354,12 @@ plot.vsel <- function(
 #'   observations. For this, the response category ("class") with highest
 #'   probability (the probabilities are model-based) is taken as the prediction
 #'   ("classification") for an observation. For the corresponding uncertainty
-#'   interval, a normal approximation is used.
+#'   interval, a logit-normal approximation is used if `deltas` is `FALSE`. The
+#'   standard error on the logit scale comes from the delta method. A normal
+#'   approximation is used if `deltas` is `TRUE` (or `"mixed"`, in case of
+#'   [plot.vsel()]). It is also used if `deltas` is `FALSE` and the estimate is
+#'   not strictly between 0 and 1 (an estimate outside of \[0, 1\] is possible
+#'   with subsampled LOO-CV).
 #'   * `"auc"`: area under the ROC curve (only available in the situations
 #'   mentioned in section "Details" below). For the corresponding standard error
 #'   and lower and upper uncertainty interval bounds, bootstrapping is used. Not
@@ -2019,11 +2025,8 @@ replace_population_names <- function(population_effects, nm_scheme) {
       names(population_effects),
       nm_scheme = nm_scheme
     )
-    if (length(population_effects) > 0) {
-      # We could also use `recycle0 = TRUE` here, but that would
-      # require R >= 4.0.1.
-      names(population_effects) <- paste0("b_", names(population_effects))
-    }
+    names(population_effects) <- paste0("b_", names(population_effects),
+                                        recycle0 = TRUE)
   }
   return(population_effects)
 }
@@ -2391,7 +2394,11 @@ get_subparams.glmerMod <- function(x, ...) {
 #' @noRd
 #' @export
 get_subparams.gamm4 <- function(x, ...) {
-  return(get_subparams.lm(x, ...))
+  # coef() of a gamm4 fit is `NULL`, so get_subparams.lm() would return no
+  # parameters:
+  stop("as.matrix.projection() and as_draws_matrix.projection() do not ",
+       "support submodels with smooth and group-level terms (GAMMs) yet.",
+       call. = FALSE)
 }
 
 #' @noRd
@@ -2514,6 +2521,13 @@ get_subparams.mmblogit <- function(x, ...) {
 #'   reference model fit (see section "Augmented-data projection" in
 #'   [extend_family()]'s documentation).
 #'
+#'   For a submodel with smooth terms (fitted with [mgcv::gam()]), the columns
+#'   of the smooth terms are the coefficients in the basis of `gam()`. The
+#'   reference model fit can use another basis ([rstanarm::stan_gamm4()] and
+#'   \pkg{brms} do so for `s()` terms). Then these columns do not match the
+#'   reference model parameters. For a submodel with smooth and group-level
+#'   terms (GAMM), the projected draws cannot be extracted yet (error).
+#'
 #' @return An \eqn{S_{\mathrm{prj}} \times Q}{S_prj x Q} matrix of projected
 #'   draws, with \eqn{S_{\mathrm{prj}}}{S_prj} denoting the number of projected
 #'   draws and \eqn{Q} the number of parameters. If `allow_nonconst_wdraws_prj`
@@ -2546,12 +2560,10 @@ get_subparams.mmblogit <- function(x, ...) {
 #' # Since the draws have all the same weight here, we can treat them like
 #' # ordinary MCMC draws, e.g., we can summarize them using the `posterior`
 #' # package:
-#' if (requireNamespace("posterior", quietly = TRUE)) {
-#'   print(posterior::summarize_draws(
-#'     posterior::as_draws_matrix(prj_mat),
-#'     "median", "mad", function(x) quantile(x, probs = c(0.025, 0.975))
-#'   ))
-#' }
+#' print(posterior::summarize_draws(
+#'   posterior::as_draws_matrix(prj_mat),
+#'   "median", "mad", function(x) quantile(x, probs = c(0.025, 0.975))
+#' ))
 #' # Or visualize them using the `bayesplot` package:
 #' if (requireNamespace("bayesplot", quietly = TRUE)) {
 #'   print(bayesplot::mcmc_intervals(prj_mat))
@@ -2618,7 +2630,7 @@ as.matrix.projection <- function(x, nm_scheme = NULL,
 #'   \eqn{Q} the number of parameters. If the projected draws have nonconstant
 #'   weights, [posterior::weight_draws()] is applied internally.
 #'
-#' @examplesIf requireNamespace("rstanarm", quietly = TRUE) && requireNamespace("posterior", quietly = TRUE)
+#' @examplesIf requireNamespace("rstanarm", quietly = TRUE)
 #' # Data:
 #' dat_gauss <- data.frame(y = df_gaussian$y, df_gaussian$x)
 #'
@@ -2676,9 +2688,6 @@ as_draws.projection <- function(x, ...) {
 # argument `wdraws_prj`) to a `draws_matrix` (which will be weighted if `xmat`
 # possesses an argument `wdraws_prj`).
 mat2drmat <- function(xmat) {
-  if (!requireNamespace("posterior", quietly = TRUE)) {
-    stop("Please install the 'posterior' package.")
-  }
   drmat <- posterior::as_draws_matrix(structure(xmat, wdraws_prj = NULL))
   wdr <- attr(xmat, "wdraws_prj")
   if (!is.null(wdr)) {

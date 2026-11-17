@@ -36,8 +36,13 @@
 #'   non-default methods of [get_refmodel()], an object of the corresponding
 #'   class.
 #' @param data A `data.frame` containing the data to use for the projection
-#'   predictive variable selection. Any `contrasts` attributes of the dataset's
-#'   columns are silently removed. For custom reference models, the columns of
+#'   predictive variable selection. The `contrasts` attributes of the factor
+#'   columns (see [contrasts()]) set the contrasts of these predictors in the
+#'   submodels; for other factors, the submodels use `options("contrasts")`.
+#'   The `stanreg` method of [get_refmodel()] takes the contrasts from the
+#'   \pkg{rstanarm} fit (except for [rstanarm::stan_gamm4()], which does not
+#'   store them), and \pkg{brms} sets these attributes. For custom reference
+#'   models, the columns of
 #'   `data` do not necessarily have to coincide with those of the dataset used
 #'   for fitting the reference model, but keep in mind that a row-subset of
 #'   `data` is used for argument `newdata` of `ref_predfun` during \eqn{K}-fold
@@ -152,6 +157,14 @@
 #' In multilevel (group-level) terms, function calls on the right-hand side of
 #' the `|` character (e.g., `(1 | gr(group_variable))`, which is possible in
 #' \pkg{brms}) are currently not allowed in \pkg{projpred}.
+#'
+#' Group terms with a \pkg{brms} correlation ID, such as `(1 + x |p| g)`, are
+#' used without the ID (here `(1 + x | g)`), and a message tells about this.
+#' Group terms with `||` (uncorrelated group-level effects) are currently not
+#' supported. If a grouping factor has more than one group term, such as
+#' `(1 | g) + (0 + x | g)`, the submodels merge these terms into one term with
+#' correlations (here `(x | g)`), and [init_refmodel()] gives a warning (no
+#' warning if all these terms have the same \pkg{brms} correlation ID).
 #'
 #' For additive models (still an experimental feature), only [mgcv::s()] and
 #' [mgcv::t2()] are currently supported as smooth terms. Furthermore, these need
@@ -853,6 +866,17 @@ get_refmodel.stanreg <- function(object, latent = FALSE, dis = NULL,
 
   data <- object$data
   stopifnot(is.data.frame(data))
+  # rstanarm stores the contrasts of the fit in `object$contrasts`, not as
+  # attributes of the factor columns (init_refmodel() takes them from these
+  # attributes). A matrix for other levels (for example, if the fit dropped an
+  # unused level) is left out:
+  for (nm in intersect(names(object$contrasts), names(data))) {
+    ctr <- object$contrasts[[nm]]
+    if (is.factor(data[[nm]]) && is.null(attr(data[[nm]], "contrasts")) &&
+        (!is.matrix(ctr) || nrow(ctr) == nlevels(data[[nm]]))) {
+      contrasts(data[[nm]]) <- ctr
+    }
+  }
 
   # Weights (for the observations):
   if (family$family == "binomial" && length(object$weights) > 0) {
@@ -1174,7 +1198,8 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
   stopifnot(inherits(formula, "formula"))
   data <- na.fail(data)
   stopifnot(is.data.frame(data))
-  formula <- expand_formula(formula, data)
+  fml_ids <- rm_group_ids(formula, verbose = !called_from_cvrefbuilder)
+  formula <- expand_formula(fml_ids$formula, data)
   if (!as.logical(attr(terms(formula), "intercept"))) {
     # Add an intercept to `formula` so that we always project onto submodels
     # *including* an intercept (see the discussion at #96):
@@ -1222,6 +1247,19 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
                !called_from_cvrefbuilder) {
       warning("Support for additive models is still experimental.")
     }
+  }
+  # Terms of one grouping factor with the same brms ID are one correlated block
+  # in brms, so merging them does not add correlations:
+  grp_fctrs_mult <- setdiff(grp_fctrs_multi(grp_trms),
+                            fml_ids$grp_fctrs_shared_id)
+  if (length(grp_fctrs_mult) > 0 && !called_from_cvrefbuilder) {
+    warning("The reference model formula has more than one group term for ",
+            "the grouping factor(s) ",
+            paste0("`", grp_fctrs_mult, "`", collapse = ", "), ". The ",
+            "submodels merge the group terms of a grouping factor into one ",
+            "term with correlations (for example, `(1 | g) + (0 + x | g)` ",
+            "becomes `(x | g)`), so they can have correlations that the ",
+            "reference model does not have.")
   }
   if (length(grp_trms) > 0 &&
       getOption("projpred.warn_instable_projections", TRUE) &&
@@ -1427,14 +1465,16 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
       linpred_out <- unname(linpred_out)
 
       if (excl_offs) {
-        # Observation weights are not needed here, so we can use the default of
-        # `wrhs = NULL` (using something like `wrhs = rep(1, nrow(newdata %||%
-        # data))` would cause a warning in newer brms versions). The internal
-        # default `extract_model_data` gets weights of 1, so that it does not
-        # need the response columns of a 2-column response in `newdata`:
+        # Observation weights are not needed here, so use the default
+        # `wrhs = NULL` (weights of 1 would cause a warning in newer brms
+        # versions). The internal default `extract_model_data` gets weights of 1
+        # only for a 2-column response, so that it does not need the response
+        # columns in `newdata`:
         offs <- extract_model_data(
           fit, newdata = newdata,
-          wrhs = if (emd_default) rep(1, nrow(newdata %||% data)),
+          wrhs = if (emd_default && !is.null(wrhs_2col)) {
+            rep(1, nrow(newdata %||% data))
+          },
           extract_y = FALSE
         )$offset
         stopifnot(length(offs) %in% c(1L, n_obs))
@@ -1495,7 +1535,8 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
       # instead of building them again for every projection:
       pred_sub <- subprd_fitted(fits, nobs = nrow(data))
     }
-    newdata <- fetch_data(data, obs = obs, newdata = newdata)
+    # The submodel fits store their contrasts:
+    newdata <- strip_contrasts(fetch_data(data, obs = obs, newdata = newdata))
     if (is.null(offset)) {
       offset <- rep(0, nrow(newdata))
     } else {
@@ -1550,8 +1591,12 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
       cvrefbuilder <- function(cvfit) {
         init_refmodel(
           object = NULL,
-          data = fetch_data_wrapper(obs = setdiff(seq_len(nrow(data)),
-                                                  cvfit$omitted)),
+          data = set_contrasts(
+            fetch_data_wrapper(obs = setdiff(seq_len(nrow(data)),
+                                             cvfit$omitted)),
+            # Assigned below, before this function is called:
+            ctrs
+          ),
           formula = formula,
           family = family,
           div_minimizer = div_minimizer,
@@ -1668,14 +1713,12 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
     stop("For a `datafit`, offsets are not allowed.")
   }
 
-  # For avoiding the warning "contrasts dropped from factor <factor_name>" when
-  # predicting for each projected draw, e.g., for submodels fit with lm()/glm():
-  has_contr <- sapply(data, function(data_col) {
-    !is.null(attr(data_col, "contrasts"))
-  })
-  for (idx_col in which(has_contr)) {
-    attr(data[[idx_col]], "contrasts") <- NULL
-  }
+  # The contrasts of the factor predictors (`contrasts` attributes of the
+  # columns of `data`). The stored data have no such attributes, which avoids
+  # the warning "contrasts dropped from factor <factor_name>" in predictions.
+  # set_contrasts() sets them again where the submodels are fit:
+  ctrs <- contrasts_from_data(data, vars = all.vars(formula[[3]]))
+  data <- strip_contrasts(data)
 
   # Needed for rstanarm (and possibly custom) multilevel models with `:` between
   # grouping variables (reason: repair_re() currently requires a corresponding
@@ -1796,7 +1839,7 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
     fit = object, formula, div_minimizer, family, eta, mu, mu_offs, dis, y,
     fetch_data = fetch_data_wrapper, wobs = weights, wdraws_ref, offset, cvfun,
     cvfits, extract_model_data, ref_predfun, mu_fun, cvrefbuilder,
-    y_oscale = y_oscale %||% y, nobs = nrow(data)
+    y_oscale = y_oscale %||% y, nobs = nrow(data), contrasts = ctrs
   )
   if (proper_model) {
     class(refmodel) <- "refmodel"
