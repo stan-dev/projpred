@@ -1270,13 +1270,17 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
         "properly. The latent projection may be a remedy. See section ",
         "\"Troubleshooting\" of the main vignette for more information."
       )
-    } else if (family$family %in% c("binomial", "poisson") &&
-               utils::packageVersion("lme4") < "2.1.1") {
+    } else if (family$family == "binomial") {
       warning(
-        "With lme4 < 2.1-1, the group-level standard deviations of ",
-        "multilevel binomial and Poisson submodels can be wrong. We ",
-        "recommend lme4 >= 2.1-1. See section \"Troubleshooting\" of the ",
-        "main vignette for more information."
+        "For multilevel binomial models, the traditional projection may not ",
+        "work properly. The latent projection may be a remedy. See section ",
+        "\"Troubleshooting\" of the main vignette for more information."
+      )
+    } else if (family$family == "poisson") {
+      warning(
+        "For multilevel Poisson models, the traditional projection may take ",
+        "very long. The latent projection may be a remedy. See section ",
+        "\"Troubleshooting\" of the main vignette for more information."
       )
     }
   }
