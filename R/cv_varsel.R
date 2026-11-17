@@ -1110,7 +1110,13 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
                " (`refit_prj = ", refit_prj, "`) for each of the `nloo = ",
                nloo, "` LOO-CV folds separately ...")
     }
+    # `lw_i` holds the PSIS-LOO log weights of the fold (column `i` of `lw`),
+    # and `rk` its predictor ranking from `search_out_rks` (or `NULL`). The
+    # parallel workers then get these parts with their folds, not all of `lw`
+    # and `search_out_rks`:
     one_obs <- function(run_index,
+                        lw_i,
+                        rk,
                         verbose_obs = max(verbose - 1L, 0L),
                         ...) {
       # Observation index:
@@ -1137,7 +1143,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
       refmodel_fold$wobs[i] <- 0
       perturb_failed <- FALSE
       if (!search_out_rks_was_null) {
-        search_path <- list(predictor_ranking = search_out_rks[[run_index]])
+        search_path <- list(predictor_ranking = rk)
       } else {
         # The search of fold i uses random observation weights and reference
         # draws shifted toward the posterior under these weights. The
@@ -1145,7 +1151,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
         refmodel_search <- refmodel_fold
         if (is.finite(perturb_alpha)) {
           refmodel_search <- perturb_refmodel(
-            refmodel_fold, i = i, ll = perturb_ll, lw_i = lw[, i],
+            refmodel_fold, i = i, ll = perturb_ll, lw_i = lw_i,
             alpha = perturb_alpha,
             seed = as.integer((as.numeric(perturb_seed) + i) %%
                                 .Machine$integer.max)
@@ -1158,7 +1164,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
         }
         search_path <- .select(
           refmodel = refmodel_search, ndraws = ndraws, nclusters = nclusters,
-          reweighting_args = list(cl_ref = cl_sel, wdraws_ref = exp(lw[, i])),
+          reweighting_args = list(cl_ref = cl_sel, wdraws_ref = exp(lw_i)),
           method = method, nterms_max = nterms_max, penalty = penalty,
           verbose = verbose_obs, verbose_line_length = 3,
           verbose_txt_add = vtxt_obs_i, search_control = search_control,
@@ -1173,7 +1179,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
       perf_eval_out <- perf_eval(
         search_path = search_path, refmodel = refmodel_fold,
         refit_prj = refit_prj, ndraws = ndraws_pred, nclusters = nclusters_pred,
-        reweighting_args = list(cl_ref = cl_pred, wdraws_ref = exp(lw[, i])),
+        reweighting_args = list(cl_ref = cl_pred, wdraws_ref = exp(lw_i)),
         refmodel_fulldata = refmodel,
         indices_test = i, verbose = verbose_obs, verbose_line_length = 3,
         verbose_txt_add = vtxt_obs_i, ...
@@ -1188,11 +1194,11 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
     # The parallel workers get one_obs() with its enclosing environment, so
     # keep only the objects that one_obs() uses:
     one_obs <- fun_with_objs(one_obs, c(
-      "cl_pred", "cl_sel", "inds", "lw", "method", "n", "nclusters",
+      "cl_pred", "cl_sel", "inds", "method", "n", "nclusters",
       "nclusters_pred", "ndraws", "ndraws_pred", "nloo", "nterms_max",
       "penalty", "perturb_alpha", "perturb_ll", "perturb_seed", "refit_prj",
-      "refmodel", "search_control", "search_out_rks",
-      "search_out_rks_was_null", "search_terms", "verbose"
+      "refmodel", "search_control", "search_out_rks_was_null", "search_terms",
+      "verbose"
     ))
     if (!parallel) {
       # Sequential case. Each fold gets its own RNG stream, as in the
@@ -1205,7 +1211,8 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
         if (verbose == 1L) {
           on.exit(utils::setTxtProgressBar(pb, run_index))
         }
-        one_obs(run_index, ...)
+        one_obs(run_index, lw_i = lw[, inds[run_index]],
+                rk = search_out_rks[[run_index]], ...)
       })
       if (verbose == 1L) {
         close(pb)
@@ -1218,9 +1225,13 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
       # same results:
       assign("refmodel", refmodel_for_folds(refmodel),
              envir = environment(one_obs))
-      res_cv <- par_lapply(seq_along(inds), one_obs, verbose_obs = FALSE, ...,
-                           .backend = par_backend(), .rng = TRUE,
-                           .progress = verbose > 0)
+      args_obs <- lapply(seq_along(inds), function(run_index) {
+        list(run_index = run_index, lw_i = lw[, inds[run_index]],
+             rk = search_out_rks[[run_index]])
+      })
+      res_cv <- par_lapply(args_obs, call_with_args, .fun = one_obs,
+                           verbose_obs = FALSE, ..., .backend = par_backend(),
+                           .rng = TRUE, .progress = verbose > 0)
     }
     n_perturb_failed <- sum(vapply(res_cv, "[[", logical(1), "perturb_failed"))
     if (n_perturb_failed > 0) {
