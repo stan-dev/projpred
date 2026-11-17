@@ -338,7 +338,11 @@ extend_family <- function(family,
             return(ilpreds)
           }
         } else {
-          if (family$family_oscale != "poisson") {
+          # Families whose `linkinv` gives the mean of the response:
+          fams_linkinv_mean <- c("poisson", "neg_binomial_2", "negbinomial",
+                                 "geometric", "Gamma", "weibull",
+                                 "exponential")
+          if (!family$family_oscale %in% fams_linkinv_mean) {
             message("Defining `latent_ilink` as a function which calls ",
                     "`family$linkinv`, but there is no guarantee that this ",
                     "will work for all families. If relying on ",
