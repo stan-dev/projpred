@@ -1263,26 +1263,12 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
   }
   if (length(grp_trms) > 0 &&
       getOption("projpred.warn_instable_projections", TRUE) &&
-      !called_from_cvrefbuilder) {
-    if (family$for_augdat) {
-      warning(
-        "For multilevel models, the augmented-data projection may not work ",
-        "properly. The latent projection may be a remedy. See section ",
-        "\"Troubleshooting\" of the main vignette for more information."
-      )
-    } else if (family$family == "binomial") {
-      warning(
-        "For multilevel binomial models, the traditional projection may not ",
-        "work properly. The latent projection may be a remedy. See section ",
-        "\"Troubleshooting\" of the main vignette for more information."
-      )
-    } else if (family$family == "poisson") {
-      warning(
-        "For multilevel Poisson models, the traditional projection may take ",
-        "very long. The latent projection may be a remedy. See section ",
-        "\"Troubleshooting\" of the main vignette for more information."
-      )
-    }
+      !called_from_cvrefbuilder && family$for_augdat) {
+    warning(
+      "For multilevel models, the augmented-data projection may not work ",
+      "properly. The latent projection may be a remedy. See section ",
+      "\"Troubleshooting\" of the main vignette for more information."
+    )
   }
   if (family$family == "categorical" &&
       length(fml_extractions$offset_terms) > 0) {

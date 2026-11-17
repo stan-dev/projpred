@@ -100,7 +100,11 @@ uses the other of these two links. For the \code{\link[brms:categorical]{brms::c
 \code{\link[mclogit:mblogit]{mclogit::mblogit()}}).
 }
 \item Submodel without multilevel but additive terms: \code{\link[mgcv:gam]{mgcv::gam()}} (the returned
-object inherits from class \code{gam}).
+object inherits from class \code{gam}). \pkg{projpred} uses the default \code{method}
+of \code{\link[mgcv:gam]{mgcv::gam()}}. For the \code{\link[=poisson]{poisson()}} family, the responses of the
+traditional projection are not integers, and \code{\link[mgcv:gam]{mgcv::gam()}} with
+\code{method = "REML"} or \code{method = "ML"} (via \code{...} or global option
+\code{mgcv.gam.method}) then stops with an error.
 \item Submodel with multilevel and additive terms: \code{\link[gamm4:gamm4]{gamm4::gamm4()}} (within
 \pkg{projpred}, the returned object inherits from class \code{gamm4}). For the
 \code{\link[=binomial]{binomial()}} and the \code{\link[=poisson]{poisson()}} family, \pkg{projpred} passes the same

@@ -105,7 +105,11 @@
 #'     \pkg{projpred} only supports `catCov = "free"` (see
 #'     [mclogit::mblogit()]).
 #' * Submodel without multilevel but additive terms: [mgcv::gam()] (the returned
-#' object inherits from class `gam`).
+#' object inherits from class `gam`). \pkg{projpred} uses the default `method`
+#' of [mgcv::gam()]. For the [poisson()] family, the responses of the
+#' traditional projection are not integers, and [mgcv::gam()] with
+#' `method = "REML"` or `method = "ML"` (via `...` or global option
+#' `mgcv.gam.method`) then stops with an error.
 #' * Submodel with multilevel and additive terms: [gamm4::gamm4()] (within
 #' \pkg{projpred}, the returned object inherits from class `gamm4`). For the
 #' [binomial()] and the [poisson()] family, \pkg{projpred} passes the same

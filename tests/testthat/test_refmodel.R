@@ -641,3 +641,38 @@ test_that(paste(
     proj_linpred(prj_nt, newdata = dat_nt[1:5, c("x1", "x2", "y")])
   )
 })
+
+test_that(paste(
+  "init_refmodel() does not warn about the traditional projection of",
+  "multilevel binomial and Poisson models"
+), {
+  withr::local_options(projpred.warn_instable_projections = TRUE)
+  withr::local_seed(4410)
+  n <- 40L
+  ndraws <- 10L
+  dat <- data.frame(x1 = rnorm(n), g = gl(4, 10))
+  eta <- 0.3 * dat$x1 + matrix(rnorm(n * ndraws, sd = 0.05), n, ndraws)
+  ref_predfun <- function(fit, newdata = NULL) {
+    stopifnot(is.null(newdata))
+    fit$eta
+  }
+  dat$y_binom <- rbinom(n, 1, plogis(eta[, 1]))
+  dat$y_pois <- rpois(n, exp(eta[, 1]))
+  warns_init <- function(fml, family) {
+    warns <- character()
+    suppressMessages(withCallingHandlers(
+      init_refmodel(list(eta = eta), data = dat, formula = fml,
+                    family = family, ref_predfun = ref_predfun),
+      warning = function(w) {
+        warns <<- c(warns, conditionMessage(w))
+        invokeRestart("muffleWarning")
+      }
+    ))
+    return(warns)
+  }
+  for (nm in c("binom", "pois")) {
+    fam <- if (nm == "binom") binomial() else poisson()
+    warns <- warns_init(as.formula(paste0("y_", nm, " ~ x1 + (1 | g)")), fam)
+    expect_false(any(grepl("projection may", warns)), info = nm)
+  }
+})
