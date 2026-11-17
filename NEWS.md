@@ -75,6 +75,8 @@ If you read this from a place other than <https://mc-stan.org/projpred/news/inde
 * A named argument of an `s()` or `t2()` term now gives an error also if it comes before the predictors or is the only argument, such as `s(by = g, x)`. (GitHub: #626, #636)
 * Fixed wrong predictions and errors of additive multilevel submodels (`gamm4::gamm4()`) for new data, and wrong predictions with group-level slopes. New group levels now get drawn group-level effects, and option `projpred.mlvl_pred_new` now applies. (GitHub: #239, #623)
 * Fixed the term names of the L1 search if one model-matrix column name starts with another one. (GitHub: #615)
+* After a PIRLS error of `lme4::glmer()` in a submodel with a non-scalar group-level term or several group-level terms (for example `(x | g)`), projpred now stops with an error that contains the lme4 error. (GitHub: #565, #633)
+* If the optimx refit after a `not positive definite` error of lme4 fails, too, projpred now stops with an error that contains both error messages. (GitHub: #323, #633)
 * The submodels now use the contrasts of the reference model for factor predictors instead of `options("contrasts")`. This changes the projected coefficients and can change the L1 search and LOO predictions for a level of one observation. (GitHub: #283, #619)
 * `get_refmodel()` now stops with an error that names the missing variables and gives a workaround. This applies to `rstanarm::stan_gamm4()` fits with argument `random` and an expression in the formula, such as `cbind(y, n - y)`. (GitHub: #148, #634)
 
