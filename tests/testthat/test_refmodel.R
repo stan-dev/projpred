@@ -641,3 +641,26 @@ test_that(paste(
     proj_linpred(prj_nt, newdata = dat_nt[1:5, c("x1", "x2", "y")])
   )
 })
+
+test_that(paste(
+  "init_refmodel() warns about lme4 < 2.1-1 for multilevel binomial and",
+  "Poisson models exactly if lme4 < 2.1-1"
+), {
+  tstsetups <- grep("\\.glmm\\.(brnll|binom|poiss)\\.", names(fits),
+                    value = TRUE)
+  skip_if(length(tstsetups) == 0)
+  withr::local_options(list(projpred.warn_instable_projections = NULL))
+  lme4_old <- utils::packageVersion("lme4") < "2.1.1"
+  for (tstsetup in tstsetups) {
+    warns <- character()
+    suppressMessages(withCallingHandlers(
+      get_refmodel(fits[[tstsetup]]),
+      warning = function(w) {
+        warns <<- c(warns, conditionMessage(w))
+        invokeRestart("muffleWarning")
+      }
+    ))
+    expect_identical(any(grepl("With lme4 < 2.1-1", warns, fixed = TRUE)),
+                     lme4_old, info = tstsetup)
+  }
+})
