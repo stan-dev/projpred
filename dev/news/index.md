@@ -408,6 +408,18 @@
 - Fixed the term names of the L1 search if one model-matrix column name
   starts with another one. (GitHub:
   [\#615](https://github.com/stan-dev/projpred/issues/615))
+- After a PIRLS error of
+  [`lme4::glmer()`](https://rdrr.io/pkg/lme4/man/glmer.html) in a
+  submodel with a non-scalar group-level term or several group-level
+  terms (for example `(x | g)`), projpred now stops with an error that
+  contains the lme4 error. (GitHub:
+  [\#565](https://github.com/stan-dev/projpred/issues/565),
+  [\#633](https://github.com/stan-dev/projpred/issues/633))
+- If the optimx refit after a `not positive definite` error of lme4
+  fails, too, projpred now stops with an error that contains both error
+  messages. (GitHub:
+  [\#323](https://github.com/stan-dev/projpred/issues/323),
+  [\#633](https://github.com/stan-dev/projpred/issues/633))
 - The submodels now use the contrasts of the reference model for factor
   predictors instead of `options("contrasts")`. This changes the
   projected coefficients and can change the L1 search and LOO
