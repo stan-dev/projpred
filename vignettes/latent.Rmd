@@ -63,7 +63,8 @@ The families currently supported by **projpred**'s augmented-data projection are
 ## Example: Poisson distribution
 
 In this example, we will illustrate that in case of a family supported by **projpred**'s traditional projection (here the `poisson()` family), the latent projection can reduce the runtime of the variable selection compared to the traditional projection.
-With L1 search (see argument `method` of `varsel()` and `cv_varsel()`), the latent projection can also give a better predictor ranking.
+We first use L1 search (see argument `method` of `varsel()` and `cv_varsel()`) only to show an issue of the traditional projection.
+In general, forward search (the default) is more accurate than L1 search.
 
 ### Data
 
@@ -266,7 +267,7 @@ More importantly however, the predictor ranking contains several noise terms bef
 
 ### Forward search
 
-Forward search can be more accurate than L1 search (see section "Details" in `?varsel`).
+In general, forward search is more accurate than L1 search (see section "Details" in `?varsel`).
 We now run `varsel()` with forward search (the default `method`) for both projections:
 ```{r vs_fw_poiss}
 time_lat_fw <- system.time(vs_lat_fw <- varsel(
@@ -344,7 +345,7 @@ cvvs_trad_poiss <- cv_varsel(
 ### Conclusion
 
 This example showed that the latent projection can be advantageous also for families supported by **projpred**'s traditional projection.
-With L1 search, the latent projection gave a better predictor ranking.
+With L1 search, which we used only to show an issue of the traditional projection, the traditional projection ranked several noise terms before truly relevant ones.
 With forward search, both projections ranked the 11 truly relevant predictor terms first.
 The latent projection was much faster, in particular in LOO CV with validated search.
 
