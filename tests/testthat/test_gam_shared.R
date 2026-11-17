@@ -19,11 +19,28 @@ fml_gs <- as.formula(paste0(
 divmin_gs <- function(shared) {
   opts_old <- options(projpred.gam_shared = shared)
   on.exit(options(opts_old))
-  suppressWarnings(divmin(
-    formula = fml_gs, data = dat_gs, family = extend_family(gaussian()),
-    weights = wts_gs, projpred_var = matrix(NA, n_gs, n_draws_gs),
-    projpred_ws_aug = matrix(NA, n_gs, n_draws_gs), verbose_divmin = FALSE
-  ))
+  divmin_call <- function() {
+    suppressWarnings(divmin(
+      formula = fml_gs, data = dat_gs, family = extend_family(gaussian()),
+      weights = wts_gs, projpred_var = matrix(NA, n_gs, n_draws_gs),
+      projpred_ws_aug = matrix(NA, n_gs, n_draws_gs), verbose_divmin = FALSE
+    ))
+  }
+  if (!shared) {
+    return(divmin_call())
+  }
+  # The shared fits must not fall back to draw-wise fits:
+  with_mocked_bindings(
+    divmin_call(),
+    fit_gam_callback = function(...) stop("draw-wise fallback")
+  )
+}
+
+# Removes the environment of a terms object (all.equal() does not compare the
+# attributes of terms objects, and identical() compares their environments):
+noenv <- function(x) {
+  attr(x, ".Environment") <- NULL
+  x
 }
 
 test_that("divmin() gives the same gam() fits with and without sharing", {
@@ -31,11 +48,23 @@ test_that("divmin() gives the same gam() fits with and without sharing", {
   fits_drawwise <- divmin_gs(FALSE)
   expect_length(fits_shared, n_draws_gs)
   for (s in seq_len(n_draws_gs)) {
+    info_s <- paste("draw", s)
     expect_s3_class(fits_shared[[s]], "gam")
     expect_equal(fits_shared[[s]], fits_drawwise[[s]], tolerance = 0,
-                 info = s)
+                 info = info_s)
     expect_identical(formula(fits_shared[[s]]),
-                     formula(fits_drawwise[[s]]), info = s)
+                     formula(fits_drawwise[[s]]), info = info_s)
+    for (el in c("terms", "pterms")) {
+      expect_identical(noenv(fits_shared[[s]][[el]]),
+                       noenv(fits_drawwise[[s]][[el]]),
+                       info = paste(info_s, el))
+    }
+    at_shared <- attributes(fits_shared[[s]]$model)
+    at_drawwise <- attributes(fits_drawwise[[s]]$model)
+    expect_identical(noenv(at_shared$terms), noenv(at_drawwise$terms),
+                     info = info_s)
+    at_shared$terms <- at_drawwise$terms <- NULL
+    expect_identical(at_shared, at_drawwise, info = info_s)
   }
 })
 
