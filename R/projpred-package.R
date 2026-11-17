@@ -131,14 +131,13 @@
 #' *projection* parallelization, see below).
 #'
 #' Both use the parallel workers of the current plan of the \pkg{future}
-#' package. We recommend the workers of the \pkg{future.mirai} package, e.g.,
-#' `future::plan(future.mirai::mirai_multisession, workers = 4)`. Other plans
-#' for \pkg{future} can be used as well, e.g.,
+#' package, e.g., `future::plan(future.mirai::mirai_multisession, workers = 4)`
+#' from the \pkg{future.mirai} package or
 #' `future::plan(future::multisession, workers = 4)`. In our experiments with
 #' 8 workers, the first parallel call with the workers of \pkg{future.mirai}
 #' was faster than with those of `future::multisession`, and the workers of
 #' \pkg{future.mirai} returned big results faster (see the projection
-#' parallelization below).
+#' parallelization below). So we recommend the workers of \pkg{future.mirai}.
 #' With the sequential plan of \pkg{future} (the default), a parallel run is
 #' not possible, so \pkg{projpred} then runs sequentially and
 #' throws a warning. The workers must be able to load the same
