@@ -426,7 +426,6 @@ vs_nebin <- varsel(
   ###
 )
 ```
-The message concerning `latent_ilink` can be safely ignored here (the internal default based on `family$linkinv` works correctly in this case).
 
 Again, we first inspect the `plot()` results to decide for a submodel size:
 ```{r plot_vsel_nebin, fig.alt="The same kind of plot for the latent projection of the negative binomial model. The ratio increases with the size, rises above 1 and then levels off. The first 11 predictors of the ranking are the 11 truly relevant ones."}
@@ -578,7 +577,6 @@ refm_weib <- get_refmodel(
   latent_ppd_oscale = latent_ppd_oscale_weib
 )
 ```
-The message concerning `latent_ilink` can be safely ignored here (the internal default based on `family$linkinv` works correctly in this case).
 The functions above use the shape draws of the full-data fit (`refm_shape`).
 This is correct for `varsel()` and for the LOO CV that we use below.
 For K-fold CV, see section ["K-fold CV with custom response-scale functions"](#kfold-custom).
@@ -824,7 +822,6 @@ refm_nebin_kfold <- get_refmodel_nebin(
   }
 )
 ```
-As before, the message concerning `latent_ilink` can be ignored here.
 Then `cv_varsel(refm_nebin_kfold, cv_method = "kfold")` uses the `reciprocal_dispersion` draws of the fold-wise refit in each fold.
 We do not run K-fold CV here, because it refits the reference model $K$ times.
 For the Weibull example, define `refm_shape` inside such a function in the same way.
