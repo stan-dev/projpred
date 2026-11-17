@@ -200,7 +200,7 @@ In order to decide for a submodel size, we first inspect the `plot()` results.
 In contrast to the main vignette where we used the mean log predictive density (MLPD) as predictive performance statistic for a `gaussian()` family reference model (and `gaussian()` submodels), we have a discrete family (`poisson()`) here, so it makes sense to exponentiate the MLPD to obtain the geometric mean predictive density (GMPD; in case of a discrete response, the predictive density values are actually predictive *probabilities* and hence the GMPD is bounded by 0 and 1).
 As in the main vignette, we plot with `deltas = TRUE` (in case of the GMPD, this means that the *ratio* of the submodel GMPD vs. the reference model GMPD is shown).
 Via global option `projpred.plot_vsel_size_position`, we set argument `size_position` of `plot.vsel()` to `"secondary_x"` to make the submodel sizes readable in all of the plots in this vignette.
-```{r plot_vsel_lat, fig.alt="Plot of the ratio of the geometric mean predictive density (GMPD) of each submodel to that of the reference model, with uncertainty bars, for the latent projection of the Poisson model. The top x-axis shows the submodel size and the bottom x-axis the predictor added at each size. A dashed horizontal line at 1 marks the reference model. The ratio is close to 0 below size 11 and reaches the reference model at size 11."}
+```{r plot_vsel_lat, fig.alt="Plot of the ratio of the geometric mean predictive density (GMPD) of each submodel to that of the reference model, with uncertainty bars, for the latent projection of the Poisson model. The top x-axis shows the submodel size and the bottom x-axis the predictor added at each size. A dashed horizontal line at 1 marks the reference model. The ratio is close to 0 at small sizes and then rises to the reference model."}
 options(projpred.plot_vsel_size_position = "secondary_x")
 ( gg_lat <- plot(vs_lat, stats = "gmpd", deltas = TRUE) )
 ```
@@ -257,7 +257,7 @@ time_trad <- system.time(vs_trad <- varsel(
 options(warn_instable_orig)
 rm(warn_instable_orig)
 ```
-```{r post_vs_trad, fig.alt="The same plot for the traditional projection. Several noise terms enter the predictor ranking before relevant ones, and the submodels reach the reference model only at size 28."}
+```{r post_vs_trad, fig.alt="The same plot for the traditional projection. Several noise terms enter the predictor ranking before relevant ones, and the submodels reach the reference model only at a much larger size."}
 print(time_trad)
 ( gg_trad <- plot(vs_trad, stats = "gmpd", deltas = TRUE) )
 ```
@@ -315,7 +315,7 @@ time_cvvs_lat <- system.time(cvvs_lat_poiss <- cv_varsel(
 ))
 print(time_cvvs_lat)
 ```
-```{r plot_cvvs_lat_poiss, fig.alt="The same kind of plot for LOO CV with validated search and the latent projection of the Poisson model. The ratio is close to 0 below size 9 and reaches the reference model at size 11."}
+```{r plot_cvvs_lat_poiss, fig.alt="The same kind of plot for LOO CV with validated search and the latent projection of the Poisson model. The ratio is close to 0 at small sizes and then rises to the reference model."}
 plot(cvvs_lat_poiss, stats = "gmpd", deltas = TRUE)
 ```
 ```{r rk_cvvs_lat_poiss}
@@ -427,7 +427,7 @@ Again, the message telling that `<refmodel>$dis` consists of only `NA`s will not
 The message concerning `latent_ilink` can be safely ignored here (the internal default based on `family$linkinv` works correctly in this case).
 
 Again, we first inspect the `plot()` results to decide for a submodel size:
-```{r plot_vsel_nebin, fig.alt="The same kind of plot for the latent projection of the negative binomial model. The ratio increases with the size, is above 1 from size 9 on and levels off at about 1.2 from size 10 on. The first 11 predictors of the ranking are the 11 truly relevant ones."}
+```{r plot_vsel_nebin, fig.alt="The same kind of plot for the latent projection of the negative binomial model. The ratio increases with the size, rises above 1 and then levels off. The first 11 predictors of the ranking are the 11 truly relevant ones."}
 ( gg_nebin <- plot(vs_nebin, stats = "gmpd", deltas = TRUE) )
 ```
 
@@ -608,7 +608,7 @@ if (use_parallel) {
 In this case, we will ignore the warnings about high Pareto-$\hat{k}$ values because we chose quite rough settings (e.g., only 2 MCMC chains) in this vignette (for technical reasons).
 
 Plot the results:
-```{r weibull_plot_cvvs, fig.alt="Plot of the MLPD difference between each submodel and the reference model, with uncertainty bars, for the Weibull model with right-censored observations. The top x-axis shows the submodel size and the bottom x-axis the predictor added at each size. The first 10 predictors are the 10 truly relevant ones. The difference comes close to zero (dashed line) from size 9 on."}
+```{r weibull_plot_cvvs, fig.alt="Plot of the MLPD difference between each submodel and the reference model, with uncertainty bars, for the Weibull model with right-censored observations. The top x-axis shows the submodel size and the bottom x-axis the predictor added at each size. The first 10 predictors are the 10 truly relevant ones. The difference increases with the size and then levels off close to zero (dashed line)."}
 plot(cvvs_weib, stats = "mlpd", deltas = TRUE)
 ```
 Hence, the truly relevant predictors are identified correctly.
@@ -746,7 +746,7 @@ if (use_parallel) {
 In this case, we will ignore the warnings about high Pareto-$\hat{k}$ values because we chose quite rough settings (e.g., only 2 MCMC chains) in this vignette (for technical reasons).
 
 Plot the results:
-```{r lognormal_plot_cvvs, fig.alt="The same kind of plot for the log-normal model with right-censored observations. The first 10 predictors are the 10 truly relevant ones. The difference comes close to zero (dashed line) from size 10 on."}
+```{r lognormal_plot_cvvs, fig.alt="The same kind of plot for the log-normal model with right-censored observations. The first 10 predictors are the 10 truly relevant ones. The difference increases with the size and then levels off close to zero (dashed line)."}
 plot(cvvs_lnorm, stats = "mlpd", deltas = TRUE)
 ```
 Hence, the truly relevant predictors are identified correctly.
