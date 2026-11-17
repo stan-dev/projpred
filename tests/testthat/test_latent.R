@@ -435,7 +435,7 @@ test_that(paste(
   "get_refmodel() with `latent = TRUE` and without `dis` gives no message",
   "about the `NA` dispersion"
 ), {
-  tstsetups <- grep("^rstanarm\\.glm\\.poiss\\.", names(fits), value = TRUE)
+  tstsetups <- grep("\\.glm\\.poiss\\.", names(fits), value = TRUE)
   skip_if(length(tstsetups) == 0)
   for (tstsetup in tstsetups) {
     expect_no_message(
