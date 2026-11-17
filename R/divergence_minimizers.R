@@ -810,6 +810,92 @@ shared_model_matrix <- function(formulas, data) {
               terms = xy$terms, contrasts = xy$contrasts))
 }
 
+# The model frame and the model matrix of all main-effect terms of `formula` for
+# the data `data` (with the contrasts of the reference model set, see
+# set_contrasts()), for shared_x_from_design(). Returns `NULL` if the column
+# blocks would not give the model matrix of shared_model_matrix(): rows with
+# missing values, column names that data.frame() changes (see
+# subset_formula_and_data()), variables of the model frame other than the term
+# labels (for example an offset), or an error of model.frame() or
+# model.matrix().
+design_main_effects <- function(formula, data) {
+  if (!is.data.frame(data) || nrow(data) == 0 ||
+      !identical(make.names(names(data), unique = TRUE), names(data)) ||
+      any(startsWith(names(data), "."))) {
+    return(NULL)
+  }
+  lbls <- extract_terms_response(formula)$individual_terms
+  if (length(lbls) == 0) {
+    return(NULL)
+  }
+  fml <- stats::reformulate(lbls, env = environment(formula))
+  fr <- tryCatch(model.frame(fml, data = data, drop.unused.levels = TRUE),
+                 error = function(e) NULL)
+  if (is.null(fr) || nrow(fr) != nrow(data)) {
+    return(NULL)
+  }
+  dcl <- attr(attr(fr, "terms"), "dataClasses")
+  pv <- as.list(attr(attr(fr, "terms"), "predvars"))[-1]
+  if (!identical(names(dcl), lbls) || length(pv) != length(lbls)) {
+    return(NULL)
+  }
+  # model.matrix() can fail for a term that no submodel uses (for example a
+  # factor with one level):
+  mm <- tryCatch(model.matrix(fml, data = fr), error = function(e) NULL)
+  if (is.null(mm)) {
+    return(NULL)
+  }
+  keep <- colnames(mm) != "(Intercept)"
+  asg <- attr(mm, "assign")[keep]
+  nms_chr_fac <- lbls[dcl %in% c("character", "factor")]
+  return(list(
+    labels = lbls,
+    x = mm[, keep, drop = FALSE],
+    cols = lapply(seq_along(lbls), function(j) which(asg == j)),
+    predvars = pv,
+    classes = dcl,
+    lvls = lapply(setNames(nm = nms_chr_fac), function(nm) {
+      levels(as.factor(fr[[nm]]))
+    }),
+    contrasts = attr(mm, "contrasts")
+  ))
+}
+
+# The output of shared_model_matrix() for the draw-wise formulas `formulas`
+# (see validate_response_formula()), from the column blocks of `design` (see
+# design_main_effects()), without a model frame and a model matrix for the
+# submodel. Without interactions, the columns of a term do not depend on the
+# other terms. `y_names` are the names of the response (as from
+# model.response()). Returns `NULL` for an interaction, a model without
+# intercept, an offset, or a term that `design` does not have.
+shared_x_from_design <- function(formulas, design, y_names) {
+  tt <- terms(formulas[[1]])
+  lbls <- attr(tt, "term.labels")
+  vars <- as.list(attr(tt, "variables"))[-1]
+  if (attr(tt, "intercept") != 1 || attr(tt, "response") != 1 ||
+      !is.null(attr(tt, "offset")) || any(attr(tt, "order") != 1) ||
+      length(vars) != length(lbls) + 1L || !is.name(vars[[1]])) {
+    return(NULL)
+  }
+  idx <- match(lbls, design$labels)
+  if (anyNA(idx)) {
+    return(NULL)
+  }
+  # The attributes that model.frame() adds to the terms (the response is a
+  # numeric column of the data):
+  attr(tt, "predvars") <- as.call(c(list(quote(list), vars[[1]]),
+                                    design$predvars[idx]))
+  dcl <- c(setNames("numeric", as.character(vars[[1]])), design$classes[idx])
+  attr(tt, "dataClasses") <- dcl
+  x <- design$x[, as.integer(unlist(design$cols[idx])), drop = FALSE]
+  nms_chr_fac <- names(dcl)[dcl %in% c("character", "factor")]
+  xlvls <- if (length(nms_chr_fac) > 0) design$lvls[nms_chr_fac]
+  nms_ctr <- intersect(names(dcl), names(design$contrasts))
+  ctrs <- if (length(nms_ctr) > 0) design$contrasts[nms_ctr]
+  return(list(x = x, xlvls = xlvls, y_names = y_names, terms = tt,
+              contrasts = ctrs))
+}
+
 # fit_glm_ridge_callback() with a fixed shared model matrix. The enclosing
 # environment holds only `shared_x` (relevant for the parallel case in divmin(),
 # where the function is exported).
