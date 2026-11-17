@@ -479,7 +479,8 @@ We recommend `cv_varsel()` instead of `varsel()` and `cv_varsel()` should be use
 
 ### Issues with the augmented-data projection
 
-For multilevel models, the augmented-data projection may not work properly and give suboptimal results, see [#353](https://github.com/stan-dev/projpred/pull/353).
+For multilevel models with the `brms::cumulative()` or the `brms::categorical()` family (or `rstanarm::stan_polr()` fits), the augmented-data projection may not work properly and give suboptimal results, see [#353](https://github.com/stan-dev/projpred/pull/353).
+For the `binomial()` and the `brms::bernoulli()` family, the augmented-data projection uses the same `lme4::glmer()` fits as the traditional projection.
 By suboptimal results, we mean that the relevance of the group-level terms can be underestimated.
 According to the simulation-based case study from [#353](https://github.com/stan-dev/projpred/pull/353), the latent projection might help in such cases.
 
