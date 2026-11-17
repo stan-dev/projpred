@@ -139,6 +139,13 @@
   [`varsel()`](https://mc-stan.org/projpred/dev/reference/varsel.md) for
   an additive model is about 1.5 times faster. (GitHub:
   [\#584](https://github.com/stan-dev/projpred/issues/584))
+- Faster predictions of additive multilevel submodels
+  ([`gamm4::gamm4()`](https://rdrr.io/pkg/gamm4/man/gamm4.html)): one
+  linear-predictor matrix and one random-effects design serve all
+  projected draws. For example, the predictions for 2000 observations
+  and 100 projected draws are about 28 times faster. (GitHub:
+  [\#239](https://github.com/stan-dev/projpred/issues/239),
+  [\#639](https://github.com/stan-dev/projpred/issues/639))
 - Faster reweighting of the clusters of the reference model draws in
   [`cv_varsel()`](https://mc-stan.org/projpred/dev/reference/cv_varsel.md)
   with `validate_search = TRUE`. For example,
@@ -180,6 +187,11 @@
   with 400 clusters is about 9 % faster for a Gaussian model with 382
   observations. (GitHub:
   [\#621](https://github.com/stan-dev/projpred/issues/621))
+- The forward search adds a smooth term only after the linear terms of
+  its variables, so the full model has the same size on all search
+  paths. The full-model warnings use the size of the submodel with all
+  search terms. This changes the default results of additive models.
+  (GitHub: [\#638](https://github.com/stan-dev/projpred/issues/638))
 
 ### Minor changes
 
@@ -434,6 +446,13 @@
   `cbind(y, n - y)`. (GitHub:
   [\#148](https://github.com/stan-dev/projpred/issues/148),
   [\#634](https://github.com/stan-dev/projpred/issues/634))
+- Fixed the error “length of ‘dimnames’ \[1\] not equal to array extent”
+  in the predictions of multilevel
+  [`brms::categorical()`](https://paulbuerkner.com/brms/reference/brmsfamily.html)
+  submodels with a factor in a group-level term, such as `(1 + f | g)`.
+  `catCov` values other than `"free"` now give an error. (GitHub:
+  [\#635](https://github.com/stan-dev/projpred/issues/635),
+  [\#640](https://github.com/stan-dev/projpred/issues/640))
 
 ## projpred 2.11.0
 

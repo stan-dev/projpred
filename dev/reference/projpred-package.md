@@ -122,7 +122,10 @@ by projpred's internal default `div_minimizer` functions, see
     [`ordinal::clmm.control()`](https://rdrr.io/pkg/ordinal/man/clmm.control.html))
     and does not use `ucminf()`. The code of
     [`ordinal::clmm()`](https://rdrr.io/pkg/ordinal/man/clmm.html) for a
-    single group-level term uses the other of these two links.
+    single group-level term uses the other of these two links. For the
+    [`brms::categorical()`](https://paulbuerkner.com/brms/reference/brmsfamily.html)
+    family, projpred only supports `catCov = "free"` (see
+    [`mclogit::mblogit()`](https://melff.github.io/mclogit/reference/mblogit.html)).
 
 - Submodel without multilevel but additive terms:
   [`mgcv::gam()`](https://rdrr.io/pkg/mgcv/man/gam.html) (the returned

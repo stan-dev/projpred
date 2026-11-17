@@ -201,7 +201,11 @@ varsel(
   [`union()`](https://rdrr.io/r/base/sets.html), so there's no
   difference between including it explicitly or omitting it. The default
   `search_terms` considers all the terms in the reference model's
-  formula.
+  formula and, for each smooth term, the linear terms of its variables.
+  A smooth term can enter the search only after the linear terms of its
+  variables that are search terms without a smooth term; the smooth term
+  then adds the nonlinear part. To search a smooth term without its
+  linear terms, leave these linear terms out of `search_terms`.
 
 - search_out:
 
