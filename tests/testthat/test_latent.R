@@ -430,3 +430,18 @@ test_that(paste(
     }
   }
 })
+
+test_that(paste(
+  "get_refmodel() with `latent = TRUE` and without `dis` gives no message",
+  "about the `NA` dispersion"
+), {
+  tstsetups <- grep("^rstanarm\\.glm\\.poiss\\.", names(fits), value = TRUE)
+  skip_if(length(tstsetups) == 0)
+  for (tstsetup in tstsetups) {
+    expect_no_message(
+      refm <- get_refmodel(fits[[tstsetup]], latent = TRUE),
+      message = "will consist of only `NA`s"
+    )
+    expect_true(all(is.na(refm$dis)), info = tstsetup)
+  }
+})
