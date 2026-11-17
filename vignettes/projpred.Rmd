@@ -177,6 +177,7 @@ Since the difference-scale uncertainty is usually more helpful than the actual-s
 The search ran up to submodel size 19 (here, the default of argument `nterms_max` of `cv_varsel()`).
 To keep the labels readable, the plot shows only the sizes up to 12 (argument `nterms_max` of `plot.vsel()`):
 ```{r plot_vsel, fig.alt="Plot of the MLPD difference between each submodel and the reference model against the submodel size from 0 to 12, with uncertainty bars. Below each size, the x-axis shows the predictor that the full-data search added and the proportion of CV folds that put this predictor at the same position. A dashed horizontal line at zero marks the reference model. The difference reaches zero at size 7 and stays slightly above zero for larger sizes."}
+ggplot2::theme_set(bayesplot::theme_default(base_family = "sans"))
 options(projpred.plot_vsel_size_position = "primary_x_bottom")
 options(projpred.plot_vsel_text_angle = 0)
 options(projpred.plot_vsel_show_cv_proportions = TRUE)
@@ -332,7 +333,6 @@ A visualization of the projected posterior can be achieved with the [**bayesplot
 library(bayesplot)
 ```
 ```{r bayesplot_prj, fig.alt="Interval plot of the projected posterior, with one row for the intercept, each of the 7 selected predictors and sigma, and the parameter value on the x-axis. Each row has a point for the median, a thick line for the 50 % interval and a thin line for the 90 % interval."}
-ggplot2::theme_set(bayesplot::theme_default(base_family = "sans"))
 mcmc_intervals(prj_mat) +
   ggplot2::coord_cartesian(xlim = c(-1.5, 1.6))
 ```
