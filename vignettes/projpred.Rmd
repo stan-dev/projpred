@@ -246,10 +246,9 @@ To compute these ranking proportions, we use `cv_proportions()`:
 ```
 The main diagonal of this matrix is contained in column `cv_proportions_diag` of the `summary.vsel()` output and is also shown in the third line of the x-axis tick labels of the predictive performance plot from section ["Predictive performance plot from the `cv_varsel()` run"](#plotfinal) (due to `show_cv_proportions = TRUE` set via its global option).
 
-Here, 93% of the LOO CV folds have `X1` at position 1 and `X14` at position 2.
-The other folds have these two predictors in the opposite order.
-At each of positions 3 to 8, at least 96% of the folds have the same predictor as the full-data predictor ranking at that position.
-From position 9 on, the proportions are below 40%, so the ranking of the remaining predictors varies between the folds.
+Here, most LOO CV folds have `X1` at position 1 and `X14` at position 2.
+At positions 3 to 8, most folds also have the same predictor as the full-data predictor ranking.
+From position 9 on, the proportions are smaller, so the ranking of the remaining predictors varies between the folds.
 Since the column names of the matrix returned by `cv_proportions()` follow the full-data predictor ranking, we can infer that `X1` and `X14` are also the most relevant predictor terms (in this order) in the full-data predictor ranking.
 To see this more explicitly, we can access element `fulldata` of the `ranking()` output:
 ```{r ranking_fulldata}
@@ -271,18 +270,18 @@ To retrieve the predictor terms of the final submodel (except for the intercept 
 ( predictors_final <- head(rk[["fulldata"]], size_decided) )
 ```
 At this place, it is again helpful to take the ranking proportions into account, but now in a cumulated fashion:
-```{r plot_cv_proportions_cumul, fig.alt="Heat map of the cumulated ranking proportions. For each predictor (y-axis) and each size j from 1 to 12 (x-axis), the tile gives the proportion of CV folds that have the predictor among their first j predictors. At sizes 7 and 8, all tiles of the first 7 or 8 predictors are at 100 %, at size 9 only 35 % of the folds include the 9th predictor."}
+```{r plot_cv_proportions_cumul, fig.alt="Heat map of the cumulated ranking proportions. For each predictor (y-axis) and each size j from 1 to 12 (x-axis), the tile gives the proportion of CV folds that have the predictor among their first j predictors. At sizes 7 and 8, all tiles of the first 7 or 8 predictors are at 100 %; at size 9, fewer folds include the 9th predictor."}
 plot(cv_proportions(rk, cumulate = TRUE))
 ```
 This plot shows that all fold-wise searches and the full-data search agree on the *set* of the 7 most relevant predictors.
 (The full-data predictor ranking determines the order of the predictors on the y-axis.)
 At `<=7` on the x-axis, all tiles above and including the 7^th^ main diagonal element are at 100%.
 The same holds for the set of the 8 most relevant predictors (`<=8`), but not for larger sets.
-For example, only 35% of the folds have `X10` among their first 9 predictors.
+For example, only some of the folds have `X10` among their first 9 predictors.
 
 The cumulated ranking proportions can also guide the decision for a submodel size.
 Here, they agree with our choice of size 7: all folds select the same 7 (and 8) predictors.
-A size of 9 would add `X10`, which only 35% of the folds have among their first 9 predictors.
+A size of 9 would add `X10`, which only some of the folds have among their first 9 predictors.
 
 In a real-world application, we might also be able to incorporate the full-data predictor ranking into our decision for a submodel size (usually, this requires to also take into account the variability of the predictor ranking, as reflected by the---possibly cumulated---ranking proportions).
 For example, the predictors might be associated with different measurement costs, so that we might want to select a costly predictor only if the submodel size at which it would be selected (according to the full-data predictor ranking, but taking into account that there might be variability in the ranking of the predictors) comes with a considerable increase in predictive performance.
