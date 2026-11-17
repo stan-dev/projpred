@@ -822,10 +822,14 @@ test_that("\"acc\" has a logit-normal interval without a baseline", {
     expect_lt(res$uq, 1)
   }
 
-  # All observations classified correctly or all wrongly:
+  # All observations classified correctly or all wrongly. Where `long double`
+  # has only `double` precision (as on arm64 macOS), the weighted mean in
+  # .weighted_sd() can differ from 1 by one ulp, so the standard error is below
+  # 1e-16 and not exactly 0:
   res <- get_stat(list(mu = y, lppd = rep(-0.1, n)), y_wobs_test = y_wobs_test,
                   stat = "acc", alpha = alpha)
-  expect_identical(c(res$value, res$se, res$lq, res$uq), c(1, 0, 1, 1))
+  expect_equal(c(res$value, res$se, res$lq, res$uq), c(1, 0, 1, 1),
+               tolerance = 1e-12)
   res <- get_stat(list(mu = 1 - y, lppd = rep(-1, n)),
                   y_wobs_test = y_wobs_test, stat = "acc", alpha = alpha)
   expect_identical(c(res$value, res$se, res$lq, res$uq), c(0, 0, 0, 0))
