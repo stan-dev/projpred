@@ -426,7 +426,7 @@ subprd_gamm4_direct <- function(fits, newdata) {
     gamm4_re_b(fit, prep = prep, ranef_tmp = ranef_s)
   }, fits, ranefs))
   prd <- x_lp %*% do.call(cbind, lapply(gams, stats::coef)) +
-    t(as(t(bs) %*% prep$Zt, "matrix"))
+    as(Matrix::crossprod(prep$Zt, bs), "matrix")
   # As cbind() of the outputs of predict.gamm4():
   dimnames(prd) <- NULL
   return(prd)
