@@ -860,6 +860,98 @@ test_that("\"acc\" has a logit-normal interval without a baseline", {
                tolerance = 1e-12)
 })
 
+test_that(paste("a negative variance estimate from subsampled LOO-CV gives a",
+                "warning and a standard error of 0"), {
+  # Submodel, baseline and fast predictions for 20 observations, with 3
+  # observations in the subsample:
+  gen_smmrs <- function(seed) {
+    set.seed(seed)
+    n <- 20
+    y <- rnorm(n)
+    mu_base <- y + rnorm(n)
+    mu <- mu_base + rnorm(n, sd = 0.3)
+    mu_fast <- mu + rnorm(n, sd = 0.5)
+    loo_inds <- sort(sample(n, 3))
+    lppd <- rep(-1, n)
+    list(sub = list(mu = mu, lppd = lppd),
+         base = list(mu = mu_base, lppd = lppd),
+         fast = list(mu = mu_fast, lppd = lppd), loo_inds = loo_inds,
+         y_wobs_test = list(y = y, wobs = rep(1, n)))
+  }
+  get_stat_negvar <- function(d, stat, subsmpl = TRUE) {
+    n_warn <- 0L
+    res <- withCallingHandlers(
+      get_stat(d$sub, summaries_baseline = d$base,
+               summaries_fast = if (subsmpl) d$fast,
+               loo_inds = if (subsmpl) d$loo_inds,
+               y_wobs_test = d$y_wobs_test, stat = stat, alpha = 0.1),
+      projpred_negvar = function(w) {
+        n_warn <<- n_warn + 1L
+        invokeRestart("muffleWarning")
+      }
+    )
+    c(res, list(n_warn = n_warn))
+  }
+
+  # For these seeds, the variance estimate of the difference is negative with
+  # subsampling (rmse: -0.0049, mse: -0.047, R2: -0.0090; the threshold for an
+  # error or a warning is about -1.5e-5). Full LOO-CV with the same data gives a
+  # positive estimate:
+  for (stat_seed in list(list(stat = "rmse", seed = 9L),
+                         list(stat = "mse", seed = 169L),
+                         list(stat = "R2", seed = 169L))) {
+    stat <- stat_seed$stat
+    d <- gen_smmrs(stat_seed$seed)
+    res <- get_stat_negvar(d, stat)
+    expect_identical(res$n_warn, 1L, info = stat)
+    expect_identical(res$se, 0, info = stat)
+    expect_identical(c(res$lq, res$uq), rep(res$value, 2), info = stat)
+    res <- get_stat_negvar(d, stat, subsmpl = FALSE)
+    expect_identical(res$n_warn, 0L, info = stat)
+    expect_gt(res$se, 0, label = paste("full-LOO SE of", stat))
+  }
+
+  # Without `neg_to_zero = TRUE`, a negative input is still an error:
+  expect_error(sqrt_cut0(-0.005), "Negative")
+
+  # .tabulate_stats() gives one warning that names the columns and sizes:
+  d <- gen_smmrs(9)
+  vs <- list(
+    summaries = list(ref = d$base, sub = list(d$sub)),
+    summaries_fast = list(sub = list(d$fast)),
+    loo_inds = d$loo_inds, y_wobs_test = d$y_wobs_test, type_test = "LOO",
+    refmodel = list(family = list(family = "gaussian", for_latent = FALSE,
+                                  for_augdat = FALSE))
+  )
+  tabulate_warns <- function(...) {
+    warns <- character()
+    tab <- withCallingHandlers(
+      .tabulate_stats(vs, "rmse", alpha = 0.1, ...),
+      warning = function(w) {
+        warns <<- c(warns, conditionMessage(w))
+        invokeRestart("muffleWarning")
+      }
+    )
+    list(tab = tab, warns = warns)
+  }
+  # Without a baseline, only the difference to the reference model warns:
+  out <- tabulate_warns()
+  expect_length(out$warns, 1)
+  expect_match(out$warns, "estimate for `rmse.diff` (size 0). The",
+               fixed = TRUE)
+  expect_identical(out$tab$diff.se[out$tab$size == 0], 0)
+  expect_gt(out$tab$se[out$tab$size == 0], 0)
+  # With the reference model as the baseline, both columns warn:
+  out <- tabulate_warns(nfeat_baseline = Inf)
+  expect_length(out$warns, 1)
+  expect_match(out$warns, "estimate for `rmse` (size 0), `rmse.diff` (size 0).",
+               fixed = TRUE)
+  expect_identical(out$tab$se[out$tab$size == 0], 0)
+  # Internal calls can turn off the warning:
+  out <- tabulate_warns(nfeat_baseline = Inf, warn_negvar = FALSE)
+  expect_length(out$warns, 0)
+})
+
 test_that("plot.vsel() names the logit-normal interval of \"acc\"", {
   skip_if_not(run_vs)
   tstsetups <- Filter(function(tstsetup) {
