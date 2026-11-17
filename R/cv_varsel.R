@@ -1110,10 +1110,10 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
                " (`refit_prj = ", refit_prj, "`) for each of the `nloo = ",
                nloo, "` LOO-CV folds separately ...")
     }
-    # `lw_i` holds the PSIS-LOO log weights of the fold (column `i` of `lw`),
-    # and `rk` its predictor ranking from `search_out_rks` (or `NULL`). The
-    # parallel workers then get these parts with their folds, not all of `lw`
-    # and `search_out_rks`:
+    # `lw_i` is column `inds[run_index]` of `lw`. `rk` is element `run_index`
+    # of `search_out_rks`, or `NULL` for a new search. So the parallel workers
+    # get only the parts of their folds, not all of `lw` and
+    # `search_out_rks`:
     one_obs <- function(run_index,
                         lw_i,
                         rk,

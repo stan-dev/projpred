@@ -651,8 +651,9 @@ test_that(paste(
   # The calls of the fold loops, LOO first:
   calls_folds <- Filter(function(cl) "refmodel" %in% cl$env_nms, rec$calls)
   expect_length(calls_folds, 2)
-  expect_false(any(c("psisloo", "loglik_forPSIS", "refdist_pred") %in%
-                     calls_folds[[1]]$env_nms))
+  # The LOO folds get their columns of `lw` and their rankings as elements:
+  expect_false(any(c("psisloo", "loglik_forPSIS", "refdist_pred", "lw",
+                     "search_out_rks") %in% calls_folds[[1]]$env_nms))
   expect_false("list_cv" %in% calls_folds[[2]]$env_nms)
   # The folds get the reference models without their fits (see
   # refmodel_for_folds()), and each fold gets an RNG stream:
