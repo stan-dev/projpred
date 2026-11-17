@@ -37,6 +37,7 @@ If you read this from a place other than <https://mc-stan.org/projpred/news/inde
 * projpred now requires R >= 4.4.0 (previously R >= 3.6.0). (GitHub: #605)
 * **posterior** is now a required package (previously suggested), so the `as_draws()` and `as_draws_matrix()` methods for projections work without an extra installation. (GitHub: #605)
 * **loo** >= 2.10.1, **posterior** >= 1.7.0 and **gamm4** >= 0.3-0 are now required, and **gtools** is no longer needed. (GitHub: #605)
+* **lme4** >= 2.0-1 is now required. (GitHub: #???)
 * `get_refmodel.stanreg()` has new arguments `cvfun` and `cvrefbuilder` for K-fold CV. For example, a custom `cvrefbuilder` lets custom latent-projection functions use the draws of the fold-wise refits. (GitHub: #604)
 * New function `custom_stat()` defines a user-defined performance statistic for argument `stats` of `summary.vsel()`, `plot.vsel()` and `performances()`, and argument `stat` of `suggest_size()`. (GitHub: #566, #590)
 * Faster `cl_agg()` and conversion of arrays to augmented-rows matrices. For example, LOO CV with validated search for the latent projection with 4000 projected draws is about 3-4 times faster. (GitHub: #600)
@@ -81,7 +82,7 @@ If you read this from a place other than <https://mc-stan.org/projpred/news/inde
 * The submodels now use the contrasts of the reference model for factor predictors instead of `options("contrasts")`. This changes the projected coefficients and can change the L1 search and LOO predictions for a level of one observation. (GitHub: #283, #619)
 * `get_refmodel()` now stops with an error that names the missing variables and gives a workaround. This applies to `rstanarm::stan_gamm4()` fits with argument `random` and an expression in the formula, such as `cbind(y, n - y)`. (GitHub: #148, #634)
 * Fixed the error "length of 'dimnames' [1] not equal to array extent" in the predictions of multilevel `brms::categorical()` submodels with a factor in a group-level term, such as `(1 + f | g)`. `catCov` values other than `"free"` now give an error. (GitHub: #635, #640)
-* projpred now requires lme4 >= 2.0-1. With lme4 versions before 2.1-1, binomial and Poisson submodels with group-level terms are now fitted without rounding non-integer data. Before, the group-level standard deviations of Poisson submodels stayed at 1. (GitHub: #???)
+* With lme4 versions before 2.1-1, binomial and Poisson submodels with group-level terms are now fitted without rounding non-integer data. Before, the group-level standard deviations of Poisson submodels stayed at 1. (GitHub: #616, #???)
 
 
 # projpred 2.11.0

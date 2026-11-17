@@ -425,8 +425,8 @@ subprd_gamm4_direct <- function(fits, newdata) {
 # their model frames without their environments (lmer_frame_attrs()); the
 # shared fits keep the formula environment of the first draw. lmer_shared_ok()
 # checks this once per R session on a small fixed problem, and the test suite
-# checks it on CRAN. If the check fails (for example after a change in lme4) or
-# lme4 is older than 2.0-1, divmin() fits each draw with lmer().
+# checks it on CRAN. If the check fails (for example after a change in lme4),
+# divmin() fits each draw with lmer().
 
 # Replaces the name `old` by `new` in all language objects of `x`, including
 # its attributes and names (used for the response of a shared model frame).
@@ -563,14 +563,11 @@ lmer_shared_callback <- function(formulas, dot_args) {
 
 # Whether lmer_shared_fit() gives the fits of lme4::lmer() with the installed
 # lme4 (checked once per R session on a small fixed problem, without random
-# numbers). lme4 before 2.0-1 has another body of lmer() and other arguments
-# of lme4:::checkConv() and lme4:::optwrap().
+# numbers).
 lmer_shared_state <- new.env(parent = emptyenv())
-lmer_shared_lme4_min <- "2.0.1"
 lmer_shared_ok <- function() {
   if (is.null(lmer_shared_state$ok)) {
     lmer_shared_state$ok <-
-      utils::packageVersion("lme4") >= lmer_shared_lme4_min &&
       isTRUE(tryCatch(lmer_shared_check(), error = function(e) FALSE))
   }
   return(lmer_shared_state$ok)
@@ -1150,7 +1147,8 @@ fit_gamm_callback <- function(formula, projpred_formula_no_random,
       methods::formalArgs(lme4::glFormula))
   )]
   # As in fit_glmer_callback(). The error handler below reads `family` and
-  # `control`, so the changed family and control are copies:
+  # `control`, so the changed family and control are copies. `data` is changed
+  # in place; glmer_data() does not change it again in a refit:
   family_gamm <- glmer_family(family)
   control_gamm <- glmer_control(control, family = family_gamm)
   data <- glmer_data(data, formula = projpred_formula_no_random,
@@ -1583,7 +1581,8 @@ glmer_control <- function(control, family) {
 # The data for the family from glmer_family(). lme4 accepts a factor response
 # (augmented-data projection) only for the family name "binomial". As in
 # binomial()$initialize, the first factor level is a failure and all other
-# levels are successes.
+# levels are successes. Only a response that is a variable name is converted
+# (the response of projpred's submodel formulas is always a name).
 glmer_data <- function(data, formula, family) {
   if (!identical(family$family, "binomial_projpred") || is.null(data) ||
       length(formula) != 3 || !is.name(formula[[2]])) {

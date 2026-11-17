@@ -173,11 +173,15 @@ test_that(paste(
 ), {
   d <- dat_fitters()
   d$y <- plogis(d$eta)
-  # A glmer() that records `nAGQ` and fails in its first call:
+  testthat::local_mocked_bindings(lme4_needs_glmer_family = function() TRUE)
+  # A glmer() that records `nAGQ` and the family name and fails in its first
+  # call:
   nAGQ_calls <- list()
+  fam_calls <- character()
   glmer_mock <- lme4::glmer
   body(glmer_mock) <- quote({
     nAGQ_calls[[length(nAGQ_calls) + 1L]] <<- nAGQ
+    fam_calls <<- c(fam_calls, family$family)
     if (length(nAGQ_calls) == 1L) {
       stop("PIRLS step-halvings failed to reduce deviance")
     }
@@ -189,6 +193,8 @@ test_that(paste(
                         weights = rep(1, nrow(d)))
   expect_identical(fit, "fit")
   expect_identical(nAGQ_calls, list(1L, 20L))
+  # The refit also gets the family from glmer_family():
+  expect_identical(fam_calls, rep("binomial_projpred", 2))
   nAGQ_calls <- list()
   fit <- fit_glmer_test(y ~ x + (1 | g), d, extend_family(binomial()),
                         weights = rep(1, nrow(d)), nAGQ = 3L)
@@ -929,10 +935,6 @@ test_that(paste(
   for (sd_grp in c(0.8, 0)) {
     d <- dat_fitters(sd_grp = sd_grp)
     for (nm in names(cases)) {
-      if (nm == "lmer" &&
-          utils::packageVersion("lme4") < lmer_shared_lme4_min) {
-        next
-      }
       info <- paste(nm, "sd_grp:", sd_grp)
       args <- cases[[nm]]
       res_shared <- divmin_shared_tst(args$opt_nm, TRUE, args$count_fun,

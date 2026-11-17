@@ -1,14 +1,10 @@
 context("lmer_shared")
 
-# These tests run on CRAN on purpose: with lme4 >= 2.0-1, lmer_shared_fit()
-# repeats the steps of lme4::lmer() after a shared lme4::lFormula(), so a change
-# in lme4 has to make them fail (also in the reverse-dependency checks of lme4).
-# With older lme4, divmin() fits each draw with lmer().
-
-lme4_new_ls <- utils::packageVersion("lme4") >= lmer_shared_lme4_min
+# These tests run on CRAN on purpose: lmer_shared_fit() repeats the steps of
+# lme4::lmer() after a shared lme4::lFormula(), so a change in lme4 has to make
+# them fail (also in the reverse-dependency checks of lme4).
 
 test_that("lmer_shared_fit() gives the fits of lme4::lmer()", {
-  skip_if_not(lme4_new_ls, paste("lme4 is older than", lmer_shared_lme4_min))
   expect_true(lmer_shared_check())
   lmer_shared_state$ok <- NULL
   expect_true(lmer_shared_ok())
@@ -61,7 +57,6 @@ dat_new_ls <- data.frame(x1 = cos(idx_new_ls), x2 = sin(2 * idx_new_ls),
                          h = factor(c("h0", "h1", "h_new", "h3", "h4", "h0")))
 
 test_that("divmin() gives the same lmer() fits with and without sharing", {
-  skip_if_not(lme4_new_ls, paste("lme4 is older than", lmer_shared_lme4_min))
   fits_shared <- divmin_ls(TRUE)
   fits_drawwise <- divmin_ls(FALSE)
   expect_length(fits_shared, n_draws_ls)
@@ -84,7 +79,6 @@ test_that(paste(
   "divmin() gives the same lmer() fits with and without sharing if an",
   "observation has weight 0"
 ), {
-  skip_if_not(lme4_new_ls, paste("lme4 is older than", lmer_shared_lme4_min))
   wts_bu <- wts_ls
   on.exit(wts_ls <<- wts_bu)
   wts_ls <<- replace(wts_ls, 1, 0)
@@ -105,7 +99,6 @@ test_that(paste(
   "lmer() fits with and without sharing give the same predictions for new",
   "data"
 ), {
-  skip_if_not(lme4_new_ls, paste("lme4 is older than", lmer_shared_lme4_min))
   fits_shared <- divmin_ls(TRUE)
   fits_drawwise <- divmin_ls(FALSE)
   for (s in seq_len(n_draws_ls)) {
@@ -127,7 +120,6 @@ test_that(paste(
   "proj_linpred() gives the same predictions for new data with and without",
   "sharing the lmer() setup"
 ), {
-  skip_if_not(lme4_new_ls, paste("lme4 is older than", lmer_shared_lme4_min))
   dat_ref <- dat_ls[c("x1", "x2", "f", "g", "h")]
   dat_ref$y <- dat_ls$.y.1
   nobs_ref <- nrow(dat_ref)
@@ -173,13 +165,7 @@ test_that("lmer_shared_callback() returns `NULL` for other cases", {
   fmls <- validate_response_formula(fml_ls)
   dot_args <- list(data = dat_ls, family = extend_family(gaussian()),
                    weights = wts_ls)
-  if (lme4_new_ls) {
-    expect_true(is.function(lmer_shared_callback(fmls, dot_args)))
-  } else {
-    lmer_shared_state$ok <- NULL
-    expect_false(lmer_shared_ok())
-    expect_null(lmer_shared_callback(fmls, dot_args))
-  }
+  expect_true(is.function(lmer_shared_callback(fmls, dot_args)))
   opts_old <- options(projpred.lmer_shared = FALSE)
   expect_null(lmer_shared_callback(fmls, dot_args))
   options(opts_old)
