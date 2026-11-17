@@ -290,18 +290,6 @@ For example, the predictors might be associated with different measurement costs
 
 The `project()` function returns an object of class `projection` which forms the basis for convenient post-selection inference.
 By the following `project()` call, we project the reference model onto the final submodel once again^[During the search, the reference model is projected onto all candidate models (this is where arguments `ndraws` and `nclusters` of `varsel()` and `cv_varsel()` come into play; note that in case of an L1 search, the projection is L1-penalized). For the evaluation of the submodels along the predictor ranking returned by the search, the reference model is projected onto these submodels again (this is where arguments `ndraws_pred` and `nclusters_pred` of `varsel()` and `cv_varsel()` come into play; note that this only holds if argument `refit_prj` of `varsel()` and `cv_varsel()` is set to `TRUE`, as by default). Within `project()`, `refit_prj = FALSE` allows to re-use the submodel fits (that is, the projections) from the full-data search of a `vsel` object, but usually, the search relies on a rather coarse clustering or thinning of the reference model's posterior draws (by default, `varsel()` and `cv_varsel()` use `nclusters = 20`---or `nclusters = 1` in case of L1 search), which would then imply the same coarseness for a `project()` call where `refit_prj` is set to `FALSE`. In general, we want the final projection (that post-selection inference is based on) to be as accurate as possible, so here we call `project()` with the defaults of `refit_prj = TRUE` and `ndraws = 400`. For more accurate results, we could increase argument `ndraws` of `project()` (up to the number of posterior draws in the reference model). However, this would increase the runtime, which we don't want in this vignette.]:
-<!-- In versions > 2.0.2, **projpred** offers a parallelization of the projection. -->
-<!-- Typically, this only makes sense for a large number of projected draws. -->
-<!-- Therefore, this parallelization is not activated by a simple logical switch, but by a threshold for the number of projected draws below which no parallelization will be used. -->
-<!-- Values greater than or equal to this threshold will trigger the parallelization. -->
-<!-- For more information, see the general package documentation available at ``?`projpred-package` ``. -->
-<!-- There, we also explain for which types of submodels the parallelization of the projection is useful (see also section ["Supported types of models"](#modtypes) below). -->
-<!-- ```{r prll_prj_prep} -->
-<!-- if (!identical(.Platform$OS.type, "windows")) { -->
-<!--   future::plan(future.mirai::mirai_multisession, workers = ncores) -->
-<!--   trigger_default <- options(projpred.parallel_proj_trigger = 200) -->
-<!-- } -->
-<!-- ``` -->
 ```{r project}
 prj <- project(
   refm_obj,
@@ -311,12 +299,6 @@ prj <- project(
   ###
 )
 ```
-<!-- ```{r prll_prj_tear} -->
-<!-- if (!identical(.Platform$OS.type, "windows")) { -->
-<!--   options(trigger_default) -->
-<!--   future::plan(future::sequential) -->
-<!-- } -->
-<!-- ``` -->
 
 Next, we create a matrix containing the projected posterior draws stored in the depths of `project()`'s output:
 ```{r as_matrix_prj}
@@ -430,9 +412,7 @@ On the side of the predictors, **projpred** not only supports linear main effect
 
 Transferring this vignette to such more complex problems is straightforward (also because this vignette employs a "typical" reference model object): Basically, only the code for fitting the reference model via **rstanarm** or **brms** needs to be adapted.
 The **projpred** code stays almost the same.
-Only note that in case of multilevel or additive reference models,
-<!-- the parallelization of the projection is not recommended and that -->
-some **projpred** functions then have slightly different options for a few arguments.
+Only note that in case of multilevel or additive reference models, some **projpred** functions then have slightly different options for a few arguments.
 See the documentation for details.
 
 For example, to apply **projpred** to the `VerbAgg` dataset from the [**lme4**](https://CRAN.R-project.org/package=lme4) package, a corresponding multilevel reference model for the binary response `r2` could be created by the following code:
