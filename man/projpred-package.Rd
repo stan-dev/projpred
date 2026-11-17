@@ -79,17 +79,10 @@ replaces this default in the first fit. After some \pkg{lme4} errors,
 rounding: they round non-integer binomial responses and weights, and
 the objective is infinite for non-integer Poisson responses (then the
 group-level standard deviations stay at their start values). With
-\pkg{lme4} versions from 2.0-1 to 2.1-0, \pkg{projpred} passes a copy of
-these families with another name (ending in \verb{_projpred}) and an \code{aic}
+these \pkg{lme4} versions, \pkg{projpred} passes a copy of these
+families with another name (ending in \verb{_projpred}) and an \code{aic}
 function without rounding. The submodel fits then have this family
 name, so for example \code{\link[lme4:simulate.merMod]{lme4::simulate.merMod()}} does not work for them.
-With \pkg{lme4} versions before 2.0-1, \pkg{projpred} uses \code{nAGQ = 0}
-for binomial submodels with non-integer responses or weights unless
-\code{nAGQ} is set via \code{...}. Then the fixed effects and the group-level
-effects do not depend on the rounded objective; the group-level
-standard deviations still do. With these \pkg{lme4} versions, the
-group-level standard deviations of Poisson submodels are not estimated
-(they stay at 1), so we recommend \pkg{lme4} 2.0-1 or later.
 \item For the augmented-data projection: \code{\link[ordinal:clmm]{ordinal::clmm()}} (the returned
 object inherits from class \code{clmm}) for the \code{\link[brms:cumulative]{brms::cumulative()}} family,
 \code{\link[mclogit:mblogit]{mclogit::mblogit()}} (the returned object inherits from class \code{mmblogit})
@@ -111,16 +104,7 @@ object inherits from class \code{gam}).
 \item Submodel with multilevel and additive terms: \code{\link[gamm4:gamm4]{gamm4::gamm4()}} (within
 \pkg{projpred}, the returned object inherits from class \code{gamm4}). For the
 \code{\link[=binomial]{binomial()}} and the \code{\link[=poisson]{poisson()}} family, \pkg{projpred} passes the same
-family as to \code{\link[lme4:glmer]{lme4::glmer()}} (see above). For the \code{\link[=binomial]{binomial()}} family with
-non-integer responses or weights and \pkg{lme4} versions before 2.0-1,
-\pkg{projpred} gives
-\code{\link[gamm4:gamm4]{gamm4::gamm4()}} an optimizer that skips its second optimization stage, so
-the fit is that of \code{nAGQ = 0} in \code{\link[lme4:glmer]{lme4::glmer()}} (see the paragraph on
-\code{\link[lme4:glmer]{lme4::glmer()}} above), up to the optimizer. The first stage uses the
-optimizer of \code{control}, with the BOBYQA of \code{\link[lme4:nloptwrap]{lme4::nloptwrap()}} for
-\code{"bobyqa"}. With other optimizers than \code{"bobyqa"}, \code{"nloptwrap"},
-\code{"Nelder_Mead"}, \code{"nlminbwrap"}, \code{"optimx"} with \code{method = "nlminb"}, or a
-function, \code{\link[gamm4:gamm4]{gamm4::gamm4()}} runs both stages.
+family as to \code{\link[lme4:glmer]{lme4::glmer()}} (see above).
 }
 }
 

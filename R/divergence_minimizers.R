@@ -1155,23 +1155,6 @@ fit_gamm_callback <- function(formula, projpred_formula_no_random,
   control_gamm <- glmer_control(control, family = family_gamm)
   data <- glmer_data(data, formula = projpred_formula_no_random,
                      family = family_gamm)
-  # gamm4::gamm4() has no `nAGQ = 0`: after stage 1 (as `nAGQ = 0` in
-  # lme4::glmer()), it always runs stage 2, which optimizes the fixed effects
-  # with the Laplace objective. Some lme4 versions round non-integer binomial
-  # data in this objective (see glmer_rounds_binomial()). gamm4::gamm4() uses
-  # `control$optimizer[[1]]` in both stages, so gamm_stage1_optimizer() can
-  # skip stage 2. gamm4::gamm4() does not call lme4::checkConv(), so the
-  # derivatives are not used:
-  if (inherits(control, "glmerControl") &&
-      glmer_rounds_binomial(projpred_formula_no_random, family = family_gamm,
-                            data = data, weights = dot_args[["weights"]])) {
-    opt_stage1 <- gamm_stage1_optimizer(control$optimizer[[1]],
-                                        opt_ctrl = control$optCtrl)
-    if (!is.null(opt_stage1)) {
-      control_gamm$optimizer <- list(opt_stage1, opt_stage1)
-      control_gamm$calc.derivs <- FALSE
-    }
-  }
   # Call the submodel fitter:
   fit <- tryCatch({
     do.call(gamm4::gamm4, c(
@@ -1364,16 +1347,6 @@ fit_glmer_callback <- function(formula, projpred_formula_no_random,
       control_glmer <- glmer_control(control, family = family_glmer)
       dot_args$data <- glmer_data(dot_args$data, formula = formula,
                                   family = family_glmer)
-      # Other lme4 versions round non-integer binomial data in the objective of
-      # `nAGQ >= 1` (see glmer_rounds_binomial()). With `nAGQ = 0`, the fixed
-      # effects and the group-level effects do not depend on this objective
-      # (the group-level standard deviations still do):
-      if (is.null(dot_args$nAGQ) &&
-          glmer_rounds_binomial(formula, family = family_glmer,
-                                data = dot_args$data,
-                                weights = dot_args$weights)) {
-        dot_args$nAGQ <- 0L
-      }
       # Call the submodel fitter:
       return(do.call(lme4::glmer, c(list(formula = formula,
                                          family = family_glmer,
@@ -1418,8 +1391,6 @@ fit_glmer_callback <- function(formula, projpred_formula_no_random,
         )
       }, e_first = e, pkg = "lme4"))
     } else if (grepl("PIRLS", as.character(e))) {
-      # `nAGQ` from `...` (not the `nAGQ = 0` that the code above sets for
-      # non-integer binomial data):
       dot_args_retry <- list(...)
       # lme4 accepts `nAGQ > 1` only for a single scalar group-level term:
       if (!glmer_scalar_re(formula, data = dot_args_retry$data)) {
@@ -1555,11 +1526,10 @@ fit_glmer_callback <- function(formula, projpred_formula_no_random,
 # for a family with another name. The fit does not use it, and VarCorr() of a
 # GLMM does not use it either. gamm4::gamm4() uses it as the scale of `sp`,
 # `sig2` and `Vp` of the `gam` part (not of the coefficients); projpred does
-# not use these. lme4 < 2.0-1 scales VarCorr() by sigma(), so these versions
-# keep the original family.
+# not use these. (lme4 < 2.0-1 scales VarCorr() by sigma(); projpred requires
+# lme4 >= 2.0-1.)
 lme4_needs_glmer_family <- function() {
-  lme4_version <- utils::packageVersion("lme4")
-  return(lme4_version >= "2.0.1" && lme4_version < "2.1.1")
+  return(utils::packageVersion("lme4") < "2.1.1")
 }
 
 # The family that fit_glmer_callback() and fit_gamm_callback() pass to lme4. For
@@ -1625,90 +1595,6 @@ glmer_data <- function(data, formula, family) {
     data[[y_nm]] <- as.numeric(y != levels(y)[1])
   }
   return(data)
-}
-
-# Whether lme4::glmer() would fit a binomial submodel to rounded data: lme4 <
-# 2.1-1 computes the objective of `nAGQ >= 1` with binomial()$aic(), which
-# rounds non-integer numbers of successes and trials. The traditional
-# projection has non-integer responses, and the augmented-data projection has
-# non-integer weights. `FALSE` for the family from glmer_family(). `TRUE` also
-# if the data cannot be checked (then `nAGQ = 0` is used for data that may be
-# integer).
-glmer_rounds_binomial <- function(formula, family, data, weights) {
-  if (!identical(family$family, "binomial") ||
-      utils::packageVersion("lme4") >= "2.1.1") {
-    return(FALSE)
-  }
-  is_whole <- function(x) {
-    all(abs(x - round(x)) < 1e-8)
-  }
-  out <- tryCatch({
-    y <- eval(formula[[2]], data, environment(formula))
-    w <- weights %||% 1
-    if (is.matrix(y)) {
-      !is_whole(w) || !is_whole(y)
-    } else {
-      !is_whole(w) || !is_whole(as.numeric(y) * w)
-    }
-  }, error = function(e) TRUE)
-  return(!isFALSE(out))
-}
-
-# An optimizer function (see the `optimizer` argument of lme4::glmerControl())
-# for both stages of gamm4::gamm4(). Its first call (stage 1: the group-level
-# parameters, with the fixed effects from the PIRLS step) runs the optimizer
-# `optimizer`. A later call with more parameters (stage 2: the group-level
-# parameters and the fixed effects, from the stage-1 solution) returns the
-# start values with the convergence code and message of stage 1, so the fit is
-# that of `nAGQ = 0` in lme4::glmer() (up to the optimizer). `optimizer` is a
-# function or the name of an optimizer of lme4 ("bobyqa" uses the BOBYQA of
-# lme4::nloptwrap(), with `maxfun` of `opt_ctrl` as `maxeval`); "optimx" works
-# only with the method "nlminb" in `opt_ctrl`. Returns `NULL` for other
-# optimizers. The `control` argument of the returned function is not used
-# (gamm4::gamm4() passes `opt_ctrl` to both stages).
-gamm_stage1_optimizer <- function(optimizer, opt_ctrl = list()) {
-  opt_ctrl <- opt_ctrl %||% list()
-  ctrl_stage1 <- list()
-  if (is.function(optimizer)) {
-    optfun <- optimizer
-    ctrl_stage1 <- opt_ctrl
-  } else if (!is.character(optimizer) || length(optimizer) != 1) {
-    return(NULL)
-  } else if (optimizer %in% c("bobyqa", "nloptwrap")) {
-    optfun <- lme4::nloptwrap
-    if (optimizer == "nloptwrap") {
-      ctrl_stage1 <- opt_ctrl
-    } else if (!is.null(opt_ctrl$maxfun)) {
-      ctrl_stage1 <- list(maxeval = opt_ctrl$maxfun)
-    }
-  } else if (optimizer == "Nelder_Mead") {
-    optfun <- lme4::Nelder_Mead
-    ctrl_stage1 <- opt_ctrl
-  } else if (optimizer == "nlminbwrap" ||
-             (optimizer == "optimx" && identical(opt_ctrl$method, "nlminb"))) {
-    optfun <- lme4::nlminbwrap
-    ctrl_stage1 <- opt_ctrl[setdiff(names(opt_ctrl), "method")]
-  } else {
-    return(NULL)
-  }
-  res_stage1 <- NULL
-  return(function(par, fn, lower, upper, control = list()) {
-    if (is.null(res_stage1) || length(par) <= length(res_stage1$par)) {
-      res_stage1 <<- optfun(par = par, fn = fn, lower = lower, upper = upper,
-                            control = ctrl_stage1)
-      # As in lme4:::optwrap(), which does this only for the name
-      # "Nelder_Mead": lme4::Nelder_Mead() gives `convergence = 0` when it
-      # reaches `maxfun`.
-      if (isTRUE(res_stage1$NM.result == 4)) {
-        res_stage1$convergence <<- 4L
-      }
-      return(res_stage1)
-    }
-    conv <- res_stage1$conv %||% res_stage1$convergence %||% 0L
-    msg <- res_stage1$message %||% res_stage1$msg %||% ""
-    return(list(par = par, fval = fn(par), conv = conv,
-                message = paste("stage 1:", msg)))
-  })
 }
 
 # Whether the multilevel `formula` has a single scalar group-level term (one

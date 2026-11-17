@@ -49,7 +49,7 @@ Imports:
     rstantools (>= 2.0.0),
     loo (>= 2.10.1),
     posterior (>= 1.7.0),
-    lme4 (>= 1.1-28),
+    lme4 (>= 2.0-1),
     mvtnorm,
     mgcv,
     gamm4 (>= 0.3-0),

@@ -85,17 +85,10 @@
 #'     rounding: they round non-integer binomial responses and weights, and
 #'     the objective is infinite for non-integer Poisson responses (then the
 #'     group-level standard deviations stay at their start values). With
-#'     \pkg{lme4} versions from 2.0-1 to 2.1-0, \pkg{projpred} passes a copy of
-#'     these families with another name (ending in `_projpred`) and an `aic`
+#'     these \pkg{lme4} versions, \pkg{projpred} passes a copy of these
+#'     families with another name (ending in `_projpred`) and an `aic`
 #'     function without rounding. The submodel fits then have this family
 #'     name, so for example [lme4::simulate.merMod()] does not work for them.
-#'     With \pkg{lme4} versions before 2.0-1, \pkg{projpred} uses `nAGQ = 0`
-#'     for binomial submodels with non-integer responses or weights unless
-#'     `nAGQ` is set via `...`. Then the fixed effects and the group-level
-#'     effects do not depend on the rounded objective; the group-level
-#'     standard deviations still do. With these \pkg{lme4} versions, the
-#'     group-level standard deviations of Poisson submodels are not estimated
-#'     (they stay at 1), so we recommend \pkg{lme4} 2.0-1 or later.
 #'     + For the augmented-data projection: [ordinal::clmm()] (the returned
 #'     object inherits from class `clmm`) for the [brms::cumulative()] family,
 #'     [mclogit::mblogit()] (the returned object inherits from class `mmblogit`)
@@ -116,16 +109,7 @@
 #' * Submodel with multilevel and additive terms: [gamm4::gamm4()] (within
 #' \pkg{projpred}, the returned object inherits from class `gamm4`). For the
 #' [binomial()] and the [poisson()] family, \pkg{projpred} passes the same
-#' family as to [lme4::glmer()] (see above). For the [binomial()] family with
-#' non-integer responses or weights and \pkg{lme4} versions before 2.0-1,
-#' \pkg{projpred} gives
-#' [gamm4::gamm4()] an optimizer that skips its second optimization stage, so
-#' the fit is that of `nAGQ = 0` in [lme4::glmer()] (see the paragraph on
-#' [lme4::glmer()] above), up to the optimizer. The first stage uses the
-#' optimizer of `control`, with the BOBYQA of [lme4::nloptwrap()] for
-#' `"bobyqa"`. With other optimizers than `"bobyqa"`, `"nloptwrap"`,
-#' `"Nelder_Mead"`, `"nlminbwrap"`, `"optimx"` with `method = "nlminb"`, or a
-#' function, [gamm4::gamm4()] runs both stages.
+#' family as to [lme4::glmer()] (see above).
 #'
 #' # Verbosity, messages, warnings, errors
 #'
