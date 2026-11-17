@@ -481,20 +481,22 @@ Similarly, `cv_varsel()` with `validate_search = FALSE` is more prone to overfit
 
 ### Issues with the traditional projection
 
-For multilevel binomial models, the traditional projection may not work properly and give suboptimal results, see [#353](https://github.com/stan-dev/projpred/pull/353) on GitHub (the underlying issue is described in **lme4** issue [#682](https://github.com/lme4/lme4/issues/682)).
-By suboptimal results, we mean that the relevance of the group-level terms can be underestimated.
-According to the simulation-based case study from [#353](https://github.com/stan-dev/projpred/pull/353), the latent projection might help in that case.
+For multilevel binomial and Poisson models, the projection fits the submodels to the predictions of the reference model, so the response values of these fits are not integers.
+**projpred** requires **lme4** >= 2.1-1, which fits such response values with the continuous extension of the binomial and the Poisson likelihood (see **lme4** issue [#682](https://github.com/lme4/lme4/issues/682) and pull request [#1012](https://github.com/lme4/lme4/pull/1012)).
 
-For multilevel Poisson models, the traditional projection may take very long, see [#353](https://github.com/stan-dev/projpred/pull/353).
+If all group-level terms of a binomial (logit link) or Poisson (log link) submodel are group-level intercepts (`(1 | <group>)`), **projpred** fits the submodel with its own Laplace approximation, which is faster than `lme4::glmer()`.
+Submodels with other group-level terms (for example, group-level slopes) are fitted with `lme4::glmer()`, and then the projection can take long, in particular for Poisson models.
 According to the simulation-based case study from [#353](https://github.com/stan-dev/projpred/pull/353), the latent projection might help in that case.
 
 Finally, the [Poisson example of the latent-projection vignette](https://mc-stan.org/projpred/articles/latent.html#example-poisson-distribution) shows that the latent projection can be beneficial for non-multilevel models with a (non-Gaussian) family that the traditional projection also supports.
 
 ### Issues with the augmented-data projection
 
-For multilevel models, the augmented-data projection seems to suffer from the same issue as the traditional projection for the binomial family (see above), i.e., it may not work properly and give suboptimal results, see [#353](https://github.com/stan-dev/projpred/pull/353) (the underlying issue is probably similar to the one described in **lme4** issue [#682](https://github.com/lme4/lme4/issues/682)).
+For multilevel models, the augmented-data projection may not work properly and give suboptimal results, see [#353](https://github.com/stan-dev/projpred/pull/353).
 By suboptimal results, we mean that the relevance of the group-level terms can be underestimated.
 According to the simulation-based case study from [#353](https://github.com/stan-dev/projpred/pull/353), the latent projection might help in such cases.
+
+If the only group-level term of a `brms::cumulative()` submodel is a group-level intercept (`(1 | <group>)`), **projpred** fits the submodel with its own Laplace approximation, which is faster than `ordinal::clmm()`.
 
 ### Speed {#speed}
 
