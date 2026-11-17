@@ -399,7 +399,9 @@ test_that(paste(
   }
 
   refmod <- refmod_tst(y ~ x1 + (1 | g))
-  expect_warning(prj_tst(refmod, c("x1", "(1 | g)")), warn_full)
+  warns <- capture_warnings(prj_tst(refmod, c("x1", "(1 | g)")))
+  expect_match(warns, warn_full, all = FALSE)
+  expect_match(warns, "sqrt(q / (n - p))", fixed = TRUE, all = FALSE)
   expect_no_warning(prj_tst(refmod, "(1 | g)"), message = warn_full)
   expect_no_warning(prj_tst(refmod, "x1"), message = warn_full)
 
