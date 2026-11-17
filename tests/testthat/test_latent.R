@@ -433,7 +433,7 @@ test_that(paste(
 
 test_that(paste(
   "get_refmodel() with `latent = TRUE` and without `dis` gives no message",
-  "about the `NA` dispersion"
+  "about the `NA` dispersion, and as.matrix.projection() has no `sigma` column"
 ), {
   skip_if_not_installed("rstanarm")
   set.seed(4521)
@@ -450,6 +450,9 @@ test_that(paste(
   # Without a latent dispersion, as.matrix() has no `sigma` column:
   prj <- project(refm, predictor_terms = "x1", ndraws = 20, verbose = 0)
   expect_false("sigma" %in% colnames(as.matrix(prj)))
+  expect_false(
+    "sigma" %in% posterior::variables(posterior::as_draws_matrix(prj))
+  )
   # With a latent dispersion, it has one:
   refm_dis <- suppressMessages(
     get_refmodel(fit, latent = TRUE, dis = rep(1, length(refm$dis)))

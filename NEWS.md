@@ -44,7 +44,7 @@ If you read this from a place other than <https://mc-stan.org/projpred/news/inde
 * The parallel LOO and K-fold CV of `cv_varsel()` send the reference models without their fits to the workers, so the workers do not load **brms** or **rstanarm** and need less memory. (GitHub: #629)
 * The parallel workers now get the objects of the global environment that functions of a custom reference model use (found from the code, with the **globals** package). Global option `projpred.export_to_workers` can name more objects; `FALSE` turns this off. (GitHub: #629)
 * Improved error message for a binomial model with more than one trial per observation. Latent projection now stops for the brms families `beta_binomial()`, `zero_inflated_binomial()` and `zero_inflated_beta_binomial()`. (GitHub: #530, #624)
-* With `latent = TRUE`, the reference model no longer gives a message about an `NA` dispersion, or about `latent_ilink` for families whose inverse link gives the mean (e.g., negative binomial, Gamma, Weibull). (GitHub: #???)
+* With `latent = TRUE`, no message about an `NA` dispersion, and no `latent_ilink` message for families whose inverse link gives the mean (e.g., negative binomial, Weibull). Without a dispersion, `as.matrix()` of a projection has no `sigma` column. (GitHub: #???)
 
 ## Bug fixes and maintenance
 

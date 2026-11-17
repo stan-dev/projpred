@@ -2602,9 +2602,10 @@ as.matrix.projection <- function(x, nm_scheme = NULL,
   }
   stopifnot(nm_scheme %in% c("rstanarm", "brms"))
   res <- do.call(rbind, lapply(x$outdmin, get_subparams, nm_scheme = nm_scheme))
-  # Without a latent dispersion (all `NA`s), there is no `sigma` column:
+  # If `<refmodel>$dis` is all `NA` (latent projection), there is no `sigma`
+  # column:
   if (x$refmodel$family$family == "gaussian" &&
-      !(isTRUE(x$refmodel$family$for_latent) && all(is.na(x$dis)))) {
+      !(x$refmodel$family$for_latent && all(is.na(x$refmodel$dis)))) {
     res <- cbind(res, sigma = x$dis)
   }
   if (!x[["const_wdraws_prj"]]) {
