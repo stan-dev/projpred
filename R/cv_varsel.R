@@ -150,6 +150,7 @@
 #'   argument `parallel`; only \pkg{projpred}'s CV is affected.) The
 #'   parallelization uses the workers of the current plan of the
 #'   \pkg{future} package (set up with, e.g.,
+#'   `future::plan(future.mirai::mirai_multisession, workers = 4)` or
 #'   `future::plan(future::multisession, workers = 4)`), see section
 #'   "Parallelization" in [projpred-package]. Without such workers, the CV
 #'   runs sequentially, with a warning. Each CV fold has its own random
