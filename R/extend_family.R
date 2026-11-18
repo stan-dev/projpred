@@ -299,7 +299,7 @@ extend_family <- function(family,
   #   to the Bernoulli family;
   # * families with one linear predictor per non-reference response category,
   #   other than categorical().
-  # Check them here, because `latent = TRUE` replaces the family by gaussian():
+  # Check them before `latent = TRUE` replaces the family with gaussian():
   if (isTRUE(family$family %in% c("beta_binomial", "zero_inflated_binomial",
                                   "zero_inflated_beta_binomial",
                                   "multinomial", "dirichlet", "dirichlet2",
