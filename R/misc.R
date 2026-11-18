@@ -1711,9 +1711,23 @@ par_check_workers <- function() {
   return(invisible(TRUE))
 }
 
-sqrt_cut0 <- function(x) {
+# Square root of a variance estimate. A negative `x` that is numerically zero
+# gives 0. A clearly negative `x` gives an error. Estimates from subsampled
+# LOO-CV can be negative; for them, use `neg_to_zero = TRUE`. Then a clearly
+# negative `x` gives 0 and a warning of class `projpred_negvar` (with element
+# `stat`).
+sqrt_cut0 <- function(x, neg_to_zero = FALSE, stat = NULL) {
   if (!is.na(x) && sign(x) == -1) {
     if (abs(x) < 1e3 * sqrt(.Machine$double.eps)) {
+      x <- 0
+    } else if (neg_to_zero) {
+      warning(structure(
+        class = c("projpred_negvar", "warning", "condition"),
+        list(message = paste0("The variance estimate for `", stat, "` is ",
+                              "negative (", format(x, digits = 3), "). The ",
+                              "standard error is set to 0."),
+             call = NULL, stat = stat)
+      ))
       x <- 0
     } else {
       stop("Negative (and numerically non-zero) value used as input to ",
