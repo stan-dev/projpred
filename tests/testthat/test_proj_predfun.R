@@ -1011,8 +1011,19 @@ test_that(paste(
     lapply(seq_len(n_draws), function(s) {
       d$y <- sin(2 * pi * d$x) + 0.3 * d$z + rnorm(nrow(d), sd = 0.4)
       d$y_pois <- rpois(nrow(d), exp(0.3 + sin(2 * pi * d$x)))
-      fit_gamm_callback(formula = fml, projpred_formula_no_random = fml,
-                        projpred_random = rnd, data = d, family = family)
+      # With 8 groups, some fits of `(1 + z | g)` give a CHOLMOD warning
+      # 'not positive definite'. This test checks only the predictions, so
+      # muffle that warning (other warnings stay visible):
+      withCallingHandlers(
+        fit_gamm_callback(formula = fml, projpred_formula_no_random = fml,
+                          projpred_random = rnd, data = d, family = family),
+        warning = function(w) {
+          if (grepl("CHOLMOD warning 'not positive definite'",
+                    conditionMessage(w), fixed = TRUE)) {
+            invokeRestart("muffleWarning")
+          }
+        }
+      )
     })
   }
   # Count the calls of predict.gamm4() (the draw-by-draw path of subprd()):
