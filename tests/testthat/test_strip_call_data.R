@@ -146,6 +146,55 @@ test_that(paste(
   }
 })
 
+test_that(paste(
+  "gamm4_small_envs() removes the data from the environments of a gamm4 fit",
+  "and keeps its predictions for new data"
+), {
+  # A formula environment without the data (the environment of a formula made
+  # here has the environment of this file, with `dat_scd`, as an ancestor):
+  fml <- as.formula(".y.1 ~ s(x1) + x2", env = new.env(parent = globalenv()))
+  fit <- suppressWarnings(do.call(gamm4::gamm4, list(
+    formula = fml, random = ~ (1 | g), data = dat_scd
+  )))
+  # The frame of gamm4() holds the data:
+  expect_true(is.data.frame(get0("data", environment(fit$gam$pred.formula),
+                                 inherits = FALSE)))
+  fit_s <- gamm4_small_envs(fit)
+  envs <- list(
+    environment(fit_s$gam$pred.formula),
+    attr(attr(fit_s$gam$model, "terms"), ".Environment"),
+    attr(attr(fit_s$mer@frame, "terms"), ".Environment"),
+    environment(attr(fit_s$mer@frame, "formula"))
+  )
+  for (e in envs) {
+    expect_identical(e, environment(fml))
+  }
+  expect_lt(length(serialize(fit_s, NULL)), length(serialize(fit, NULL)))
+  expect_identical(predict(fit_s$gam, newdata = newdat_scd),
+                   predict(fit$gam, newdata = newdat_scd))
+  expect_identical(predict(fit_s$gam, newdata = newdat_scd, type = "lpmatrix"),
+                   predict(fit$gam, newdata = newdat_scd, type = "lpmatrix"))
+})
+
+test_that(paste(
+  "divmin() gives gamm4 fits with the formula environment in their model",
+  "frames and prediction formulas"
+), {
+  fml <- cbind(.y.1, .y.2, .y.3) ~ s(x1) + x2 + (1 | g)
+  fits <- suppressWarnings(divmin(
+    formula = fml, data = dat_scd, family = extend_family(gaussian()),
+    weights = rep(1, n_scd), projpred_var = matrix(NA, n_scd, 3),
+    projpred_ws_aug = matrix(NA, n_scd, 3), verbose_divmin = FALSE
+  ))
+  expect_length(fits, 3)
+  for (fit in fits) {
+    expect_s3_class(fit, "gamm4")
+    expect_identical(environment(fit$gam$pred.formula), environment(fml))
+    expect_identical(attr(attr(fit$mer@frame, "terms"), ".Environment"),
+                     environment(fml))
+  }
+})
+
 test_that("divmin_augdat() gives clmm() fits without the data in their calls", {
   cats <- c("lo", "mid", "hi")
   d_aug <- do.call(rbind, lapply(cats, function(cat_i) {

@@ -1248,7 +1248,46 @@ fit_gamm_callback <- function(formula, projpred_formula_no_random,
   fit$formula <- projpred_formula_no_random
   # Contrasts of the factors in the group-level terms, for repair_re.gamm4():
   fit$re_contrasts <- re_contrasts(data, projpred_random)
+  fit <- gamm4_small_envs(fit)
   class(fit) <- c("gamm4")
+  return(fit)
+}
+
+# `fit` (a gamm4::gamm4() fit) with the environment of `fit$gam$formula` (the
+# environment of the formula of the reference model) for its prediction
+# formula and for the terms and formulas of its model frames. gamm4() gives
+# these objects its own function frame, which holds the data, so each
+# serialized fit holds a copy of the data. Predictions for new data use only
+# the variables of the new data and functions that the new environment also
+# finds.
+gamm4_small_envs <- function(fit) {
+  env <- environment(fit$gam$formula)
+  if (!is.environment(env)) {
+    return(fit)
+  }
+  set_env <- function(x) {
+    if (!is.null(x)) {
+      attr(x, ".Environment") <- env
+    }
+    return(x)
+  }
+  pf <- fit$gam$pred.formula
+  if (inherits(pf, "formula")) {
+    if (!is.null(attr(pf, "full"))) {
+      attr(pf, "full") <- set_env(attr(pf, "full"))
+    }
+    fit$gam$pred.formula <- set_env(pf)
+  }
+  if (is.data.frame(fit$gam$model)) {
+    attr(fit$gam$model, "terms") <- set_env(attr(fit$gam$model, "terms"))
+  }
+  if (isS4(fit$mer) && methods::.hasSlot(fit$mer, "frame")) {
+    fr <- fit$mer@frame
+    for (anm in c("terms", "formula")) {
+      attr(fr, anm) <- set_env(attr(fr, anm))
+    }
+    fit$mer@frame <- fr
+  }
   return(fit)
 }
 
