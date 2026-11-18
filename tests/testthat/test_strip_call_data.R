@@ -16,6 +16,8 @@ dat_scd$yo <- cut(eta_scd + 1.2 * sin(2.9 * idx_scd + 0.2),
                   c(-Inf, -0.5, 0.5, Inf),
                   labels = c("lo", "mid", "hi"), ordered_result = TRUE)
 dat_scd$yc <- factor(dat_scd$yo, ordered = FALSE)
+# A column that no submodel uses, so only a copy of the whole data holds it:
+dat_scd$col_unused <- 1
 newdat_scd <- dat_scd[c(3, 50, 77, 120), c("x1", "x2", "g")]
 
 # Whether `x` holds a data frame with column `col` anywhere in its list
@@ -80,12 +82,12 @@ test_that(paste(
     cs <- cases[[nm]]
     fit <- suppressMessages(suppressWarnings(cs$fit()))
     fit_s <- strip_call_data(fit)
-    expect_false(has_df_with(fit_s, ".y.2"), info = nm)
+    expect_false(has_df_with(fit_s, "col_unused"), info = nm)
     if (isTRUE(cs$no_data)) {
       expect_identical(fit_s, fit, info = nm)
       next
     }
-    expect_true(has_df_with(fit, ".y.2"), info = nm)
+    expect_true(has_df_with(fit, "col_unused"), info = nm)
     expect_lt(length(serialize(fit_s, NULL)), length(serialize(fit, NULL)),
               label = nm)
     if (!is.null(cs$pred)) {
@@ -137,7 +139,7 @@ test_that(paste(
       info <- paste(rhs, "lmer_shared:", lmer_shared)
       fits <- divmin_scd(rhs)
       expect_length(fits, n_draws_scd)
-      expect_false(any(vapply(fits, has_df_with, logical(1), col = ".y.2")),
+      expect_false(any(vapply(fits, has_df_with, logical(1), col = "col_unused")),
                    info = info)
     }
     options(opts_old)
