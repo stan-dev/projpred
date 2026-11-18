@@ -318,11 +318,7 @@ project <- function(
       (refmodel$family$family == "gaussian" || refmodel$family$for_latent) &&
       formula_contains_group_terms(make_formula(prd_trms_max)) &&
       is_full_projection(prd_trms_max, object = object, refmodel = refmodel)) {
-    warning(
-      "In case of the Gaussian family (also in case of the latent projection) ",
-      "and multilevel terms, the projection onto the full model can be ",
-      "instable and even lead to an error, see GitHub issue #323."
-    )
+    warning(warn_instable_full_text())
   }
 
   # Projection --------------------------------------------------------------

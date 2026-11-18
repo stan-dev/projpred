@@ -391,10 +391,16 @@ test_that(paste(
   }
   warn_full <- "the projection onto the full model can be instable"
   # varsel() and cv_varsel():
-  expect_warning(args <- parse_args(y ~ x2 + s(x1) + (1 | g), NULL),
-                 warn_full)
+  warns <- capture_warnings(
+    args <- parse_args(y ~ x2 + s(x1) + (1 | g), NULL)
+  )
+  expect_match(warns, warn_full, all = FALSE)
   expect_identical(args$nterms_all, 4L)
   expect_equal(args$nterms_max, 4)
+  # The factor of the projected group-level SD and its condition:
+  expect_match(warns, "sqrt(q / (n - p))", fixed = TRUE, all = FALSE)
+  expect_match(warns, "q < n - p", fixed = TRUE, all = FALSE)
+  expect_match(warns, "(here: 3;", fixed = TRUE, all = FALSE)
   expect_warning(args <- parse_args(y ~ x2 + s(x1) + (1 | g),
                                     c("s(x1)", "x2", "(1 | g)")),
                  warn_full)
