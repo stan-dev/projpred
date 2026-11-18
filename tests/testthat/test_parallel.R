@@ -894,13 +894,19 @@ test_that(paste(
   for (tstsetup in names(refmods)) {
     refm <- refmods[[tstsetup]]
     refm_f <- projpred:::refmodel_for_folds(refm)
+    # The fold functions restore the copies of `mu` (see
+    # refmodel_drop_dup_draws()):
+    refm_r <- projpred:::refmodel_restore_draws(refm_f)
+    els <- c("mu", "eta", "mu_offs")
+    expect_identical(refm_r[els], refm[els], info = tstsetup)
     # For the latent and the augmented-data projection and for family functions
-    # from other packages, the reference model stays as it is:
+    # from other packages, the reference model stays as it is (apart from the
+    # copies of `mu`):
     fam_pkgs <- vapply(Filter(is.function, refm$family), topenv_nm,
                        character(1))
     if (isTRUE(refm$family$for_latent) || isTRUE(refm$family$for_augdat) ||
         !all(fam_pkgs %in% c("base", "stats", "projpred"))) {
-      expect_identical(refm_f, refm, info = tstsetup)
+      expect_identical(refm_r, refm, info = tstsetup)
       next
     }
     pkgs_copied <- c(pkgs_copied, sub("\\..*", "", tstsetup))
