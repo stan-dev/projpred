@@ -114,6 +114,11 @@ divmin <- function(
   }
 
   dot_args <- list(...)
+  # The option of the Laplace fit (see mlvl_laplace()) is read here, because the
+  # draw-wise calls may run in parallel workers:
+  if (identical(sdivmin, fit_glmer_callback)) {
+    dot_args$mlvl_laplace <- getOption("projpred.mlvl_laplace", TRUE)
+  }
   # Observations with weight 0 (in the LOO CV with validated search, the
   # left-out observation of a fold): remove them from the data for the
   # multilevel and additive submodel fitters. Some of these fitters (for example
@@ -1316,7 +1321,29 @@ refit_optimx <- function(refit, e_first, pkg) {
 # Use package "lme4" to fit multilevel submodels:
 fit_glmer_callback <- function(formula, projpred_formula_no_random,
                                projpred_random, family,
-                               control = control_callback(family), ...) {
+                               control = control_callback(family),
+                               mlvl_laplace = getOption("projpred.mlvl_laplace",
+                                                        TRUE),
+                               ...) {
+  # Binomial (logit) and Poisson (log) submodels with random intercepts only:
+  # projpred's own Laplace fit, with lme4::glmer() as the fallback if it does
+  # not converge (the fallback fit is converted to the same class):
+  if (missing(control) &&
+      mlvl_laplace_use(formula, family, list(...), use = mlvl_laplace)) {
+    ml_args <- list(...)
+    fit <- mlvl_laplace(formula, data = ml_args$data, family = family,
+                        weights = ml_args$weights)
+    if (!is.null(fit)) {
+      if (fit$convergence == 0) return(fit)
+      fit_glmer <- fit_glmer_callback(
+        formula = formula,
+        projpred_formula_no_random = projpred_formula_no_random,
+        projpred_random = projpred_random, family = family, control = control,
+        ...
+      )
+      return(mlvl_from_merMod(fit_glmer, formula, failed = fit))
+    }
+  }
   tryCatch({
     if (getOption("projpred.PQL", FALSE)) {
       # Exclude arguments from `...` which cannot be passed to MASS::glmmPQL():
@@ -1825,6 +1852,11 @@ divmin_augdat <- function(
     # the objects that it uses (see fun_with_objs()) and the projpred
     # namespace as parent:
     dot_args <- list(...)
+    # The option of the Laplace fit (see mlvl_laplace()), read in this R
+    # process:
+    if (identical(sdivmin, fit_glmer_callback)) {
+      dot_args$mlvl_laplace <- getOption("projpred.mlvl_laplace", TRUE)
+    }
     one_draw <- fun_with_objs(function(projpred_w_aug_s) {
       mssgs_warns_capt <- capt_mssgs_warns(
         soutdmin <- do.call(
@@ -2466,7 +2498,9 @@ check_conv <- function(outdmin, lengths_mssgs_warns, do_check = TRUE) {
 # Helper function for checking the convergence of a single submodel fit (not of
 # a whole `outdmin` object):
 check_conv_s <- function(fit_s) {
-  if (inherits(fit_s, "mmblogit")) {
+  if (inherits(fit_s, "projpred_mlvl")) {
+    return(isTRUE(fit_s$convergence == 0))
+  } else if (inherits(fit_s, "mmblogit")) {
     return(fit_s$converged)
   } else if (inherits(fit_s, "multinom")) {
     return(fit_s$convergence == 0)
@@ -2584,6 +2618,11 @@ subprd_fitted <- function(fits, nobs) {
 }
 
 subprd <- function(fits, newdata) {
+  # Fits of projpred's Laplace fitter (see mlvl_laplace()): all draws at once:
+  if (length(fits) &&
+      all(vapply(fits, inherits, logical(1), "projpred_mlvl"))) {
+    return(subprd_mlvl(fits, newdata))
+  }
   # lme4 fits of one submodel and `newdata` without new group levels: all draws
   # at once (see subprd_mer_direct()):
   prd_direct <- subprd_mer_direct(fits, newdata)
@@ -2615,6 +2654,9 @@ subprd <- function(fits, newdata) {
     }
   }
   prd_list <- lapply(fits, function(fit) {
+    if (inherits(fit, "projpred_mlvl")) {
+      return(subprd_mlvl(list(fit), newdata)[, 1])
+    }
     is_glmmPQL <- inherits(fit, "glmmPQL")
     is_glmm <- inherits(fit, c("lmerMod", "glmerMod"))
     is_gam_gamm <- inherits(fit, c("gam", "gamm4"))
