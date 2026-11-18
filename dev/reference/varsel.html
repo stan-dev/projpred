@@ -343,6 +343,20 @@ two candidates. At the last model size of 3, <code>y ~ x1 + x2 + x3</code> would
 the only candidate. As another example, to exclude <code>x1</code> from the search,
 specify <code>search_terms = c("x2", "x3", "x2 + x3")</code> (or, in a simpler way
 that leads to the same results, <code>search_terms = c("x2", "x3")</code>).</p>
+<p>The elements of <code>search_terms</code> are not exclusive alternatives. A
+candidate model consists of the <code>chosen</code> predictor terms and the terms of
+one element, so terms from different elements can be in the same
+submodel. For smooth terms, additional rules apply (see argument
+<code>search_terms</code>). For example, consider a reference model with formula <code>y ~ x1 + x2 + x3 + x4</code> and <code>search_terms = c("x1 + x2", "x1 + x3", "x1 + x2 + x4")</code>. After <code>y ~ 1</code>, the candidates are <code>y ~ x1 + x2</code> and <code>y ~ x1 + x3</code>. If the search selects <code>x1 + x3</code>, the only candidate in the next step
+is <code>y ~ x1 + x3 + x2</code>. This candidate comes from element <code>"x1 + x2"</code>,
+because <code>x1</code> is already chosen. The only candidate in the step after that
+is <code>y ~ x1 + x3 + x2 + x4</code> (from element <code>"x1 + x2 + x4"</code>). The predictor
+ranking is then <code>x1 + x3</code>, <code>x2</code>, <code>x4</code>. If the search selects <code>x1 + x2</code>
+instead, the candidates in the next step are <code>y ~ x1 + x2 + x3</code> and
+<code>y ~ x1 + x2 + x4</code>, so <code>x3</code> is still possible. Thus, a search that
+selects either <code>x1 + x2 + x4</code> or <code>x1 + x3</code> (but not terms of both) is not
+possible with one <code>search_terms</code> vector. For this, run one search for each
+set of terms, for example with <code>search_terms = c("x1 + x2", "x1 + x2 + x4")</code> and with <code>search_terms = "x1 + x3"</code>.</p>
     </div>
     <div class="section level2">
     <h2 id="argument-d-test">Argument <code>d_test</code><a class="anchor" aria-label="anchor" href="#argument-d-test"></a></h2>

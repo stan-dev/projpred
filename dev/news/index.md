@@ -277,6 +277,19 @@
 
 ### Bug fixes and maintenance
 
+- With subsampled LOO CV,
+  [`summary()`](https://rdrr.io/r/base/summary.html),
+  [`plot()`](https://rdrr.io/r/graphics/plot.default.html) and
+  [`suggest_size()`](https://mc-stan.org/projpred/dev/reference/suggest_size.md)
+  no longer stop with an error if the variance estimate of `mse`, `rmse`
+  or `R2` is negative. The standard error is set to 0, with a warning.
+  (GitHub: [\#651](https://github.com/stan-dev/projpred/issues/651))
+- Fixed bug in
+  [`get_refmodel()`](https://mc-stan.org/projpred/dev/reference/refmodel-init-get.md)
+  for **rstanarm** fits with `.` in the formula and with observation
+  weights or offsets: internal columns for the weights and offsets
+  became predictor terms. (GitHub:
+  [\#649](https://github.com/stan-dev/projpred/issues/649))
 - Fixed bug in the predictions of submodels for new data: Terms with a
   data-dependent basis, such as
   [`poly()`](https://rdrr.io/r/stats/poly.html) or

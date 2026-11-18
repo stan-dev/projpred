@@ -292,6 +292,27 @@ only candidate. As another example, to exclude `x1` from the search,
 specify `search_terms = c("x2", "x3", "x2 + x3")` (or, in a simpler way
 that leads to the same results, `search_terms = c("x2", "x3")`).
 
+The elements of `search_terms` are not exclusive alternatives. A
+candidate model consists of the `chosen` predictor terms and the terms
+of one element, so terms from different elements can be in the same
+submodel. For smooth terms, additional rules apply (see argument
+`search_terms`). For example, consider a reference model with formula
+`y ~ x1 + x2 + x3 + x4` and
+`search_terms = c("x1 + x2", "x1 + x3", "x1 + x2 + x4")`. After `y ~ 1`,
+the candidates are `y ~ x1 + x2` and `y ~ x1 + x3`. If the search
+selects `x1 + x3`, the only candidate in the next step is
+`y ~ x1 + x3 + x2`. This candidate comes from element `"x1 + x2"`,
+because `x1` is already chosen. The only candidate in the step after
+that is `y ~ x1 + x3 + x2 + x4` (from element `"x1 + x2 + x4"`). The
+predictor ranking is then `x1 + x3`, `x2`, `x4`. If the search selects
+`x1 + x2` instead, the candidates in the next step are
+`y ~ x1 + x2 + x3` and `y ~ x1 + x2 + x4`, so `x3` is still possible.
+Thus, a search that selects either `x1 + x2 + x4` or `x1 + x3` (but not
+terms of both) is not possible with one `search_terms` vector. For this,
+run one search for each set of terms, for example with
+`search_terms = c("x1 + x2", "x1 + x2 + x4")` and with
+`search_terms = "x1 + x3"`.
+
 ## Argument `d_test`
 
 If not `NULL`, then `d_test` needs to be a `list` with the following
