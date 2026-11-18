@@ -42,20 +42,46 @@ static vec ml_wvar(const vec& mu, const vec& w, int fam) {
   return w % mu % (1 - mu);
 }
 
-// Sum of the deviance residuals:
-static double ml_dev(const vec& y, const vec& mu, const vec& w, int fam) {
+// Terms of the deviance residuals without eta, per observation (see ml_dev()):
+static vec ml_dev_y(const vec& y, int fam) {
+  vec c(y.n_elem);
+  for (uword i = 0; i < y.n_elem; i++) {
+    double yi = y[i];
+    double t = (yi > 0) ? yi * std::log(yi) : 0.0;
+    if (fam == ML_POISSON) {
+      t -= yi;
+    } else if (yi < 1) {
+      t += (1 - yi) * std::log1p(-yi);
+    }
+    c[i] = t;
+  }
+  return c;
+}
+
+// The sum of the deviance residuals is computed from eta, so that it stays
+// finite and accurate where mu rounds to 0 or 1:
+//   binomial: y log(y) + (1 - y) log(1 - y) + softplus(eta) - y eta,
+//   Poisson:  y log(y) - y + exp(eta) - y eta.
+// `dev_y` holds the terms without eta (ml_dev_y()).  Each observation adds
+// them before the sum, so that rounding stays relative to the deviance near
+// the optimum.  softplus(eta) - y eta is (1 - y) eta + log1p(exp(-eta)) for
+// eta > 0.  A product with y = 0 or 1 - y = 0 is skipped, so that an infinite
+// eta gives the limit 0.
+static double ml_dev(const vec& y, const vec& eta, const vec& w, int fam,
+                     const vec& dev_y) {
   double d = 0;
   for (uword i = 0; i < y.n_elem; i++) {
     if (w[i] == 0) continue;
-    double yi = y[i], mi = mu[i];
-    double a = (yi > 0) ? yi * std::log(yi / mi) : 0.0;
-    double b;
+    double yi = y[i], e = eta[i];
+    double t;
     if (fam == ML_POISSON) {
-      b = -(yi - mi);
+      t = std::exp(e) - ((yi > 0) ? yi * e : 0.0);
+    } else if (e > 0) {
+      t = ((yi < 1) ? (1 - yi) * e : 0.0) + std::log1p(std::exp(-e));
     } else {
-      b = (yi < 1) ? (1 - yi) * std::log((1 - yi) / (1 - mi)) : 0.0;
+      t = std::log1p(std::exp(e)) - ((yi > 0) ? yi * e : 0.0);
     }
-    d += 2 * w[i] * (a + b);
+    d += 2 * w[i] * (dev_y[i] + t);
   }
   return d;
 }
@@ -112,9 +138,9 @@ List mlvl_laplace_c(const arma::vec& theta, const arma::vec& beta,
     }
     return s;
   };
+  const vec dev_y = ml_dev_y(y, fam);
   auto obj = [&](const vec& uu) -> double {
-    vec mu = ml_linkinv(eta0 + a_u(uu), fam);
-    return ml_dev(y, mu, w, fam) + dot(uu, uu);
+    return ml_dev(y, eta0 + a_u(uu), w, fam, dev_y) + dot(uu, uu);
   };
   double f = obj(u);
   if (!std::isfinite(f)) {

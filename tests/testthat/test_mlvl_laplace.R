@@ -63,6 +63,67 @@ test_that("mlvl_laplace_c() gives the gradient of its objective", {
 })
 
 test_that(paste(
+  "mlvl_laplace_c() gives the deviance for linear predictors where mu rounds",
+  "to 0 or 1"
+), {
+  # With theta = 0, the conditional modes are 0, so D is the deviance at
+  # eta = offset:
+  dev_c <- function(y, eta, fam) {
+    n <- length(y)
+    mlvl_laplace_c(0, 0, matrix(1, n, 1), matrix(0L, n, 1), 1L, y, rep(1, n),
+                   eta, 0, fam, FALSE)$D
+  }
+  xlogx <- function(x) ifelse(x > 0, x * log(x), 0)
+  # Relative error, also for targets near 0 (where expect_equal() compares
+  # absolute differences):
+  expect_rel <- function(object, expected, info) {
+    if (expected == 0) {
+      expect_identical(object, 0, info = info)
+    } else {
+      expect_lt(abs(object / expected - 1), 1e-12, label = info)
+    }
+  }
+  # Binomial: in double precision, plogis() is 0 for eta -800 and 1 for eta 37
+  # and 100:
+  y <- rep(c(0, 0.3, 1 - 1e-6, 1), 4)
+  eta <- rep(c(-800, 2, 37, 100), each = 4)
+  dev_ref <- 2 * (xlogx(y) + xlogx(1 - y) -
+                    y * plogis(eta, log.p = TRUE) -
+                    (1 - y) * plogis(-eta, log.p = TRUE))
+  for (i in seq_along(y)) {
+    expect_rel(dev_c(y[i], eta[i], 0L), dev_ref[i],
+               info = paste("binomial: y", y[i], "eta", eta[i]))
+  }
+  y2 <- y[eta == 2]
+  expect_equal(vapply(y2, dev_c, numeric(1), eta = 2, fam = 0L),
+               binomial()$dev.resids(y2, rep(plogis(2), 4), rep(1, 4)),
+               tolerance = 1e-12)
+  # Poisson: in double precision, exp() is 0 for eta -800 (reference by hand,
+  # with log(mu) = eta and mu = 0):
+  y <- c(0, 0.5, 3)
+  expect_rel(dev_c(y, rep(-800, 3), 1L), 2 * sum(xlogx(y) + 800 * y - y),
+             info = "poisson: eta -800")
+  expect_equal(dev_c(y, rep(1, 3), 1L),
+               sum(poisson()$dev.resids(y, rep(exp(1), 3), rep(1, 3))),
+               tolerance = 1e-12)
+  # Near the optimum, the terms of each observation nearly cancel.  The
+  # deviance keeps its relative accuracy only if each observation adds its
+  # terms before the sum:
+  withr::local_seed(1)
+  n <- 1e4
+  y <- rpois(n, 1000)
+  eta <- log(y) + rnorm(n, sd = 0.02)
+  expect_equal(dev_c(y, eta, 1L),
+               sum(poisson()$dev.resids(y, exp(eta), rep(1, n))),
+               tolerance = 1e-12)
+  eta <- rnorm(n, sd = 2)
+  y <- plogis(eta + rnorm(n, sd = 0.01))
+  expect_equal(dev_c(y, eta, 0L),
+               sum(binomial()$dev.resids(y, plogis(eta), rep(1, n))),
+               tolerance = 1e-11)
+})
+
+test_that(paste(
   "mlvl_laplace() gives the glmer() fit for integer binomial and Poisson",
   "responses"
 ), {
