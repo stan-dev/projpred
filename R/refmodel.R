@@ -957,7 +957,9 @@ get_refmodel.stanreg <- function(object, latent = FALSE, dis = NULL,
   }
 
   stopifnot(inherits(formula, "formula"))
-  formula <- expand_formula(formula, data)
+  # Expand `.` with the columns of the fit data, not with the internal
+  # columns for the weights and offsets:
+  formula <- expand_formula(formula, object$data)
   response_name <- extract_terms_response(formula)$response
   if (length(response_name) == 2) {
     if (family$family != "binomial") {
