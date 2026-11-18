@@ -161,13 +161,19 @@ test_that(paste(
   dat <- data.frame(x = rnorm(n), g = factor(rep(paste0("g", 1:5), 8)),
                     xc = factor(c(rep(c("a", "b"), length.out = n - 1), "r")))
   # Group-level intercepts and slopes of `xc`, so that the fits of
-  # `(1 + xc | g)` are not singular. For a singular fit, gamm4's getVb() can
-  # stop with "D[i,i] is negative" (in mgcv::mchol()), depending on the
-  # platform:
+  # `(1 + xc | g)` are not singular. For a singular fit, getVb() of gamm4 can
+  # stop with "D[i,i] is negative" (in mgcv::mchol()) on some platforms.
   b0 <- rnorm(5, sd = 1.5)
   b1 <- rnorm(5, sd = 1.5)
   eta <- dat$x + b0[dat$g] + b1[dat$g] * (dat$xc == "b")
   for (s in 1:2) dat[[paste0(".y.", s)]] <- eta + rnorm(n)
+  dat_fit <- droplevels(dat[-n, ])
+  for (s in 1:2) {
+    dat_fit$y <- dat_fit[[paste0(".y.", s)]]
+    expect_false(lme4::isSingular(suppressMessages(
+      lme4::lmer(y ~ x + (1 + xc | g), data = dat_fit)
+    )), info = paste("draw", s))
+  }
   # Observation n is the only one with level "r", and it has weight 0:
   wobs <- c(rep(1, n - 1), 0)
   dat_ref <- dat
