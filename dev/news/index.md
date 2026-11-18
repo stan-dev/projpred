@@ -205,6 +205,11 @@
 - **loo** \>= 2.10.1, **posterior** \>= 1.7.0 and **gamm4** \>= 0.3-0
   are now required, and **gtools** is no longer needed. (GitHub:
   [\#605](https://github.com/stan-dev/projpred/issues/605))
+- The warning about the projection onto the full Gaussian (or latent)
+  multilevel model now says that the projected group-level SD is too
+  small. It also gives the approximate factor. (GitHub:
+  [\#323](https://github.com/stan-dev/projpred/issues/323),
+  [\#653](https://github.com/stan-dev/projpred/issues/653))
 - [`get_refmodel.stanreg()`](https://mc-stan.org/projpred/dev/reference/refmodel-init-get.md)
   has new arguments `cvfun` and `cvrefbuilder` for K-fold CV. For
   example, a custom `cvrefbuilder` lets custom latent-projection
