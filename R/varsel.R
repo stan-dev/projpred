@@ -683,6 +683,21 @@ parse_args_varsel <- function(refmodel, method, refit_prj, nterms_max,
     stop("Unexpected value for argument `method`.")
   }
 
+  if (!is.null(search_screen)) {
+    if (!is.numeric(search_screen) || length(search_screen) != 1 ||
+        !is.finite(search_screen) || search_screen < 1 ||
+        search_screen > .Machine$integer.max ||
+        search_screen != round(search_screen)) {
+      stop("Argument `search_screen` must be `NULL` or a single positive ",
+           "integer.")
+    }
+    search_screen <- as.integer(search_screen)
+    if (method != "forward") {
+      message("Argument `search_screen` only takes effect if ",
+              "`method = \"forward\"`.")
+    }
+  }
+
   stopifnot(!is.null(refit_prj))
   if (refit_prj && inherits(refmodel, "datafit")) {
     warning("For an `object` of class `datafit`, `refit_prj` is automatically ",
@@ -734,21 +749,6 @@ parse_args_varsel <- function(refmodel, method, refit_prj, nterms_max,
   }
 
   verbose <- as.integer(verbose)
-
-  if (!is.null(search_screen)) {
-    if (!is.numeric(search_screen) || length(search_screen) != 1 ||
-        !is.finite(search_screen) || search_screen < 1 ||
-        search_screen > .Machine$integer.max ||
-        search_screen != round(search_screen)) {
-      stop("Argument `search_screen` must be `NULL` or a single positive ",
-           "integer.")
-    }
-    search_screen <- as.integer(search_screen)
-    if (method != "forward") {
-      message("Argument `search_screen` only takes effect if ",
-              "`method = \"forward\"`.")
-    }
-  }
 
   return(nlist(method, refit_prj, nterms_max, nclusters, search_terms,
                search_terms_was_null, nterms_all, verbose,
