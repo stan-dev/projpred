@@ -1121,6 +1121,9 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
                         ...) {
       # Observation index:
       i <- inds[run_index]
+      # In the parallel case, `refmodel` has no copies of `mu` in `mu_offs`
+      # and `eta` (see refmodel_for_folds()):
+      refmodel_full <- refmodel_restore_draws(refmodel)
 
       # For (extra-)verbose mode:
       vtxt_obs_i <- paste0(
@@ -1139,9 +1142,6 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
       # projection)).  As in K-fold CV, the left-out observation is not used
       # in the projections of its fold; it is used only for the evaluation
       # (via `refmodel_fulldata`):
-      # The parallel workers get the reference model with `mu` once (see
-      # refmodel_for_folds()):
-      refmodel_full <- refmodel_restore_draws(refmodel)
       refmodel_fold <- refmodel_full
       refmodel_fold$wobs[i] <- 0
       perturb_failed <- FALSE
@@ -1530,8 +1530,8 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws, nclusters,
                        k,
                        verbose_fold = max(verbose - 1L, 0L),
                        ...) {
-    # The parallel workers get the reference models with `mu` once (see
-    # refmodel_for_folds()):
+    # In the parallel case, `refmodel` and `fold$refmodel` have no copies of
+    # `mu` in `mu_offs` and `eta` (see refmodel_for_folds()):
     refmodel_full <- refmodel_restore_draws(refmodel)
     fold$refmodel <- refmodel_restore_draws(fold$refmodel)
     # For (extra-)verbose mode:

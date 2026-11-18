@@ -320,6 +320,13 @@ test_that("a parallel run without workers warns and runs in this R session", {
   expect_identical(ranking(cvvs)[["foldwise"]],
                    ranking(cvvs_seq)[["foldwise"]])
   expect_equal(cvvs$summaries, cvvs_seq$summaries)
+  # The same for K-fold CV (the parallel folds get the reference models
+  # without the copies of `mu`, see refmodel_for_folds()):
+  cvvs_k <- cvvs_par(tstsetup_ref, "kfold", parallel = TRUE)
+  cvvs_k_seq <- cvvs_par(tstsetup_ref, "kfold", parallel = FALSE)
+  expect_identical(ranking(cvvs_k)[["foldwise"]],
+                   ranking(cvvs_k_seq)[["foldwise"]])
+  expect_equal(cvvs_k$summaries, cvvs_k_seq$summaries)
   # The loops over the projected draws warn only once per R session:
   par_state <- get("par_state", envir = asNamespace("projpred"))
   warned_old <- par_state$warned
@@ -682,7 +689,8 @@ test_that(paste(
 ), {
   n <- 30L
   S <- 20L
-  dat <- data.frame(x = sin(seq_len(n)), y = as.integer(sin(3 * seq_len(n)) > 0))
+  dat <- data.frame(x = sin(seq_len(n)),
+                    y = as.integer(sin(3 * seq_len(n)) > 0))
   fit <- list(beta = rbind(seq(-0.5, 0.5, length.out = S),
                            seq(0.2, 1, length.out = S)), data = dat)
   ref_predfun <- function(fit, newdata = NULL) {
@@ -702,16 +710,17 @@ test_that(paste(
       fit, data = dat, formula = y ~ x, family = cs$fam,
       ref_predfun = ref_predfun, dis = cs$dis
     ))
-    refm_s <- refmodel_drop_dup_draws(refm)
+    refm_s <- projpred:::refmodel_drop_dup_draws(refm)
     expect_identical(refm_s$draws_same_as_mu, cs$dropped, info = nm)
     for (el in cs$dropped) {
       expect_null(refm_s[[el]], info = paste(nm, el))
     }
     expect_lt(length(serialize(refm_s, NULL)), length(serialize(refm, NULL)),
               label = nm)
-    expect_identical(refmodel_restore_draws(refm_s), refm, info = nm)
+    expect_identical(projpred:::refmodel_restore_draws(refm_s), refm,
+                     info = nm)
     # A reference model without removed elements stays as it is:
-    expect_identical(refmodel_restore_draws(refm), refm, info = nm)
+    expect_identical(projpred:::refmodel_restore_draws(refm), refm, info = nm)
   }
 })
 
@@ -894,8 +903,14 @@ test_that(paste(
   for (tstsetup in names(refmods)) {
     refm <- refmods[[tstsetup]]
     refm_f <- projpred:::refmodel_for_folds(refm)
-    # The fold functions restore the copies of `mu` (see
+    # The copy has no copies of `mu` (also on the path for the latent and the
+    # augmented-data projection), and the fold functions restore them (see
     # refmodel_drop_dup_draws()):
+    expect_false(identical(refm_f$mu_offs, refm_f$mu), info = tstsetup)
+    expect_false(identical(refm_f$eta, refm_f$mu), info = tstsetup)
+    if (all(refm$offset == 0)) {
+      expect_true("mu_offs" %in% refm_f$draws_same_as_mu, info = tstsetup)
+    }
     refm_r <- projpred:::refmodel_restore_draws(refm_f)
     els <- c("mu", "eta", "mu_offs")
     expect_identical(refm_r[els], refm[els], info = tstsetup)
