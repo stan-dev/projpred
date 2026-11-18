@@ -446,6 +446,12 @@
   `cbind(y, n - y)`. (GitHub:
   [\#148](https://github.com/stan-dev/projpred/issues/148),
   [\#634](https://github.com/stan-dev/projpred/issues/634))
+- Fixed errors in
+  [`cv_varsel()`](https://mc-stan.org/projpred/dev/reference/cv_varsel.md)
+  with `cv_method = "LOO"` and `validate_search = TRUE` if a factor is
+  only in a group-level term of a submodel (as with `search_terms`) and
+  a level of it occurs only in the left-out observation. (GitHub:
+  [\#635](https://github.com/stan-dev/projpred/issues/635))
 - Fixed the error “length of ‘dimnames’ \[1\] not equal to array extent”
   in the predictions of multilevel
   [`brms::categorical()`](https://paulbuerkner.com/brms/reference/brmsfamily.html)
