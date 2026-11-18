@@ -101,9 +101,12 @@ weighted_summary_means <- function(y_wobs_test, data_aux_test, family, wdraws,
 # plot.vsel()'s `deltas = "mixed"` case. In that case, `nfeat_baseline_diff`
 # gives the size of the baseline model analogously to `nfeat_baseline` (in
 # particular, `nfeat_baseline_diff = Inf` designates the reference model).
+# `warn_negvar = FALSE` turns off the warning about negative variance estimates
+# from subsampled LOO-CV (for internal calls whose table the user does not see).
 .tabulate_stats <- function(varsel, stats, alpha = 0.05,
                             nfeat_baseline = NULL, nfeat_baseline_diff = NULL,
-                            resp_oscale = TRUE, custom_stats = list(), ...) {
+                            resp_oscale = TRUE, custom_stats = list(),
+                            warn_negvar = TRUE, ...) {
   stat_tab <- data.frame()
   summaries_ref <- varsel$summaries$ref
   summaries_sub <- varsel$summaries$sub
@@ -263,7 +266,11 @@ weighted_summary_means <- function(y_wobs_test, data_aux_test, family, wdraws,
     }
   }
 
-  for (s in seq_along(stats)) {
+  # Collect the warnings about negative variance estimates (subsampled LOO-CV)
+  # as "<column> (size <k>)" and give one warning at the end:
+  negvar <- character()
+  negvar_where <- ""
+  withCallingHandlers(for (s in seq_along(stats)) {
     stat <- stats[s]
 
     ## reference model statistics
@@ -282,6 +289,7 @@ weighted_summary_means <- function(y_wobs_test, data_aux_test, family, wdraws,
 
     ## submodel statistics
     for (k in seq_along(summaries_sub)) {
+      negvar_where <- paste0("`", stat, "` (size ", k - 1, ")")
       res <- get_stat(summaries = summaries_sub[[k]],
                       summaries_baseline = summaries_baseline,
                       summaries_fast = summaries_fast_sub[[k]],
@@ -291,6 +299,7 @@ weighted_summary_means <- function(y_wobs_test, data_aux_test, family, wdraws,
       # TODO: If `!is.null(nfeat_baseline) && nfeat_baseline == Inf` and
       # `is.null(nfeat_baseline_diff)`, we should be able to set `diff <- res`
       # and hence avoid a second call to get_stat().
+      negvar_where <- paste0("`", stat, ".diff` (size ", k - 1, ")")
       diff <- get_stat(summaries = summaries_sub[[k]],
                        summaries_baseline = summaries_baseline_diff,
                        summaries_fast = summaries_fast_sub[[k]],
@@ -304,6 +313,16 @@ weighted_summary_means <- function(y_wobs_test, data_aux_test, family, wdraws,
       )
       stat_tab <- rbind(stat_tab, row)
     }
+  }, projpred_negvar = function(w) {
+    negvar <<- c(negvar, negvar_where)
+    invokeRestart("muffleWarning")
+  })
+  if (warn_negvar && length(negvar) > 0) {
+    warning("Subsampled LOO-CV gave a negative variance estimate for ",
+            paste(unique(negvar), collapse = ", "), ". The standard error ",
+            "of these estimates was set to 0, so their uncertainty interval ",
+            "has zero width. A larger `nloo` in cv_varsel() makes negative ",
+            "variance estimates less likely.", call. = FALSE)
   }
 
   return(stat_tab)
@@ -400,6 +419,7 @@ get_stat <- function(summaries, summaries_baseline = NULL,
     }
     # store for later calculations
     mse_e <- value
+    var_mse_e <- value_se^2
     if (!is.null(summaries_baseline)) {
       # delta=TRUE, variance of difference of two normally distributed
       # quantities (log-normally in case of MSE and RMSE, although the central
@@ -422,7 +442,14 @@ get_stat <- function(summaries, summaries_baseline = NULL,
                               ((mu_baseline - y)^2 - mse_b)) / (n_full - 1)
       }
       if (stat != "rmse") {
-        value_se <- sqrt_cut0(value_se^2 - 2 * cov_mse_e_b + var_mse_b)
+        var_mse_e <- var_mse_e - 2 * cov_mse_e_b + var_mse_b
+        # With subsampled LOO-CV, `var_mse_e` can be negative. For R2, only the
+        # final variance (below) is checked then.
+        if (stat == "mse" || n_loo == n_full) {
+          value_se <- sqrt_cut0(var_mse_e, neg_to_zero = n_loo < n_full,
+                                stat = stat)
+          var_mse_e <- value_se^2
+        }
       }
     }
     if (stat == "mse") {
@@ -436,7 +463,8 @@ get_stat <- function(summaries, summaries_baseline = NULL,
       } else {
         value_se <- sqrt_cut0((value_se^2 / mse_e -
                                  2 * cov_mse_e_b / sqrt(mse_e * mse_b) +
-                                 var_mse_b / mse_b) / 4)
+                                 var_mse_b / mse_b) / 4,
+                              neg_to_zero = n_loo < n_full, stat = stat)
       }
     } else if (stat == "R2") {
       y_mean_w <- mean(wobs * y)
@@ -483,9 +511,10 @@ get_stat <- function(summaries, summaries_baseline = NULL,
         # delta=TRUE
         mse_e <- mse_e - mse_b
       }
-      value_se <- sqrt_cut0((value_se^2 -
+      value_se <- sqrt_cut0((var_mse_e -
                                2 * mse_e / mse_y * cov_mse_e_y +
-                               (mse_e / mse_y)^2 * var_mse_y) / mse_y^2)
+                               (mse_e / mse_y)^2 * var_mse_y) / mse_y^2,
+                            neg_to_zero = n_loo < n_full, stat = stat)
     }
   } else if (stat %in% c("acc", "pctcorr", "auc")) {
     y <- y_wobs_test$y
@@ -630,6 +659,15 @@ get_stat <- function(summaries, summaries_baseline = NULL,
     # Go back to linear scale
     lq <- exp(lq)
     uq <- exp(uq)
+  } else if (stat %in% c("acc", "pctcorr") && is.null(summaries_baseline) &&
+             isTRUE(value > 0 && value < 1)) {
+    # Normal approximation on the logit scale, with the standard error from the
+    # delta method. An estimate of 0 or 1 (or outside of (0, 1) with subsampled
+    # LOO-CV) uses the normal approximation below.
+    sd_logit <- value_se / (value * (1 - value))
+    lq <- plogis(qnorm(alpha_half, mean = qlogis(value), sd = sd_logit))
+    uq <- plogis(qnorm(one_minus_alpha_half, mean = qlogis(value),
+                       sd = sd_logit))
   } else if (stat %in% c("auc")) {
     lq <- lq_uq[1]
     uq <- lq_uq[2]
@@ -667,7 +705,7 @@ get_nfeat_baseline <- function(object, baseline, stat, custom_stats = list(),
     ## find number of features that maximizes the utility (or minimizes the
     ## loss)
     tab <- .tabulate_stats(object, stat, B = 2, custom_stats = custom_stats,
-                           ...)
+                           warn_negvar = FALSE, ...)
     stats_table <- subset(tab, tab$size != Inf)
     ## tab <- .tabulate_stats(object, B = 2, ...)
     ## stats_table <- subset(tab, tab$delta == FALSE &

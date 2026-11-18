@@ -35,25 +35,48 @@ fml_ls <- as.formula(paste0(
 divmin_ls <- function(shared) {
   opts_old <- options(projpred.lmer_shared = shared)
   on.exit(options(opts_old))
-  suppressWarnings(divmin(
-    formula = fml_ls, data = dat_ls, family = extend_family(gaussian()),
-    weights = wts_ls, projpred_var = matrix(NA, n_ls, n_draws_ls),
-    projpred_ws_aug = matrix(NA, n_ls, n_draws_ls), verbose_divmin = FALSE
-  ))
+  divmin_call <- function() {
+    suppressWarnings(divmin(
+      formula = fml_ls, data = dat_ls, family = extend_family(gaussian()),
+      weights = wts_ls, projpred_var = matrix(NA, n_ls, n_draws_ls),
+      projpred_ws_aug = matrix(NA, n_ls, n_draws_ls), verbose_divmin = FALSE
+    ))
+  }
+  if (!shared) {
+    return(divmin_call())
+  }
+  # The shared fits must not fall back to draw-wise fits:
+  with_mocked_bindings(
+    divmin_call(),
+    fit_glmer_callback = function(...) stop("draw-wise fallback")
+  )
 }
 
+# New data with new levels of `g` and `h`, so that the predictions of the
+# lmer() fits use predict.merMod() and the model frame of the fit:
+idx_new_ls <- seq_len(6)
+dat_new_ls <- data.frame(x1 = cos(idx_new_ls), x2 = sin(2 * idx_new_ls),
+                         f = factor(c("a", "b", "c", "a", "b", "c")),
+                         g = factor(c("g1", "g2", "g3", "g_new", "g5", "g6")),
+                         h = factor(c("h0", "h1", "h_new", "h3", "h4", "h0")))
+
 test_that("divmin() gives the same lmer() fits with and without sharing", {
+  skip_if_not(lme4_new_ls, paste("lme4 is older than", lmer_shared_lme4_min))
   fits_shared <- divmin_ls(TRUE)
   fits_drawwise <- divmin_ls(FALSE)
   expect_length(fits_shared, n_draws_ls)
   for (s in seq_len(n_draws_ls)) {
+    info_s <- paste("draw", s)
     expect_s4_class(fits_shared[[s]], "lmerMod")
     expect_equal(fits_shared[[s]], fits_drawwise[[s]], tolerance = 0,
-                 info = s)
+                 info = info_s)
     expect_identical(lme4::getME(fits_shared[[s]], "theta"),
-                     lme4::getME(fits_drawwise[[s]], "theta"), info = s)
+                     lme4::getME(fits_drawwise[[s]], "theta"), info = info_s)
     expect_identical(formula(fits_shared[[s]]),
-                     formula(fits_drawwise[[s]]), info = s)
+                     formula(fits_drawwise[[s]]), info = info_s)
+    # all.equal() does not compare these attributes:
+    expect_identical(lmer_frame_attrs(fits_shared[[s]]),
+                     lmer_frame_attrs(fits_drawwise[[s]]), info = info_s)
   }
 })
 
@@ -61,17 +84,89 @@ test_that(paste(
   "divmin() gives the same lmer() fits with and without sharing if an",
   "observation has weight 0"
 ), {
+  skip_if_not(lme4_new_ls, paste("lme4 is older than", lmer_shared_lme4_min))
   wts_bu <- wts_ls
   on.exit(wts_ls <<- wts_bu)
   wts_ls <<- replace(wts_ls, 1, 0)
   fits_shared <- divmin_ls(TRUE)
   fits_drawwise <- divmin_ls(FALSE)
   for (s in seq_len(n_draws_ls)) {
+    info_s <- paste("draw", s)
     expect_equal(fits_shared[[s]], fits_drawwise[[s]], tolerance = 0,
-                 info = s)
+                 info = info_s)
     expect_identical(lme4::getME(fits_shared[[s]], "theta"),
-                     lme4::getME(fits_drawwise[[s]], "theta"), info = s)
+                     lme4::getME(fits_drawwise[[s]], "theta"), info = info_s)
+    expect_identical(lmer_frame_attrs(fits_shared[[s]]),
+                     lmer_frame_attrs(fits_drawwise[[s]]), info = info_s)
   }
+})
+
+test_that(paste(
+  "lmer() fits with and without sharing give the same predictions for new",
+  "data"
+), {
+  skip_if_not(lme4_new_ls, paste("lme4 is older than", lmer_shared_lme4_min))
+  fits_shared <- divmin_ls(TRUE)
+  fits_drawwise <- divmin_ls(FALSE)
+  for (s in seq_len(n_draws_ls)) {
+    info_s <- paste("draw", s)
+    expect_identical(names(model.frame(fits_shared[[s]], fixed.only = TRUE)),
+                     names(model.frame(fits_drawwise[[s]], fixed.only = TRUE)),
+                     info = info_s)
+    expect_equal(
+      predict(fits_shared[[s]], newdata = dat_new_ls,
+              allow.new.levels = TRUE),
+      predict(fits_drawwise[[s]], newdata = dat_new_ls,
+              allow.new.levels = TRUE),
+      tolerance = 0, info = info_s
+    )
+  }
+})
+
+test_that(paste(
+  "proj_linpred() gives the same predictions for new data with and without",
+  "sharing the lmer() setup"
+), {
+  skip_if_not(lme4_new_ls, paste("lme4 is older than", lmer_shared_lme4_min))
+  dat_ref <- dat_ls[c("x1", "x2", "f", "g", "h")]
+  dat_ref$y <- dat_ls$.y.1
+  nobs_ref <- nrow(dat_ref)
+  # A custom reference model with 5 draws and a fixed dispersion parameter:
+  mu_ref <- sapply(seq_len(5), function(s) {
+    dat_ref$y + 0.1 * s * sin(s * seq_len(nobs_ref))
+  })
+  fit_ref <- list(mu = mu_ref)
+  refm <- suppressWarnings(init_refmodel(
+    fit_ref, data = dat_ref,
+    formula = y ~ x1 + x2 + f + (1 | g) + (1 | h), family = gaussian(),
+    ref_predfun = function(fit, newdata = NULL) {
+      if (!is.null(newdata)) stop("unexpected call with newdata")
+      fit$mu
+    },
+    dis = rep(0.5, 5)
+  ))
+  pl <- lapply(c(shared = TRUE, drawwise = FALSE), function(shared) {
+    opts_old <- options(projpred.lmer_shared = shared)
+    on.exit(options(opts_old))
+    project_call <- function() {
+      suppressWarnings(project(
+        refm, predictor_terms = c("x1", "x2", "f", "(1 | g)", "(1 | h)"),
+        ndraws = 5, verbose = 0
+      ))
+    }
+    if (shared) {
+      # The shared fits must not fall back to draw-wise fits:
+      prj <- with_mocked_bindings(
+        project_call(),
+        fit_glmer_callback = function(...) stop("draw-wise fallback")
+      )
+    } else {
+      prj <- project_call()
+    }
+    set.seed(5867)
+    proj_linpred(prj, newdata = dat_new_ls)$pred
+  })
+  expect_equal(pl$shared, pl$drawwise, tolerance = 0)
 })
 
 test_that("lmer_shared_callback() returns `NULL` for other cases", {
