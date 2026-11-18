@@ -75,17 +75,33 @@
 #'     projection in case of the [binomial()] or [brms::bernoulli()] family):
 #'     [lme4::lmer()] (the returned object inherits from class `lmerMod`) for
 #'     the [gaussian()] family, [lme4::glmer()] (the returned object inherits
-#'     from class `glmerMod`) for all other families. For [lme4::glmer()],
+#'     from class `glmerMod`) for all other families. Exception: for the
+#'     [binomial()] family with the logit link and the [poisson()] family with
+#'     the log link, if all group-level terms are random intercepts
+#'     `(1 | <group>)`, \pkg{projpred} uses its own fit (the returned object
+#'     inherits from class `projpred_mlvl`). This fit minimizes the Laplace
+#'     approximation of [lme4::glmer()] (with `nAGQ = 1`), without rounding
+#'     non-integer responses. \pkg{projpred} uses [lme4::glmer()] instead if
+#'     the fit does not converge, if the submodel has an offset, a
+#'     rank-deficient model matrix or more than 500 group levels in total, if
+#'     `...` contains arguments of
+#'     [lme4::glmer()] (for example `control` or `nAGQ`), or if global option
+#'     `projpred.mlvl_laplace` is `FALSE`. After a fit that does not converge,
+#'     the [lme4::glmer()] fit is returned as class `projpred_mlvl`, too.
+#'     [as_glmerMod()] converts an object of class `projpred_mlvl` to class
+#'     `glmerMod`. For [lme4::glmer()],
 #'     \pkg{projpred} uses `control = lme4::glmerControl(optimizer = "bobyqa")`,
 #'     so both optimization stages use BOBYQA. A `control` argument in `...`
 #'     replaces this default in the first fit. After some \pkg{lme4} errors,
 #'     \pkg{projpred} refits with its own settings and ignores this `control`.
-#'     For the [binomial()] family, \pkg{lme4} versions before 2.1-1 round
-#'     non-integer responses and weights in the objective of [lme4::glmer()]
-#'     with `nAGQ >= 1`. With these \pkg{lme4} versions, \pkg{projpred} uses
-#'     `nAGQ = 0` for such submodels unless `nAGQ` is set via `...`. Then the
-#'     fixed effects and the group-level effects do not depend on the rounded
-#'     objective; the group-level standard deviations still do.
+#'     For [lme4::glmer()] fits of the [binomial()] family (also the fit after
+#'     an own fit that does not converge), \pkg{lme4} versions before 2.1-1
+#'     round non-integer responses and weights in the objective of
+#'     [lme4::glmer()] with `nAGQ >= 1`. With these \pkg{lme4} versions,
+#'     \pkg{projpred} uses `nAGQ = 0` for such submodels unless `nAGQ` is set
+#'     via `...`. Then the fixed effects and the group-level effects do not
+#'     depend on the rounded objective; the group-level standard deviations
+#'     still do.
 #'     + For the augmented-data projection: [ordinal::clmm()] (the returned
 #'     object inherits from class `clmm`) for the [brms::cumulative()] family,
 #'     [mclogit::mblogit()] (the returned object inherits from class `mmblogit`)

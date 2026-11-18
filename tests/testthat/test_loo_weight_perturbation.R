@@ -408,7 +408,7 @@ test_that("weight perturbation gives the same result in parallel", {
   skip_on_cran()
   skip_on_os("windows")
   skip_if_not_installed("future")
-  skip_if_not(future::supportsMulticore())
+  skip_if_not(parallelly::supportsMulticore())
   r <- cre_ref_wp()
   cvvs <- run_cv_wp(r$ref)
   # Forked workers use the projpred of this R session:

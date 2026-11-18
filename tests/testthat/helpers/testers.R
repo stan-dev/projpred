@@ -743,6 +743,7 @@ outdmin_tester_trad <- function(
     augdat_cats = NULL,
     allow_w_zero = FALSE,
     check_y_from_resp = TRUE,
+    uses_nagq = FALSE,
     seq_extensive_tests = seq_extensive_tests,
     nobsv = nobsv,
     info_str
@@ -903,9 +904,21 @@ outdmin_tester_trad <- function(
       }
     }
   } else if (has_grp && !has_add) {
+    # projpred's own Laplace fit (see mlvl_laplace()) for binomial and Poisson
+    # submodels with random intercepts only and without offsets (and without
+    # lme4::glmer() arguments such as `nAGQ`):
+    is_mlvl <- sub_fam %in% c("binomial", "poisson") && !with_offs &&
+      !uses_nagq && getOption("projpred.mlvl_laplace", TRUE) &&
+      !getOption("projpred.PQL", FALSE) &&
+      !is.null(mlvl_laplace_grps(sub_formul[[1]]))
     if (sub_fam == "gaussian") {
       for (j in seq_along(outdmin_totest)) {
         expect_s4_class(outdmin_totest[[!!j]], "lmerMod")
+      }
+    } else if (is_mlvl) {
+      for (j in seq_along(outdmin_totest)) {
+        expect_true(inherits(outdmin_totest[[!!j]], "projpred_mlvl"),
+                    info = info_str)
       }
     } else {
       for (j in seq_along(outdmin_totest)) {
@@ -935,6 +948,49 @@ outdmin_tester_trad <- function(
     ))
     mm_expected <- model.matrix(sub_formul_for_mm, data = sub_mf_expected)
     attr(mm_expected, "msgScaleX") <- character()
+
+    if (is_mlvl) {
+      grps_expected <- mlvl_laplace_grps(sub_formul[[1]])
+      for (j in seq_extensive_tests) {
+        expect_equal(formula(outdmin_totest[[!!j]]),
+                     flatten_formula(sub_formul[[j]]), info = info_str)
+        expect_identical(names(outdmin_totest[[!!j]]$coefficients),
+                         colnames(mm_expected), info = info_str)
+        expect_true(all(is.finite(outdmin_totest[[!!j]]$coefficients)),
+                    info = info_str)
+        expect_setequal(names(outdmin_totest[[!!j]]$sd), grps_expected)
+        expect_true(all(outdmin_totest[[!!j]]$sd >= 0), info = info_str)
+        for (g in grps_expected) {
+          expect_identical(
+            names(outdmin_totest[[!!j]]$ranef[[!!g]]),
+            levels(droplevels(as.factor(sub_data[[!!g]]))),
+            info = info_str
+          )
+        }
+        expect_identical(outdmin_totest[[!!j]]$convergence, 0L,
+                         info = info_str)
+      }
+      # The fixed effects of lme4::glmer() for the first of these draws (lme4
+      # >= 2.1-1 does not round non-integer responses):
+      j1 <- seq_extensive_tests[1]
+      if (utils::packageVersion("lme4") >= "2.1.1" && is.null(augdat_cats)) {
+        dat_j1 <- sub_data
+        dat_j1$.w_tst <- if (is.null(wobs_expected)) {
+          rep(1, nrow(sub_data))
+        } else if (is.matrix(wobs_expected)) {
+          wobs_expected[, j1]
+        } else {
+          wobs_expected
+        }
+        fit_g <- suppressWarnings(suppressMessages(lme4::glmer(
+          sub_formul[[j1]], data = dat_j1, family = get(sub_fam)(),
+          weights = .w_tst, control = lme4::glmerControl(optimizer = "bobyqa")
+        )))
+        expect_equal(outdmin_totest[[j1]]$coefficients, lme4::fixef(fit_g),
+                     tolerance = 1e-2, info = info_str)
+      }
+      return(invisible(TRUE))
+    }
 
     for (j in seq_extensive_tests) {
       # formula
@@ -1408,6 +1464,9 @@ outdmin_tester_aug <- function(
 #   weights are allowed to have a value of zero (`TRUE`) or not (`FALSE`).
 # @param check_y_from_resp A single logical value indicating whether to check
 #   elements `outdmin_totest[[j]]@resp$y` for GLMMs (`TRUE`) or not (`FALSE`).
+# @param uses_nagq A single logical value indicating whether the divergence
+#   minimizer got argument `nAGQ` (then binomial and Poisson multilevel
+#   submodels are fitted by lme4::glmer(), not by mlvl_laplace()).
 # @param info_str A single character string giving information to be printed in
 #   case of failure.
 #
@@ -1426,6 +1485,7 @@ outdmin_tester <- function(
     augdat_cats = NULL,
     allow_w_zero = FALSE,
     check_y_from_resp = TRUE,
+    uses_nagq = FALSE,
     info_str
 ) {
   expect_type(outdmin_totest, "list")
@@ -1476,6 +1536,7 @@ outdmin_tester <- function(
       augdat_cats = augdat_cats,
       allow_w_zero = allow_w_zero,
       check_y_from_resp = check_y_from_resp,
+      uses_nagq = uses_nagq,
       seq_extensive_tests = seq_extensive_tests,
       nobsv = nobsv,
       info_str = info_str
@@ -1595,6 +1656,7 @@ refdist_tester <- function(refd,
 # @param from_vsel_L1_search A single logical value indicating whether `p` uses
 #   the L1 `search_path` of an object of class `vsel` for extracting the
 #   subfit(s) (`TRUE`) or not (`FALSE`).
+# @param uses_nagq Passed to outdmin_tester().
 # @param info_str A single character string giving information to be printed in
 #   case of failure.
 #
@@ -1607,6 +1669,7 @@ projection_tester <- function(p,
                               seed_expected = seed_tst,
                               prjdraw_weights_expected = NULL,
                               from_vsel_L1_search = FALSE,
+                              uses_nagq = FALSE,
                               info_str = "") {
   expect_s3_class(p, "projection")
   expect_type(p, "list")
@@ -1732,6 +1795,7 @@ projection_tester <- function(p,
                  wobs_expected = wobs_expected_crr,
                  prd_trms_vsel_L1_search = prd_trms_vsel_L1_search_crr,
                  augdat_cats = augdat_cats_crr,
+                 uses_nagq = uses_nagq,
                  info_str = info_str)
 
   # dis

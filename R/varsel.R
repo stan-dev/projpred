@@ -194,6 +194,25 @@
 #'   specify `search_terms = c("x2", "x3", "x2 + x3")` (or, in a simpler way
 #'   that leads to the same results, `search_terms = c("x2", "x3")`).
 #'
+#'   The elements of `search_terms` are not exclusive alternatives. A
+#'   candidate model consists of the `chosen` predictor terms and the terms of
+#'   one element, so terms from different elements can be in the same
+#'   submodel. For smooth terms, additional rules apply (see argument
+#'   `search_terms`). For example, consider a reference model with formula `y ~
+#'   x1 + x2 + x3 + x4` and `search_terms = c("x1 + x2", "x1 + x3", "x1 + x2 +
+#'   x4")`. After `y ~ 1`, the candidates are `y ~ x1 + x2` and `y ~ x1 +
+#'   x3`. If the search selects `x1 + x3`, the only candidate in the next step
+#'   is `y ~ x1 + x3 + x2`. This candidate comes from element `"x1 + x2"`,
+#'   because `x1` is already chosen. The only candidate in the step after that
+#'   is `y ~ x1 + x3 + x2 + x4` (from element `"x1 + x2 + x4"`). The predictor
+#'   ranking is then `x1 + x3`, `x2`, `x4`. If the search selects `x1 + x2`
+#'   instead, the candidates in the next step are `y ~ x1 + x2 + x3` and
+#'   `y ~ x1 + x2 + x4`, so `x3` is still possible. Thus, a search that
+#'   selects either `x1 + x2 + x4` or `x1 + x3` (but not terms of both) is not
+#'   possible with one `search_terms` vector. For this, run one search for each
+#'   set of terms, for example with `search_terms = c("x1 + x2", "x1 + x2 +
+#'   x4")` and with `search_terms = "x1 + x3"`.
+#'
 #' @return An object of class `vsel`. The elements of this object are not meant
 #'   to be accessed directly but instead via helper functions (see the main
 #'   vignette and [projpred-package]).
@@ -678,13 +697,11 @@ parse_args_varsel <- function(refmodel, method, refit_prj, nterms_max,
       getOption("projpred.warn_instable_projections", TRUE) &&
       (refmodel$family$family == "gaussian" || refmodel$family$for_latent)) {
     warning(
-      "In case of the Gaussian family (also in case of the latent projection) ",
-      "and multilevel terms, the projection onto the full model can be ",
-      "instable and even lead to an error, see GitHub issue #323. If you ",
-      "experience this and may refrain from the projection onto the full ",
-      "model, set `nterms_max` to the size of the submodel with all search ",
-      "terms minus 1 (here: ", nterms_all - 1L, "; possibly accounting for ",
-      "submodel sizes skipped by custom `search_terms`)."
+      warn_instable_full_text(), " If you experience these problems and may ",
+      "refrain from the projection onto the full model, set `nterms_max` to ",
+      "the size of the submodel with all search terms minus 1 (here: ",
+      nterms_all - 1L, "; possibly accounting for submodel sizes skipped by ",
+      "custom `search_terms`)."
     )
   }
 
@@ -692,4 +709,25 @@ parse_args_varsel <- function(refmodel, method, refit_prj, nterms_max,
 
   return(nlist(method, refit_prj, nterms_max, nclusters, search_terms,
                search_terms_was_null, nterms_all, verbose))
+}
+
+# The text of the warning about the projection onto the full Gaussian (or
+# latent) multilevel model, used by varsel(), cv_varsel() and project(). If the
+# submodel has all terms of the reference model, it can reproduce the reference
+# model prediction of each projected draw or cluster. Then the residual SD of
+# the lme4 fit goes to 0, and the fit has no finite optimum. For one
+# group-level intercept term and q < n - p, the projected group-level SD goes
+# to the root mean square of the centered group-level effects of that
+# prediction times sqrt(q / (n - p)) (REML).
+warn_instable_full_text <- function() {
+  paste0(
+    "In case of the Gaussian family (also in case of the latent projection) ",
+    "and multilevel terms, the projection onto the full model can be ",
+    "instable and even lead to an error, see GitHub issue #323. If the ",
+    "submodel has all terms of the reference model, the projected ",
+    "group-level standard deviation (SD) is also too small by a factor. For ",
+    "one group-level intercept term with q levels (and no other group-level ",
+    "or smooth terms), n observations, p population-level coefficients and ",
+    "q < n - p, this factor is about sqrt(q / (n - p))."
+  )
 }
