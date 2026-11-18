@@ -27,6 +27,7 @@ test_that("control_callback() returns nlme::lmeControl() for the PQL fitter", {
 
 test_that("fit_glmer_callback() fits with BOBYQA by default", {
   skip_if_not_installed("lme4")
+  withr::local_options(projpred.mlvl_laplace = FALSE)
   set.seed(5678)
   dat <- data.frame(x = rnorm(120), g = gl(12, 10))
   dat$y <- rbinom(120, 1, plogis(0.5 * dat$x + rnorm(12, sd = 0.8)[dat$g]))

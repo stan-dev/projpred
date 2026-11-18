@@ -13,6 +13,7 @@ test_that(paste(
                       prd_trms_expected = args_prj_i$predictor_terms,
                       nprjdraws_expected = ndr_ncl$nprjdraws,
                       with_clusters = ndr_ncl$clust_used,
+                      uses_nagq = !is.null(args_prj_i$nAGQ),
                       info_str = tstsetup)
   }
 })
@@ -399,7 +400,9 @@ test_that(paste(
   }
 
   refmod <- refmod_tst(y ~ x1 + (1 | g))
-  expect_warning(prj_tst(refmod, c("x1", "(1 | g)")), warn_full)
+  warns <- capture_warnings(prj_tst(refmod, c("x1", "(1 | g)")))
+  expect_match(warns, warn_full, all = FALSE)
+  expect_match(warns, "sqrt(q / (n - p))", fixed = TRUE, all = FALSE)
   expect_no_warning(prj_tst(refmod, "(1 | g)"), message = warn_full)
   expect_no_warning(prj_tst(refmod, "x1"), message = warn_full)
 

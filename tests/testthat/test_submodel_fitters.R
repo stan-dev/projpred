@@ -140,10 +140,11 @@ to_augdat_form <- function(d) {
   rbind(d1, d0)
 }
 
+# The glmer() code path (`mlvl_laplace = FALSE`: no Laplace fit of projpred).
 fit_glmer_test <- function(formula, data, family, weights, ...) {
   suppressWarnings(suppressMessages(fit_glmer_callback(
     formula, projpred_formula_no_random = NA, projpred_random = NA,
-    family = family, data = data, weights = weights, ...
+    family = family, data = data, weights = weights, mlvl_laplace = FALSE, ...
   )))
 }
 
@@ -372,6 +373,7 @@ test_that(paste(
 test_that(paste(
   "observations with weight 0 do not change a binomial glmer() submodel fit"
 ), {
+  withr::local_options(projpred.mlvl_laplace = FALSE)
   d <- dat_fitters()
   mu <- plogis(d$eta)
   w <- rep(1, nrow(d))
@@ -397,6 +399,7 @@ test_that(paste(
   "with duplicated observations"
 ), {
   skip_if_lme4_rounds()
+  withr::local_options(projpred.mlvl_laplace = FALSE)
   d <- dat_fitters()
   idxs_dupl <- c(seq_len(nrow(d)), idxs_w2)
   w <- rep(1, nrow(d))

@@ -31,12 +31,15 @@ If you read this from a place other than <https://mc-stan.org/projpred/news/inde
 * In `cv_varsel()`, each CV fold now has its own random number stream, so for a given seed, the results depend neither on `parallel` nor on the number of workers. Results of folds that draw random numbers (e.g., in K-fold CV) differ from earlier versions. (GitHub: #629)
 * Faster weight perturbation in `cv_varsel()` with `validate_search = TRUE` for Gaussian models and the latent projection. For example, `cv_varsel()` with 400 clusters is about 9 % faster for a Gaussian model with 382 observations. (GitHub: #621)
 * The forward search adds a smooth term only after the linear terms of its variables, so the full model has the same size on all search paths. The full-model warnings use the size of the submodel with all search terms. This changes the default results of additive models. (GitHub: #638)
+* Faster binomial (logit) and Poisson (log) multilevel submodels with group-level intercepts only: projpred's own Laplace fit (class `projpred_mlvl`). `cv_varsel()` with `validate_search = TRUE` is about 8 times faster. (GitHub: #644)
+* The fits of these submodels (for example, in element `outdmin` of `project()` output) have class `projpred_mlvl` instead of `glmerMod`. The new function `as_glmerMod()` converts such a fit to class `glmerMod`. (GitHub: #644)
 
 ## Minor changes
 
 * projpred now requires R >= 4.4.0 (previously R >= 3.6.0). (GitHub: #605)
 * **posterior** is now a required package (previously suggested), so the `as_draws()` and `as_draws_matrix()` methods for projections work without an extra installation. (GitHub: #605)
 * **loo** >= 2.10.1, **posterior** >= 1.7.0 and **gamm4** >= 0.3-0 are now required, and **gtools** is no longer needed. (GitHub: #605)
+* The warning about the projection onto the full Gaussian (or latent) multilevel model now says that the projected group-level SD is too small. It also gives the approximate factor. (GitHub: #323, #653)
 * `get_refmodel.stanreg()` has new arguments `cvfun` and `cvrefbuilder` for K-fold CV. For example, a custom `cvrefbuilder` lets custom latent-projection functions use the draws of the fold-wise refits. (GitHub: #604)
 * New function `custom_stat()` defines a user-defined performance statistic for argument `stats` of `summary.vsel()`, `plot.vsel()` and `performances()`, and argument `stat` of `suggest_size()`. (GitHub: #566, #590)
 * Faster `cl_agg()` and conversion of arrays to augmented-rows matrices. For example, LOO CV with validated search for the latent projection with 4000 projected draws is about 3-4 times faster. (GitHub: #600)
@@ -67,7 +70,7 @@ If you read this from a place other than <https://mc-stan.org/projpred/news/inde
 * Fixed the log-likelihood of binomial (logit) and Poisson (log) reference model draws with a large linear predictor, where the inverse link clamped the mean. (GitHub: #614)
 * With `nm_scheme = "rstanarm"`, the `Sigma[...]` columns of `as.matrix.projection()` now hold the group-level variances and covariances in the rstanarm order, as in rstanarm. (GitHub: #622)
 * Fixed the log-likelihood of reference model draws with small response category probabilities in the augmented-data projection (cumulative, categorical and binomial families). (GitHub: #618)
-* With lme4 versions before 2.1-1, binomial submodels with multilevel terms (and no additive terms) now use `nAGQ = 0` in `lme4::glmer()` for non-integer responses or weights, unless `nAGQ` is set via `...`. Their coefficients were fitted to rounded data before. (GitHub: #616)
+* With lme4 versions before 2.1-1, binomial submodels with multilevel terms (and no additive terms) that `lme4::glmer()` fits now use `nAGQ = 0` for non-integer responses or weights, unless `nAGQ` is set via `...`. Their coefficients were fitted to rounded data before. (GitHub: #616)
 * Removed line breaks from the names of search terms above about 500 characters in `ranking()`, `summary()` and `plot()`. (GitHub: #607)
 * `project()`, `varsel()` and `cv_varsel()` now warn if the smoothing parameter optimization of a `mgcv::gam()` submodel fit does not converge with `optimizer = c("outer", "bfgs")`, `c("outer", "nlm")`, `c("outer", "optim")` or `"efs"`. (GitHub: #479, #630)
 * Group terms with a **brms** correlation ID, such as `(1 |p| g)`, now work: projpred removes the ID with a message. Group terms with `||` give an error that explains the limitation, and several group terms of one grouping factor give a warning. (GitHub: #435, #495, #628)
@@ -81,6 +84,7 @@ If you read this from a place other than <https://mc-stan.org/projpred/news/inde
 * If the optimx refit after a `not positive definite` error of lme4 fails, too, projpred now stops with an error that contains both error messages. (GitHub: #323, #633)
 * The submodels now use the contrasts of the reference model for factor predictors instead of `options("contrasts")`. This changes the projected coefficients and can change the L1 search and LOO predictions for a level of one observation. (GitHub: #283, #619)
 * `get_refmodel()` now stops with an error that names the missing variables and gives a workaround. This applies to `rstanarm::stan_gamm4()` fits with argument `random` and an expression in the formula, such as `cbind(y, n - y)`. (GitHub: #148, #634)
+* Fixed errors in `cv_varsel()` with `cv_method = "LOO"` and `validate_search = TRUE` if a factor is only in a group-level term of a submodel (as with `search_terms`) and a level of it occurs only in the left-out observation. (GitHub: #635)
 * Fixed the error "length of 'dimnames' [1] not equal to array extent" in the predictions of multilevel `brms::categorical()` submodels with a factor in a group-level term, such as `(1 + f | g)`. `catCov` values other than `"free"` now give an error. (GitHub: #635, #640)
 
 

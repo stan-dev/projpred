@@ -678,13 +678,11 @@ parse_args_varsel <- function(refmodel, method, refit_prj, nterms_max,
       getOption("projpred.warn_instable_projections", TRUE) &&
       (refmodel$family$family == "gaussian" || refmodel$family$for_latent)) {
     warning(
-      "In case of the Gaussian family (also in case of the latent projection) ",
-      "and multilevel terms, the projection onto the full model can be ",
-      "instable and even lead to an error, see GitHub issue #323. If you ",
-      "experience this and may refrain from the projection onto the full ",
-      "model, set `nterms_max` to the size of the submodel with all search ",
-      "terms minus 1 (here: ", nterms_all - 1L, "; possibly accounting for ",
-      "submodel sizes skipped by custom `search_terms`)."
+      warn_instable_full_text(), " If you experience these problems and may ",
+      "refrain from the projection onto the full model, set `nterms_max` to ",
+      "the size of the submodel with all search terms minus 1 (here: ",
+      nterms_all - 1L, "; possibly accounting for submodel sizes skipped by ",
+      "custom `search_terms`)."
     )
   }
 
@@ -692,4 +690,25 @@ parse_args_varsel <- function(refmodel, method, refit_prj, nterms_max,
 
   return(nlist(method, refit_prj, nterms_max, nclusters, search_terms,
                search_terms_was_null, nterms_all, verbose))
+}
+
+# The text of the warning about the projection onto the full Gaussian (or
+# latent) multilevel model, used by varsel(), cv_varsel() and project(). If the
+# submodel has all terms of the reference model, it can reproduce the reference
+# model prediction of each projected draw or cluster. Then the residual SD of
+# the lme4 fit goes to 0, and the fit has no finite optimum. For one
+# group-level intercept term and q < n - p, the projected group-level SD goes
+# to the root mean square of the centered group-level effects of that
+# prediction times sqrt(q / (n - p)) (REML).
+warn_instable_full_text <- function() {
+  paste0(
+    "In case of the Gaussian family (also in case of the latent projection) ",
+    "and multilevel terms, the projection onto the full model can be ",
+    "instable and even lead to an error, see GitHub issue #323. If the ",
+    "submodel has all terms of the reference model, the projected ",
+    "group-level standard deviation (SD) is also too small by a factor. For ",
+    "one group-level intercept term with q levels (and no other group-level ",
+    "or smooth terms), n observations, p population-level coefficients and ",
+    "q < n - p, this factor is about sqrt(q / (n - p))."
+  )
 }
