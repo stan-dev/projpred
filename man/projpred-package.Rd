@@ -69,17 +69,33 @@ inherits from class \code{multinom}) for the \code{\link[brms:categorical]{brms:
 projection in case of the \code{\link[=binomial]{binomial()}} or \code{\link[brms:bernoulli]{brms::bernoulli()}} family):
 \code{\link[lme4:lmer]{lme4::lmer()}} (the returned object inherits from class \code{lmerMod}) for
 the \code{\link[=gaussian]{gaussian()}} family, \code{\link[lme4:glmer]{lme4::glmer()}} (the returned object inherits
-from class \code{glmerMod}) for all other families. For \code{\link[lme4:glmer]{lme4::glmer()}},
+from class \code{glmerMod}) for all other families. Exception: for the
+\code{\link[=binomial]{binomial()}} family with the logit link and the \code{\link[=poisson]{poisson()}} family with
+the log link, if all group-level terms are random intercepts
+\verb{(1 | <group>)}, \pkg{projpred} uses its own fit (the returned object
+inherits from class \code{projpred_mlvl}). This fit minimizes the Laplace
+approximation of \code{\link[lme4:glmer]{lme4::glmer()}} (with \code{nAGQ = 1}), without rounding
+non-integer responses. \pkg{projpred} uses \code{\link[lme4:glmer]{lme4::glmer()}} instead if
+the fit does not converge, if the submodel has an offset, a
+rank-deficient model matrix or more than 500 group levels in total, if
+\code{...} contains arguments of
+\code{\link[lme4:glmer]{lme4::glmer()}} (for example \code{control} or \code{nAGQ}), or if global option
+\code{projpred.mlvl_laplace} is \code{FALSE}. After a fit that does not converge,
+the \code{\link[lme4:glmer]{lme4::glmer()}} fit is returned as class \code{projpred_mlvl}, too.
+\code{\link[=as_glmerMod]{as_glmerMod()}} converts an object of class \code{projpred_mlvl} to class
+\code{glmerMod}. For \code{\link[lme4:glmer]{lme4::glmer()}},
 \pkg{projpred} uses \code{control = lme4::glmerControl(optimizer = "bobyqa")},
 so both optimization stages use BOBYQA. A \code{control} argument in \code{...}
 replaces this default in the first fit. After some \pkg{lme4} errors,
 \pkg{projpred} refits with its own settings and ignores this \code{control}.
-For the \code{\link[=binomial]{binomial()}} family, \pkg{lme4} versions before 2.1-1 round
-non-integer responses and weights in the objective of \code{\link[lme4:glmer]{lme4::glmer()}}
-with \code{nAGQ >= 1}. With these \pkg{lme4} versions, \pkg{projpred} uses
-\code{nAGQ = 0} for such submodels unless \code{nAGQ} is set via \code{...}. Then the
-fixed effects and the group-level effects do not depend on the rounded
-objective; the group-level standard deviations still do.
+For \code{\link[lme4:glmer]{lme4::glmer()}} fits of the \code{\link[=binomial]{binomial()}} family (also the fit after
+an own fit that does not converge), \pkg{lme4} versions before 2.1-1
+round non-integer responses and weights in the objective of
+\code{\link[lme4:glmer]{lme4::glmer()}} with \code{nAGQ >= 1}. With these \pkg{lme4} versions,
+\pkg{projpred} uses \code{nAGQ = 0} for such submodels unless \code{nAGQ} is set
+via \code{...}. Then the fixed effects and the group-level effects do not
+depend on the rounded objective; the group-level standard deviations
+still do.
 \item For the augmented-data projection: \code{\link[ordinal:clmm]{ordinal::clmm()}} (the returned
 object inherits from class \code{clmm}) for the \code{\link[brms:cumulative]{brms::cumulative()}} family,
 \code{\link[mclogit:mblogit]{mclogit::mblogit()}} (the returned object inherits from class \code{mmblogit})
@@ -92,7 +108,9 @@ argument \code{method} or \code{control} in \code{...} replaces this default. Fo
 \code{cloglog} and \code{loglog} links, \pkg{projpred} always uses
 \code{useMatrix = TRUE} (see \code{\link[ordinal:clmm.control]{ordinal::clmm.control()}}) and does not use
 \code{ucminf()}. The code of \code{\link[ordinal:clmm]{ordinal::clmm()}} for a single group-level term
-uses the other of these two links.
+uses the other of these two links. For the \code{\link[brms:categorical]{brms::categorical()}} family,
+\pkg{projpred} only supports \code{catCov = "free"} (see
+\code{\link[mclogit:mblogit]{mclogit::mblogit()}}).
 }
 \item Submodel without multilevel but additive terms: \code{\link[mgcv:gam]{mgcv::gam()}} (the returned
 object inherits from class \code{gam}).
