@@ -623,6 +623,16 @@ local_record_par <- function(frame = parent.frame()) {
         !is.list(x) || is.null(x$fold) ||
           (is.null(x$fold$refmodel$fit) && !is.null(x$fold$eta_test))
       }, logical(1))),
+      # Whether a reference model for the workers holds `mu_offs` or `eta`
+      # as a copy of `mu`:
+      dup_draws = any(vapply(
+        c(list(environment(fun)$refmodel),
+          lapply(.X, function(x) if (is.list(x)) x$fold$refmodel)),
+        function(r) {
+          !is.null(r$mu) && (identical(r$mu_offs, r$mu) ||
+                               identical(r$eta, r$mu))
+        }, logical(1)
+      )),
       rng = .rng
     )))
     par_chunk <- get("par_chunk", envir = asNamespace("projpred"))
@@ -662,6 +672,46 @@ test_that(paste(
     expect_true(cl$fit_null)
     expect_true(cl$folds_slim)
     expect_true(cl$rng)
+    expect_false(cl$dup_draws)
+  }
+})
+
+test_that(paste(
+  "refmodel_drop_dup_draws() removes the copies of `mu`, and",
+  "refmodel_restore_draws() puts them back"
+), {
+  n <- 30L
+  S <- 20L
+  dat <- data.frame(x = sin(seq_len(n)), y = as.integer(sin(3 * seq_len(n)) > 0))
+  fit <- list(beta = rbind(seq(-0.5, 0.5, length.out = S),
+                           seq(0.2, 1, length.out = S)), data = dat)
+  ref_predfun <- function(fit, newdata = NULL) {
+    nd <- if (is.null(newdata)) fit$data else newdata
+    cbind(1, nd$x) %*% fit$beta
+  }
+  # `mu` is the object `eta` (identity link) and the object `mu_offs` (no
+  # offsets), or only the object `mu_offs` (logit link):
+  cases <- list(
+    gauss = list(fam = gaussian(), dis = rep(1, S),
+                 dropped = c("mu_offs", "eta")),
+    brnll = list(fam = binomial(), dis = NULL, dropped = "mu_offs")
+  )
+  for (nm in names(cases)) {
+    cs <- cases[[nm]]
+    refm <- suppressWarnings(init_refmodel(
+      fit, data = dat, formula = y ~ x, family = cs$fam,
+      ref_predfun = ref_predfun, dis = cs$dis
+    ))
+    refm_s <- refmodel_drop_dup_draws(refm)
+    expect_identical(refm_s$draws_same_as_mu, cs$dropped, info = nm)
+    for (el in cs$dropped) {
+      expect_null(refm_s[[el]], info = paste(nm, el))
+    }
+    expect_lt(length(serialize(refm_s, NULL)), length(serialize(refm, NULL)),
+              label = nm)
+    expect_identical(refmodel_restore_draws(refm_s), refm, info = nm)
+    # A reference model without removed elements stays as it is:
+    expect_identical(refmodel_restore_draws(refm), refm, info = nm)
   }
 })
 

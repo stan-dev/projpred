@@ -1275,6 +1275,33 @@ fun_with_objs <- function(fun, nms, env = parent.frame()) {
   return(fun)
 }
 
+# `refmodel` without `mu_offs` and `eta` if they are identical to `mu`
+# (`mu_offs` without offsets, `eta` with the identity link). In memory, these
+# are often one matrix, but a serialized reference model holds a copy of each.
+# Element `draws_same_as_mu` names the removed elements.
+refmodel_drop_dup_draws <- function(refmodel) {
+  if (is.null(refmodel$mu)) {
+    return(refmodel)
+  }
+  same <- c(mu_offs = identical(refmodel$mu_offs, refmodel$mu),
+            eta = identical(refmodel$eta, refmodel$mu))
+  for (nm in names(same)[same]) {
+    refmodel[nm] <- list(NULL)
+  }
+  refmodel["draws_same_as_mu"] <- list(names(same)[same])
+  return(refmodel)
+}
+
+# `refmodel` with the elements that refmodel_drop_dup_draws() removed. Other
+# reference models stay as they are.
+refmodel_restore_draws <- function(refmodel) {
+  for (nm in refmodel$draws_same_as_mu) {
+    refmodel[[nm]] <- refmodel$mu
+  }
+  refmodel["draws_same_as_mu"] <- NULL
+  return(refmodel)
+}
+
 # The objects of the init_refmodel() environment that mu_fun() and
 # fetch_data() of a reference model use (see refmodel_for_folds()):
 refmodel_fun_objs <- c("data", "family", "proj_predfun",
@@ -1294,7 +1321,9 @@ refmodel_fun_objs <- c("data", "family", "proj_predfun",
 # an environment with only the objects that they use. Other mu_fun() and
 # fetch_data() functions stay as they are. With `formula_env`, the formula of
 # the copy gets a small environment (see formula_for_folds(); for the
-# reference model of a K-fold fold).
+# reference model of a K-fold fold). The copy has `mu_offs` and `eta` only if
+# they differ from `mu` (see refmodel_drop_dup_draws()); the fold functions
+# restore them.
 refmodel_for_folds <- function(refmodel, formula_env = NULL) {
   # The family functions of the latent and the augmented-data projection, and
   # family functions from other packages, can hold the fit in their
@@ -1309,7 +1338,7 @@ refmodel_for_folds <- function(refmodel, formula_env = NULL) {
   if (isTRUE(refmodel$family$for_latent) ||
       isTRUE(refmodel$family$for_augdat) ||
       !all(fam_pkgs %in% c("base", "stats", "projpred"))) {
-    return(refmodel)
+    return(refmodel_drop_dup_draws(refmodel))
   }
   out <- refmodel
   out["fit"] <- list(NULL)
@@ -1342,7 +1371,7 @@ refmodel_for_folds <- function(refmodel, formula_env = NULL) {
                                      data_nms = names(out$fetch_data(obs = 1L)),
                                      env_parent = formula_env)
   }
-  return(out)
+  return(refmodel_drop_dup_draws(out))
 }
 
 # The formula of the reference model of a K-fold fold can have the environment
