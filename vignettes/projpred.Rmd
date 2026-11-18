@@ -477,12 +477,17 @@ In this case, the latent-space approach by @catalina_latent_2021 might help, see
 If `varsel()` is used, the lack of a CV in `varsel()` may lead to overconfident and overfitted results.
 We recommend `cv_varsel()` instead of `varsel()` and `cv_varsel()` should be used for final results anyway. Similarly, `cv_varsel()` with `validate_search = FALSE` is more prone to overfitting than `cv_varsel()` with `validate_search = TRUE`.
 
-### Issues with the augmented-data projection
+### Issues with multilevel models
 
-For multilevel models with the `brms::cumulative()` or the `brms::categorical()` family (or `rstanarm::stan_polr()` fits), the augmented-data projection may not work properly and give suboptimal results, see [#353](https://github.com/stan-dev/projpred/pull/353).
-For the `binomial()` and the `brms::bernoulli()` family, the augmented-data projection uses the same `lme4::glmer()` fits as the traditional projection.
-By suboptimal results, we mean that the relevance of the group-level terms can be underestimated.
-According to the simulation-based case study from [#353](https://github.com/stan-dev/projpred/pull/353), the latent projection might help in such cases.
+In multilevel models, the projected group-level standard deviations can be near zero for the `binomial()` and `brms::bernoulli()` families (traditional and augmented-data projection).
+The same applies to the augmented-data projection of the `brms::cumulative()` and `brms::categorical()` families and of `rstanarm::stan_polr()` fits.
+In that case, the search can underestimate the relevance of the group-level terms, see [#353](https://github.com/stan-dev/projpred/pull/353).
+**projpred** estimates these standard deviations by (approximate) maximum marginal likelihood, which assumes binomial or multinomial noise around the fitted values.
+The projection fits the submodels to the reference model's predictions, which have no noise, so the data have less noise than the model assumes.
+The group-level standard deviations are likely to be near zero if the groups have few observations or the observations have few trials.
+The augmented-data projection has one trial per observation.
+The latent projection might help because its Gaussian submodels estimate the residual standard deviation (see the [latent-projection vignette](https://mc-stan.org/projpred/articles/latent.html)).
+The latent projection is not available for the `brms::categorical()` family.
 
 ### Speed {#speed}
 
