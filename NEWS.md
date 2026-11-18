@@ -82,8 +82,8 @@ If you read this from a place other than <https://mc-stan.org/projpred/news/inde
 * The submodels now use the contrasts of the reference model for factor predictors instead of `options("contrasts")`. This changes the projected coefficients and can change the L1 search and LOO predictions for a level of one observation. (GitHub: #283, #619)
 * `get_refmodel()` now stops with an error that names the missing variables and gives a workaround. This applies to `rstanarm::stan_gamm4()` fits with argument `random` and an expression in the formula, such as `cbind(y, n - y)`. (GitHub: #148, #634)
 * Fixed the error "length of 'dimnames' [1] not equal to array extent" in the predictions of multilevel `brms::categorical()` submodels with a factor in a group-level term, such as `(1 + f | g)`. `catCov` values other than `"free"` now give an error. (GitHub: #635, #640)
-* With lme4 versions before 2.1-1, binomial and Poisson submodels with group-level terms are now fitted correctly to non-integer data. Before, the group-level standard deviations of Poisson submodels stayed at 1. `init_refmodel()` no longer warns that the projection of multilevel Poisson models may take very long. (GitHub: #616, #655)
-* The warning of `init_refmodel()` for multilevel models with a binomial response or with the augmented-data projection now gives the cause: the projected group-level standard deviations are often near zero, so the search can rank group-level terms too low. (GitHub: #353, #655)
+* With lme4 versions before 2.1-1, binomial and Poisson submodels with group-level terms are now fitted correctly to non-integer data. Before, the group-level standard deviations of Poisson submodels stayed at 1. These Poisson fits are also faster, so `init_refmodel()` no longer warns that the projection of multilevel Poisson models may take very long. (GitHub: #616, #655)
+* The warning of `init_refmodel()` for multilevel models with a binomial response or with the augmented-data projection now gives the cause: the projected group-level standard deviations can be near zero, and then the search can rank group-level terms too low. (GitHub: #353, #655)
 
 
 # projpred 2.11.0

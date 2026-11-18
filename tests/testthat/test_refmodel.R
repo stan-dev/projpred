@@ -677,13 +677,16 @@ test_that(paste(
         invokeRestart("muffleWarning")
       }
     ))
-    return(any(grepl("group-level standard deviations are often near zero",
+    return(any(grepl("group-level standard deviations can be near zero",
                      warns)))
   }
   expect_true(warns_init(y_binom ~ x1 + (1 | g), binomial(), eta),
               info = "binomial, traditional")
   expect_false(warns_init(y_binom ~ x1, binomial(), eta),
                info = "binomial, traditional, no group-level terms")
+  expect_false(warns_init(y_binom ~ x1 + (1 | g), binomial(), eta,
+                          called_from_cvrefbuilder = TRUE),
+               info = "binomial, traditional, cvrefbuilder")
   expect_false(warns_init(y_binom ~ x1 + (1 | g), binomial(), eta,
                           latent = TRUE, dis = rep(1, ndraws)),
                info = "binomial, latent")
