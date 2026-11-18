@@ -219,11 +219,29 @@ parse_additive_terms <- function(terms) {
   smooth <- unlist(lapply(smooth_terms, function(st) {
     grep(make_function_regexp(st), terms, value = TRUE)
   }))
-  if (any(grepl("\\(.+,.*=.+\\)", smooth))) {
+  if (any(vapply(smooth, function(st) has_named_smooth_arg(str2lang(st)),
+                 logical(1)))) {
     stop("In s() and t2() terms, arguments other than predictors are not ",
          "allowed.")
   }
   return(smooth)
+}
+
+# Checks whether a call to s() or t2() in the expression `e` contains a named
+# argument (for example `k = 5` or `by = g`) at any position, also in a call
+# inside the s() or t2() call (for example `s(poly(x, degree = 2))`).
+has_named_smooth_arg <- function(e, in_smooth = FALSE) {
+  if (!is.call(e)) {
+    return(FALSE)
+  }
+  fn <- e[[1]]
+  in_smooth <- in_smooth ||
+    (is.name(fn) && as.character(fn) %in% c("s", "t2"))
+  if (in_smooth && any(nzchar(names(e)[-1]))) {
+    return(TRUE)
+  }
+  return(any(vapply(as.list(e)[-1], has_named_smooth_arg, logical(1),
+                    in_smooth = in_smooth)))
 }
 
 make_function_regexp <- function(fname) {
@@ -921,11 +939,31 @@ select_possible_terms_size_uncached <- function(chosen, terms, size,
              terms_chosen$additive_terms,
              perl = TRUE)
   ))
+  # A smooth term can enter only after the linear terms of its variables if
+  # these linear terms are search terms (without a smooth term). With the
+  # default bases of mgcv, a smooth term contains the linear term, so the smooth
+  # term then adds the nonlinear part, and a submodel has the same size on all
+  # search paths. Names are compared without backticks, as smooth_args() gives
+  # them:
+  unquote <- function(nms) gsub("`", "", nms, fixed = TRUE)
+  linear_search <- unique(unquote(unlist(lapply(terms, function(x) {
+    tt <- extract_terms_response(make_formula(x))
+    if (length(tt$additive_terms) > 0) {
+      return(NULL)
+    }
+    return(tt$individual_terms)
+  }))))
   valid_sub_trm_combs <- lapply(terms, function(x) {
     ## if we are adding a linear term whose smooth is already
     ## included, we reject it
     terms_new <- extract_terms_response(make_formula(x))
     linear <- terms_new$individual_terms
+    smooth_vars <- unquote(unlist(lapply(terms_new$additive_terms,
+                                         smooth_args)))
+    if (!all(intersect(smooth_vars, linear_search) %in%
+               unquote(c(terms_chosen$individual_terms, linear)))) {
+      return(NA)
+    }
     dups <- setdiff(linear[!is.na(match(linear, additive))], chosen)
 
     size_crr <- count_terms_chosen(c(chosen, x)) - length(dups)
@@ -989,6 +1027,14 @@ count_terms_chosen <- function(list_of_terms, duplicates = TRUE) {
   return(
     count_terms_in_formula(flatten_formula(formula, duplicates = duplicates))
   )
+}
+
+# The size of the submodel with all of the search terms `search_terms` (not
+# counting the intercept), that is, the largest size of a forward search. With
+# the default search terms, this counts a linear term and a smooth term of the
+# same variable as two terms (see select_possible_terms_size()).
+nterms_search_all <- function(search_terms) {
+  return(count_terms_chosen(unique(split_plus(search_terms))) - 1L)
 }
 
 ## Helper function to evaluate right hand side formulas in a context

@@ -1202,7 +1202,10 @@ plot.vsel <- function(
     ci_type <- "exponentiated normal-approximation "
   } else if (all(stats %in% c("mse", "rmse")) && isFALSE(deltas)) {
     ci_type <- "log-normal-approximation "
-  } else if (all(!stats %in% c(stats_bs_ci, "gmpd", "mse", "rmse")) ||
+  } else if (all(stats %in% c("acc", "pctcorr")) && isFALSE(deltas)) {
+    ci_type <- "logit-normal-approximation "
+  } else if (all(!stats %in% c(stats_bs_ci, "gmpd", "mse", "rmse", "acc",
+                               "pctcorr")) ||
              (all(!stats %in% c(stats_bs_ci, "gmpd")) &&
               (identical(deltas, "mixed") || isTRUE(deltas)))) {
     ci_type <- "normal-approximation "
@@ -1351,7 +1354,12 @@ plot.vsel <- function(
 #'   observations. For this, the response category ("class") with highest
 #'   probability (the probabilities are model-based) is taken as the prediction
 #'   ("classification") for an observation. For the corresponding uncertainty
-#'   interval, a normal approximation is used.
+#'   interval, a logit-normal approximation is used if `deltas` is `FALSE`. The
+#'   standard error on the logit scale comes from the delta method. A normal
+#'   approximation is used if `deltas` is `TRUE` (or `"mixed"`, in case of
+#'   [plot.vsel()]). It is also used if `deltas` is `FALSE` and the estimate is
+#'   not strictly between 0 and 1 (an estimate outside of \[0, 1\] is possible
+#'   with subsampled LOO-CV).
 #'   * `"auc"`: area under the ROC curve (only available in the situations
 #'   mentioned in section "Details" below). For the corresponding standard error
 #'   and lower and upper uncertainty interval bounds, bootstrapping is used. Not
@@ -2385,6 +2393,36 @@ get_subparams.glmerMod <- function(x, ...) {
 
 #' @noRd
 #' @export
+get_subparams.projpred_mlvl <- function(x, ...) {
+  population_effects <- replace_population_names(x$coefficients, ...)
+
+  # The structure of lme4::VarCorr() and lme4::ranef() for random intercepts:
+  int_nm <- "(Intercept)"
+  group_vc_raw <- lapply(x$sd, function(s) {
+    structure(matrix(s^2, 1, 1, dimnames = list(int_nm, int_nm)),
+              stddev = setNames(s, int_nm),
+              correlation = matrix(1, 1, 1, dimnames = list(int_nm, int_nm)))
+  })
+  group_vc <- proc_VarCorr(group_vc_raw,
+                           coef_nms = lapply(group_vc_raw, rownames), ...)
+
+  subparams <- c(population_effects, group_vc)
+
+  if (!getOption("projpred.mlvl_pred_new", FALSE)) {
+    group_ef_raw <- lapply(x$ranef, function(b) {
+      data.frame(setNames(list(unname(b)), int_nm), row.names = names(b),
+                 check.names = FALSE)
+    })
+    group_ef <- proc_ranef(group_ef_raw,
+                           coef_nms = lapply(group_vc_raw, rownames), ...)
+    subparams <- c(subparams, group_ef)
+  }
+
+  return(subparams)
+}
+
+#' @noRd
+#' @export
 get_subparams.gamm4 <- function(x, ...) {
   # coef() of a gamm4 fit is `NULL`, so get_subparams.lm() would return no
   # parameters:
@@ -2455,16 +2493,8 @@ get_subparams.mmblogit <- function(x, ...) {
   subparams <- c(setNames(as.vector(coefs), nms), group_vc)
 
   if (!getOption("projpred.mlvl_pred_new", FALSE)) {
-    if (utils::packageVersion("mclogit") < "0.9") {
-      ncoefs_all <- length(all.vars(x$random$formula)) + 1L
-    } else {
-      ncoefs_all <- sapply(
-        setNames(x$random, names(x$groups)),
-        function(re_info_i) {
-          length(all.vars(re_info_i$formula)) + 1L
-        }
-      )
-    }
+    # The number of group-level coefficients per latent category:
+    ncoefs_all <- vapply(group_vc_raw, ncol, integer(1)) %/% ncol(x$D)
     group_ef <- proc_ranef(setNames(x$random.effects, names(x$groups)),
                            nms_lats = colnames(x$D),
                            ncoefs = ncoefs_all,
