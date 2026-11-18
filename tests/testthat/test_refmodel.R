@@ -181,6 +181,51 @@ test_that(paste(
   expect_equal(refmod_cbind$wobs, dat$wobs_col)
 })
 
+test_that(paste(
+  "get_refmodel.stanreg() expands `.` in the formula without the columns for",
+  "the observation weights and offsets"
+), {
+  skip_if_not_installed("rstanarm")
+  xco <- dat[c("xco.1", "xco.2", "xco.3")]
+  dat_dot <- data.frame(y = dat$y_glm_gauss, xco)
+  dat_dot_o <- cbind(dat_dot, o = offs_tst)
+  dat_dot_b <- data.frame(ys = dat$y_glm_binom,
+                          nf = dat$wobs_col - dat$y_glm_binom, xco)
+  # rstanarm evaluates `weights` and `offset` with model.frame(), so the calls
+  # cannot go through the `...` of a helper function. Each case has the fit
+  # and the expected observation weights and offsets:
+  cases <- suppressWarnings(list(
+    weights = list(fit = rstanarm::stan_glm(
+      y ~ ., data = dat_dot, weights = wobs_tst,
+      chains = 1L, iter = 200L, seed = seed_fit, refresh = 0
+    ), wobs = wobs_tst, offs = rep(0, nobsv)),
+    offset_arg = list(fit = rstanarm::stan_glm(
+      y ~ ., data = dat_dot, offset = offs_tst,
+      chains = 1L, iter = 200L, seed = seed_fit, refresh = 0
+    ), wobs = rep(1, nobsv), offs = offs_tst),
+    offset_formula = list(fit = rstanarm::stan_glm(
+      y ~ . - o + offset(o), data = dat_dot_o,
+      chains = 1L, iter = 200L, seed = seed_fit, refresh = 0
+    ), wobs = rep(1, nobsv), offs = offs_tst),
+    weights_offset = list(fit = rstanarm::stan_glm(
+      y ~ ., data = dat_dot, weights = wobs_tst, offset = offs_tst,
+      chains = 1L, iter = 200L, seed = seed_fit, refresh = 0
+    ), wobs = wobs_tst, offs = offs_tst),
+    binom_2col_offset = list(fit = rstanarm::stan_glm(
+      cbind(ys, nf) ~ ., family = binomial(), data = dat_dot_b,
+      offset = offs_tst,
+      chains = 1L, iter = 200L, seed = seed_fit, refresh = 0
+    ), wobs = dat$wobs_col, offs = offs_tst)
+  ))
+  for (nm in names(cases)) {
+    refmod_dot <- get_refmodel(cases[[nm]]$fit)
+    expect_identical(sort(labels(terms(refmod_dot$formula))),
+                     c("xco.1", "xco.2", "xco.3"), info = nm)
+    expect_equal(refmod_dot$wobs, cases[[nm]]$wobs, info = nm)
+    expect_equal(refmod_dot$offset, cases[[nm]]$offs, info = nm)
+  }
+})
+
 test_that("function calls in group terms fail", {
   tstsetup <- "brms.glmm.brnll.stdformul.without_wobs.without_offs"
   args_fit_i <- args_fit[[tstsetup]]
