@@ -1262,12 +1262,12 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
             "reference model does not have.")
   }
   # The multilevel submodel fitters estimate the group-level SDs by
-  # (approximate) maximum marginal likelihood with binomial (or multinomial)
-  # noise around the reference predictions, which have no noise. With little
-  # information per group, the estimates are then near zero. Gaussian
-  # submodels (also those of the latent projection) estimate the residual SD,
-  # and Poisson submodels get more information per observation for large
-  # counts:
+  # (approximate) maximum marginal likelihood. They assume binomial (or
+  # multinomial) noise around the reference predictions, which have no noise.
+  # With little information per group, the estimates are then near zero.
+  # Gaussian submodels (also those of the latent projection) estimate the
+  # residual SD. Poisson submodels get more information per observation for
+  # large counts.
   if (proper_model && length(grp_trms) > 0 &&
       getOption("projpred.warn_instable_projections", TRUE) &&
       !called_from_cvrefbuilder &&
@@ -1276,11 +1276,11 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
       "For multilevel models with a binomial response or with the ",
       "augmented-data projection, the projected group-level standard ",
       "deviations can be near zero. Then the search can rank group-level ",
-      "terms too low. This is likely if the groups have few observations or ",
-      "the observations have few trials (the augmented-data projection has ",
-      "one). The latent projection may be a remedy (not for the ",
-      "brms::categorical() family). See section \"Troubleshooting\" of the ",
-      "main vignette for more information."
+      "terms too low. Near-zero estimates are likely if the groups have few ",
+      "observations or the observations have few trials (one trial in the ",
+      "augmented-data projection). The latent projection may be a remedy (not ",
+      "for the brms::categorical() family). See section \"Troubleshooting\" ",
+      "of the main vignette for more information."
     )
   }
   if (family$family == "categorical" &&
