@@ -141,7 +141,8 @@ This run takes only a few seconds.
 The code below also shows how **projpred**'s CV can be parallelized with the **future** package (we disable the parallelization for the vignette build).
 The LOO folds are then split among the parallel workers.
 For a model as small as this one, the parallelization overhead can be larger than the runtime gain.
-We recommend the workers of the **future.mirai** package: in our experiments, the first parallel call was faster with them than with `future::multisession` (see section "Parallelization" in the general package documentation available [online](https://mc-stan.org/projpred/reference/projpred-package.html) or by typing `` ?`projpred-package` ``).
+We use the workers of the **future.mirai** package because the first parallel call was faster with them than with `future::multisession`.
+For more details, see section "Parallelization" in the package documentation ([online](https://mc-stan.org/projpred/reference/projpred-package.html)) or type `` ?`projpred-package` ``.
 
 If PSIS-LOO CV is not reliable (for example, if many Pareto $\hat{k}$ values are high), $K$-fold CV (`cv_method = "kfold"`) is an alternative.
 Then `run_cvfun()` can run the $K$ reference model refits once, so that several `cv_varsel()` calls can use them (see argument `cvfits` of `cv_varsel()`).
