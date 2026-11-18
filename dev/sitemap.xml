@@ -10,6 +10,7 @@
 <url><loc>https://mc-stan.org/projpred/dev/news/index.html</loc></url>
 <url><loc>https://mc-stan.org/projpred/dev/reference/as.matrix.projection.html</loc></url>
 <url><loc>https://mc-stan.org/projpred/dev/reference/as_draws_matrix.projection.html</loc></url>
+<url><loc>https://mc-stan.org/projpred/dev/reference/as_glmerMod.html</loc></url>
 <url><loc>https://mc-stan.org/projpred/dev/reference/augdat-internals.html</loc></url>
 <url><loc>https://mc-stan.org/projpred/dev/reference/augdat_ilink_binom.html</loc></url>
 <url><loc>https://mc-stan.org/projpred/dev/reference/augdat_link_binom.html</loc></url>

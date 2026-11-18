@@ -12,6 +12,11 @@
   Extract projected parameter draws and coerce to `draws_matrix` (see
   package posterior)
 
+- [`as_glmerMod()`](https://mc-stan.org/projpred/dev/reference/as_glmerMod.md)
+  :
+
+  Convert a submodel fit of class `projpred_mlvl` to class `glmerMod`
+
 - [`augdat_ilink_binom()`](https://mc-stan.org/projpred/dev/reference/augdat_ilink_binom.md)
   : Inverse-link function for augmented-data projection with binomial
   family

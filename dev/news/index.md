@@ -192,6 +192,19 @@
   paths. The full-model warnings use the size of the submodel with all
   search terms. This changes the default results of additive models.
   (GitHub: [\#638](https://github.com/stan-dev/projpred/issues/638))
+- Faster binomial (logit) and Poisson (log) multilevel submodels with
+  group-level intercepts only: projpred’s own Laplace fit (class
+  `projpred_mlvl`).
+  [`cv_varsel()`](https://mc-stan.org/projpred/dev/reference/cv_varsel.md)
+  with `validate_search = TRUE` is about 8 times faster. (GitHub:
+  [\#644](https://github.com/stan-dev/projpred/issues/644))
+- The fits of these submodels (for example, in element `outdmin` of
+  [`project()`](https://mc-stan.org/projpred/dev/reference/project.md)
+  output) have class `projpred_mlvl` instead of `glmerMod`. The new
+  function
+  [`as_glmerMod()`](https://mc-stan.org/projpred/dev/reference/as_glmerMod.md)
+  converts such a fit to class `glmerMod`. (GitHub:
+  [\#644](https://github.com/stan-dev/projpred/issues/644))
 
 ### Minor changes
 
@@ -364,11 +377,11 @@
   categorical and binomial families). (GitHub:
   [\#618](https://github.com/stan-dev/projpred/issues/618))
 - With lme4 versions before 2.1-1, binomial submodels with multilevel
-  terms (and no additive terms) now use `nAGQ = 0` in
-  [`lme4::glmer()`](https://rdrr.io/pkg/lme4/man/glmer.html) for
-  non-integer responses or weights, unless `nAGQ` is set via `...`.
-  Their coefficients were fitted to rounded data before. (GitHub:
-  [\#616](https://github.com/stan-dev/projpred/issues/616))
+  terms (and no additive terms) that
+  [`lme4::glmer()`](https://rdrr.io/pkg/lme4/man/glmer.html) fits now
+  use `nAGQ = 0` for non-integer responses or weights, unless `nAGQ` is
+  set via `...`. Their coefficients were fitted to rounded data before.
+  (GitHub: [\#616](https://github.com/stan-dev/projpred/issues/616))
 - Removed line breaks from the names of search terms above about 500
   characters in
   [`ranking()`](https://mc-stan.org/projpred/dev/reference/ranking.md),

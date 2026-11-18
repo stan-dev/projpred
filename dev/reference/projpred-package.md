@@ -85,15 +85,38 @@ by projpred's internal default `div_minimizer` functions, see
     [`gaussian()`](https://rdrr.io/r/stats/family.html) family,
     [`lme4::glmer()`](https://rdrr.io/pkg/lme4/man/glmer.html) (the
     returned object inherits from class `glmerMod`) for all other
-    families. For
+    families. Exception: for the
+    [`binomial()`](https://rdrr.io/r/stats/family.html) family with the
+    logit link and the
+    [`poisson()`](https://rdrr.io/r/stats/family.html) family with the
+    log link, if all group-level terms are random intercepts
+    `(1 | <group>)`, projpred uses its own fit (the returned object
+    inherits from class `projpred_mlvl`). This fit minimizes the Laplace
+    approximation of
+    [`lme4::glmer()`](https://rdrr.io/pkg/lme4/man/glmer.html) (with
+    `nAGQ = 1`), without rounding non-integer responses. projpred uses
+    [`lme4::glmer()`](https://rdrr.io/pkg/lme4/man/glmer.html) instead
+    if the fit does not converge, if the submodel has an offset, a
+    rank-deficient model matrix or more than 500 group levels in total,
+    if `...` contains arguments of
+    [`lme4::glmer()`](https://rdrr.io/pkg/lme4/man/glmer.html) (for
+    example `control` or `nAGQ`), or if global option
+    `projpred.mlvl_laplace` is `FALSE`. After a fit that does not
+    converge, the
+    [`lme4::glmer()`](https://rdrr.io/pkg/lme4/man/glmer.html) fit is
+    returned as class `projpred_mlvl`, too.
+    [`as_glmerMod()`](https://mc-stan.org/projpred/dev/reference/as_glmerMod.md)
+    converts an object of class `projpred_mlvl` to class `glmerMod`. For
     [`lme4::glmer()`](https://rdrr.io/pkg/lme4/man/glmer.html), projpred
     uses `control = lme4::glmerControl(optimizer = "bobyqa")`, so both
     optimization stages use BOBYQA. A `control` argument in `...`
     replaces this default in the first fit. After some lme4 errors,
     projpred refits with its own settings and ignores this `control`.
-    For the [`binomial()`](https://rdrr.io/r/stats/family.html) family,
-    lme4 versions before 2.1-1 round non-integer responses and weights
-    in the objective of
+    For [`lme4::glmer()`](https://rdrr.io/pkg/lme4/man/glmer.html) fits
+    of the [`binomial()`](https://rdrr.io/r/stats/family.html) family
+    (also the fit after an own fit that does not converge), lme4
+    versions before 2.1-1 round non-integer responses and weights in the
+    objective of
     [`lme4::glmer()`](https://rdrr.io/pkg/lme4/man/glmer.html) with
     `nAGQ >= 1`. With these lme4 versions, projpred uses `nAGQ = 0` for
     such submodels unless `nAGQ` is set via `...`. Then the fixed
