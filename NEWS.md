@@ -52,6 +52,7 @@ If you read this from a place other than <https://mc-stan.org/projpred/news/inde
 
 ## Bug fixes and maintenance
 
+* Fixed bug in `get_refmodel()` for **rstanarm** fits with `.` in the formula and with observation weights or offsets: internal columns for the weights and offsets became predictor terms. (GitHub: #649)
 * Fixed bug in the predictions of submodels for new data: Terms with a data-dependent basis, such as `poly()` or `splines::ns()`, used a basis computed from the new data instead of the basis of the training data. This affected `proj_linpred()` and `proj_predict()` with `newdata`, `varsel()` with `d_test`, and K-fold CV, and caused `cv_varsel()` with `validate_search = TRUE` and LOO CV to fail with `poly()` terms. (GitHub: #573)
 * Tests: Adapt to version 2.1-0 of package lme4. (GitHub: #577)
 * Fixed bug in `init_refmodel()` with a 2-column binomial response (successes and failures) and the default `extract_model_data`. (GitHub: #625)
