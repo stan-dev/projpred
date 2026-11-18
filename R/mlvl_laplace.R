@@ -251,6 +251,8 @@ mlvl_from_merMod <- function(fit, formula, failed) {
   sd <- vapply(vc[names(re)], function(v) unname(attr(v, "stddev")),
                numeric(1))
   fam <- stats::family(fit)
+  # The family of glmer_family() has the suffix "_projpred":
+  fam$family <- sub("_projpred$", "", fam$family)
   dev <- tryCatch(
     mlvl_laplace_dev(des, mlvl_laplace_fam(fam), sd,
                      unname(lme4::fixef(fit))),
