@@ -577,6 +577,11 @@ predict.refmodel <- function(object, newdata = NULL, ynew = NULL,
         if (length(dim(pred)) < 2) {
           stop("Unexpected structure for the output of `latent_ilink`.")
         }
+        pred <- latent_epred_apply(
+          refmodel$family, pred, dis = refmodel$dis,
+          cl_ref = seq_along(refmodel$wdraws_ref),
+          wdraws_ref = rep(1, length(refmodel$wdraws_ref))
+        )
         if (length(dim(pred)) == 3) {
           pred <- arr2augmat(pred, margin_draws = 1)
         }

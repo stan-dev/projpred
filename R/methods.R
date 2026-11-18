@@ -384,6 +384,11 @@ proj_linpred_aux <- function(proj, newdata, offsetnew, weightsnew,
   lpd_out <- compute_lpd(ynew = ynew, newdata = newdata, pred_sub = pred_sub,
                          proj = proj, weights = weights,
                          transformed = transform)
+  if (proj$refmodel$family$for_latent && transform) {
+    pred_sub <- latent_epred_apply(proj$refmodel$family, pred_sub,
+                                   dis = proj$dis, cl_ref = proj$cl_ref,
+                                   wdraws_ref = proj$wdraws_ref)
+  }
   if (integrated) {
     if (proj$refmodel$family$for_latent && transform &&
         length(dim(pred_sub)) == 3) {

@@ -53,6 +53,14 @@
 #'   "posterior predictive distribution"), \pkg{projpred} currently only uses it
 #'   in [proj_predict()], i.e., for sampling from what would better be termed
 #'   posterior-projection predictive distribution (PPPD).
+#' @param latent_epred Only relevant for the latent projection with
+#'   `is.null(family$cats)` (after taking `latent_y_unqs` into account). If not
+#'   `NULL`, this needs to be the function computing the response-scale
+#'   expected values from the output of `latent_ilink`. It is needed if the
+#'   output of `latent_ilink` is not the expected value, for example the
+#'   `meanlog` parameter of a log-normal distribution. If `NULL` (the default),
+#'   the output of `latent_ilink` is used as the expected value. See also
+#'   section "Latent projection" below.
 #' @param augdat_y_unqs Only relevant for augmented-data projection, in which
 #'   case this needs to be the character vector of unique response values (which
 #'   will be assigned to `family$cats` internally) or may be left at `NULL` if
@@ -227,7 +235,21 @@
 #' posterior(-projection) predictive distributions for the \eqn{N} observations
 #' from its inputs.
 #'
-#' If the bodies of these three functions involve parameter draws from the
+#' The function supplied to argument `latent_epred` needs to have the prototype
+#' ```{r, eval = FALSE}
+#' latent_epred(ilpreds, dis, cl_ref, wdraws_ref = rep(1, length(cl_ref)))
+#' ```
+#' where the arguments accept the same input as the arguments of the same name
+#' of `latent_ll_oscale`. The return value of `latent_epred` needs to be an
+#' \eqn{S \times N}{S x N} matrix containing the response-scale expected
+#' values. \pkg{projpred} uses them for the response-scale predictions of
+#' [proj_linpred()] (with `transform = TRUE`), [proj_epred()], and
+#' [predict.refmodel()] (with `type = "response"`), and for the
+#' response-scale performance statistics `"mse"`, `"rmse"`, and `"R2"`. The
+#' functions `latent_ll_oscale` and `latent_ppd_oscale` still get the output of
+#' `latent_ilink`.
+#'
+#' If the bodies of these functions involve parameter draws from the
 #' reference model which have not been projected (e.g., for `latent_ilink`, the
 #' thresholds in an ordinal model), [cl_agg()] is provided as a helper function
 #' for aggregating these reference model draws in the same way as the draws have
@@ -281,6 +303,7 @@ extend_family <- function(family,
                           latent_ilink = NULL,
                           latent_ll_oscale = NULL,
                           latent_ppd_oscale = NULL,
+                          latent_epred = NULL,
                           augdat_y_unqs = NULL,
                           augdat_link = NULL,
                           augdat_ilink = NULL,
@@ -404,9 +427,19 @@ extend_family <- function(family,
         stop("Please add argument `dis_resamp` to the `latent_ppd_oscale` ",
              "function.")
       }
+      if (!is.null(latent_epred)) {
+        if (!is.null(family$cats)) {
+          stop("Argument `latent_epred` cannot be used if `family$cats` is ",
+               "not `NULL`.")
+        }
+        if (!any(c("dis", "...") %in% methods::formalArgs(latent_epred))) {
+          stop("Please add argument `dis` to the `latent_epred` function.")
+        }
+      }
       family$latent_ilink <- latent_ilink
       family$latent_ll_oscale <- latent_ll_oscale
       family$latent_ppd_oscale <- latent_ppd_oscale
+      family$latent_epred <- latent_epred
     }
     family$for_latent <- latent
     family$for_augdat <- FALSE

@@ -718,6 +718,11 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
       stop("In case of the latent projection, `cv_method = \"LOO\"` requires ",
            "a function `latent_ll_oscale` that does not return only `NA`s.")
     }
+    # From here on, `mu_offs_oscale` is only used for the expected values:
+    mu_offs_oscale <- latent_epred_apply(
+      refmodel$family, mu_offs_oscale, dis = refmodel$dis,
+      cl_ref = seq_along(refmodel$wdraws_ref), wdraws_ref = refmodel$wdraws_ref
+    )
     if (length(dim(mu_offs_oscale)) == 3) {
       # In this case, `mu_offs_oscale` is a 3-dimensional array (S x N x C), so
       # coerce it to an augmented-rows matrix:
@@ -1027,6 +1032,10 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
         )
         loo_sub_oscale[[k]][inds] <- apply(log_lik_sub_oscale + lw_sub, 2,
                                            log_sum_exp)
+        mu_k_oscale <- latent_epred_apply(
+          refmodel$family, mu_k_oscale, dis = perf_eval_out[["dis_sub"]][[k]],
+          cl_ref = refdist_eval$cl, wdraws_ref = refdist_eval$wdraws_orig
+        )
         if (length(dim(mu_k_oscale)) == 3) {
           mu_k_oscale <- arr2augmat(mu_k_oscale, margin_draws = 1)
         }
@@ -1353,6 +1362,11 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
         wdraws_ref = refmodel$wdraws_ref
       )
       mu_offs_mlvlRan_oscale_odim <- mu_offs_mlvlRan_oscale
+      mu_offs_mlvlRan_oscale <- latent_epred_apply(
+        refmodel$family, mu_offs_mlvlRan_oscale, dis = refmodel$dis,
+        cl_ref = seq_along(refmodel$wdraws_ref),
+        wdraws_ref = refmodel$wdraws_ref
+      )
       if (length(dim(mu_offs_mlvlRan_oscale)) == 3) {
         mu_offs_mlvlRan_oscale <- arr2augmat(mu_offs_mlvlRan_oscale,
                                              margin_draws = 1)

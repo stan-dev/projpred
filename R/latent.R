@@ -100,6 +100,28 @@ latent_ppd_oscale_NA <- function(ilpreds_resamp,
   return(array(dim = dim(ilpreds_resamp)[1:2]))
 }
 
+# Expected values ---------------------------------------------------------
+
+# Response-scale expected values of the latent projection: the output of
+# `family$latent_epred` if it exists, otherwise `ilpreds` (the output of
+# `family$latent_ilink`). An array `ilpreds` (`family$cats` not `NULL`) is
+# returned unchanged.
+latent_epred_apply <- function(family, ilpreds, dis, cl_ref,
+                               wdraws_ref = rep(1, length(cl_ref))) {
+  if (is.null(family$latent_epred) || length(dim(ilpreds)) != 2) {
+    return(ilpreds)
+  }
+  out <- family$latent_epred(ilpreds, dis = dis, cl_ref = cl_ref,
+                             wdraws_ref = wdraws_ref)
+  if (!is.matrix(out) || !identical(dim(out), dim(ilpreds))) {
+    stop("Unexpected structure for the output of `latent_epred`.")
+  }
+  if (is.null(dimnames(out))) {
+    dimnames(out) <- dimnames(ilpreds)
+  }
+  return(out)
+}
+
 # Other -------------------------------------------------------------------
 
 #' Weighted averaging within clusters of parameter draws
