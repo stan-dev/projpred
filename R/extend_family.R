@@ -244,7 +244,8 @@
 #' the dispersion parameter; for the reference model, it is `<refmodel>$dis`
 #' (see argument `dis` of [init_refmodel()]). If `<refmodel>$dis` consists of
 #' only `NA`s, a `latent_epred` function that uses `dis` gives `NA`s for the
-#' reference model. The return value of `latent_epred` needs to be an
+#' reference model and the submodels. The return value of `latent_epred` needs
+#' to be an
 #' \eqn{S \times N}{S x N} matrix containing the response-scale expected
 #' values. \pkg{projpred} uses them for the response-scale predictions of
 #' [proj_linpred()] (with `transform = TRUE`), [proj_epred()], and

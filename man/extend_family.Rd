@@ -290,7 +290,8 @@ of \code{latent_ll_oscale}. For a submodel, \code{dis} contains the projected dr
 the dispersion parameter; for the reference model, it is \verb{<refmodel>$dis}
 (see argument \code{dis} of \code{\link[=init_refmodel]{init_refmodel()}}). If \verb{<refmodel>$dis} consists of
 only \code{NA}s, a \code{latent_epred} function that uses \code{dis} gives \code{NA}s for the
-reference model. The return value of \code{latent_epred} needs to be an
+reference model and the submodels. The return value of \code{latent_epred} needs
+to be an
 \eqn{S \times N}{S x N} matrix containing the response-scale expected
 values. \pkg{projpred} uses them for the response-scale predictions of
 \code{\link[=proj_linpred]{proj_linpred()}} (with \code{transform = TRUE}), \code{\link[=proj_epred]{proj_epred()}}, and
