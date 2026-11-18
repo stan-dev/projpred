@@ -34,6 +34,8 @@ dat_retry <- function() {
              h = gl(5, 1, n), f = gl(2, n / 2))
 }
 
+# `mlvl_laplace = FALSE`: projpred's own Laplace fit (see mlvl_laplace())
+# would fit the models with group-level intercepts only, without lme4.
 fit_glmer_retry <- function(formula, ...) {
   bars <- vapply(reformulas::findbars(formula), deparse1, "")
   random <- stats::as.formula(paste("~", paste0("(", bars, ")",
@@ -41,7 +43,7 @@ fit_glmer_retry <- function(formula, ...) {
   fit_glmer_callback(formula,
                      projpred_formula_no_random = reformulas::nobars(formula),
                      projpred_random = random, family = binomial(),
-                     data = dat_retry(), ...)
+                     data = dat_retry(), mlvl_laplace = FALSE, ...)
 }
 
 msg_pirls <- "PIRLS step-halvings failed to reduce deviance in pwrssUpdate"
