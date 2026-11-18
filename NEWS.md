@@ -33,6 +33,7 @@ If you read this from a place other than <https://mc-stan.org/projpred/news/inde
 * The forward search adds a smooth term only after the linear terms of its variables, so the full model has the same size on all search paths. The full-model warnings use the size of the submodel with all search terms. This changes the default results of additive models. (GitHub: #638)
 * Faster binomial (logit) and Poisson (log) multilevel submodels with group-level intercepts only: projpred's own Laplace fit (class `projpred_mlvl`). `cv_varsel()` with `validate_search = TRUE` is about 8 times faster. (GitHub: #644)
 * The fits of these submodels (for example, in element `outdmin` of `project()` output) have class `projpred_mlvl` instead of `glmerMod`. The new function `as_glmerMod()` converts such a fit to class `glmerMod`. (GitHub: #644)
+* New argument `latent_epred` of `extend_family()`: a function that gives the response-scale expected values of the latent projection, for example `exp(meanlog + sdlog^2 / 2)` for a log-normal model. They are used for the predictions and for `"mse"`, `"rmse"` and `"R2"`. (GitHub: #???)
 
 ## Minor changes
 
@@ -42,7 +43,6 @@ If you read this from a place other than <https://mc-stan.org/projpred/news/inde
 * The warning about the projection onto the full Gaussian (or latent) multilevel model now says that the projected group-level SD is too small. It also gives the approximate factor. (GitHub: #323, #653)
 * `get_refmodel.stanreg()` has new arguments `cvfun` and `cvrefbuilder` for K-fold CV. For example, a custom `cvrefbuilder` lets custom latent-projection functions use the draws of the fold-wise refits. (GitHub: #604)
 * New function `custom_stat()` defines a user-defined performance statistic for argument `stats` of `summary.vsel()`, `plot.vsel()` and `performances()`, and argument `stat` of `suggest_size()`. (GitHub: #566, #590)
-* New argument `latent_epred` of `extend_family()`: a function that gives the response-scale expected values of the latent projection, for example `exp(meanlog + sdlog^2 / 2)` for a log-normal model. They are used for the predictions and for `"mse"`, `"rmse"` and `"R2"`. (GitHub: #???)
 * Faster `cl_agg()` and conversion of arrays to augmented-rows matrices. For example, LOO CV with validated search for the latent projection with 4000 projected draws is about 3-4 times faster. (GitHub: #600)
 * The parallel `cv_varsel()` with `validate_search = TRUE` sends less data to the workers. (GitHub: #611)
 * The uncertainty interval of `stats = "acc"` with `deltas = FALSE` now uses a logit-normal approximation instead of a normal approximation. (GitHub: #503, #631)
