@@ -16,7 +16,8 @@
 #' @param family An object of class `family`.
 #' @param latent A single logical value indicating whether to use the latent
 #'   projection (`TRUE`) or not (`FALSE`). Note that setting `latent = TRUE`
-#'   causes all arguments starting with `augdat_` to be ignored.
+#'   causes all arguments starting with `augdat_` to be ignored. The latent
+#'   projection does not support the [brms::categorical()] family.
 #' @param latent_y_unqs Only relevant for a latent projection where the original
 #'   response space has finite support (i.e., the original response values may
 #'   be regarded as categories), in which case this needs to be the character
@@ -298,6 +299,13 @@ extend_family <- function(family,
                                   "zero_inflated_beta_binomial"))) {
     stop("Currently, projpred does not support the brms family `",
          family$family, "()`.", call. = FALSE)
+  }
+  # The latent projection needs one linear predictor per observation, but
+  # brms::categorical() has one per response category except the first:
+  if (latent && isTRUE(family$family == "categorical")) {
+    stop("The latent projection does not support the brms::categorical() ",
+         "family, which has more than one linear predictor. Use the ",
+         "augmented-data projection instead.", call. = FALSE)
   }
   if (latent) {
     family_oscale_tmp <- family$family

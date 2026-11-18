@@ -77,7 +77,8 @@ family).}
 
 \item{latent}{A single logical value indicating whether to use the latent
 projection (\code{TRUE}) or not (\code{FALSE}). Note that setting \code{latent = TRUE}
-causes all arguments starting with \code{augdat_} to be ignored.}
+causes all arguments starting with \code{augdat_} to be ignored. The latent
+projection does not support the \code{\link[brms:categorical]{brms::categorical()}} family.}
 
 \item{dis}{A vector of posterior draws for the reference model's dispersion
 parameter or---more precisely---the posterior values for the reference

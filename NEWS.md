@@ -83,6 +83,7 @@ If you read this from a place other than <https://mc-stan.org/projpred/news/inde
 * `get_refmodel()` now stops with an error that names the missing variables and gives a workaround. This applies to `rstanarm::stan_gamm4()` fits with argument `random` and an expression in the formula, such as `cbind(y, n - y)`. (GitHub: #148, #634)
 * Fixed errors in `cv_varsel()` with `cv_method = "LOO"` and `validate_search = TRUE` if a factor is only in a group-level term of a submodel (as with `search_terms`) and a level of it occurs only in the left-out observation. (GitHub: #635)
 * Fixed the error "length of 'dimnames' [1] not equal to array extent" in the predictions of multilevel `brms::categorical()` submodels with a factor in a group-level term, such as `(1 + f | g)`. `catCov` values other than `"free"` now give an error. (GitHub: #635, #640)
+* The latent projection of a `brms::categorical()` reference model now gives an error that says that the latent projection does not support this family. Before, the error was "replacement has ... rows, data has ...". (GitHub: #XXX)
 
 
 # projpred 2.11.0
