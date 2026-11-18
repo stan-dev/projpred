@@ -323,6 +323,30 @@ test_that(paste(
 })
 
 test_that(paste(
+  "the screened search runs with the reference model of the parallel fold",
+  "loops (without its fit) and gives the same ranking"
+), {
+  refm <- refm_screen()
+  refm_slim <- refmodel_for_folds(refm)
+  expect_null(refm_slim$fit)
+  p_ref <- get_refdist(refm, nclusters = 3)
+  search_terms <- union("1", split_formula(refm$formula,
+                                           data = refm$fetch_data()))
+  scr <- function(refmodel) {
+    muffle_known(search_forward_screen(
+      p_ref = p_ref, refmodel = refmodel, nterms_max = 4, verbose = FALSE,
+      search_terms = search_terms, screen_m = 3L, search_control = NULL
+    ))
+  }
+  out_full <- scr(refm)
+  out_slim <- scr(refm_slim)
+  expect_false(is.null(out_full))
+  expect_false(is.null(out_slim))
+  expect_identical(out_slim$predictor_ranking, out_full$predictor_ranking)
+  expect_length(out_slim$predictor_ranking, 4)
+})
+
+test_that(paste(
   "the screened fold searches of LOO CV use the perturbed observation weights",
   "and draws"
 ), {
