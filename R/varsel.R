@@ -86,7 +86,11 @@
 #'   The intercept (`"1"`) is always included internally via `union()`, so
 #'   there's no difference between including it explicitly or omitting it. The
 #'   default `search_terms` considers all the terms in the reference model's
-#'   formula.
+#'   formula and, for each smooth term, the linear terms of its variables. A
+#'   smooth term can enter the search only after the linear terms of its
+#'   variables that are search terms without a smooth term; the smooth term then
+#'   adds the nonlinear part. To search a smooth term without its linear terms,
+#'   leave these linear terms out of `search_terms`.
 #' @param search_out Intended for internal use.
 #' @param verbose A single integer value from the set \eqn{\{0, 1, 2, 3,
 #'   4\}}{{0, 1, 2, 3, 4}} (for [varsel()], \eqn{3} and \eqn{4} have the same
@@ -333,13 +337,12 @@ varsel.refmodel <- function(
   on.exit(proj_cache_exit(), add = TRUE)
 
   refmodel <- object
-  nterms_all <- count_terms_in_formula(refmodel$formula) - 1L
 
   # Parse arguments:
   args <- parse_args_varsel(
     refmodel = refmodel, method = method, refit_prj = refit_prj,
     nterms_max = nterms_max, nclusters = nclusters, search_terms = search_terms,
-    nterms_all = nterms_all, verbose = verbose
+    verbose = verbose
   )
   method <- args$method
   refit_prj <- args$refit_prj
@@ -347,6 +350,7 @@ varsel.refmodel <- function(
   nclusters <- args$nclusters
   search_terms <- args$search_terms
   search_terms_was_null <- args$search_terms_was_null
+  nterms_all <- args$nterms_all
   verbose <- args$verbose
 
   # Pre-process `d_test`:
@@ -618,7 +622,7 @@ varsel.refmodel <- function(
 # them in with the default values. The purpose of this function is to avoid
 # repeating the same code both in varsel() and cv_varsel().
 parse_args_varsel <- function(refmodel, method, refit_prj, nterms_max,
-                              nclusters, search_terms, nterms_all, verbose) {
+                              nclusters, search_terms, verbose) {
   search_terms_was_null <- is.null(search_terms)
   if (search_terms_was_null) {
     search_terms <- split_formula(refmodel$formula,
@@ -672,28 +676,30 @@ parse_args_varsel <- function(refmodel, method, refit_prj, nterms_max,
     )
   }
 
-  search_terms_unq <- unique(split_plus(search_terms))
-  max_nv_possible <- count_terms_chosen(search_terms_unq) - 1L
+  # The size of the largest submodel of the search (the submodel with all search
+  # terms):
+  nterms_all <- nterms_search_all(search_terms)
   if (is.null(nterms_max)) {
     nterms_max <- 19
-    if (nterms_max < max_nv_possible &&
+    if (nterms_max < nterms_all &&
         getOption("projpred.mssg_cut_search", TRUE)) {
       message("Cutting off the search at size ", nterms_max, ". Use argument ",
               "`nterms_max` to customize this.")
     }
   }
-  nterms_max <- min(max_nv_possible, nterms_max)
+  nterms_max <- min(nterms_all, nterms_max)
 
-  if (nterms_max == nterms_all && has_group_features &&
+  # The warning applies if the submodel with all search terms is reached and
+  # has group-level terms:
+  if (nterms_max == nterms_all &&
+      formula_contains_group_terms(make_formula(search_terms)) &&
       getOption("projpred.warn_instable_projections", TRUE) &&
       (refmodel$family$family == "gaussian" || refmodel$family$for_latent)) {
     warning(
-      "In case of the Gaussian family (also in case of the latent projection) ",
-      "and multilevel terms, the projection onto the full model can be ",
-      "instable and even lead to an error, see GitHub issue #323. If you ",
-      "experience this and may refrain from the projection onto the full ",
-      "model, set `nterms_max` to the number of predictor terms in the full ",
-      "model minus 1 (possibly accounting for submodel sizes skipped by ",
+      warn_instable_full_text(), " If you experience these problems and may ",
+      "refrain from the projection onto the full model, set `nterms_max` to ",
+      "the size of the submodel with all search terms minus 1 (here: ",
+      nterms_all - 1L, "; possibly accounting for submodel sizes skipped by ",
       "custom `search_terms`)."
     )
   }
@@ -701,5 +707,26 @@ parse_args_varsel <- function(refmodel, method, refit_prj, nterms_max,
   verbose <- as.integer(verbose)
 
   return(nlist(method, refit_prj, nterms_max, nclusters, search_terms,
-               search_terms_was_null, verbose))
+               search_terms_was_null, nterms_all, verbose))
+}
+
+# The text of the warning about the projection onto the full Gaussian (or
+# latent) multilevel model, used by varsel(), cv_varsel() and project(). If the
+# submodel has all terms of the reference model, it can reproduce the reference
+# model prediction of each projected draw or cluster. Then the residual SD of
+# the lme4 fit goes to 0, and the fit has no finite optimum. For one
+# group-level intercept term and q < n - p, the projected group-level SD goes
+# to the root mean square of the centered group-level effects of that
+# prediction times sqrt(q / (n - p)) (REML).
+warn_instable_full_text <- function() {
+  paste0(
+    "In case of the Gaussian family (also in case of the latent projection) ",
+    "and multilevel terms, the projection onto the full model can be ",
+    "instable and even lead to an error, see GitHub issue #323. If the ",
+    "submodel has all terms of the reference model, the projected ",
+    "group-level standard deviation (SD) is also too small by a factor. For ",
+    "one group-level intercept term with q levels (and no other group-level ",
+    "or smooth terms), n observations, p population-level coefficients and ",
+    "q < n - p, this factor is about sqrt(q / (n - p))."
+  )
 }

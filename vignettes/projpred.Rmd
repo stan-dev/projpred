@@ -204,7 +204,7 @@ cv_fits <- run_cvfun(
 # Note: Parallel processing is disabled during package building to avoid issues
 use_parallel <- FALSE  # Set to TRUE for actual parallel processing
 if (use_parallel) {
-  doParallel::registerDoParallel(ncores)
+  future::plan(future::multisession, workers = ncores)
 }
 # Final cv_varsel() run:
 cvvs <- cv_varsel(
@@ -223,8 +223,7 @@ cvvs <- cv_varsel(
 )
 # Tear down the CV parallelization setup:
 if (use_parallel) {
-  doParallel::stopImplicitCluster()
-  foreach::registerDoSEQ()
+  future::plan(future::sequential)
 }
 ```
 
@@ -345,10 +344,10 @@ By the following `project()` call, we project the reference model onto the final
 <!-- Therefore, this parallelization is not activated by a simple logical switch, but by a threshold for the number of projected draws below which no parallelization will be used. -->
 <!-- Values greater than or equal to this threshold will trigger the parallelization. -->
 <!-- For more information, see the general package documentation available at ``?`projpred-package` ``. -->
-<!-- There, we also explain why we are not running the parallelization on Windows and why we cannot recommend the parallelization of the projection for some types of reference models (see also section ["Supported types of models"](#modtypes) below). -->
+<!-- There, we also explain for which types of submodels the parallelization of the projection is useful (see also section ["Supported types of models"](#modtypes) below). -->
 <!-- ```{r prll_prj_prep} -->
 <!-- if (!identical(.Platform$OS.type, "windows")) { -->
-<!--   doParallel::registerDoParallel(ncores) -->
+<!--   future::plan(future::multisession, workers = ncores) -->
 <!--   trigger_default <- options(projpred.parallel_proj_trigger = 200) -->
 <!-- } -->
 <!-- ``` -->
@@ -364,8 +363,7 @@ prj <- project(
 <!-- ```{r prll_prj_tear} -->
 <!-- if (!identical(.Platform$OS.type, "windows")) { -->
 <!--   options(trigger_default) -->
-<!--   doParallel::stopImplicitCluster() -->
-<!--   foreach::registerDoSEQ() -->
+<!--   future::plan(future::sequential) -->
 <!-- } -->
 <!-- ``` -->
 
