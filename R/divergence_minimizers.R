@@ -624,18 +624,20 @@ lmer_frame_attrs <- function(fit) {
   })
 }
 
-# `fit` (a submodel fit) with the symbol `data` instead of a data frame as
-# element `data` of its call. The fitters get the data as a value (through
-# do.call()), so the call of a fit holds a copy of the data frame, with the
-# response columns of all draws. In memory, the fits share this copy, but each
-# serialized fit (from a parallel worker, or in a saved projection) holds its
-# own. Predictions do not use the call. The elements of a list `fit` (for
-# example, the parts of a gamm4 fit) are searched too, one level deep.
-strip_call_data <- function(fit, depth = 0L) {
+# `fit` (a submodel fit) without the data frame in element `data` of its call.
+# The fitters get the data as a value (through do.call()), so the call of a fit
+# holds a copy of the data frame, with the response columns of all draws. In
+# memory, the fits share this copy, but each serialized fit (from a parallel
+# worker, or in a saved projection) holds its own. Predictions for new data do
+# not use the call. The new element is a symbol that does not exist, so code
+# that evaluates the call (update(), lme4::getData()) stops instead of finding
+# other data. Fits that keep the data in another element (stats::glm(),
+# mclogit::mblogit()) keep it.
+strip_call_data <- function(fit) {
   if (isS4(fit)) {
     if (methods::.hasSlot(fit, "call") && is.call(fit@call) &&
-        is.data.frame(fit@call$data)) {
-      fit@call$data <- quote(data)
+        is.data.frame(fit@call[["data"]])) {
+      fit@call[["data"]] <- quote(.projpred_data_removed)
     }
     return(fit)
   }
@@ -643,17 +645,9 @@ strip_call_data <- function(fit, depth = 0L) {
     return(fit)
   }
   cl <- fit[["call"]]
-  if (is.call(cl) && is.data.frame(cl$data)) {
-    cl$data <- quote(data)
+  if (is.call(cl) && is.data.frame(cl[["data"]])) {
+    cl[["data"]] <- quote(.projpred_data_removed)
     fit[["call"]] <- cl
-  }
-  if (depth < 1L) {
-    for (j in seq_along(fit)) {
-      el <- fit[[j]]
-      if (isS4(el) || (is.list(el) && !is.data.frame(el))) {
-        fit[[j]] <- strip_call_data(el, depth = depth + 1L)
-      }
-    }
   }
   return(fit)
 }

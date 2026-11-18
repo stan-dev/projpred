@@ -1,5 +1,3 @@
-context("strip_call_data")
-
 # Data with the response columns of several draws, as the submodel fitters get
 # them:
 n_scd <- 150L
@@ -20,21 +18,21 @@ dat_scd$yo <- cut(eta_scd + 1.2 * sin(2.9 * idx_scd + 0.2),
 dat_scd$yc <- factor(dat_scd$yo, ordered = FALSE)
 newdat_scd <- dat_scd[c(3, 50, 77, 120), c("x1", "x2", "g")]
 
-# Whether a call of `x` (or of its list elements, one level deep) holds a
-# data frame as element `data`:
-has_call_data <- function(x, depth = 0L) {
-  cl <- if (isS4(x)) {
-    if (methods::.hasSlot(x, "call")) x@call
-  } else if (is.list(x) && !is.data.frame(x)) {
-    x[["call"]]
+# Whether `x` holds a data frame with column `col` anywhere in its list
+# elements, S4 slots and calls (not in environments):
+has_df_with <- function(x, col, depth = 0L) {
+  if (depth > 8L) {
+    return(FALSE)
   }
-  if (is.call(cl) && is.data.frame(cl$data)) {
-    return(TRUE)
+  if (is.data.frame(x)) {
+    return(col %in% names(x))
   }
-  if (depth < 1L && is.list(x) && !isS4(x) && !is.data.frame(x)) {
-    return(any(vapply(x, has_call_data, logical(1), depth = depth + 1L)))
+  parts <- if (isS4(x)) {
+    lapply(methods::slotNames(x), function(nm) methods::slot(x, nm))
+  } else if (is.list(x) || is.call(x)) {
+    as.list(x)
   }
-  return(FALSE)
+  any(vapply(parts, has_df_with, logical(1), col = col, depth = depth + 1L))
 }
 
 test_that(paste(
@@ -44,58 +42,71 @@ test_that(paste(
   # Each case: the fit (through do.call(), as in the fitters of projpred) and
   # the predictions for new data (`NULL`: no predict() method).
   cases <- list(
-    lmer = list(pkg = "lme4", fit = function() {
+    lmer = list(fit = function() {
       do.call(lme4::lmer, list(formula = .y.1 ~ x1 + x2 + (1 | g),
                                data = dat_scd))
     }, pred = function(f) predict(f, newdata = newdat_scd)),
-    glmer = list(pkg = "lme4", fit = function() {
+    glmer = list(fit = function() {
       do.call(lme4::glmer, list(formula = yb ~ x1 + (1 | g), data = dat_scd,
                                 family = binomial()))
     }, pred = function(f) predict(f, newdata = newdat_scd)),
-    gam = list(pkg = "mgcv", fit = function() {
+    gam = list(fit = function() {
       do.call(mgcv::gam, list(formula = .y.1 ~ s(x1) + x2, data = dat_scd))
     }, pred = function(f) predict(f, newdata = newdat_scd)),
     # gamm4() fits keep no data frame in their calls:
-    gamm4 = list(pkg = "gamm4", fit = function() {
+    gamm4 = list(fit = function() {
       do.call(gamm4::gamm4, list(formula = .y.1 ~ s(x1) + x2,
                                  random = ~ (1 | g), data = dat_scd))
     }, pred = function(f) predict(f$gam, newdata = newdat_scd),
     no_data = TRUE),
-    glmmPQL = list(pkg = "MASS", fit = function() {
+    glmmPQL = list(fit = function() {
       do.call(MASS::glmmPQL, list(fixed = yb ~ x1, random = ~ 1 | g,
                                   family = binomial(), data = dat_scd,
                                   verbose = FALSE))
     }, pred = function(f) predict(f, newdata = newdat_scd, level = 0)),
-    polr = list(pkg = "MASS", fit = function() {
+    polr = list(fit = function() {
       do.call(MASS::polr, list(formula = yo ~ x1 + x2, data = dat_scd))
     }, pred = function(f) predict(f, newdata = newdat_scd, type = "probs")),
-    clmm = list(pkg = "ordinal", fit = function() {
+    clmm = list(fit = function() {
       do.call(ordinal::clmm, list(formula = yo ~ x1 + (1 | g),
                                   data = dat_scd))
     }, pred = NULL),
-    multinom = list(pkg = "nnet", fit = function() {
+    multinom = list(fit = function() {
       do.call(nnet::multinom, list(formula = yc ~ x1 + x2, data = dat_scd,
                                    trace = FALSE))
     }, pred = function(f) predict(f, newdata = newdat_scd, type = "probs"))
   )
   for (nm in names(cases)) {
     cs <- cases[[nm]]
-    if (!requireNamespace(cs$pkg, quietly = TRUE)) next
     fit <- suppressMessages(suppressWarnings(cs$fit()))
+    fit_s <- strip_call_data(fit)
+    expect_false(has_df_with(fit_s, ".y.2"), info = nm)
     if (isTRUE(cs$no_data)) {
-      expect_false(has_call_data(fit), info = nm)
-      expect_identical(strip_call_data(fit), fit, info = nm)
+      expect_identical(fit_s, fit, info = nm)
       next
     }
-    expect_true(has_call_data(fit), info = nm)
-    fit_s <- strip_call_data(fit)
-    expect_false(has_call_data(fit_s), info = nm)
+    expect_true(has_df_with(fit, ".y.2"), info = nm)
     expect_lt(length(serialize(fit_s, NULL)), length(serialize(fit, NULL)),
               label = nm)
     if (!is.null(cs$pred)) {
       expect_identical(cs$pred(fit_s), cs$pred(fit), info = nm)
     }
   }
+})
+
+test_that(paste(
+  "the call of a stripped fit does not find other data, and lme4 predictions",
+  "for the training data use the model frame"
+), {
+  fit <- suppressMessages(do.call(lme4::lmer, list(
+    formula = .y.1 ~ x1 + x2 + (1 | g), data = dat_scd
+  )))
+  fit_s <- strip_call_data(fit)
+  # A data frame named `data` must not replace the data of the fit:
+  data <- dat_scd[1:10, ]
+  expect_identical(predict(fit_s, re.form = ~ (1 | g)),
+                   predict(fit, re.form = ~ (1 | g)))
+  expect_error(update(fit_s, . ~ . - x2), "\\.projpred_data_removed")
 })
 
 test_that("strip_call_data() leaves other objects as they are", {
@@ -105,7 +116,10 @@ test_that("strip_call_data() leaves other objects as they are", {
   expect_identical(strip_call_data(x), x)
 })
 
-test_that("divmin() gives multilevel and additive fits without the data", {
+test_that(paste(
+  "divmin() gives multilevel and additive fits without the data in their",
+  "calls"
+), {
   fml_resp <- paste0("cbind(", paste0(".y.", seq_len(n_draws_scd),
                                       collapse = ", "), ")")
   divmin_scd <- function(rhs) {
@@ -116,9 +130,47 @@ test_that("divmin() gives multilevel and additive fits without the data", {
       projpred_ws_aug = matrix(NA, n_scd, n_draws_scd), verbose_divmin = FALSE
     ))
   }
-  for (rhs in c("x1 + x2 + (1 | g)", "s(x1) + x2")) {
-    fits <- divmin_scd(rhs)
-    expect_length(fits, n_draws_scd)
-    expect_false(any(vapply(fits, has_call_data, logical(1))), info = rhs)
+  # The shared lme4 and mgcv setups, and the draw-wise lme4 fits:
+  for (lmer_shared in c(TRUE, FALSE)) {
+    opts_old <- options(projpred.lmer_shared = lmer_shared)
+    for (rhs in c("x1 + x2 + (1 | g)", "s(x1) + x2")) {
+      info <- paste(rhs, "lmer_shared:", lmer_shared)
+      fits <- divmin_scd(rhs)
+      expect_length(fits, n_draws_scd)
+      expect_false(any(vapply(fits, has_df_with, logical(1), col = ".y.2")),
+                   info = info)
+    }
+    options(opts_old)
+  }
+})
+
+test_that("divmin_augdat() gives clmm() fits without the data in their calls", {
+  cats <- c("lo", "mid", "hi")
+  d_aug <- do.call(rbind, lapply(cats, function(cat_i) {
+    d <- dat_scd[, c("x1", "x2", "g")]
+    d$yo <- cat_i
+    # A column that only the data of the fitter call holds:
+    d$col_unused <- 1
+    d
+  }))
+  d_aug$yo <- factor(d_aug$yo, levels = cats, ordered = TRUE)
+  probs <- function(shift) {
+    t(vapply(eta_scd + shift, function(eta_i) {
+      diff(c(0, plogis(c(-0.5, 0.5) - eta_i), 1))
+    }, numeric(3)))
+  }
+  ws_aug <- cbind(c(probs(0)), c(probs(0.3)))
+  fam <- structure(list(family = "cumulative_rstanarm", link = "logit",
+                        cats = cats), class = "family")
+  fits <- suppressWarnings(divmin_augdat(
+    formula = yo ~ x1 + (1 | g), data = d_aug, family = fam,
+    weights = "unused", projpred_var = matrix(NA_real_, nrow(d_aug), 2),
+    projpred_ws_aug = ws_aug, verbose_divmin = FALSE,
+    throw_warn_sdivmin = FALSE, do_check_conv = FALSE
+  ))
+  expect_length(fits, 2)
+  for (fit in fits) {
+    expect_s3_class(fit, "clmm")
+    expect_false(has_df_with(fit, "col_unused"))
   }
 })
