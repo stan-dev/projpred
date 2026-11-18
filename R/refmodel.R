@@ -587,8 +587,8 @@ predict.refmodel <- function(object, newdata = NULL, ynew = NULL,
         }
         if (all(is.na(pred))) {
           message(
-            "`latent_ilink` returned only `NA`s, so the output will also be ",
-            "`NA` as long as `type = \"response\"`."
+            "`latent_ilink` (or `latent_epred`) returned only `NA`s, so the ",
+            "output will also be `NA` as long as `type = \"response\"`."
           )
         }
       } else {

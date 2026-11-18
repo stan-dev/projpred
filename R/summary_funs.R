@@ -164,8 +164,9 @@ weighted_summary_means <- function(y_wobs_test, data_aux_test, family, wdraws,
         )
       } else if (ref_mu_NA || sub_mu_NA || fast_sub_mu_NA) {
         message(
-          "`latent_ilink` returned only `NA`s, so all performance statistics ",
-          "will also be `NA` as long as `resp_oscale = TRUE`."
+          "`latent_ilink` (or `latent_epred`) returned only `NA`s, so all ",
+          "performance statistics will also be `NA` as long as ",
+          "`resp_oscale = TRUE`."
         )
       } else if (any(stats %in% c("elpd", "mlpd", "gmpd")) &&
                  (ref_lppd_NA || sub_lppd_NA || fast_sub_lppd_NA)) {

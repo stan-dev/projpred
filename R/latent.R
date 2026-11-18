@@ -116,8 +116,11 @@ latent_epred_apply <- function(family, ilpreds, dis, cl_ref,
   if (!is.matrix(out) || !identical(dim(out), dim(ilpreds))) {
     stop("Unexpected structure for the output of `latent_epred`.")
   }
-  if (is.null(dimnames(out))) {
-    dimnames(out) <- dimnames(ilpreds)
+  if (is.null(rownames(out))) {
+    rownames(out) <- rownames(ilpreds)
+  }
+  if (is.null(colnames(out))) {
+    colnames(out) <- colnames(ilpreds)
   }
   return(out)
 }

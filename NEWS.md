@@ -33,7 +33,7 @@ If you read this from a place other than <https://mc-stan.org/projpred/news/inde
 * The forward search adds a smooth term only after the linear terms of its variables, so the full model has the same size on all search paths. The full-model warnings use the size of the submodel with all search terms. This changes the default results of additive models. (GitHub: #638)
 * Faster binomial (logit) and Poisson (log) multilevel submodels with group-level intercepts only: projpred's own Laplace fit (class `projpred_mlvl`). `cv_varsel()` with `validate_search = TRUE` is about 8 times faster. (GitHub: #644)
 * The fits of these submodels (for example, in element `outdmin` of `project()` output) have class `projpred_mlvl` instead of `glmerMod`. The new function `as_glmerMod()` converts such a fit to class `glmerMod`. (GitHub: #644)
-* New argument `latent_epred` of `extend_family()`: a function that gives the response-scale expected values of the latent projection, for example `exp(meanlog + sdlog^2 / 2)` for a log-normal model. They are used for the predictions and for `"mse"`, `"rmse"` and `"R2"`. (GitHub: #???)
+* New argument `latent_epred` of `extend_family()` for the response-scale expected values of the latent projection, e.g., `exp(meanlog + sdlog^2 / 2)` for a log-normal model. They are used in `proj_linpred()`, `proj_epred()`, `predict.refmodel()` and for `"mse"`, `"rmse"` and `"R2"`. (GitHub: #???)
 
 ## Minor changes
 

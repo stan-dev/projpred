@@ -53,14 +53,14 @@
 #'   "posterior predictive distribution"), \pkg{projpred} currently only uses it
 #'   in [proj_predict()], i.e., for sampling from what would better be termed
 #'   posterior-projection predictive distribution (PPPD).
-#' @param latent_epred Only relevant for the latent projection with
-#'   `is.null(family$cats)` (after taking `latent_y_unqs` into account). If not
-#'   `NULL`, this needs to be the function computing the response-scale
-#'   expected values from the output of `latent_ilink`. It is needed if the
-#'   output of `latent_ilink` is not the expected value, for example the
-#'   `meanlog` parameter of a log-normal distribution. If `NULL` (the default),
-#'   the output of `latent_ilink` is used as the expected value. See also
-#'   section "Latent projection" below.
+#' @param latent_epred Only relevant for the latent projection. Must be `NULL`
+#'   if `family$cats` is not `NULL` (after taking `latent_y_unqs` into
+#'   account). If not `NULL`, this needs to be the function computing the
+#'   response-scale expected values from the output of `latent_ilink`. It is
+#'   needed if the output of `latent_ilink` is not the expected value, for
+#'   example the `meanlog` parameter of a log-normal distribution. If `NULL`
+#'   (the default), the output of `latent_ilink` is used as the expected value.
+#'   See also section "Latent projection" below.
 #' @param augdat_y_unqs Only relevant for augmented-data projection, in which
 #'   case this needs to be the character vector of unique response values (which
 #'   will be assigned to `family$cats` internally) or may be left at `NULL` if
@@ -240,7 +240,11 @@
 #' latent_epred(ilpreds, dis, cl_ref, wdraws_ref = rep(1, length(cl_ref)))
 #' ```
 #' where the arguments accept the same input as the arguments of the same name
-#' of `latent_ll_oscale`. The return value of `latent_epred` needs to be an
+#' of `latent_ll_oscale`. For a submodel, `dis` contains the projected draws of
+#' the dispersion parameter; for the reference model, it is `<refmodel>$dis`
+#' (see argument `dis` of [init_refmodel()]). If `<refmodel>$dis` consists of
+#' only `NA`s, a `latent_epred` function that uses `dis` gives `NA`s for the
+#' reference model. The return value of `latent_epred` needs to be an
 #' \eqn{S \times N}{S x N} matrix containing the response-scale expected
 #' values. \pkg{projpred} uses them for the response-scale predictions of
 #' [proj_linpred()] (with `transform = TRUE`), [proj_epred()], and
@@ -269,9 +273,9 @@
 #' the \eqn{K} folds are created by the `cvrefbuilder` function (see
 #' [init_refmodel()]). The default `cvrefbuilder` functions of
 #' [get_refmodel.stanreg()] and [brms::get_refmodel.brmsfit()] pass
-#' user-supplied functions `latent_ilink`, `latent_ll_oscale`, and
-#' `latent_ppd_oscale` (and a user-supplied argument `dis`, see
-#' [init_refmodel()]) unchanged to the fold-wise reference model objects. If
+#' user-supplied functions `latent_ilink`, `latent_ll_oscale`,
+#' `latent_ppd_oscale`, and `latent_epred` (and a user-supplied argument `dis`,
+#' see [init_refmodel()]) unchanged to the fold-wise reference model objects. If
 #' these functions take reference model draws from their enclosing environment
 #' (e.g., draws of a shape parameter), or if `dis` contains such draws, then the
 #' folds use the draws from the full-data fit. To use the draws from the
@@ -432,8 +436,17 @@ extend_family <- function(family,
           stop("Argument `latent_epred` cannot be used if `family$cats` is ",
                "not `NULL`.")
         }
-        if (!any(c("dis", "...") %in% methods::formalArgs(latent_epred))) {
-          stop("Please add argument `dis` to the `latent_epred` function.")
+        if (!is.function(latent_epred)) {
+          stop("Argument `latent_epred` needs to be a function or `NULL`.")
+        }
+        args_epred <- c("dis", "cl_ref", "wdraws_ref")
+        args_missing <- setdiff(args_epred,
+                                methods::formalArgs(latent_epred))
+        if (!"..." %in% methods::formalArgs(latent_epred) &&
+            length(args_missing) > 0) {
+          stop("Please add argument(s) ",
+               paste0("`", args_missing, "`", collapse = ", "),
+               " to the `latent_epred` function.")
         }
       }
       family$latent_ilink <- latent_ilink

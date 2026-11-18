@@ -67,14 +67,14 @@ this function has the abbreviation "PPD" in its name (which stands for
 in \code{\link[=proj_predict]{proj_predict()}}, i.e., for sampling from what would better be termed
 posterior-projection predictive distribution (PPPD).}
 
-\item{latent_epred}{Only relevant for the latent projection with
-\code{is.null(family$cats)} (after taking \code{latent_y_unqs} into account). If not
-\code{NULL}, this needs to be the function computing the response-scale
-expected values from the output of \code{latent_ilink}. It is needed if the
-output of \code{latent_ilink} is not the expected value, for example the
-\code{meanlog} parameter of a log-normal distribution. If \code{NULL} (the default),
-the output of \code{latent_ilink} is used as the expected value. See also
-section "Latent projection" below.}
+\item{latent_epred}{Only relevant for the latent projection. Must be \code{NULL}
+if \code{family$cats} is not \code{NULL} (after taking \code{latent_y_unqs} into
+account). If not \code{NULL}, this needs to be the function computing the
+response-scale expected values from the output of \code{latent_ilink}. It is
+needed if the output of \code{latent_ilink} is not the expected value, for
+example the \code{meanlog} parameter of a log-normal distribution. If \code{NULL}
+(the default), the output of \code{latent_ilink} is used as the expected value.
+See also section "Latent projection" below.}
 
 \item{augdat_y_unqs}{Only relevant for augmented-data projection, in which
 case this needs to be the character vector of unique response values (which
@@ -286,7 +286,11 @@ The function supplied to argument \code{latent_epred} needs to have the prototyp
 }\if{html}{\out{</div>}}
 
 where the arguments accept the same input as the arguments of the same name
-of \code{latent_ll_oscale}. The return value of \code{latent_epred} needs to be an
+of \code{latent_ll_oscale}. For a submodel, \code{dis} contains the projected draws of
+the dispersion parameter; for the reference model, it is \verb{<refmodel>$dis}
+(see argument \code{dis} of \code{\link[=init_refmodel]{init_refmodel()}}). If \verb{<refmodel>$dis} consists of
+only \code{NA}s, a \code{latent_epred} function that uses \code{dis} gives \code{NA}s for the
+reference model. The return value of \code{latent_epred} needs to be an
 \eqn{S \times N}{S x N} matrix containing the response-scale expected
 values. \pkg{projpred} uses them for the response-scale predictions of
 \code{\link[=proj_linpred]{proj_linpred()}} (with \code{transform = TRUE}), \code{\link[=proj_epred]{proj_epred()}}, and
@@ -314,9 +318,9 @@ In \code{\link[=cv_varsel]{cv_varsel()}} with \code{cv_method = "kfold"}, the re
 the \eqn{K} folds are created by the \code{cvrefbuilder} function (see
 \code{\link[=init_refmodel]{init_refmodel()}}). The default \code{cvrefbuilder} functions of
 \code{\link[=get_refmodel.stanreg]{get_refmodel.stanreg()}} and \code{\link[brms:get_refmodel.brmsfit]{brms::get_refmodel.brmsfit()}} pass
-user-supplied functions \code{latent_ilink}, \code{latent_ll_oscale}, and
-\code{latent_ppd_oscale} (and a user-supplied argument \code{dis}, see
-\code{\link[=init_refmodel]{init_refmodel()}}) unchanged to the fold-wise reference model objects. If
+user-supplied functions \code{latent_ilink}, \code{latent_ll_oscale},
+\code{latent_ppd_oscale}, and \code{latent_epred} (and a user-supplied argument \code{dis},
+see \code{\link[=init_refmodel]{init_refmodel()}}) unchanged to the fold-wise reference model objects. If
 these functions take reference model draws from their enclosing environment
 (e.g., draws of a shape parameter), or if \code{dis} contains such draws, then the
 folds use the draws from the full-data fit. To use the draws from the
