@@ -134,15 +134,17 @@ test_that(paste(
   }
   # The shared lme4 and mgcv setups, and the draw-wise lme4 fits:
   for (lmer_shared in c(TRUE, FALSE)) {
-    opts_old <- options(projpred.lmer_shared = lmer_shared)
-    for (rhs in c("x1 + x2 + (1 | g)", "s(x1) + x2")) {
-      info <- paste(rhs, "lmer_shared:", lmer_shared)
-      fits <- divmin_scd(rhs)
-      expect_length(fits, n_draws_scd)
-      expect_false(any(vapply(fits, has_df_with, logical(1), col = "col_unused")),
-                   info = info)
-    }
-    options(opts_old)
+    withr::with_options(list(projpred.lmer_shared = lmer_shared), {
+      for (rhs in c("x1 + x2 + (1 | g)", "s(x1) + x2")) {
+        info <- paste(rhs, "lmer_shared:", lmer_shared)
+        fits <- divmin_scd(rhs)
+        expect_length(fits, n_draws_scd)
+        expect_false(
+          any(vapply(fits, has_df_with, logical(1), col = "col_unused")),
+          info = info
+        )
+      }
+    })
   }
 })
 
@@ -196,6 +198,8 @@ test_that(paste(
 })
 
 test_that("divmin_augdat() gives clmm() fits without the data in their calls", {
+  # Without projpred's own Laplace fit, divmin_augdat() uses clmm():
+  withr::local_options(projpred.mlvl_laplace = FALSE)
   cats <- c("lo", "mid", "hi")
   d_aug <- do.call(rbind, lapply(cats, function(cat_i) {
     d <- dat_scd[, c("x1", "x2", "g")]
