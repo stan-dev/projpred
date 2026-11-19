@@ -99,8 +99,8 @@ test_that(paste(
   k <- k_eloo$k
   expect_length(k, n)
   thres <- .ps_khat_threshold(S)
-  # The k value of observation 1 could not be estimated (`NA` or `-Inf`,
-  # depending on the posterior version) or is above the threshold:
+  # The k value of observation 1 could not be estimated (`NA` or `-Inf`) or is
+  # above the threshold:
   expect_true(is.na(k[1]) || k[1] == -Inf || k[1] > thres)
   k_inf <- replace(k, is.na(k) | k == -Inf, Inf)
   expect_length(warns_lat, 1)
