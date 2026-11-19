@@ -419,6 +419,7 @@ evaluations in case of \code{validate_search = TRUE}. (Note that in case of
 argument \code{parallel}; only \pkg{projpred}'s CV is affected.) The
 parallelization uses the workers of the current plan of the
 \pkg{future} package (set up with, e.g.,
+\code{future::plan(future.mirai::mirai_multisession, workers = 4)} or
 \code{future::plan(future::multisession, workers = 4)}), see section
 "Parallelization" in \link{projpred-package}. Without such workers, the CV
 runs sequentially, with a warning. Each CV fold has its own random
