@@ -74,3 +74,24 @@ test_that("extend_family() works for the latent projection", {
                   info_str = fam_nm)
   }
 })
+
+test_that(paste(
+  "the latent projection stops for brms families with several linear",
+  "predictors"
+), {
+  skip_if_not_installed("brms")
+  msg_categ <- paste("support the latent projection for the brms family",
+                     "`categorical()`")
+  expect_error(extend_family(brms::categorical(), latent = TRUE), msg_categ,
+               fixed = TRUE)
+  for (latent in c(FALSE, TRUE)) {
+    expect_error(extend_family(brms::multinomial(), latent = latent),
+                 "does not support the brms family `multinomial()`",
+                 fixed = TRUE, info = paste("latent:", latent))
+  }
+  tstsetups <- grep("^brms\\.(glm|glmm)\\.categ\\.", names(fits), value = TRUE)
+  for (tstsetup in tstsetups) {
+    expect_error(get_refmodel(fits[[tstsetup]], latent = TRUE), msg_categ,
+                 fixed = TRUE, info = tstsetup)
+  }
+})
