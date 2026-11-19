@@ -100,8 +100,20 @@ name, so for example \code{\link[lme4:simulate.merMod]{lme4::simulate.merMod()}}
 \item For the augmented-data projection: \code{\link[ordinal:clmm]{ordinal::clmm()}} (the returned
 object inherits from class \code{clmm}) for the \code{\link[brms:cumulative]{brms::cumulative()}} family,
 \code{\link[mclogit:mblogit]{mclogit::mblogit()}} (the returned object inherits from class \code{mmblogit})
-for the \code{\link[brms:categorical]{brms::categorical()}} family. For \code{\link[ordinal:clmm]{ordinal::clmm()}} with a single
-group-level term \verb{(1 | <group>)}, \pkg{projpred} uses
+for the \code{\link[brms:categorical]{brms::categorical()}} family. Exception: for the
+\code{\link[brms:cumulative]{brms::cumulative()}} family, if the only group-level term is a random
+intercept \verb{(1 | <group>)}, \pkg{projpred} uses its own fit (the returned
+object inherits from classes \code{projpred_mlvl_cumul} and \code{projpred_mlvl}).
+This fit minimizes the Laplace approximation that \code{\link[ordinal:clmm]{ordinal::clmm()}}
+uses, for the links of \code{\link[brms:cumulative]{brms::cumulative()}} (\code{logit}, \code{probit},
+\code{probit_approx}, \code{cloglog}, \code{cauchit}). \pkg{projpred} uses
+\code{\link[ordinal:clmm]{ordinal::clmm()}} instead if the fit does not converge, if the submodel
+has an offset or a rank-deficient model matrix, if \code{...} contains
+arguments of \code{\link[ordinal:clmm]{ordinal::clmm()}} or of its optimizers (for example
+\code{method} or \code{control}), or if global option \code{projpred.mlvl_laplace} is
+\code{FALSE}. After a fit that does not converge, the \code{\link[ordinal:clmm]{ordinal::clmm()}} fit
+is returned as class \code{projpred_mlvl_cumul}, too. For \code{\link[ordinal:clmm]{ordinal::clmm()}}
+with a single group-level term \verb{(1 | <group>)}, \pkg{projpred} uses
 \code{method = "ucminf"} and \code{grad = "forward"} (see
 \code{\link[ordinal:clmm.control]{ordinal::clmm.control()}}). If this fit fails or does not converge,
 \pkg{projpred} refits with the default settings of \code{\link[ordinal:clmm]{ordinal::clmm()}}. An
