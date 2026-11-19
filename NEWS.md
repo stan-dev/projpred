@@ -96,6 +96,7 @@ If you read this from a place other than <https://mc-stan.org/projpred/news/inde
 * The warning of `init_refmodel()` for multilevel models with a binomial response or with the augmented-data projection now gives the cause. The projected group-level standard deviations can be near zero, and then the search can rank group-level terms too low. (GitHub: #353, #655)
 * With `latent = TRUE`, `get_refmodel()` and `init_refmodel()` give an informative error for `brms::categorical()` and the unsupported **brms** families with several linear predictors (for example `multinomial()`). (GitHub: #658)
 
+* Fixed the error "missing value where TRUE/FALSE needed" in `cv_varsel()` with LOO and the latent projection if a Pareto k could not be estimated. Such a k now counts as `Inf`, as in `loo::psis()`. The submodel Pareto k warning now counts with the threshold that it prints. (GitHub: #???)
 
 # projpred 2.11.0
 

@@ -785,8 +785,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
   # argument, another reason is that they can quickly become as costly as
   # K-fold CV).
   warn_pareto(
-    n07 = sum(pareto_k > .ps_khat_threshold(dim(psisloo)[1])), n = n,
-    khat_threshold = .ps_khat_threshold(dim(psisloo)[1]),
+    pareto_k, S = dim(psisloo)[1], n = n,
     warn_txt = paste0("Some (%d / %d) Pareto k's for the reference model's ",
                       "PSIS-LOO weights are > %s.")
   )
@@ -825,8 +824,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
     # al., 2024, <https://jmlr.org/papers/v25/19-556.html>, beginning of
     # section 3, section 3.2.8, appendix D, and appendix E).
     warn_pareto(
-      n07 = sum(y_lat_E$pareto_k > .ps_khat_threshold(dim(psisloo)[1])), n = n,
-      khat_threshold = .ps_khat_threshold(dim(psisloo)[1]),
+      y_lat_E$pareto_k, S = dim(psisloo)[1], n = n,
       warn_txt = paste0(
         "In the recalculation of the latent response values, some (%d / %d) ",
         "expectation-specific Pareto k-values are > %s.\n",
@@ -1004,8 +1002,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
       if (importance_sampling_nm == "psis") {
         pareto_k_eval <- loo::pareto_k_values(sub_psisloo)
         warn_pareto(
-          n07 = sum(pareto_k_eval > .ps_khat_threshold(dim(psisloo)[1])), n = n,
-          khat_threshold = .ps_khat_threshold(dim(sub_psisloo)[1]),
+          pareto_k_eval, S = dim(sub_psisloo)[1], n = n,
           warn_txt = paste0(
             "Some (%d / %d) Pareto k's for the reference model's PSIS-LOO ",
             "weights given ", txt_clust_draws(clust_used_eval, nprjdraws_eval),
@@ -1442,31 +1439,39 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
   return(out_list)
 }
 
-warn_pareto <- function(n07, n, khat_threshold = 0.7, warn_txt) {
-  if (!getOption("projpred.warn_psis", TRUE) || (n07 == 0)) return()
-  warning(sprintf(warn_txt, n07, n, as.character(round(khat_threshold, 2))),
+# Warns if some of the Pareto k values `pareto_k` (estimated from `S` draws)
+# are above the threshold for `S` draws. `warn_txt` is the sprintf() format for
+# the number of these k values, `n` and the threshold.
+warn_pareto <- function(pareto_k, S, n, warn_txt) {
+  if (!getOption("projpred.warn_psis", TRUE)) return()
+  khat_threshold <- .ps_khat_threshold(S)
+  n_high <- n_high_pareto_k(pareto_k, khat_threshold)
+  if (n_high == 0) return()
+  warning(sprintf(warn_txt, n_high, n, as.character(round(khat_threshold, 2))),
           call. = FALSE)
   return()
 }
 
+# The number of Pareto k values above `threshold`. As in loo::psis(), a k value
+# that could not be estimated (`NA`, `NaN` or `-Inf`, for example because the
+# tail of the ratios underflows to 0) counts as `Inf`.
+n_high_pareto_k <- function(pareto_k, threshold) {
+  pareto_k[is.na(pareto_k) | pareto_k == -Inf] <- Inf
+  return(sum(pareto_k > threshold))
+}
+
 #' Pareto-smoothing k-hat threshold
 #'
-#' Copied from loo package. Remove after loo package exposes this.
-#'
-#' Given sample size S computes khat threshold for reliable Pareto
-#' smoothed estimate (to have small probability of large error). See
-#' section 3.2.4, equation (13). Sample sizes 100, 320, 1000, 2200,
-#' 10000 correspond to thresholds 0.5, 0.6, 0.67, 0.7, 0.75. Although
-#' with bigger sample size S we can achieve estimates with small
-#' probability of large error, it is difficult to get accurate MCSE
-#' estimates as the bias starts to dominate when k > 0.7 (see Section 3.2.3).
-#' Thus the sample size dependend k-ht threshold is capped at 0.7.
+#' The threshold of posterior::ps_khat_threshold(), capped at 0.7 as in the loo
+#' package (which does not export its version). With more draws, the estimates
+#' can have a small probability of a large error also for k > 0.7, but it is
+#' difficult to get accurate MCSE estimates, because the bias dominates.
 #' @param S sample size
 #' @param ... unused
 #' @return threshold
 #' @noRd
 .ps_khat_threshold <- function(S, ...) {
-  min(1 - 1 / log10(S), 0.7)
+  min(posterior::ps_khat_threshold(S), 0.7)
 }
 
 # K-fold CV ---------------------------------------------------------------
