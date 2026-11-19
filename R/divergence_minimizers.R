@@ -1648,17 +1648,23 @@ glmer_scalar_re <- function(formula, data = NULL) {
 }
 
 # lme4::checkConv() for the lme4 part `fit$mer` of a gamm4::gamm4() fit
-# (gamm4::gamm4() does not call it). The result goes to
-# `fit$mer@optinfo$conv$lme4` for check_conv_s(). The lower bounds of the fixed
-# effects are `-Inf`, and the upper bounds of all parameters are `Inf`. The
-# differences from lme4::checkConv() are:
+# (gamm4::gamm4() does not call it). If the check finds a problem, the result
+# goes to `fit$mer@optinfo$conv$lme4` for check_conv_s(). The lower bounds of
+# the fixed effects are `-Inf`, and the upper bounds of all parameters are
+# `Inf`. As in lme4::lmer() and lme4::glmer() with the default `calc.derivs`,
+# there is no check if the number of observations is at least
+# `check.conv.nobsmax` or the number of parameters is at least
+# `check.conv.nparmax`. The differences from lme4::checkConv() are:
 # * The Hessian is not checked. The smoothing parameters are variance
 #   parameters of `fit$mer`, and the finite-difference Hessian of large
 #   variance parameters is too inexact.
-# * If the Hessian is not positive definite, the unscaled gradient is used
-#   (lme4::checkConv() gives "unable to evaluate scaled gradient").
+# * If the scaled gradient cannot be evaluated (Hessian not positive definite,
+#   or `NA`), the unscaled gradient is used (lme4::checkConv() gives "unable to
+#   evaluate scaled gradient").
 # * A fit at a boundary (singular fit) gets no message and no result.
 # * `check.conv.grad$relTol` is not used.
+# * The action "message" of `check.conv.grad` gives a warning
+#   (lme4::checkConv() gives an error).
 # * The message gives the index of the largest gradient component
 #   (lme4::checkConv() always gives component 1) and no help text.
 gamm_check_conv <- function(fit, control) {
@@ -1671,8 +1677,8 @@ gamm_check_conv <- function(fit, control) {
   coefs <- mer@optinfo$val
   lbound <- c(mer@lower, rep(-Inf, length(coefs) - length(mer@lower)))
   if (min(coefs - lbound) < (ctrl$check.conv.singular$tol %||% 1e-4) ||
-      nrow(mer@frame) > (ctrl$check.conv.nobsmax %||% Inf) ||
-      length(coefs) > (ctrl$check.conv.nparmax %||% Inf)) {
+      nrow(mer@frame) >= (ctrl$check.conv.nobsmax %||% Inf) ||
+      length(coefs) >= (ctrl$check.conv.nparmax %||% Inf)) {
     return(fit)
   }
   grad <- derivs$gradient

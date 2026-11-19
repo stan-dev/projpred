@@ -391,6 +391,13 @@ test_that(paste(
       message = "converge"
     )
     expect_length(fits, 2)
+    if (startsWith(rhs, "s(")) {
+      # The gamm4() fits are not singular, so gamm_check_conv() checks the
+      # gradient:
+      for (fit in fits) {
+        expect_false(is.null(fit$mer@optinfo$derivs))
+      }
+    }
   }
 })
 
@@ -408,6 +415,10 @@ test_that(paste(
     message = "converge"
   )
   expect_length(fits, 2)
+  # The fits are not singular, so gamm_check_conv() checks the gradient:
+  for (fit in fits) {
+    expect_false(is.null(fit$mer@optinfo$derivs))
+  }
 })
 
 test_that(paste(
