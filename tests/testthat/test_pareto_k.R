@@ -167,9 +167,9 @@ test_that(paste(
   # depends on the threshold:
   expect_true(any(k_sub > thres_prj & k_sub <= thres_ref))
   expect_length(warns_sub, 1)
-  expect_match(warns_sub, sprintf(
-    "Some (%d / %d) ", n_high_pareto_k(k_sub, thres_prj), n
-  ), fixed = TRUE)
+  k_inf <- replace(k_sub, is.na(k_sub) | k_sub == -Inf, Inf)
+  expect_match(warns_sub, sprintf("Some (%d / %d) ", sum(k_inf > thres_prj), n),
+               fixed = TRUE)
   expect_match(warns_sub, sprintf("are > %s.", round(thres_prj, 2)),
                fixed = TRUE)
 })
