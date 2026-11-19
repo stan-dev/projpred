@@ -246,6 +246,31 @@ sign_groups_of <- function(fml, dat) {
   lapply(mo_sign_groups(fr, mm), function(g) colnames(mm)[g])
 }
 
+test_that(paste(
+  "has_mo_call(), mo_calls() and split_term_exprs() work for a sum of more",
+  "than 1000 terms"
+), {
+  # The call tree of a sum of p terms has the depth p. The mo() call is the
+  # first term, so it is at the bottom of the tree:
+  p <- 3000
+  vars_chr <- sprintf("v%04d", seq_len(p))
+  sum_chr <- paste(c("mo(z)", vars_chr), collapse = " + ")
+  sum_expr <- str2lang(sum_chr)
+  expect_true(has_mo_call(sum_expr))
+  expect_false(has_mo_call(str2lang(paste(vars_chr, collapse = " + "))))
+  expect_identical(mo_calls(sum_expr), list(quote(mo(z))))
+  exprs <- split_term_exprs(c("1", sum_chr))
+  expect_length(exprs, p + 1)
+  expect_identical(exprs[[1]], quote(mo(z)))
+  expect_identical(exprs[[p + 1]], as.name(vars_chr[p]))
+  # mo_calls() gives the calls from left to right, also inside other calls:
+  expect_identical(mo_calls(quote(mo(a) + f(b, mo(c))[, 1] + d:brms::mo(e))),
+                   list(quote(mo(a)), quote(mo(c)), quote(brms::mo(e))))
+  expect_identical(mo_calls(quote(g(a = mo(x), b = 1))), list(quote(mo(x))))
+  expect_identical(mo_calls(quote(f())), list())
+  expect_identical(mo_calls(quote(x)), list())
+})
+
 test_that("mo_sign_groups() gives one group per mo() column set", {
   dat <- data.frame(
     y = rnorm(12), x = rep(1:4, 3), x2 = rep(c(5, 6, 7), 4),
@@ -675,17 +700,20 @@ test_that("multilevel and additive submodels with mo() terms work", {
 # decreases with `x`), and no effect of the integer `x2` (levels 1, 2, 3), of
 # the factor `f` and of the grouping variable `g`. Each draw adds `dip`
 # (normal with mean `dip_mean` and SD `dip_sd`) to the effect of the levels 2,
-# 3 and 4 of `x`.
+# 3 and 4 of `x`. `contr_f` (optional) sets the contrasts of `f`.
 mo_nonmono_refm <- function(family = gaussian(), fml = y ~ mo(x) + z + mo(x2),
                             S = 20, n = 100, seed = 5129,
                             eff_x = c(0, 0.8, -0.4, 0.6, 0.2), c_w = 0,
                             dip_mean = 0, dip_sd = 0, sd_g = 0, c_h = 0,
-                            ...) {
+                            contr_f = NULL, ...) {
   set.seed(seed)
   dat <- data.frame(x = sample(rep_len(0:4, n)), z = rnorm(n),
                     x2 = sample(rep_len(1:3, n)),
                     f = factor(sample(rep_len(c("a", "b"), n))),
                     g = factor(sample(rep_len(paste0("gr", 1:5), n))))
+  if (!is.null(contr_f)) {
+    contrasts(dat$f) <- contr_f
+  }
   dat$w <- -0.5 * dat$x + rnorm(n, sd = 0.5)
   b <- cbind(alpha = rnorm(S, 0.1, 0.05), bx = rnorm(S, 1, 0.1),
              bz = rnorm(S, 0.4, 0.05), dip = rnorm(S, dip_mean, dip_sd))
@@ -1440,6 +1468,49 @@ test_that(paste(
   cols_simo <- grep("^simo_", colnames(eff_w), value = TRUE)
   expect_true(all(is.na(eff_w[is_zero, cols_simo])))
   expect_false(anyNA(eff_w[!is_zero, cols_simo]))
+})
+
+test_that(paste(
+  "the signs from the full model and mo_effects() use the contrasts of the",
+  "reference model"
+), {
+  skip_if_not_installed("posterior")
+  opts_old <- options(projpred.mo_monotone = TRUE)
+  on.exit(options(opts_old), add = TRUE)
+  # With sum contrasts, the column of `f` is `f1` (not `fb`), and `mo(x)` is
+  # the mean effect of `x` over the levels of `f`:
+  refm <- mo_nonmono_refm(fml = y ~ mo(x) * f + z, contr_f = contr.sum(2))
+  S <- ncol(refm$mu)
+  trms_full <- c("mo(x)", "f", "mo(x):f", "z")
+  cols_x <- paste0("mo(x)", 1:4)
+  cols_xf <- paste0(cols_x, ":f1")
+  p_ref <- get_refdist(refm, ndraws = S)
+  signs <- mo_full_signs(p_ref, refm, list(
+    family = refm$family, weights = refm$wobs, projpred_var = p_ref$var,
+    projpred_ws_aug = p_ref$mu, verbose_divmin = FALSE
+  ))
+  # The keys of the sign groups of the submodel fits:
+  expect_identical(colnames(signs), c("mo(x)#", "mo(x):f1#1"))
+  # The signs of the sums of the coefficients in the unconstrained projection
+  # onto the full model:
+  options(projpred.mo_monotone = FALSE)
+  b_full <- prj_coefs(project(refm, predictor_terms = trms_full, ndraws = S,
+                              verbose = FALSE))
+  options(projpred.mo_monotone = TRUE)
+  expect_true(all(c(cols_x, cols_xf) %in% colnames(b_full)))
+  expect_identical(
+    unname(signs),
+    unname(cbind(ifelse(rowSums(b_full[, cols_x]) >= 0, 1, -1),
+                 ifelse(rowSums(b_full[, cols_xf]) >= 0, 1, -1)))
+  )
+  # mo_effects() finds the coefficients of the fits by these column names:
+  prj <- project(refm, predictor_terms = trms_full, ndraws = S,
+                 verbose = FALSE)
+  expect_identical(
+    posterior::variables(mo_effects(prj)),
+    c("bsp_mox", paste0("simo_mox1[", 1:4, "]"),
+      "bsp_mox:f1", paste0("simo_mox:f11[", 1:4, "]"))
+  )
 })
 
 # Latent and augmented-data projection ------------------------------------

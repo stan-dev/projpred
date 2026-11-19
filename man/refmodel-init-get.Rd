@@ -300,9 +300,14 @@ terms, multilevel submodels with another family, terms with more than one
 With \code{options(projpred.mo_monotone = FALSE)}, the coefficients of the
 indicators are not constrained (so the projected effect of \code{x} is not
 necessarily monotonic), and these cases are supported. \pkg{projpred} reads
-the option when it projects: in a parallel \eqn{K}-fold CV, the workers use
-their own value of the option, and \code{refit_prj = FALSE} reuses the submodel
-fits of the search.
+the option when it projects. With \code{refit_prj = FALSE}, the submodel fits of
+the search are reused, so the value of the option at the time of the search
+applies. In a parallel run, the workers get the value of the option from
+the main R session if the option is set there; otherwise, each worker uses
+the value of its own R session. In a screened forward search (argument
+\code{search_screen} of \code{\link[=varsel]{varsel()}} and \code{\link[=cv_varsel]{cv_varsel()}}), the screening criterion
+ranks the candidates without the monotonicity constraint; the exact
+projections onto the m best candidates apply it.
 }
 
 \section{Arguments \code{ref_predfun}, \code{proj_predfun}, and \code{div_minimizer}}{

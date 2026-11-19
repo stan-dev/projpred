@@ -288,16 +288,23 @@ mo_formula_env <- function(formula) {
   return(formula)
 }
 
-# The mo() calls in the expression `expr` (as a list).
+# The mo() calls in the expression `expr` (as a list, from left to right).
 mo_calls <- function(expr) {
-  if (!is.call(expr)) {
-    return(list())
+  # A loop with a stack of calls, as in has_mo_call(). The arguments go on
+  # the stack in reverse order, so the leftmost one comes first:
+  out <- list()
+  stack <- if (is.call(expr)) list(expr) else list()
+  while (length(stack) > 0L) {
+    e <- stack[[length(stack)]]
+    stack[[length(stack)]] <- NULL
+    if (is_mo_call(e)) {
+      out <- c(out, list(e))
+      next
+    }
+    args <- as.list(e)[-1L]
+    stack <- c(stack, rev(args[vapply(args, is.call, logical(1))]))
   }
-  if (is_mo_call(expr)) {
-    return(list(expr))
-  }
-  out <- lapply(as.list(expr)[-1L], mo_calls)
-  return(do.call(c, unname(out)))
+  return(out)
 }
 
 # The lost levels (see lost_levels()) of a variable `x` of a mo() term. The
@@ -399,6 +406,9 @@ mo_full_signs <- function(p_ref, refmodel, args_divmin) {
   subset <- subset_formula_and_data(formula = refmodel$formula,
                                     terms_ = terms_full, data = data,
                                     y = p_ref$mu)
+  # The contrasts of the reference model, as in the submodel fits (the
+  # columns of a sign group and their names depend on the contrasts):
+  subset$data <- set_contrasts(subset$data, refmodel$contrasts)
   fml_full <- flatten_formula(subset$formula)
   if (formula_contains_additive_terms(fml_full)) {
     stop_mo_unsupported("reference models with smooth terms")
@@ -710,7 +720,9 @@ mo_effects <- function(object, ...) {
   fml_fixed <- reformulas::nobars(fml)
   fml_rhs <- stats::as.formula(call("~", fml_fixed[[length(fml_fixed)]]),
                                env = environment(fml))
-  fr <- model.frame(fml_rhs, data = refm$fetch_data(),
+  # The contrasts of the reference model, as in the submodel fits:
+  fr <- model.frame(fml_rhs,
+                    data = set_contrasts(refm$fetch_data(), refm$contrasts),
                     drop.unused.levels = TRUE)
   mm <- model.matrix(fml_rhs, data = fr)
   groups <- mo_sign_groups(fr, mm, skip_multi = TRUE)
