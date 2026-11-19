@@ -88,19 +88,32 @@ the \code{\link[lme4:glmer]{lme4::glmer()}} fit is returned as class \code{projp
 so both optimization stages use BOBYQA. A \code{control} argument in \code{...}
 replaces this default in the first fit. After some \pkg{lme4} errors,
 \pkg{projpred} refits with its own settings and ignores this \code{control}.
-For \code{\link[lme4:glmer]{lme4::glmer()}} fits of the \code{\link[=binomial]{binomial()}} family (also the fit after
-an own fit that does not converge), \pkg{lme4} versions before 2.1-1
-round non-integer responses and weights in the objective of
-\code{\link[lme4:glmer]{lme4::glmer()}} with \code{nAGQ >= 1}. With these \pkg{lme4} versions,
-\pkg{projpred} uses \code{nAGQ = 0} for such submodels unless \code{nAGQ} is set
-via \code{...}. Then the fixed effects and the group-level effects do not
-depend on the rounded objective; the group-level standard deviations
-still do.
+\pkg{lme4} versions before 2.1-1 evaluate the objective of
+\code{\link[lme4:glmer]{lme4::glmer()}} for the \code{\link[=binomial]{binomial()}} and the \code{\link[=poisson]{poisson()}} family with
+rounding: they round non-integer binomial responses and weights, and
+the objective is infinite for non-integer Poisson responses (then the
+group-level standard deviations stay at their start values). With
+these \pkg{lme4} versions, \pkg{projpred} passes a copy of these
+families with another name (ending in \verb{_projpred}) and an \code{aic}
+function without rounding. The submodel fits then have this family
+name, so for example \code{\link[lme4:simulate.merMod]{lme4::simulate.merMod()}} does not work for them.
 \item For the augmented-data projection: \code{\link[ordinal:clmm]{ordinal::clmm()}} (the returned
 object inherits from class \code{clmm}) for the \code{\link[brms:cumulative]{brms::cumulative()}} family,
 \code{\link[mclogit:mblogit]{mclogit::mblogit()}} (the returned object inherits from class \code{mmblogit})
-for the \code{\link[brms:categorical]{brms::categorical()}} family. For \code{\link[ordinal:clmm]{ordinal::clmm()}} with a single
-group-level term \verb{(1 | <group>)}, \pkg{projpred} uses
+for the \code{\link[brms:categorical]{brms::categorical()}} family. Exception: for the
+\code{\link[brms:cumulative]{brms::cumulative()}} family, if the only group-level term is a random
+intercept \verb{(1 | <group>)}, \pkg{projpred} uses its own fit (the returned
+object inherits from classes \code{projpred_mlvl_cumul} and \code{projpred_mlvl}).
+This fit minimizes the Laplace approximation that \code{\link[ordinal:clmm]{ordinal::clmm()}}
+uses, for the links of \code{\link[brms:cumulative]{brms::cumulative()}} (\code{logit}, \code{probit},
+\code{probit_approx}, \code{cloglog}, \code{cauchit}). \pkg{projpred} uses
+\code{\link[ordinal:clmm]{ordinal::clmm()}} instead if the fit does not converge, if the submodel
+has an offset or a rank-deficient model matrix, if \code{...} contains
+arguments of \code{\link[ordinal:clmm]{ordinal::clmm()}} or of its optimizers (for example
+\code{method} or \code{control}), or if global option \code{projpred.mlvl_laplace} is
+\code{FALSE}. After a fit that does not converge, the \code{\link[ordinal:clmm]{ordinal::clmm()}} fit
+is returned as class \code{projpred_mlvl_cumul}, too. For \code{\link[ordinal:clmm]{ordinal::clmm()}}
+with a single group-level term \verb{(1 | <group>)}, \pkg{projpred} uses
 \code{method = "ucminf"} and \code{grad = "forward"} (see
 \code{\link[ordinal:clmm.control]{ordinal::clmm.control()}}). If this fit fails or does not converge,
 \pkg{projpred} refits with the default settings of \code{\link[ordinal:clmm]{ordinal::clmm()}}. An
@@ -113,9 +126,16 @@ uses the other of these two links. For the \code{\link[brms:categorical]{brms::c
 \code{\link[mclogit:mblogit]{mclogit::mblogit()}}).
 }
 \item Submodel without multilevel but additive terms: \code{\link[mgcv:gam]{mgcv::gam()}} (the returned
-object inherits from class \code{gam}).
+object inherits from class \code{gam}). \pkg{projpred} uses the default \code{method}
+of \code{\link[mgcv:gam]{mgcv::gam()}}. For the \code{\link[=poisson]{poisson()}} family, the responses of the
+traditional projection are not integers. Then \code{\link[mgcv:gam]{mgcv::gam()}} with
+\code{method = "REML"} or \code{method = "ML"} stops with an error. Such a \code{method}
+can come from \code{...} or (\pkg{mgcv} >= 1.9-5) from global option
+\code{mgcv.gam.method}.
 \item Submodel with multilevel and additive terms: \code{\link[gamm4:gamm4]{gamm4::gamm4()}} (within
-\pkg{projpred}, the returned object inherits from class \code{gamm4}).
+\pkg{projpred}, the returned object inherits from class \code{gamm4}). For the
+\code{\link[=binomial]{binomial()}} and the \code{\link[=poisson]{poisson()}} family, \pkg{projpred} passes the same
+family as to \code{\link[lme4:glmer]{lme4::glmer()}} (see above).
 }
 }
 
@@ -145,13 +165,13 @@ draws (or clusters) of the reference model onto a submodel (the
 \emph{projection} parallelization, see below).
 
 Both use the parallel workers of the current plan of the \pkg{future}
-package, e.g., \code{future::plan(future::multisession, workers = 4)}. Plans
-from other packages for \pkg{future} can be used as well, e.g.,
-\code{future::plan(future.mirai::mirai_multisession, workers = 4)} from the
-\pkg{future.mirai} package. In our experiments with 8 workers, the first
-parallel call with the workers of \pkg{future.mirai} was faster than with
-those of \code{future::multisession}, and the workers of \pkg{future.mirai}
-returned big results faster (see the projection parallelization below).
+package, e.g., \code{future::plan(future.mirai::mirai_multisession, workers = 4)}
+from the \pkg{future.mirai} package or
+\code{future::plan(future::multisession, workers = 4)}. In our experiments with
+8 workers, the first parallel call with the workers of \pkg{future.mirai}
+was faster than with those of \code{future::multisession}, and the workers of
+\pkg{future.mirai} returned big results faster (see the projection
+parallelization below). So we recommend the workers of \pkg{future.mirai}.
 With the sequential plan of \pkg{future} (the default), a parallel run is
 not possible, so \pkg{projpred} then runs sequentially and
 throws a warning. The workers must be able to load the same

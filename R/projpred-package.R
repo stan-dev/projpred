@@ -94,19 +94,32 @@
 #'     so both optimization stages use BOBYQA. A `control` argument in `...`
 #'     replaces this default in the first fit. After some \pkg{lme4} errors,
 #'     \pkg{projpred} refits with its own settings and ignores this `control`.
-#'     For [lme4::glmer()] fits of the [binomial()] family (also the fit after
-#'     an own fit that does not converge), \pkg{lme4} versions before 2.1-1
-#'     round non-integer responses and weights in the objective of
-#'     [lme4::glmer()] with `nAGQ >= 1`. With these \pkg{lme4} versions,
-#'     \pkg{projpred} uses `nAGQ = 0` for such submodels unless `nAGQ` is set
-#'     via `...`. Then the fixed effects and the group-level effects do not
-#'     depend on the rounded objective; the group-level standard deviations
-#'     still do.
+#'     \pkg{lme4} versions before 2.1-1 evaluate the objective of
+#'     [lme4::glmer()] for the [binomial()] and the [poisson()] family with
+#'     rounding: they round non-integer binomial responses and weights, and
+#'     the objective is infinite for non-integer Poisson responses (then the
+#'     group-level standard deviations stay at their start values). With
+#'     these \pkg{lme4} versions, \pkg{projpred} passes a copy of these
+#'     families with another name (ending in `_projpred`) and an `aic`
+#'     function without rounding. The submodel fits then have this family
+#'     name, so for example [lme4::simulate.merMod()] does not work for them.
 #'     + For the augmented-data projection: [ordinal::clmm()] (the returned
 #'     object inherits from class `clmm`) for the [brms::cumulative()] family,
 #'     [mclogit::mblogit()] (the returned object inherits from class `mmblogit`)
-#'     for the [brms::categorical()] family. For [ordinal::clmm()] with a single
-#'     group-level term `(1 | <group>)`, \pkg{projpred} uses
+#'     for the [brms::categorical()] family. Exception: for the
+#'     [brms::cumulative()] family, if the only group-level term is a random
+#'     intercept `(1 | <group>)`, \pkg{projpred} uses its own fit (the returned
+#'     object inherits from classes `projpred_mlvl_cumul` and `projpred_mlvl`).
+#'     This fit minimizes the Laplace approximation that [ordinal::clmm()]
+#'     uses, for the links of [brms::cumulative()] (`logit`, `probit`,
+#'     `probit_approx`, `cloglog`, `cauchit`). \pkg{projpred} uses
+#'     [ordinal::clmm()] instead if the fit does not converge, if the submodel
+#'     has an offset or a rank-deficient model matrix, if `...` contains
+#'     arguments of [ordinal::clmm()] or of its optimizers (for example
+#'     `method` or `control`), or if global option `projpred.mlvl_laplace` is
+#'     `FALSE`. After a fit that does not converge, the [ordinal::clmm()] fit
+#'     is returned as class `projpred_mlvl_cumul`, too. For [ordinal::clmm()]
+#'     with a single group-level term `(1 | <group>)`, \pkg{projpred} uses
 #'     `method = "ucminf"` and `grad = "forward"` (see
 #'     [ordinal::clmm.control()]). If this fit fails or does not converge,
 #'     \pkg{projpred} refits with the default settings of [ordinal::clmm()]. An
@@ -118,9 +131,16 @@
 #'     \pkg{projpred} only supports `catCov = "free"` (see
 #'     [mclogit::mblogit()]).
 #' * Submodel without multilevel but additive terms: [mgcv::gam()] (the returned
-#' object inherits from class `gam`).
+#' object inherits from class `gam`). \pkg{projpred} uses the default `method`
+#' of [mgcv::gam()]. For the [poisson()] family, the responses of the
+#' traditional projection are not integers. Then [mgcv::gam()] with
+#' `method = "REML"` or `method = "ML"` stops with an error. Such a `method`
+#' can come from `...` or (\pkg{mgcv} >= 1.9-5) from global option
+#' `mgcv.gam.method`.
 #' * Submodel with multilevel and additive terms: [gamm4::gamm4()] (within
-#' \pkg{projpred}, the returned object inherits from class `gamm4`).
+#' \pkg{projpred}, the returned object inherits from class `gamm4`). For the
+#' [binomial()] and the [poisson()] family, \pkg{projpred} passes the same
+#' family as to [lme4::glmer()] (see above).
 #'
 #' # Verbosity, messages, warnings, errors
 #'
@@ -149,13 +169,13 @@
 #' *projection* parallelization, see below).
 #'
 #' Both use the parallel workers of the current plan of the \pkg{future}
-#' package, e.g., `future::plan(future::multisession, workers = 4)`. Plans
-#' from other packages for \pkg{future} can be used as well, e.g.,
-#' `future::plan(future.mirai::mirai_multisession, workers = 4)` from the
-#' \pkg{future.mirai} package. In our experiments with 8 workers, the first
-#' parallel call with the workers of \pkg{future.mirai} was faster than with
-#' those of `future::multisession`, and the workers of \pkg{future.mirai}
-#' returned big results faster (see the projection parallelization below).
+#' package, e.g., `future::plan(future.mirai::mirai_multisession, workers = 4)`
+#' from the \pkg{future.mirai} package or
+#' `future::plan(future::multisession, workers = 4)`. In our experiments with
+#' 8 workers, the first parallel call with the workers of \pkg{future.mirai}
+#' was faster than with those of `future::multisession`, and the workers of
+#' \pkg{future.mirai} returned big results faster (see the projection
+#' parallelization below). So we recommend the workers of \pkg{future.mirai}.
 #' With the sequential plan of \pkg{future} (the default), a parallel run is
 #' not possible, so \pkg{projpred} then runs sequentially and
 #' throws a warning. The workers must be able to load the same
@@ -322,9 +342,6 @@
 #' meaning of these global options, see their occurrences in the codebase. With
 #' the exception of `projpred.warn_allrandom_dis`, these global options are
 #' currently used in the unit tests to deactivate these messages and warnings.
-#' Global option `projpred.warn_instable_projections` is also used (invisibly)
-#' in the latent vignette to suppress the corresponding warnings while
-#' illustrating the underlying issue (instable projections).
 #' * `projpred.additional_checks`: A single logical value indicating whether to
 #' run some additional checks that are not necessary to be run when users call
 #' the corresponding \pkg{projpred} functions. Currently, these checks are

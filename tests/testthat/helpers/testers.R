@@ -1042,14 +1042,17 @@ outdmin_tester_trad <- function(
                        model.frame(outdmin_totest[[!!j]]),
                        info = info_str)
       if (check_y_from_resp) {
-        expect_equal(
-          outdmin_totest[[!!j]]@frame[[
-            grep("y_|ybinprop", names(outdmin_totest[[!!j]]@frame),
-                 value = TRUE)
-          ]],
-          y_from_resp,
-          info = info_str
-        )
+        y_from_frame <- outdmin_totest[[j]]@frame[[
+          grep("y_|ybinprop", names(outdmin_totest[[j]]@frame), value = TRUE)
+        ]]
+        if (!is.null(augdat_cats) && !is.factor(y_from_frame)) {
+          # glmer_data() passes a 0/1 response instead of a factor:
+          y_orig <- eval(str2lang(as.character(sub_formul[[j]])[2]), sub_data)
+          expect_equal(y_from_frame, as.numeric(y_orig != levels(y_orig)[1]),
+                       info = info_str)
+        } else {
+          expect_equal(y_from_frame, y_from_resp, info = info_str)
+        }
       }
       if (!is.null(wobs_expected)) {
         expect_equal(structure(outdmin_totest[[!!j]]@frame$`(weights)`,
@@ -1207,7 +1210,50 @@ outdmin_tester_aug <- function(
     coef_nms <- strsplit(grp_trms_for_coef, "[[:blank:]]*\\+[[:blank:]]*")
     coef_nms <- union("1", coef_nms)
     coef_nms <- sub("^1$", "(Intercept)", unlist(coef_nms))
-    if (sub_fam %in% c("cumulative", "cumulative_rstanarm")) {
+    # projpred's own Laplace fit (see mlvl_laplace_cumul()) for cumulative
+    # submodels with a single group-level intercept term and without offsets
+    # (and without arguments for ordinal::clmm()):
+    is_mlvl_cumul <- sub_fam %in% c("cumulative", "cumulative_rstanarm") &&
+      identical(coef_nms, "(Intercept)") && !with_offs &&
+      getOption("projpred.mlvl_laplace", TRUE)
+    if (is_mlvl_cumul) {
+      for (j in seq_along(outdmin_totest)) {
+        expect_s3_class(outdmin_totest[[!!j]],
+                        c("projpred_mlvl_cumul", "projpred_mlvl"),
+                        exact = TRUE)
+      }
+      sub_formul_no_grp <- update(sub_formul, . ~ . - (1 | z.1))
+      coefs_nms_expected <- grep(
+        "Intercept",
+        colnames(model.matrix(sub_formul_no_grp, data = sub_data)),
+        value = TRUE, invert = TRUE
+      )
+      for (j in seq_extensive_tests) {
+        fit_j <- outdmin_totest[[j]]
+        expect_named(
+          fit_j$alpha,
+          paste(head(augdat_cats, -1), tail(augdat_cats, -1), sep = "|"),
+          info = info_str
+        )
+        expect_true(all(diff(fit_j$alpha) > 0), info = info_str)
+        expect_true(is.vector(fit_j$coefficients, "numeric"), info = info_str)
+        if (length(coefs_nms_expected)) {
+          expect_named(fit_j$coefficients, coefs_nms_expected, info = info_str)
+        } else {
+          expect_length(fit_j$coefficients, 0)
+        }
+        expect_true(all(is.finite(fit_j$coefficients)), info = info_str)
+        expect_named(fit_j$sd, "z.1", info = info_str)
+        expect_true(fit_j$sd >= 0, info = info_str)
+        expect_named(fit_j$ranef, "z.1", info = info_str)
+        expect_named(fit_j$ranef[["z.1"]],
+                     levels(droplevels(as.factor(sub_data$z.1))),
+                     info = info_str)
+        expect_identical(fit_j$lev, augdat_cats, info = info_str)
+        expect_identical(fit_j$convergence, 0L, info = info_str)
+        expect_equal(formula(fit_j), sub_formul, info = info_str)
+      }
+    } else if (sub_fam %in% c("cumulative", "cumulative_rstanarm")) {
       for (j in seq_along(outdmin_totest)) {
         expect_s3_class(outdmin_totest[[!!j]], "clmm")
       }
@@ -2106,6 +2152,7 @@ vsel_tester <- function(
     K_expected = NULL,
     penalty_expected = NULL,
     search_terms_expected = NULL,
+    search_screen_expected = NULL,
     search_trms_empty_size = FALSE,
     search_control_expected = NULL,
     extra_tol = 1.1,
@@ -2483,7 +2530,8 @@ vsel_tester <- function(
         NULL
       } else {
         union("1", search_terms_expected)
-      }
+      },
+      search_screen = search_screen_expected
     ),
     info = info_str
   )

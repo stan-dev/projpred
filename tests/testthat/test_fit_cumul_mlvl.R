@@ -13,7 +13,7 @@ clmm_test_data <- function() {
 fit_clmm_test <- function(dat, formula = y ~ x + (1 | g), ...) {
   fit_cumul_mlvl(formula = formula, data = dat,
                  family = list(link = "logit"), weights = rep(1, nrow(dat)),
-                 ...)
+                 mlvl_laplace = FALSE, ...)
 }
 
 test_that("fit_cumul_mlvl() uses ucminf() with forward differences", {
@@ -64,7 +64,8 @@ test_that("fit_cumul_mlvl() fits the requested link for cloglog and loglog", {
     fit_clm <- ordinal::clm(y ~ x, data = dat, link = lk)
     fit_clm_other <- ordinal::clm(y ~ x, data = dat, link = lk_other)
     fit <- fit_cumul_mlvl(y ~ x + (1 | g), data = dat,
-                          family = list(link = lk), weights = rep(1, n))
+                          family = list(link = lk), weights = rep(1, n),
+                          mlvl_laplace = FALSE)
     expect_lt(fit$ST[[1]][1, 1], 0.3)
     expect_equal(fit$coefficients, fit_clm$coefficients, tolerance = 0.05,
                  info = lk)

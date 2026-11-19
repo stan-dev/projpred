@@ -2421,6 +2421,16 @@ get_subparams.projpred_mlvl <- function(x, ...) {
   return(subparams)
 }
 
+# The parameters in the order of get_subparams.clmm(): thresholds, regression
+# coefficients, group-level standard deviation, group-level intercepts.
+#' @noRd
+#' @export
+get_subparams.projpred_mlvl_cumul <- function(x, ...) {
+  thres <- x$alpha
+  names(thres) <- mknms_thres(names(thres), ...)
+  return(c(thres, get_subparams.projpred_mlvl(x, ...)))
+}
+
 #' @noRd
 #' @export
 get_subparams.gamm4 <- function(x, ...) {
@@ -2550,6 +2560,10 @@ get_subparams.mmblogit <- function(x, ...) {
 #'   reference model parameters. For a submodel with smooth and group-level
 #'   terms (GAMM), the projected draws cannot be extracted yet (error).
 #'
+#'   For the latent projection, column `sigma` contains the projected latent
+#'   dispersion. If `<refmodel>$dis` consists of only `NA`s (see argument `dis`
+#'   of [init_refmodel()]), there is no column `sigma`.
+#'
 #' @return An \eqn{S_{\mathrm{prj}} \times Q}{S_prj x Q} matrix of projected
 #'   draws, with \eqn{S_{\mathrm{prj}}}{S_prj} denoting the number of projected
 #'   draws and \eqn{Q} the number of parameters. If `allow_nonconst_wdraws_prj`
@@ -2620,7 +2634,12 @@ as.matrix.projection <- function(x, nm_scheme = NULL,
   }
   stopifnot(nm_scheme %in% c("rstanarm", "brms"))
   res <- do.call(rbind, lapply(x$outdmin, get_subparams, nm_scheme = nm_scheme))
-  if (x$refmodel$family$family == "gaussian") res <- cbind(res, sigma = x$dis)
+  # If `<refmodel>$dis` is all `NA` (latent projection), there is no `sigma`
+  # column:
+  if (x$refmodel$family$family == "gaussian" &&
+      !(x$refmodel$family$for_latent && all(is.na(x$refmodel$dis)))) {
+    res <- cbind(res, sigma = x$dis)
+  }
   if (!x[["const_wdraws_prj"]]) {
     attr(res, "wdraws_prj") <- x[["wdraws_prj"]]
   }

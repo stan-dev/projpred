@@ -532,6 +532,40 @@ test_that("cv_varsel() in parallel gives the same results as sequentially", {
 })
 
 test_that(paste(
+  "cv_varsel() with `search_screen` in parallel gives the same results as",
+  "sequentially"
+), {
+  skip_if_not(run_prll)
+  skip_if_not(run_cvvs)
+  skip_if(length(par_backends_tst) == 0)
+  # A binomial or Poisson GLM (the score screen applies to these):
+  tstsetups_ref <- names(cvfitss)[!sapply(cvfitss, inherits, "try-error")]
+  tstsetups_ref <- grep("^rstanarm\\.glm\\.(brnll|binom|poiss)\\.",
+                        tstsetups_ref, value = TRUE)
+  skip_if(length(tstsetups_ref) == 0)
+  tstsetup_ref <- tstsetups_ref[1]
+  cvvs_scr <- function(cv_meth, parallel) {
+    # Use suppressWarnings() because of Pareto-k warnings of the small data:
+    suppressWarnings(cv_varsel(
+      refmods[[tstsetup_ref]], cv_method = cv_meth,
+      cvfits = if (cv_meth == "kfold") cvfitss[[tstsetup_ref]],
+      validate_search = TRUE, search_screen = 3, nclusters = nclusters_tst,
+      nclusters_pred = nclusters_pred_tst, nterms_max = nterms_max_tst,
+      parallel = parallel, seed = seed_tst, verbose = FALSE
+    ))
+  }
+  for (cv_meth in c("LOO", "kfold")) {
+    cvvs_seq <- cvvs_scr(cv_meth, parallel = FALSE)
+    expect_identical(cvvs_seq$args_search$search_screen, 3L, info = cv_meth)
+    local({
+      local_par_workers(par_backends_tst[1])
+      expect_equal(cvvs_scr(cv_meth, parallel = TRUE), cvvs_seq,
+                   info = paste(tstsetup_ref, cv_meth))
+    })
+  }
+})
+
+test_that(paste(
   "the parallel K-fold cv_varsel() gives the exact reference model lppd where",
   "the inverse link clamps the mean"
 ), {
