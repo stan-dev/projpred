@@ -1123,7 +1123,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
       i <- inds[run_index]
       # In the parallel case, `refmodel` has no copies of `mu` in `mu_offs`
       # and `eta` (see refmodel_for_folds()):
-      refmodel_full <- refmodel_restore_draws(refmodel)
+      refmodel <- refmodel_restore_draws(refmodel)
 
       # For (extra-)verbose mode:
       vtxt_obs_i <- paste0(
@@ -1142,7 +1142,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
       # projection)).  As in K-fold CV, the left-out observation is not used
       # in the projections of its fold; it is used only for the evaluation
       # (via `refmodel_fulldata`):
-      refmodel_fold <- refmodel_full
+      refmodel_fold <- refmodel
       refmodel_fold$wobs[i] <- 0
       perturb_failed <- FALSE
       if (!search_out_rks_was_null) {
@@ -1183,7 +1183,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
         search_path = search_path, refmodel = refmodel_fold,
         refit_prj = refit_prj, ndraws = ndraws_pred, nclusters = nclusters_pred,
         reweighting_args = list(cl_ref = cl_pred, wdraws_ref = exp(lw_i)),
-        refmodel_fulldata = refmodel_full,
+        refmodel_fulldata = refmodel,
         indices_test = i, verbose = verbose_obs, verbose_line_length = 3,
         verbose_txt_add = vtxt_obs_i, ...
       )
@@ -1532,7 +1532,7 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws, nclusters,
                        ...) {
     # In the parallel case, `refmodel` and `fold$refmodel` have no copies of
     # `mu` in `mu_offs` and `eta` (see refmodel_for_folds()):
-    refmodel_full <- refmodel_restore_draws(refmodel)
+    refmodel <- refmodel_restore_draws(refmodel)
     fold$refmodel <- refmodel_restore_draws(fold$refmodel)
     # For (extra-)verbose mode:
     vtxt_fold_k <- paste0("for CV fold ", k, " out of K = ", K, " (",
@@ -1560,7 +1560,7 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws, nclusters,
     perf_eval_out <- perf_eval(
       search_path = search_path, refmodel = fold$refmodel,
       refit_prj = refit_prj, ndraws = ndraws_pred, nclusters = nclusters_pred,
-      refmodel_fulldata = refmodel_full, indices_test = fold$omitted,
+      refmodel_fulldata = refmodel, indices_test = fold$omitted,
       verbose = verbose_fold, verbose_line_length = 3,
       verbose_txt_add = vtxt_fold_k, ...
     )

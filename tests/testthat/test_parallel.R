@@ -776,6 +776,7 @@ test_that(paste(
   "divmin_augdat() match their free variables"
 ), {
   skip_if_not_installed("codetools")
+  skip_if_not_installed("globals")
   # The right-hand sides of all assignments `nm <- ...` in `expr`:
   rhs_of <- function(expr, nm) {
     out <- list()
@@ -816,19 +817,19 @@ test_that(paste(
       expect_identical(sum(is_def), 0L, info = outer_nm)
       inner_fun <- eval(slim_call[[2]])
     }
-    globs <- codetools::findGlobals(inner_fun, merge = FALSE)
+    # With `method = "ordered"`, a variable that the function reads before it
+    # assigns it (for example `refmodel <- f(refmodel)`) is a free variable:
+    globs <- globals::findGlobals(inner_fun, method = "ordered")
     outer_locals <- unique(c(
       names(formals(outer_fun)),
       codetools::findFuncLocals(formals(outer_fun), body(outer_fun))
     ))
     listed <- eval(slim_call[[3]])
-    expect_setequal(intersect(c(globs$variables, globs$functions),
-                              outer_locals),
-                    listed)
+    expect_setequal(intersect(globs, outer_locals), listed)
     # The workers find all other free variables only if they are in the
     # projpred namespace, its imports or base (not in the global
     # environment):
-    others <- setdiff(c(globs$variables, globs$functions), outer_locals)
+    others <- setdiff(globs, outer_locals)
     ns <- asNamespace("projpred")
     in_ns <- vapply(others, function(nm) {
       exists(nm, envir = ns, inherits = FALSE) ||
