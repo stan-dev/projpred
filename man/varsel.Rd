@@ -154,24 +154,38 @@ adds the nonlinear part. To search a smooth term without its linear terms,
 leave these linear terms out of \code{search_terms}.}
 
 \item{search_screen}{Only relevant for forward search. \code{NULL} (default) for
-the plain forward search, or a single positive integer m for a
-score-screened forward search: in each step, the score statistic of each
-candidate at the current submodel approximates the reduction of the KL
-divergence, and only the m best candidates get an exact projection. This
-reduces the number of projections from about p per step to at most m per
-step. The selected terms and their order can differ from those of the
-plain forward search. The screening applies only to the traditional
-projection with \code{\link[=binomial]{binomial()}} (logit link) or \code{\link[=poisson]{poisson()}} (log link)
-submodels without multilevel terms, additive terms and interactions with
-a factor, with the default divergence minimizer, and only if the
-model matrix of the search terms can be built (for example, no missing
-values and no zero-variance columns); in the other cases, \code{search_screen}
-is ignored and the plain forward search runs. For Gaussian submodels with
+the plain forward search, or a single positive integer m for a screened
+forward search: in each step, a cheap criterion ranks the candidates, and
+only the m best candidates get an exact projection. This reduces the
+number of projections from about p per step to at most m per step. The
+selected terms and their order can differ from those of the plain forward
+search. All screens need the default divergence minimizer. The criterion
+depends on the model:
+\itemize{
+\item Traditional projection with \code{\link[=binomial]{binomial()}} (logit link) or \code{\link[=poisson]{poisson()}}
+(log link) submodels without multilevel terms, additive terms and
+interactions with a factor: the score statistic of each candidate at the
+current submodel, which approximates the reduction of the KL divergence.
+The model matrix of the search terms must be possible to build (for
+example, no missing values and no zero-variance columns). With offsets,
+the score statistic approximates the reduction of the objective that the
+submodels are fitted to, which has no offsets; the exact projections still
+choose the term. We recommend m = 3.
+\item Augmented-data projection with the \code{\link[brms:cumulative]{brms::cumulative()}} family (logit
+or probit link), without offsets, multilevel terms and additive terms,
+and with one model-matrix column per search term (for example, no
+factors with more than two levels): the reduction of a weighted residual
+sum of squares of the latent predictor. We recommend m = 10.
+\item Latent projection with multilevel terms, without offsets and additive
+terms: the residual sum of squares of one \code{\link[lme4:lmer]{lme4::lmer()}} fit per
+candidate to the mean latent predictor of the projected draws. We
+recommend m = 3.
+}
+
+In the other cases, \code{search_screen} is ignored and the plain forward
+search runs. For Gaussian submodels with
 the identity link, \code{search_screen} is ignored if projpred uses its
-cross-product forward search for them.
-With offsets, the score statistic approximates the reduction of the
-objective that the submodels are fitted to, which has no offsets; the
-exact projections still choose the term.}
+cross-product forward search for them.}
 
 \item{search_out}{Intended for internal use.}
 
