@@ -654,6 +654,7 @@ test_that(paste(
   "a clmm() submodel fit without group-level variation equals the polr()",
   "fit"
 ), {
+  withr::local_options(projpred.mlvl_laplace = FALSE)
   d <- dat_fitters(sd_grp = 0)
   probs <- probs_cumul(d$eta)
   fit_clmm <- divmin_augdat_tst("x + (1 | g)", d, fam_cumul, probs)[[1]]
@@ -675,6 +676,7 @@ test_that(paste(
   "observations with weight 0 do not change a clmm() submodel fit, and",
   "integer weights equal duplicated observations"
 ), {
+  withr::local_options(projpred.mlvl_laplace = FALSE)
   d <- dat_fitters(sd_grp = 2)
   probs <- probs_cumul(d$eta)
   fit <- divmin_augdat_tst("x + (1 | g)", d, fam_cumul, probs)[[1]]
