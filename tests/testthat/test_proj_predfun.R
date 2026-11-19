@@ -1012,13 +1012,16 @@ test_that(paste(
       d$y <- sin(2 * pi * d$x) + 0.3 * d$z + rnorm(nrow(d), sd = 0.4)
       d$y_pois <- rpois(nrow(d), exp(0.3 + sin(2 * pi * d$x)))
       # Some fits of these small data give a CHOLMOD warning 'not positive
-      # definite'. This test checks only the predictions, so muffle it:
+      # definite' or a warning about the gradient at the optimum. This test
+      # checks only the predictions, so muffle them:
       withCallingHandlers(
         fit_gamm_callback(formula = fml, projpred_formula_no_random = fml,
                           projpred_random = rnd, data = d, family = family),
         warning = function(w) {
-          if (grepl("cholmod warning 'not positive definite'",
-                    tolower(conditionMessage(w)), fixed = TRUE)) {
+          mssg <- tolower(conditionMessage(w))
+          if (grepl("cholmod warning 'not positive definite'", mssg,
+                    fixed = TRUE) ||
+              grepl("failed to converge", mssg, fixed = TRUE)) {
             invokeRestart("muffleWarning")
           }
         }

@@ -395,6 +395,22 @@ test_that(paste(
 })
 
 test_that(paste(
+  "a binomial gamm4() submodel with non-integer responses gives no",
+  "convergence warning"
+), {
+  d <- dat_fitters()
+  mu <- plogis(cbind(d$eta, d$eta + 0.3 * d$z))
+  expect_no_warning(
+    fits <- with_r_printing(
+      divmin_tst("s(z) + x + (1 | g)", d, extend_family(binomial()), mu,
+                 throw_warn = TRUE, check_conv = TRUE)
+    ),
+    message = "converge"
+  )
+  expect_length(fits, 2)
+})
+
+test_that(paste(
   "a Poisson gamm4() submodel with non-integer responses estimates the",
   "group-level standard deviation"
 ), {

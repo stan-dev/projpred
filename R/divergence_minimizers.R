@@ -1648,12 +1648,19 @@ glmer_scalar_re <- function(formula, data = NULL) {
 }
 
 # lme4::checkConv() for the lme4 part `fit$mer` of a gamm4::gamm4() fit
-# (gamm4::gamm4() does not call it), with two differences: the Hessian is not
-# checked, and the unscaled gradient is used if the Hessian is not positive
-# definite. The smoothing parameters are variance parameters of `fit$mer`, and
-# the finite-difference Hessian of large variance parameters is too inexact.
-# The result goes to `fit$mer@optinfo$conv$lme4` for check_conv_s(). The lower
-# bounds of the fixed effects are `-Inf`, and the upper bounds are `Inf`.
+# (gamm4::gamm4() does not call it). The result goes to
+# `fit$mer@optinfo$conv$lme4` for check_conv_s(). The lower bounds of the fixed
+# effects are `-Inf`, and the upper bounds of all parameters are `Inf`. The
+# differences from lme4::checkConv() are:
+# * The Hessian is not checked. The smoothing parameters are variance
+#   parameters of `fit$mer`, and the finite-difference Hessian of large
+#   variance parameters is too inexact.
+# * If the Hessian is not positive definite, the unscaled gradient is used
+#   (lme4::checkConv() gives "unable to evaluate scaled gradient").
+# * A fit at a boundary (singular fit) gets no message and no result.
+# * `check.conv.grad$relTol` is not used.
+# * The message gives the index of the largest gradient component
+#   (lme4::checkConv() always gives component 1) and no help text.
 gamm_check_conv <- function(fit, control) {
   mer <- fit$mer
   ctrl <- control$checkConv
