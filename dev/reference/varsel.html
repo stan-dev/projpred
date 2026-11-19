@@ -114,6 +114,7 @@ performance of the submodels along the predictor ranking. A special method is
 <span>  thresh <span class="op">=</span> <span class="fl">1e-06</span>,</span>
 <span>  penalty <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  search_terms <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  search_screen <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  search_out <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  seed <span class="op">=</span> <span class="cn">NA</span>,</span>
 <span>  <span class="va">...</span></span>
@@ -270,6 +271,28 @@ smooth term can enter the search only after the linear terms of its
 variables that are search terms without a smooth term; the smooth term then
 adds the nonlinear part. To search a smooth term without its linear terms,
 leave these linear terms out of <code>search_terms</code>.</p></dd>
+
+
+<dt id="arg-search-screen">search_screen<a class="anchor" aria-label="anchor" href="#arg-search-screen"></a></dt>
+<dd><p>Only relevant for forward search. <code>NULL</code> (default) for
+the plain forward search, or a single positive integer m for a
+score-screened forward search: in each step, the score statistic of each
+candidate at the current submodel approximates the reduction of the KL
+divergence, and only the m best candidates get an exact projection. This
+reduces the number of projections from about p per step to at most m per
+step. The selected terms and their order can differ from those of the
+plain forward search. The screening applies only to the traditional
+projection with <code><a href="https://rdrr.io/r/stats/family.html" class="external-link">binomial()</a></code> (logit link) or <code><a href="https://rdrr.io/r/stats/family.html" class="external-link">poisson()</a></code> (log link)
+submodels without multilevel terms, additive terms and interactions with
+a factor, with the default divergence minimizer, and only if the
+model matrix of the search terms can be built (for example, no missing
+values and no zero-variance columns); in the other cases, <code>search_screen</code>
+is ignored and the plain forward search runs. For Gaussian submodels with
+the identity link, <code>search_screen</code> is ignored if projpred uses its
+cross-product forward search for them.
+With offsets, the score statistic approximates the reduction of the
+objective that the submodels are fitted to, which has no offsets; the
+exact projections still choose the term.</p></dd>
 
 
 <dt id="arg-search-out">search_out<a class="anchor" aria-label="anchor" href="#arg-search-out"></a></dt>

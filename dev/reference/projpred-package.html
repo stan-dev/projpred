@@ -164,8 +164,20 @@ still do.</p></li>
 <li><p>For the augmented-data projection: <code><a href="https://rdrr.io/pkg/ordinal/man/clmm.html" class="external-link">ordinal::clmm()</a></code> (the returned
 object inherits from class <code>clmm</code>) for the <code><a href="https://paulbuerkner.com/brms/reference/brmsfamily.html" class="external-link">brms::cumulative()</a></code> family,
 <code><a href="https://melff.github.io/mclogit/reference/mblogit.html" class="external-link">mclogit::mblogit()</a></code> (the returned object inherits from class <code>mmblogit</code>)
-for the <code><a href="https://paulbuerkner.com/brms/reference/brmsfamily.html" class="external-link">brms::categorical()</a></code> family. For <code><a href="https://rdrr.io/pkg/ordinal/man/clmm.html" class="external-link">ordinal::clmm()</a></code> with a single
-group-level term <code>(1 | &lt;group&gt;)</code>, <span class="pkg">projpred</span> uses
+for the <code><a href="https://paulbuerkner.com/brms/reference/brmsfamily.html" class="external-link">brms::categorical()</a></code> family. Exception: for the
+<code><a href="https://paulbuerkner.com/brms/reference/brmsfamily.html" class="external-link">brms::cumulative()</a></code> family, if the only group-level term is a random
+intercept <code>(1 | &lt;group&gt;)</code>, <span class="pkg">projpred</span> uses its own fit (the returned
+object inherits from classes <code>projpred_mlvl_cumul</code> and <code>projpred_mlvl</code>).
+This fit minimizes the Laplace approximation that <code><a href="https://rdrr.io/pkg/ordinal/man/clmm.html" class="external-link">ordinal::clmm()</a></code>
+uses, for the links of <code><a href="https://paulbuerkner.com/brms/reference/brmsfamily.html" class="external-link">brms::cumulative()</a></code> (<code>logit</code>, <code>probit</code>,
+<code>probit_approx</code>, <code>cloglog</code>, <code>cauchit</code>). <span class="pkg">projpred</span> uses
+<code><a href="https://rdrr.io/pkg/ordinal/man/clmm.html" class="external-link">ordinal::clmm()</a></code> instead if the fit does not converge, if the submodel
+has an offset or a rank-deficient model matrix, if <code>...</code> contains
+arguments of <code><a href="https://rdrr.io/pkg/ordinal/man/clmm.html" class="external-link">ordinal::clmm()</a></code> or of its optimizers (for example
+<code>method</code> or <code>control</code>), or if global option <code>projpred.mlvl_laplace</code> is
+<code>FALSE</code>. After a fit that does not converge, the <code><a href="https://rdrr.io/pkg/ordinal/man/clmm.html" class="external-link">ordinal::clmm()</a></code> fit
+is returned as class <code>projpred_mlvl_cumul</code>, too. For <code><a href="https://rdrr.io/pkg/ordinal/man/clmm.html" class="external-link">ordinal::clmm()</a></code>
+with a single group-level term <code>(1 | &lt;group&gt;)</code>, <span class="pkg">projpred</span> uses
 <code>method = "ucminf"</code> and <code>grad = "forward"</code> (see
 <code><a href="https://rdrr.io/pkg/ordinal/man/clmm.control.html" class="external-link">ordinal::clmm.control()</a></code>). If this fit fails or does not converge,
 <span class="pkg">projpred</span> refits with the default settings of <code><a href="https://rdrr.io/pkg/ordinal/man/clmm.html" class="external-link">ordinal::clmm()</a></code>. An

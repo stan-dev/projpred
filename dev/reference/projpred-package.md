@@ -131,7 +131,25 @@ by projpred's internal default `div_minimizer` functions, see
     [`mclogit::mblogit()`](https://melff.github.io/mclogit/reference/mblogit.html)
     (the returned object inherits from class `mmblogit`) for the
     [`brms::categorical()`](https://paulbuerkner.com/brms/reference/brmsfamily.html)
-    family. For
+    family. Exception: for the
+    [`brms::cumulative()`](https://paulbuerkner.com/brms/reference/brmsfamily.html)
+    family, if the only group-level term is a random intercept
+    `(1 | <group>)`, projpred uses its own fit (the returned object
+    inherits from classes `projpred_mlvl_cumul` and `projpred_mlvl`).
+    This fit minimizes the Laplace approximation that
+    [`ordinal::clmm()`](https://rdrr.io/pkg/ordinal/man/clmm.html) uses,
+    for the links of
+    [`brms::cumulative()`](https://paulbuerkner.com/brms/reference/brmsfamily.html)
+    (`logit`, `probit`, `probit_approx`, `cloglog`, `cauchit`). projpred
+    uses [`ordinal::clmm()`](https://rdrr.io/pkg/ordinal/man/clmm.html)
+    instead if the fit does not converge, if the submodel has an offset
+    or a rank-deficient model matrix, if `...` contains arguments of
+    [`ordinal::clmm()`](https://rdrr.io/pkg/ordinal/man/clmm.html) or of
+    its optimizers (for example `method` or `control`), or if global
+    option `projpred.mlvl_laplace` is `FALSE`. After a fit that does not
+    converge, the
+    [`ordinal::clmm()`](https://rdrr.io/pkg/ordinal/man/clmm.html) fit
+    is returned as class `projpred_mlvl_cumul`, too. For
     [`ordinal::clmm()`](https://rdrr.io/pkg/ordinal/man/clmm.html) with
     a single group-level term `(1 | <group>)`, projpred uses
     `method = "ucminf"` and `grad = "forward"` (see

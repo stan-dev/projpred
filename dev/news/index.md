@@ -205,6 +205,21 @@
   [`as_glmerMod()`](https://mc-stan.org/projpred/dev/reference/as_glmerMod.md)
   converts such a fit to class `glmerMod`. (GitHub:
   [\#644](https://github.com/stan-dev/projpred/issues/644))
+- New argument `search_screen` of
+  [`varsel()`](https://mc-stan.org/projpred/dev/reference/varsel.md) and
+  [`cv_varsel()`](https://mc-stan.org/projpred/dev/reference/cv_varsel.md):
+  a faster forward search for binomial (logit) and Poisson (log)
+  submodels, which projects only the `search_screen` best candidates per
+  step, ranked by a score statistic. (GitHub:
+  [\#646](https://github.com/stan-dev/projpred/issues/646))
+- Faster multilevel submodels of the
+  [`brms::cumulative()`](https://paulbuerkner.com/brms/reference/brmsfamily.html)
+  family with a single group-level intercept term: projpred’s own
+  Laplace fit (class `projpred_mlvl_cumul`) instead of
+  [`ordinal::clmm()`](https://rdrr.io/pkg/ordinal/man/clmm.html).
+  [`cv_varsel()`](https://mc-stan.org/projpred/dev/reference/cv_varsel.md)
+  with `validate_search = TRUE` is about 6 times faster. (GitHub:
+  [\#645](https://github.com/stan-dev/projpred/issues/645))
 
 ### Minor changes
 

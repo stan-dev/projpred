@@ -39,6 +39,7 @@ varsel(
   thresh = 1e-06,
   penalty = NULL,
   search_terms = NULL,
+  search_screen = NULL,
   search_out = NULL,
   seed = NA,
   ...
@@ -206,6 +207,29 @@ varsel(
   variables that are search terms without a smooth term; the smooth term
   then adds the nonlinear part. To search a smooth term without its
   linear terms, leave these linear terms out of `search_terms`.
+
+- search_screen:
+
+  Only relevant for forward search. `NULL` (default) for the plain
+  forward search, or a single positive integer m for a score-screened
+  forward search: in each step, the score statistic of each candidate at
+  the current submodel approximates the reduction of the KL divergence,
+  and only the m best candidates get an exact projection. This reduces
+  the number of projections from about p per step to at most m per step.
+  The selected terms and their order can differ from those of the plain
+  forward search. The screening applies only to the traditional
+  projection with [`binomial()`](https://rdrr.io/r/stats/family.html)
+  (logit link) or [`poisson()`](https://rdrr.io/r/stats/family.html)
+  (log link) submodels without multilevel terms, additive terms and
+  interactions with a factor, with the default divergence minimizer, and
+  only if the model matrix of the search terms can be built (for
+  example, no missing values and no zero-variance columns); in the other
+  cases, `search_screen` is ignored and the plain forward search runs.
+  For Gaussian submodels with the identity link, `search_screen` is
+  ignored if projpred uses its cross-product forward search for them.
+  With offsets, the score statistic approximates the reduction of the
+  objective that the submodels are fitted to, which has no offsets; the
+  exact projections still choose the term.
 
 - search_out:
 
