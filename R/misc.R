@@ -653,10 +653,22 @@ get_p_clust <- function(family, eta, mu, mu_offs, dis, nclusters = 10,
   if (as_moments && !all(lengths(ind_by_cl) == 1L)) {
     return(NULL)
   }
+  # A cluster whose draws all have weight 0 (for example PSIS-LOO weights that
+  # underflow to 0) gets projection weight 0. Its center, dispersion and
+  # predictive variance use equal weights of its draws (`wdraws_in`), so that
+  # its projection gets finite data:
+  wdraws_in <- wdraws
+  if (any(wdraws == 0, na.rm = TRUE)) {
+    wsum_orig <- vapply(ind_by_cl, function(ind) sum(wdraws[ind]), numeric(1),
+                        USE.NAMES = FALSE)
+    for (j in which(wsum_orig == 0 & lengths(ind_by_cl) > 0L)) {
+      wdraws_in[ind_by_cl[[j]]] <- 1
+    }
+  }
   wsum_cl <- NULL
   if (!is.null(draws_shift)) {
     ndraws_cl <- lengths(ind_by_cl)
-    wsum_cl <- vapply(ind_by_cl, function(ind) sum(wdraws[ind]), numeric(1),
+    wsum_cl <- vapply(ind_by_cl, function(ind) sum(wdraws_in[ind]), numeric(1),
                       USE.NAMES = FALSE)
     if (!(use_mix && any(ndraws_cl > 1L) && all(ndraws_cl > 0L) &&
           all(is.finite(wsum_cl) & wsum_cl != 0))) {
@@ -679,7 +691,8 @@ get_p_clust <- function(family, eta, mu, mu_offs, dis, nclusters = 10,
     # at once.
     idx <- unlist(ind_by_cl, use.names = FALSE)
     wcluster <- unname(as.numeric(wdraws[idx]))
-    ws <- wcluster / wcluster * (1 - eps)
+    wcluster_in <- unname(as.numeric(wdraws_in[idx]))
+    ws <- wcluster_in / wcluster_in * (1 - eps)
     # Usually, all draws are used in their order, and `w / w` is exactly 1
     # (for a finite nonzero weight), so that `ws` is `1 - eps`. Then one
     # product with a scalar gives the centers, without copies of the draws:
@@ -731,10 +744,16 @@ get_p_clust <- function(family, eta, mu, mu_offs, dis, nclusters = 10,
   } else {
     # Several draws in a cluster: weighted moments of the draws in compiled
     # code. The results differ from the cluster loop only by rounding.
-    wcluster <- wsum_cl %||%
+    wcluster_in <- wsum_cl %||%
+      vapply(ind_by_cl, function(ind) sum(wdraws_in[ind]), numeric(1),
+             USE.NAMES = FALSE)
+    wcluster <- if (identical(wdraws_in, wdraws)) {
+      wcluster_in
+    } else {
       vapply(ind_by_cl, function(ind) sum(wdraws[ind]), numeric(1),
              USE.NAMES = FALSE)
-    wn <- as.numeric(wdraws) / wcluster[cl_ind]
+    }
+    wn <- as.numeric(wdraws_in) / wcluster_in[cl_ind]
     wn[is.na(cl_ind)] <- 0
     mom <- clust_moments_c(
       mu, mu_offs, as.numeric(dis)[seq_along(cl)], wn,
@@ -754,9 +773,10 @@ get_p_clust <- function(family, eta, mu, mu_offs, dis, nclusters = 10,
     }
   }
   # The cluster loop: for the predictive variances without
-  # `family$predvar_mix`, and for the clusters with a weight sum of 0, Inf or
-  # NaN, or without draws (so that NA and NaN propagate as in the loop):
-  ind_loop <- which(!is.finite(wcluster) | wcluster == 0)
+  # `family$predvar_mix`, and for the clusters with a weight sum (of
+  # `wdraws_in`) of Inf or NaN, or without draws (so that NA and NaN propagate
+  # as in the loop):
+  ind_loop <- which(!is.finite(wcluster_in) | wcluster_in == 0)
   if (!use_mix) {
     predvar <- matrix(nrow = nobs, ncol = nclusters)
     ind_loop <- seq_len(nclusters)
@@ -765,11 +785,11 @@ get_p_clust <- function(family, eta, mu, mu_offs, dis, nclusters = 10,
     ind <- ind_by_cl[[j]]
     # Compute normalized weights within the j-th cluster; `1 - eps` is for
     # numerical stability:
-    ws_j <- wdraws[ind] / sum(wdraws[ind]) * (1 - eps)
+    ws_j <- wdraws_in[ind] / sum(wdraws_in[ind]) * (1 - eps)
     # Predictive variance for the j-th cluster:
     predvar[, j] <- family$predvar(mu_offs[, ind, drop = FALSE], dis[ind],
                                    ws_j)
-    if (is.finite(wcluster[j]) && wcluster[j] != 0) {
+    if (is.finite(wcluster_in[j]) && wcluster_in[j] != 0) {
       next
     }
     # Center of the j-th cluster:
