@@ -589,13 +589,14 @@ get_p_clust <- function(family, eta, mu, mu_offs, dis, nclusters = 10,
   # `draws_shift` (from perturb_refmodel()): the draws of `eta`, `mu` and
   # `mu_offs` are the given ones plus `draws_shift` (one value per
   # observation). If each cluster has at least one draw and a finite nonzero
-  # weight sum, at least one cluster has several draws, and
-  # `family$predvar_mix` is used, then the cluster means move by the shift, and
+  # weight sum (of `wdraws_in`, see below), at least one cluster has several
+  # draws, and `family$predvar_mix` is used, then the cluster means move by the
+  # shift, and
   # the within-cluster variances do not change. In the other cases, the shifted
   # draws are computed here.
   #
   # With `as_moments = TRUE`, the function returns `NULL` or, for a given `cl`
-  # with one draw per cluster, finite nonzero weights and a
+  # with one draw per cluster, finite weights (`wdraws_in` nonzero) and a
   # `family$predvar_mix`, a list without the observations x clusters matrices
   # `mu`, `mu_offs` and `var`. Instead, the list has `draws_offs` (the input
   # `mu_offs`), the draw `idx` and the factor `ws` of each cluster (cluster
@@ -659,10 +660,10 @@ get_p_clust <- function(family, eta, mu, mu_offs, dis, nclusters = 10,
   # its projection gets finite data:
   wdraws_in <- wdraws
   if (any(wdraws == 0, na.rm = TRUE)) {
-    wsum_orig <- vapply(ind_by_cl, function(ind) sum(wdraws[ind]), numeric(1),
-                        USE.NAMES = FALSE)
-    for (j in which(wsum_orig == 0 & lengths(ind_by_cl) > 0L)) {
-      wdraws_in[ind_by_cl[[j]]] <- 1
+    for (ind in ind_by_cl) {
+      if (length(ind) > 0L && isTRUE(all(wdraws[ind] == 0))) {
+        wdraws_in[ind] <- 1
+      }
     }
   }
   wsum_cl <- NULL
@@ -691,6 +692,7 @@ get_p_clust <- function(family, eta, mu, mu_offs, dis, nclusters = 10,
     # at once.
     idx <- unlist(ind_by_cl, use.names = FALSE)
     wcluster <- unname(as.numeric(wdraws[idx]))
+    stop_if_all_wdraws_zero(wcluster)
     wcluster_in <- unname(as.numeric(wdraws_in[idx]))
     ws <- wcluster_in / wcluster_in * (1 - eps)
     # Usually, all draws are used in their order, and `w / w` is exactly 1
@@ -747,12 +749,9 @@ get_p_clust <- function(family, eta, mu, mu_offs, dis, nclusters = 10,
     wcluster_in <- wsum_cl %||%
       vapply(ind_by_cl, function(ind) sum(wdraws_in[ind]), numeric(1),
              USE.NAMES = FALSE)
-    wcluster <- if (identical(wdraws_in, wdraws)) {
-      wcluster_in
-    } else {
-      vapply(ind_by_cl, function(ind) sum(wdraws[ind]), numeric(1),
-             USE.NAMES = FALSE)
-    }
+    wcluster <- vapply(ind_by_cl, function(ind) sum(wdraws[ind]), numeric(1),
+                       USE.NAMES = FALSE)
+    stop_if_all_wdraws_zero(wcluster)
     wn <- as.numeric(wdraws_in) / wcluster_in[cl_ind]
     wn[is.na(cl_ind)] <- 0
     mom <- clust_moments_c(
@@ -821,6 +820,20 @@ get_p_clust <- function(family, eta, mu, mu_offs, dis, nclusters = 10,
     wdraws_orig = wdraws,
     clust_used = clust_used_forced %||% TRUE
   ))
+}
+
+# Stops if all projected draws (or clusters) have weight 0. In PSIS-LOO CV,
+# this happens if the PSIS-LOO weights of the left-out observation underflow to
+# 0 for all projected draws (or clusters), for example for a reference model
+# whose chains have not converged.
+stop_if_all_wdraws_zero <- function(wcluster) {
+  if (isTRUE(sum(wcluster) == 0)) {
+    stop("All projected draws (or clusters) have weight 0. In PSIS-LOO CV, ",
+         "the PSIS-LOO weights of the left-out observation are then 0 for ",
+         "all of them. Please check the convergence of the reference model, ",
+         "or use K-fold CV (`cv_method = \"kfold\"`).")
+  }
+  return(invisible(TRUE))
 }
 
 draws_subsample <- function(S, ndraws) {

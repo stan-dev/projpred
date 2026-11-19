@@ -147,12 +147,34 @@ test_that(paste(
       expect_identical(is.na(unclass(out$var)[, 2]),
                        is.na(unclass(out$var)[, 1]), info = info)
       expect_identical(out$wdraws_prj[2], 0, info = info)
-      # The center of cluster 2 is the mean of its draws:
+      # The center, dispersion and predictive variance of cluster 2 use equal
+      # weights of its draws:
+      ind <- which(cl == 2)
+      ws_eq <- rep(1 / length(ind), length(ind)) * (1 - 1e-10)
       expect_equal(unclass(out$mu)[, 2],
-                   rowMeans(inp$mu[, cl == 2, drop = FALSE]) * (1 - 1e-10),
+                   rowMeans(inp$mu[, ind, drop = FALSE]) * (1 - 1e-10),
+                   info = info)
+      expect_equal(out$dis[2], sum(inp$dis[ind] * ws_eq), info = info)
+      expect_equal(unclass(out$var)[, 2],
+                   as.vector(fam$predvar(inp$mu_offs[, ind, drop = FALSE],
+                                         inp$dis[ind], ws_eq)),
                    info = info)
     }
   }
+  # If all projected draws have weight 0 (here thinned draws), get_p_clust()
+  # stops with an informative error:
+  inp <- p_clust_inputs(extend_family(gaussian()))
+  S <- ncol(inp$mu)
+  thin <- rep(NA, S)
+  thin[c(1, 5, 9)] <- 1:3
+  w <- inp$wdraws
+  w[c(1, 5, 9)] <- 0
+  expect_error(
+    get_p_clust(family = extend_family(gaussian()), eta = inp$eta,
+                mu = inp$mu, mu_offs = inp$mu_offs, dis = inp$dis,
+                wdraws = w, cl = thin),
+    "All projected draws (or clusters) have weight 0.", fixed = TRUE
+  )
 })
 
 test_that(paste(
