@@ -21,6 +21,8 @@ test_that(paste(
   "warn_pareto() counts and prints the k values with the threshold for `S`",
   "draws, and counts k values that could not be estimated"
 ), {
+  # setup.R turns off these warnings:
+  withr::local_options(projpred.warn_psis = TRUE)
   txt <- "Some (%d / %d) k's are > %s."
   # The threshold for 100 draws is 0.5, for 4000 draws 0.7:
   k <- c(0.55, 0.65, 0.2, NA)
@@ -40,6 +42,8 @@ test_that(paste(
   "expectation-specific Pareto k values that could not be estimated"
 ), {
   skip_on_cran()
+  # setup.R turns off the Pareto k warnings:
+  withr::local_options(projpred.warn_psis = TRUE)
   withr::local_seed(5629)
   n <- 30
   S <- 40
