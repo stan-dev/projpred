@@ -142,7 +142,10 @@ test_that(paste(
                          cl = cl)
       expect_true(all(is.finite(out$mu)), info = info)
       expect_true(all(is.finite(out$mu_offs)), info = info)
-      expect_true(all(is.finite(out$var)), info = info)
+      # The predictive variances are NA for some families, also for clusters
+      # with nonzero weights:
+      expect_identical(is.na(unclass(out$var)[, 2]),
+                       is.na(unclass(out$var)[, 1]), info = info)
       expect_identical(out$wdraws_prj[2], 0, info = info)
       # The center of cluster 2 is the mean of its draws:
       expect_equal(unclass(out$mu)[, 2],

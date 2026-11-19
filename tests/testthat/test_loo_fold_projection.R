@@ -460,9 +460,11 @@ test_that(paste(
   ref <- init_refmodel(object = list(beta = beta), data = dat,
                        formula = y ~ x1 + x2 + x3, family = poisson(),
                        ref_predfun = ref_predfun)
+  # The extreme draws give the expected warnings about the Pareto k values and
+  # about the weight perturbation:
   muffle_pareto <- function(expr) {
     withCallingHandlers(expr, warning = function(w) {
-      if (grepl("Pareto", conditionMessage(w))) {
+      if (grepl("Pareto|weight perturbation", conditionMessage(w))) {
         invokeRestart("muffleWarning")
       }
     })
