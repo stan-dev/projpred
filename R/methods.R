@@ -2426,6 +2426,16 @@ get_subparams.projpred_mlvl <- function(x, ...) {
   return(subparams)
 }
 
+# The parameters in the order of get_subparams.clmm(): thresholds, regression
+# coefficients, group-level standard deviation, group-level intercepts.
+#' @noRd
+#' @export
+get_subparams.projpred_mlvl_cumul <- function(x, ...) {
+  thres <- x$alpha
+  names(thres) <- mknms_thres(names(thres), ...)
+  return(c(thres, get_subparams.projpred_mlvl(x, ...)))
+}
+
 #' @noRd
 #' @export
 get_subparams.gamm4 <- function(x, ...) {

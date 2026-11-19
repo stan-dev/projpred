@@ -33,6 +33,8 @@ If you read this from a place other than <https://mc-stan.org/projpred/news/inde
 * The forward search adds a smooth term only after the linear terms of its variables, so the full model has the same size on all search paths. The full-model warnings use the size of the submodel with all search terms. This changes the default results of additive models. (GitHub: #638)
 * Faster binomial (logit) and Poisson (log) multilevel submodels with group-level intercepts only: projpred's own Laplace fit (class `projpred_mlvl`). `cv_varsel()` with `validate_search = TRUE` is about 8 times faster. (GitHub: #644)
 * The fits of these submodels (for example, in element `outdmin` of `project()` output) have class `projpred_mlvl` instead of `glmerMod`. The new function `as_glmerMod()` converts such a fit to class `glmerMod`. (GitHub: #644)
+* New argument `search_screen` of `varsel()` and `cv_varsel()`: a faster forward search for binomial (logit) and Poisson (log) submodels, which projects only the `search_screen` best candidates per step, ranked by a score statistic. (GitHub: #646)
+* Faster multilevel submodels of the `brms::cumulative()` family with a single group-level intercept term: projpred's own Laplace fit (class `projpred_mlvl_cumul`) instead of `ordinal::clmm()`. `cv_varsel()` with `validate_search = TRUE` is about 6 times faster. (GitHub: #645)
 * New argument `latent_epred` of `extend_family()` for the response-scale expected values of the latent projection, e.g., `exp(meanlog + sdlog^2 / 2)` for a log-normal model. They are used in `proj_linpred()`, `proj_epred()`, `predict.refmodel()` and for `"mse"`, `"rmse"` and `"R2"`. (GitHub: #662)
 
 ## Minor changes
@@ -87,7 +89,7 @@ If you read this from a place other than <https://mc-stan.org/projpred/news/inde
 * If the optimx refit after a `not positive definite` error of lme4 fails, too, projpred now stops with an error that contains both error messages. (GitHub: #323, #633)
 * The submodels now use the contrasts of the reference model for factor predictors instead of `options("contrasts")`. This changes the projected coefficients and can change the L1 search and LOO predictions for a level of one observation. (GitHub: #283, #619)
 * `get_refmodel()` now stops with an error that names the missing variables and gives a workaround. This applies to `rstanarm::stan_gamm4()` fits with argument `random` and an expression in the formula, such as `cbind(y, n - y)`. (GitHub: #148, #634)
-* Fixed errors in `cv_varsel()` with `cv_method = "LOO"` and `validate_search = TRUE` if a factor is only in a group-level term of a submodel (as with `search_terms`) and a level of it occurs only in the left-out observation. (GitHub: #635)
+* Fixed errors in `cv_varsel()` with `cv_method = "LOO"` and `validate_search = TRUE` if a factor is only in a group-level term of a submodel (as with `search_terms`) and a level of it occurs only in the left-out observation. (GitHub: #635, #643)
 * Fixed the error "length of 'dimnames' [1] not equal to array extent" in the predictions of multilevel `brms::categorical()` submodels with a factor in a group-level term, such as `(1 + f | g)`. `catCov` values other than `"free"` now give an error. (GitHub: #635, #640)
 
 
