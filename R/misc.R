@@ -591,9 +591,8 @@ get_p_clust <- function(family, eta, mu, mu_offs, dis, nclusters = 10,
   # observation). If each cluster has at least one draw and a finite nonzero
   # weight sum (of `wdraws_in`, see below), at least one cluster has several
   # draws, and `family$predvar_mix` is used, then the cluster means move by the
-  # shift, and
-  # the within-cluster variances do not change. In the other cases, the shifted
-  # draws are computed here.
+  # shift, and the within-cluster variances do not change. In the other cases,
+  # the shifted draws are computed here.
   #
   # With `as_moments = TRUE`, the function returns `NULL` or, for a given `cl`
   # with one draw per cluster, finite weights (`wdraws_in` nonzero) and a
@@ -823,15 +822,18 @@ get_p_clust <- function(family, eta, mu, mu_offs, dis, nclusters = 10,
 }
 
 # Stops if all projected draws (or clusters) have weight 0. In PSIS-LOO CV,
-# this happens if the PSIS-LOO weights of the left-out observation underflow to
-# 0 for all projected draws (or clusters), for example for a reference model
-# whose chains have not converged.
+# this happens if the PSIS weights of all thinned draws underflow to 0 for the
+# left-out observation, for example for a reference model whose chains have not
+# converged. With clustering, all draws are in a cluster, so at least one
+# cluster has a nonzero weight.
 stop_if_all_wdraws_zero <- function(wcluster) {
   if (isTRUE(sum(wcluster) == 0)) {
-    stop("All projected draws (or clusters) have weight 0. In PSIS-LOO CV, ",
-         "the PSIS-LOO weights of the left-out observation are then 0 for ",
-         "all of them. Please check the convergence of the reference model, ",
-         "or use K-fold CV (`cv_method = \"kfold\"`).")
+    stop("All projected draws have weight 0. In PSIS-LOO CV, this occurs if ",
+         "the PSIS weights of all projected draws underflow to 0 for the ",
+         "left-out observation. Please check the convergence of the ",
+         "reference model. Use clustering (`nclusters`, `nclusters_pred`) ",
+         "instead of thinning (`ndraws`, `ndraws_pred`), or use ",
+         "`cv_method = \"kfold\"`.")
   }
   return(invisible(TRUE))
 }

@@ -15,7 +15,7 @@ p_clust_loop <- function(family, mu, mu_offs, dis, wdraws, cl) {
     # A cluster with weight sum 0 uses equal weights for its center (and keeps
     # projection weight 0):
     w_in <- wdraws[ind]
-    if (length(ind) > 0 && isTRUE(sum(w_in) == 0)) {
+    if (length(ind) > 0 && isTRUE(all(w_in == 0))) {
       w_in <- rep(1, length(ind))
     }
     ws <- w_in / sum(w_in) * (1 - eps)
@@ -173,7 +173,7 @@ test_that(paste(
     get_p_clust(family = extend_family(gaussian()), eta = inp$eta,
                 mu = inp$mu, mu_offs = inp$mu_offs, dis = inp$dis,
                 wdraws = w, cl = thin),
-    "All projected draws (or clusters) have weight 0.", fixed = TRUE
+    "All projected draws have weight 0.", fixed = TRUE
   )
 })
 

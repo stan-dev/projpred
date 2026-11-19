@@ -87,6 +87,7 @@ test_that(paste(
   full_0 <- do.call(get_p_clust, modifyList(args_0, list(as_moments = FALSE)))
   expect_true(isTRUE(mom_0$moments_only))
   expect_identical(mom_0$wdraws_prj[3], 0)
+  expect_identical(mom_0$ws[3], 1 - 1e-10)
   expect_equal(unclass(full_0$mu_offs),
                mu[, mom_0$idx] * rep(mom_0$ws, each = n), tolerance = 1e-15)
   for (el in c("dis", "wdraws_prj", "const_wdraws_prj")) {

@@ -460,10 +460,9 @@ test_that(paste(
       }
       eta
     }
+    y_nm <- c(poisson = "y_pois", gaussian = "y_gauss")[[fam]]
     init_refmodel(object = list(beta = beta), data = dat,
-                  formula = reformulate(colnames(x),
-                                        response = paste0("y_", substr(fam, 1,
-                                                                       5))),
+                  formula = reformulate(colnames(x), response = y_nm),
                   family = get(fam)(), ref_predfun = ref_predfun,
                   dis = if (fam == "gaussian") rep(1, S))
   })

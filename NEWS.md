@@ -95,7 +95,7 @@ If you read this from a place other than <https://mc-stan.org/projpred/news/inde
 * With lme4 versions before 2.1-1, binomial and Poisson submodels with group-level terms are now fitted correctly to non-integer data. Before, the group-level standard deviations of Poisson submodels stayed at 1. These Poisson fits are also faster, so `init_refmodel()` no longer warns about their run time. (GitHub: #616, #655)
 * The warning of `init_refmodel()` for multilevel models with a binomial response or with the augmented-data projection now gives the cause. The projected group-level standard deviations can be near zero, and then the search can rank group-level terms too low. (GitHub: #353, #655)
 * With `latent = TRUE`, `get_refmodel()` and `init_refmodel()` give an informative error for `brms::categorical()` and the unsupported **brms** families with several linear predictors (for example `multinomial()`). (GitHub: #658)
-* Fixed the error "matrix multiplication: incompatible matrix dimensions" in `cv_varsel()` with `cv_method = "LOO"` and `validate_search = TRUE` if the PSIS-LOO weights of all draws of a cluster underflow to 0, for example for a reference model with a non-converged chain. (GitHub: #???)
+* Fixed the error "matrix multiplication: incompatible matrix dimensions" in `cv_varsel()` with validated PSIS-LOO search if the weights of all draws of a cluster underflow to 0. If this occurs for all projected draws, `cv_varsel()` now stops with an informative error. (GitHub: #???)
 
 
 # projpred 2.11.0
