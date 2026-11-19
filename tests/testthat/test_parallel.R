@@ -320,6 +320,13 @@ test_that("a parallel run without workers warns and runs in this R session", {
   expect_identical(ranking(cvvs)[["foldwise"]],
                    ranking(cvvs_seq)[["foldwise"]])
   expect_equal(cvvs$summaries, cvvs_seq$summaries)
+  # The same for K-fold CV (the parallel folds get the reference models
+  # without the copies of `mu`, see refmodel_for_folds()):
+  cvvs_k <- cvvs_par(tstsetup_ref, "kfold", parallel = TRUE)
+  cvvs_k_seq <- cvvs_par(tstsetup_ref, "kfold", parallel = FALSE)
+  expect_identical(ranking(cvvs_k)[["foldwise"]],
+                   ranking(cvvs_k_seq)[["foldwise"]])
+  expect_equal(cvvs_k$summaries, cvvs_k_seq$summaries)
   # The loops over the projected draws warn only once per R session:
   par_state <- get("par_state", envir = asNamespace("projpred"))
   warned_old <- par_state$warned
@@ -657,6 +664,16 @@ local_record_par <- function(frame = parent.frame()) {
         !is.list(x) || is.null(x$fold) ||
           (is.null(x$fold$refmodel$fit) && !is.null(x$fold$eta_test))
       }, logical(1))),
+      # Whether a reference model for the workers holds `mu_offs` or `eta`
+      # as a copy of `mu`:
+      dup_draws = any(vapply(
+        c(list(environment(fun)$refmodel),
+          lapply(.X, function(x) if (is.list(x)) x$fold$refmodel)),
+        function(r) {
+          !is.null(r$mu) && (identical(r$mu_offs, r$mu) ||
+                               identical(r$eta, r$mu))
+        }, logical(1)
+      )),
       rng = .rng
     )))
     par_chunk <- get("par_chunk", envir = asNamespace("projpred"))
@@ -685,8 +702,9 @@ test_that(paste(
   # The calls of the fold loops, LOO first:
   calls_folds <- Filter(function(cl) "refmodel" %in% cl$env_nms, rec$calls)
   expect_length(calls_folds, 2)
-  expect_false(any(c("psisloo", "loglik_forPSIS", "refdist_pred") %in%
-                     calls_folds[[1]]$env_nms))
+  # The LOO folds get their columns of `lw` and their rankings as elements:
+  expect_false(any(c("psisloo", "loglik_forPSIS", "refdist_pred", "lw",
+                     "search_out_rks") %in% calls_folds[[1]]$env_nms))
   expect_false("list_cv" %in% calls_folds[[2]]$env_nms)
   # The folds get the reference models without their fits (see
   # refmodel_for_folds()), and each fold gets an RNG stream:
@@ -695,6 +713,48 @@ test_that(paste(
     expect_true(cl$fit_null)
     expect_true(cl$folds_slim)
     expect_true(cl$rng)
+    expect_false(cl$dup_draws)
+  }
+})
+
+test_that(paste(
+  "refmodel_drop_dup_draws() removes the copies of `mu`, and",
+  "refmodel_restore_draws() puts them back"
+), {
+  n <- 30L
+  S <- 20L
+  dat <- data.frame(x = sin(seq_len(n)),
+                    y = as.integer(sin(3 * seq_len(n)) > 0))
+  fit <- list(beta = rbind(seq(-0.5, 0.5, length.out = S),
+                           seq(0.2, 1, length.out = S)), data = dat)
+  ref_predfun <- function(fit, newdata = NULL) {
+    nd <- if (is.null(newdata)) fit$data else newdata
+    cbind(1, nd$x) %*% fit$beta
+  }
+  # `mu` is the object `eta` (identity link) and the object `mu_offs` (no
+  # offsets), or only the object `mu_offs` (logit link):
+  cases <- list(
+    gauss = list(fam = gaussian(), dis = rep(1, S),
+                 dropped = c("mu_offs", "eta")),
+    brnll = list(fam = binomial(), dis = NULL, dropped = "mu_offs")
+  )
+  for (nm in names(cases)) {
+    cs <- cases[[nm]]
+    refm <- suppressWarnings(init_refmodel(
+      fit, data = dat, formula = y ~ x, family = cs$fam,
+      ref_predfun = ref_predfun, dis = cs$dis
+    ))
+    refm_s <- projpred:::refmodel_drop_dup_draws(refm)
+    expect_identical(refm_s$draws_same_as_mu, cs$dropped, info = nm)
+    for (el in cs$dropped) {
+      expect_null(refm_s[[el]], info = paste(nm, el))
+    }
+    expect_lt(length(serialize(refm_s, NULL)), length(serialize(refm, NULL)),
+              label = nm)
+    expect_identical(projpred:::refmodel_restore_draws(refm_s), refm,
+                     info = nm)
+    # A reference model without removed elements stays as it is:
+    expect_identical(projpred:::refmodel_restore_draws(refm), refm, info = nm)
   }
 })
 
@@ -750,6 +810,7 @@ test_that(paste(
   "divmin_augdat() match their free variables"
 ), {
   skip_if_not_installed("codetools")
+  skip_if_not_installed("globals")
   # The right-hand sides of all assignments `nm <- ...` in `expr`:
   rhs_of <- function(expr, nm) {
     out <- list()
@@ -790,19 +851,19 @@ test_that(paste(
       expect_identical(sum(is_def), 0L, info = outer_nm)
       inner_fun <- eval(slim_call[[2]])
     }
-    globs <- codetools::findGlobals(inner_fun, merge = FALSE)
+    # With `method = "ordered"`, a variable that the function reads before it
+    # assigns it (for example `refmodel <- f(refmodel)`) is a free variable:
+    globs <- globals::findGlobals(inner_fun, method = "ordered")
     outer_locals <- unique(c(
       names(formals(outer_fun)),
       codetools::findFuncLocals(formals(outer_fun), body(outer_fun))
     ))
     listed <- eval(slim_call[[3]])
-    expect_setequal(intersect(c(globs$variables, globs$functions),
-                              outer_locals),
-                    listed)
+    expect_setequal(intersect(globs, outer_locals), listed)
     # The workers find all other free variables only if they are in the
     # projpred namespace, its imports or base (not in the global
     # environment):
-    others <- setdiff(c(globs$variables, globs$functions), outer_locals)
+    others <- setdiff(globs, outer_locals)
     ns <- asNamespace("projpred")
     in_ns <- vapply(others, function(nm) {
       exists(nm, envir = ns, inherits = FALSE) ||
@@ -877,13 +938,25 @@ test_that(paste(
   for (tstsetup in names(refmods)) {
     refm <- refmods[[tstsetup]]
     refm_f <- projpred:::refmodel_for_folds(refm)
+    # The copy has no copies of `mu` (also on the path for the latent and the
+    # augmented-data projection), and the fold functions restore them (see
+    # refmodel_drop_dup_draws()):
+    expect_false(identical(refm_f$mu_offs, refm_f$mu), info = tstsetup)
+    expect_false(identical(refm_f$eta, refm_f$mu), info = tstsetup)
+    if (all(refm$offset == 0)) {
+      expect_true("mu_offs" %in% refm_f$draws_same_as_mu, info = tstsetup)
+    }
+    refm_r <- projpred:::refmodel_restore_draws(refm_f)
+    els <- c("mu", "eta", "mu_offs")
+    expect_identical(refm_r[els], refm[els], info = tstsetup)
     # For the latent and the augmented-data projection and for family functions
-    # from other packages, the reference model stays as it is:
+    # from other packages, the reference model stays as it is (apart from the
+    # copies of `mu`):
     fam_pkgs <- vapply(Filter(is.function, refm$family), topenv_nm,
                        character(1))
     if (isTRUE(refm$family$for_latent) || isTRUE(refm$family$for_augdat) ||
         !all(fam_pkgs %in% c("base", "stats", "projpred"))) {
-      expect_identical(refm_f, refm, info = tstsetup)
+      expect_identical(refm_r, refm, info = tstsetup)
       next
     }
     pkgs_copied <- c(pkgs_copied, sub("\\..*", "", tstsetup))
