@@ -74,3 +74,51 @@ test_that("extend_family() works for the latent projection", {
                   info_str = fam_nm)
   }
 })
+
+test_that(paste(
+  "the latent projection stops for brms families with several linear",
+  "predictors"
+), {
+  skip_if_not_installed("brms")
+  msg_categ <- paste("support the latent projection for the brms family",
+                     "`categorical()`")
+  expect_error(extend_family(brms::categorical(), latent = TRUE), msg_categ,
+               fixed = TRUE)
+  for (latent in c(FALSE, TRUE)) {
+    expect_error(extend_family(brms::multinomial(), latent = latent),
+                 "does not support the brms family `multinomial()`",
+                 fixed = TRUE, info = paste("latent:", latent))
+  }
+  tstsetups <- grep("^brms\\.(glm|glmm)\\.categ\\.", names(fits), value = TRUE)
+  for (tstsetup in tstsetups) {
+    expect_error(get_refmodel(fits[[tstsetup]], latent = TRUE), msg_categ,
+                 fixed = TRUE, info = tstsetup)
+  }
+})
+
+test_that(paste(
+  "extend_family() with `latent = TRUE` gives the `latent_ilink` message only",
+  "for families whose `linkinv` does not give the mean"
+), {
+  fam_tst <- function(fam_nm, link, linkinv) {
+    structure(list(family = fam_nm, link = link, linkinv = linkinv),
+              class = "family")
+  }
+  fams_mean <- list(
+    neg_binomial_2 = fam_tst("neg_binomial_2", "log", exp),
+    negbinomial = fam_tst("negbinomial", "log", exp),
+    Gamma = Gamma(link = "log"),
+    weibull = fam_tst("weibull", "log", exp)
+  )
+  for (fam_nm in names(fams_mean)) {
+    expect_no_message(
+      extend_family(fams_mean[[fam_nm]], latent = TRUE),
+      message = "latent_ilink"
+    )
+  }
+  expect_message(
+    extend_family(fam_tst("lognormal", "identity", identity), latent = TRUE),
+    "latent_ilink",
+    info = "lognormal"
+  )
+})

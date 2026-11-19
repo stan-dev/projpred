@@ -154,6 +154,78 @@ test_that(paste(
                "response values must be numbers of successes")
 })
 
+test_that(paste(
+  "rstanarm::stan_gamm4() with argument `random` and a two-column response",
+  "fails with an informative error, and the workaround works"
+), {
+  skip_if_not_installed("rstanarm")
+  skip_if_not(run_additive)
+  fit_gamm_cbind <- suppressWarnings(rstanarm::stan_gamm4(
+    cbind(y_glm_binom, wobs_col - y_glm_binom) ~ xco.1 + s(s.1),
+    random = ~ (1 | z.1), family = f_binom, data = dat,
+    chains = 1L, seed = seed_fit, iter = 200L, refresh = 0
+  ))
+  expect_error(
+    get_refmodel(fit_gamm_cbind),
+    paste("lacks the variable\\(s\\) `y_glm_binom`, `wobs_col` of the model",
+          "formula\\. This is rstanarm issue #545")
+  )
+  fit_rows <- fit_gamm_cbind
+  fit_rows$data <- dat[-1, ]
+  expect_error(get_refmodel(fit_rows),
+               paste("has", nrow(dat) - 1L, "rows, but the fit has",
+                     nrow(dat), "rows"))
+  fit_gamm_cbind$data <- dat
+  refmod_cbind <- get_refmodel(fit_gamm_cbind)
+  expect_equal(refmod_cbind$y, dat$y_glm_binom)
+  expect_equal(refmod_cbind$wobs, dat$wobs_col)
+})
+
+test_that(paste(
+  "get_refmodel.stanreg() expands `.` in the formula without the columns for",
+  "the observation weights and offsets"
+), {
+  skip_if_not_installed("rstanarm")
+  xco <- dat[c("xco.1", "xco.2", "xco.3")]
+  dat_dot <- data.frame(y = dat$y_glm_gauss, xco)
+  dat_dot_o <- cbind(dat_dot, o = offs_tst)
+  dat_dot_b <- data.frame(ys = dat$y_glm_binom,
+                          nf = dat$wobs_col - dat$y_glm_binom, xco)
+  # rstanarm evaluates `weights` and `offset` with model.frame(), so the calls
+  # cannot go through the `...` of a helper function. Each case has the fit
+  # and the expected observation weights and offsets:
+  cases <- suppressWarnings(list(
+    weights = list(fit = rstanarm::stan_glm(
+      y ~ ., data = dat_dot, weights = wobs_tst,
+      chains = 1L, iter = 200L, seed = seed_fit, refresh = 0
+    ), wobs = wobs_tst, offs = rep(0, nobsv)),
+    offset_arg = list(fit = rstanarm::stan_glm(
+      y ~ ., data = dat_dot, offset = offs_tst,
+      chains = 1L, iter = 200L, seed = seed_fit, refresh = 0
+    ), wobs = rep(1, nobsv), offs = offs_tst),
+    offset_formula = list(fit = rstanarm::stan_glm(
+      y ~ . - o + offset(o), data = dat_dot_o,
+      chains = 1L, iter = 200L, seed = seed_fit, refresh = 0
+    ), wobs = rep(1, nobsv), offs = offs_tst),
+    weights_offset = list(fit = rstanarm::stan_glm(
+      y ~ ., data = dat_dot, weights = wobs_tst, offset = offs_tst,
+      chains = 1L, iter = 200L, seed = seed_fit, refresh = 0
+    ), wobs = wobs_tst, offs = offs_tst),
+    binom_2col_offset = list(fit = rstanarm::stan_glm(
+      cbind(ys, nf) ~ ., family = binomial(), data = dat_dot_b,
+      offset = offs_tst,
+      chains = 1L, iter = 200L, seed = seed_fit, refresh = 0
+    ), wobs = dat$wobs_col, offs = offs_tst)
+  ))
+  for (nm in names(cases)) {
+    refmod_dot <- get_refmodel(cases[[nm]]$fit)
+    expect_identical(sort(labels(terms(refmod_dot$formula))),
+                     c("xco.1", "xco.2", "xco.3"), info = nm)
+    expect_equal(refmod_dot$wobs, cases[[nm]]$wobs, info = nm)
+    expect_equal(refmod_dot$offset, cases[[nm]]$offs, info = nm)
+  }
+})
+
 test_that("function calls in group terms fail", {
   tstsetup <- "brms.glmm.brnll.stdformul.without_wobs.without_offs"
   args_fit_i <- args_fit[[tstsetup]]
@@ -167,6 +239,28 @@ test_that("function calls in group terms fail", {
           "are not allowed\\."),
     info = tstsetup
   )
+})
+
+test_that(paste(
+  "get_refmodel() removes a brms correlation ID with a message and stops for",
+  "`||`"
+), {
+  tstsetup <- "brms.glmm.brnll.stdformul.without_wobs.without_offs"
+  args_fit_i <- args_fit[[tstsetup]]
+  skip_if_not(!is.null(args_fit_i))
+  fit_id <- fits[[tstsetup]]
+  fit_id$formula <- update(fit_id$formula,
+                           . ~ . - (xco.1 | z.1) + (xco.1 |p| z.1))
+  expect_message(refmod_id <- get_refmodel(fit_id),
+                 "correlation ID(s) `p`", fixed = TRUE, info = tstsetup)
+  expect_identical(extract_terms_response(refmod_id$formula)$group_terms,
+                   "xco.1 | z.1", info = tstsetup)
+  fit_dbar <- fits[[tstsetup]]
+  fit_dbar$formula <- update(fit_dbar$formula,
+                             . ~ . - (xco.1 | z.1) + (xco.1 || z.1))
+  expect_error(get_refmodel(fit_dbar),
+               "does not support group terms with `||`", fixed = TRUE,
+               info = tstsetup)
 })
 
 test_that("extra arguments in s() or t2() terms fail", {
@@ -197,6 +291,24 @@ test_that("extra arguments in s() or t2() terms fail", {
   )
 })
 
+test_that(paste(
+  "the formula of an rstanarm GAMM reference model has no linear terms for",
+  "the variables of the smooth terms, as for an rstanarm GAM"
+), {
+  skip_if_no_setups(refmods)
+  skip_if_not(run_additive)
+  tstsetups <- grep("^rstanarm\\.gam{1,2}\\.", names(refmods), value = TRUE)
+  expect_true(any(grepl("^rstanarm\\.gamm\\.", tstsetups)))
+  for (tstsetup in tstsetups) {
+    fml <- refmods[[tstsetup]]$formula
+    expect_identical(smooth_covered_terms(fml), character(0), info = tstsetup)
+    expect_true(formula_contains_additive_terms(fml), info = tstsetup)
+    if (grepl("^rstanarm\\.gamm\\.", tstsetup)) {
+      expect_true(formula_contains_group_terms(fml), info = tstsetup)
+    }
+  }
+})
+
 test_that("get_refmodel() is idempotent", {
   skip_if_no_setups(refmods)
   for (tstsetup in names(refmods)) {
@@ -204,6 +316,108 @@ test_that("get_refmodel() is idempotent", {
                      refmods[[tstsetup]],
                      info = tstsetup)
   }
+})
+
+test_that(paste(
+  "the `cvrefbuilder` of get_refmodel.stanreg() takes the default `dis` from",
+  "the fold-wise fit and passes a user-supplied `dis` unchanged"
+), {
+  tstsetups <- grep("^rstanarm\\..*\\.gauss\\.", names(fits), value = TRUE)
+  skip_if_not(length(tstsetups) >= 2)
+  # The second fit stands in for a fold refit:
+  fit_full <- fits[[tstsetups[1]]]
+  fit_fold <- fits[[tstsetups[2]]]
+  sigma_full <- data.frame(fit_full)[, "sigma"]
+  sigma_fold <- data.frame(fit_fold)[, "sigma"]
+  skip_if(isTRUE(all.equal(sigma_full, sigma_fold)))
+
+  refmod <- get_refmodel(fit_full)
+  expect_identical(refmod$dis, sigma_full)
+  expect_identical(refmod$cvrefbuilder(fit_fold)$dis, sigma_fold)
+
+  dis_user <- rep(0.7, length(sigma_full))
+  refmod_user <- get_refmodel(fit_full, dis = dis_user)
+  expect_identical(refmod_user$cvrefbuilder(fit_fold)$dis, dis_user)
+})
+
+test_that(paste(
+  "get_refmodel.stanreg() uses user-supplied `cvfun` and `cvrefbuilder`",
+  "functions in K-fold CV"
+), {
+  tstsetups <- grep("^rstanarm\\..*\\.gauss\\.", names(fits), value = TRUE)
+  skip_if_not(length(tstsetups) >= 1)
+  fit <- fits[[tstsetups[1]]]
+
+  # The user-supplied `cvfun` returns the full-data fit for each fold, so no
+  # refit is needed:
+  cvfun_folds <- list()
+  cvfun_user <- function(folds) {
+    cvfun_folds[[length(cvfun_folds) + 1L]] <<- folds
+    rep(list(fit), max(folds))
+  }
+  cvrefbuilder_ks <- integer()
+  cvrefbuilder_user <- function(cvfit) {
+    cvrefbuilder_ks <<- c(cvrefbuilder_ks, cvfit$projpred_k)
+    get_refmodel(cvfit, called_from_cvrefbuilder = TRUE)
+  }
+  refmod <- get_refmodel(fit, cvfun = cvfun_user,
+                         cvrefbuilder = cvrefbuilder_user)
+  expect_identical(refmod$cvfun, cvfun_user)
+  expect_identical(refmod$cvrefbuilder, cvrefbuilder_user)
+
+  folds <- rep_len(seq_len(K_tst), refmod$nobs)
+  cvfits <- run_cvfun(refmod, folds = folds)
+  expect_length(cvfun_folds, 1)
+  expect_identical(cvfun_folds[[1]], folds)
+  expect_identical(attr(cvfits, "folds"), folds)
+  expect_length(cvfits, K_tst)
+
+  cvvs <- cv_varsel(refmod, cv_method = "kfold", K = K_tst, cvfits = cvfits,
+                    nclusters = nclusters_tst,
+                    nclusters_pred = nclusters_pred_tst, nterms_max = 1,
+                    verbose = FALSE, seed = seed_tst)
+  expect_s3_class(cvvs, "vsel")
+  expect_identical(cvrefbuilder_ks, seq_len(K_tst))
+})
+
+test_that(paste(
+  "get_refmodel.stanreg() with only one of `cvfun` and `cvrefbuilder` keeps",
+  "the default of the other, and the default `cvrefbuilder` does not pass a",
+  "user-supplied `cvfun` to the folds"
+), {
+  tstsetups <- grep("^rstanarm\\..*\\.gauss\\.", names(fits), value = TRUE)
+  skip_if_not(length(tstsetups) >= 2)
+  # The second fit stands in for a fold refit:
+  fit_full <- fits[[tstsetups[1]]]
+  fit_fold <- fits[[tstsetups[2]]]
+  sigma_fold <- data.frame(fit_fold)[, "sigma"]
+  refmod_dflt <- get_refmodel(fit_full)
+
+  cvfun_user <- function(folds) stop("Not used.")
+  refmod <- get_refmodel(fit_full, cvfun = cvfun_user)
+  expect_identical(refmod$cvfun, cvfun_user)
+  refmod_fold <- refmod$cvrefbuilder(fit_fold)
+  expect_false(identical(refmod_fold$cvfun, cvfun_user))
+  expect_identical(refmod_fold$dis, sigma_fold)
+
+  cvrefbuilder_user <- function(cvfit) stop("Not used.")
+  refmod <- get_refmodel(fit_full, cvrefbuilder = cvrefbuilder_user)
+  expect_identical(refmod$cvrefbuilder, cvrefbuilder_user)
+  # The default `cvfun` is kept:
+  expect_identical(body(refmod$cvfun), body(refmod_dflt$cvfun))
+})
+
+test_that(paste(
+  "get_refmodel.stanreg() rejects a `cvfun` or `cvrefbuilder` that is not a",
+  "function"
+), {
+  tstsetups <- grep("^rstanarm\\.", names(fits), value = TRUE)
+  skip_if_not(length(tstsetups) >= 1)
+  fit <- fits[[tstsetups[1]]]
+  expect_error(get_refmodel(fit, cvfun = "a"),
+               "^Argument `cvfun` must be a function or `NULL`\\.$")
+  expect_error(get_refmodel(fit, cvrefbuilder = 1),
+               "^Argument `cvrefbuilder` must be a function or `NULL`\\.$")
 })
 
 # predict.refmodel() ------------------------------------------------------
@@ -366,4 +580,179 @@ test_that(paste(
       if (testthat_ed_max2) local_edition(2)
     }
   }
+})
+
+# 2-column binomial response ----------------------------------------------
+
+test_that(paste(
+  "init_refmodel() with a 2-column binomial response and the default",
+  "`extract_model_data` uses the numbers of trials as observation weights"
+), {
+  withr::local_options(projpred.warn_cvrefbuilder_NULL = FALSE)
+  set.seed(5302)
+  n <- 40
+  ndraws <- 20
+  dat <- data.frame(x1 = rnorm(n), x2 = rnorm(n),
+                    trials = sample(2:10, n, replace = TRUE))
+  dat$y <- rbinom(n, dat$trials, plogis(0.5 * dat$x1))
+  fit <- list(beta = rbind(rnorm(ndraws, 0, 0.1), rnorm(ndraws, 0.5, 0.1),
+                           rnorm(ndraws, 0, 0.1)),
+              data = dat)
+  ref_predfun <- function(fit, newdata = NULL) {
+    nd <- if (is.null(newdata)) fit$data else newdata
+    model.matrix(~ x1 + x2, nd) %*% fit$beta
+  }
+  refm_2col <- init_refmodel(
+    fit, data = dat, formula = cbind(y, trials - y) ~ x1 + x2,
+    family = binomial(), ref_predfun = ref_predfun
+  )
+  # The same model with a 1-column response and the trials as weights:
+  emd_1col <- function(object, newdata, wrhs = NULL, orhs = NULL,
+                       extract_y = TRUE) {
+    y_wobs_offs(newdata = newdata, wrhs = wrhs %||% ~ trials, orhs = orhs,
+                resp_form = if (extract_y) ~ y else NULL)
+  }
+  refm_1col <- init_refmodel(
+    fit, data = dat, formula = y ~ x1 + x2, family = binomial(),
+    ref_predfun = ref_predfun, extract_model_data = emd_1col
+  )
+  expect_equal(refm_2col$wobs, dat$trials)
+  expect_equal(refm_2col$y, refm_1col$y)
+  prj_2col <- suppressMessages(
+    project(refm_2col, predictor_terms = "x1", ndraws = ndraws, seed = 5302)
+  )
+  prj_1col <- suppressMessages(
+    project(refm_1col, predictor_terms = "x1", ndraws = ndraws, seed = 5302)
+  )
+  expect_equal(as.matrix(prj_2col), as.matrix(prj_1col))
+  expect_equal(proj_linpred(prj_2col, newdata = dat)$lpd,
+               proj_linpred(prj_1col, newdata = dat)$lpd)
+  # Without the response columns in `newdata`, the weights need `weightsnew`:
+  nd <- dat[1:5, c("x1", "x2")]
+  expect_error(proj_linpred(prj_2col, newdata = nd),
+               "or supply argument `weightsnew`", fixed = TRUE)
+  # `pred` does not use the weights; this checks that the call with
+  # `weightsnew` does not stop:
+  expect_equal(
+    proj_linpred(prj_2col, newdata = nd, weightsnew = dat$trials[1:5])$pred,
+    proj_linpred(prj_1col, newdata = nd, weightsnew = dat$trials[1:5])$pred
+  )
+  expect_error(predict(refm_2col, newdata = nd),
+               "or supply argument `weightsnew`", fixed = TRUE)
+  expect_equal(
+    predict(refm_2col, newdata = nd, weightsnew = dat$trials[1:5]),
+    predict(refm_1col, newdata = nd, weightsnew = dat$trials[1:5])
+  )
+  expect_error(proj_predict(prj_2col, newdata = nd),
+               "or supply argument `weightsnew`", fixed = TRUE)
+  expect_equal(
+    proj_predict(prj_2col, newdata = nd, weightsnew = dat$trials[1:5],
+                 .seed = 5302),
+    proj_predict(prj_1col, newdata = nd, weightsnew = dat$trials[1:5],
+                 .seed = 5302)
+  )
+
+  # Two response columns that are both columns of `data`: the second column
+  # must stay unchanged in the stored data.
+  dat$fail <- dat$trials - dat$y
+  fit$data <- dat
+  refm_sf <- init_refmodel(
+    fit, data = dat, formula = cbind(y, fail) ~ x1 + x2,
+    family = binomial(), ref_predfun = ref_predfun
+  )
+  expect_equal(refm_sf$wobs, dat$trials)
+  expect_equal(refm_sf$fetch_data()$fail, dat$fail)
+  prj_sf <- suppressMessages(
+    project(refm_sf, predictor_terms = "x1", ndraws = ndraws, seed = 5302)
+  )
+  expect_equal(proj_linpred(prj_sf)$lpd, proj_linpred(prj_1col)$lpd)
+
+  # A constant number of trials from the formula environment: only the
+  # response variables that are columns of `data` must be in `newdata`.
+  nt <- 10L
+  dat_nt <- dat
+  dat_nt$y <- rbinom(n, nt, plogis(0.5 * dat_nt$x1))
+  fit_nt <- fit
+  fit_nt$data <- dat_nt
+  refm_nt <- init_refmodel(
+    fit_nt, data = dat_nt, formula = cbind(y, nt - y) ~ x1 + x2,
+    family = binomial(), ref_predfun = ref_predfun
+  )
+  expect_equal(refm_nt$wobs, rep(nt, n))
+  prj_nt <- suppressMessages(
+    project(refm_nt, predictor_terms = "x1", ndraws = ndraws, seed = 5302)
+  )
+  expect_no_error(
+    proj_linpred(prj_nt, newdata = dat_nt[1:5, c("x1", "x2", "y")])
+  )
+})
+
+test_that(paste(
+  "init_refmodel() warns about multilevel models with a binomial response or",
+  "with the augmented-data projection, and not about Poisson or latent ones"
+), {
+  withr::local_options(projpred.warn_instable_projections = TRUE)
+  withr::local_seed(4410)
+  n <- 40L
+  ndraws <- 10L
+  dat <- data.frame(x1 = rnorm(n), g = gl(4, 10))
+  # Linear predictors (N x S):
+  eta <- 0.3 * dat$x1 + matrix(rnorm(n * ndraws, sd = 0.05), n, ndraws)
+  dat$y_binom <- rbinom(n, 1, plogis(eta[, 1]))
+  dat$y_pois <- rpois(n, exp(eta[, 1]))
+  dat$y_bfac <- factor(dat$y_binom, levels = c("0", "1"))
+  dat$y_cumul <- cut(eta[, 1] + rlogis(n), c(-Inf, -0.5, 0.5, Inf),
+                     labels = paste0("c", 1:3), ordered_result = TRUE)
+  # N x S (also for the binomial augmented-data projection); the cumulative
+  # augmented-data projection: S x N x (number of categories - 1).
+  ref_predfun <- function(fit, newdata = NULL) {
+    stopifnot(is.null(newdata))
+    fit$eta
+  }
+  eta_aug_cumul <- simplify2array(lapply(c(-0.5, 0.5), function(thr) {
+    thr - t(eta)
+  }))
+  warns_init <- function(fml, family, eta_fit, ...) {
+    warns <- character()
+    suppressMessages(withCallingHandlers(
+      init_refmodel(list(eta = eta_fit), data = dat, formula = fml,
+                    family = family, ref_predfun = ref_predfun, ...),
+      warning = function(w) {
+        warns <<- c(warns, conditionMessage(w))
+        invokeRestart("muffleWarning")
+      }
+    ))
+    return(any(grepl("group-level standard deviations can be near zero",
+                     warns)))
+  }
+  expect_true(warns_init(y_binom ~ x1 + (1 | g), binomial(), eta),
+              info = "binomial, traditional")
+  expect_false(warns_init(y_binom ~ x1, binomial(), eta),
+               info = "binomial, traditional, no group-level terms")
+  expect_false(warns_init(y_binom ~ x1 + (1 | g), binomial(), eta,
+                          called_from_cvrefbuilder = TRUE),
+               info = "binomial, traditional, cvrefbuilder")
+  expect_false(warns_init(y_binom ~ x1 + (1 | g), binomial(), eta,
+                          latent = TRUE, dis = rep(1, ndraws)),
+               info = "binomial, latent")
+  expect_false(warns_init(y_pois ~ x1 + (1 | g), poisson(), eta),
+               info = "Poisson, traditional")
+  expect_true(
+    warns_init(y_bfac ~ x1 + (1 | g), binomial(), eta,
+               augdat_y_unqs = c("0", "1"), augdat_link = augdat_link_binom,
+               augdat_ilink = augdat_ilink_binom),
+    info = "binomial, augmented-data"
+  )
+  expect_true(
+    warns_init(y_cumul ~ x1 + (1 | g),
+               structure(list(family = "cumulative_rstanarm", link = "logit"),
+                         class = "family"),
+               eta_aug_cumul,
+               augdat_y_unqs = paste0("c", 1:3),
+               augdat_link = augdat_link_cumul,
+               augdat_ilink = augdat_ilink_cumul,
+               augdat_args_link = list(link = "logit"),
+               augdat_args_ilink = list(link = "logit")),
+    info = "cumulative, augmented-data"
+  )
 })

@@ -30,6 +30,7 @@ varsel(object, ...)
   thresh = 1e-06,
   penalty = NULL,
   search_terms = NULL,
+  search_screen = NULL,
   search_out = NULL,
   seed = NA,
   ...
@@ -146,7 +147,45 @@ vector of predictor term blocks to consider for the search. Section
 The intercept (\code{"1"}) is always included internally via \code{union()}, so
 there's no difference between including it explicitly or omitting it. The
 default \code{search_terms} considers all the terms in the reference model's
-formula.}
+formula and, for each smooth term, the linear terms of its variables. A
+smooth term can enter the search only after the linear terms of its
+variables that are search terms without a smooth term; the smooth term then
+adds the nonlinear part. To search a smooth term without its linear terms,
+leave these linear terms out of \code{search_terms}.}
+
+\item{search_screen}{Only relevant for forward search. \code{NULL} (default) for
+the plain forward search, or a single positive integer m for a screened
+forward search: in each step, a cheap criterion ranks the candidates, and
+only the m best candidates get an exact projection. This reduces the
+number of projections from about p per step to at most m per step. The
+selected terms and their order can differ from those of the plain forward
+search. All screens need the default divergence minimizer. The criterion
+depends on the model:
+\itemize{
+\item Traditional projection with \code{\link[=binomial]{binomial()}} (logit link) or \code{\link[=poisson]{poisson()}}
+(log link) submodels without multilevel terms, additive terms and
+interactions with a factor: the score statistic of each candidate at the
+current submodel, which approximates the reduction of the KL divergence.
+The model matrix of the search terms must be possible to build (for
+example, no missing values and no zero-variance columns). With offsets,
+the score statistic approximates the reduction of the objective that the
+submodels are fitted to, which has no offsets; the exact projections still
+choose the term. We recommend m = 3.
+\item Augmented-data projection with the \code{\link[brms:cumulative]{brms::cumulative()}} family (logit
+or probit link), without offsets, multilevel terms and additive terms,
+and with one model-matrix column per search term (for example, no
+factors with more than two levels): the reduction of a weighted residual
+sum of squares of the latent predictor. We recommend m = 10.
+\item Latent projection with multilevel terms, without offsets and additive
+terms: the residual sum of squares of one \code{\link[lme4:lmer]{lme4::lmer()}} fit per
+candidate to the mean latent predictor of the projected draws. We
+recommend m = 3.
+}
+
+In the other cases, \code{search_screen} is ignored and the plain forward
+search runs. For Gaussian submodels with
+the identity link, \code{search_screen} is ignored if projpred uses its
+cross-product forward search for them.}
 
 \item{search_out}{Intended for internal use.}
 
@@ -157,7 +196,7 @@ results can be obtained again if needed. Passed to argument \code{seed} of
 upon exiting \code{\link[=varsel]{varsel()}}. Here, \code{seed} is used for clustering the reference
 model's posterior draws (if \code{!is.null(nclusters)} or
 \code{!is.null(nclusters_pred)}) and for drawing new group-level effects when
-predicting from a multilevel submodel (however, not yet in case of a GAMM).}
+predicting from a multilevel submodel.}
 }
 \value{
 An object of class \code{vsel}. The elements of this object are not meant
@@ -171,7 +210,7 @@ known as solution path), i.e., the best submodel for each submodel size
 (number of predictor terms). The evaluation part determines the predictive
 performance of the submodels along the predictor ranking. A special method is
 \code{\link[=varsel.vsel]{varsel.vsel()}} which re-uses the search results from an earlier
-\code{\link[=varsel]{varsel()}} (or \code{\link[=cv_varsel]{cv_varsel()}}) run, as illustrated in the main vignette.
+\code{\link[=varsel]{varsel()}} (or \code{\link[=cv_varsel]{cv_varsel()}}) run (see section "Speed" of the main vignette).
 }
 \details{
 Arguments \code{ndraws}, \code{nclusters}, \code{nclusters_pred}, and \code{ndraws_pred}
@@ -227,6 +266,21 @@ two candidates. At the last model size of 3, \code{y ~ x1 + x2 + x3} would be
 the only candidate. As another example, to exclude \code{x1} from the search,
 specify \code{search_terms = c("x2", "x3", "x2 + x3")} (or, in a simpler way
 that leads to the same results, \code{search_terms = c("x2", "x3")}).
+
+The elements of \code{search_terms} are not exclusive alternatives. A
+candidate model consists of the \code{chosen} predictor terms and the terms of
+one element, so terms from different elements can be in the same
+submodel. For smooth terms, additional rules apply (see argument
+\code{search_terms}). For example, consider a reference model with formula \code{y ~ x1 + x2 + x3 + x4} and \code{search_terms = c("x1 + x2", "x1 + x3", "x1 + x2 + x4")}. After \code{y ~ 1}, the candidates are \code{y ~ x1 + x2} and \code{y ~ x1 + x3}. If the search selects \code{x1 + x3}, the only candidate in the next step
+is \code{y ~ x1 + x3 + x2}. This candidate comes from element \code{"x1 + x2"},
+because \code{x1} is already chosen. The only candidate in the step after that
+is \code{y ~ x1 + x3 + x2 + x4} (from element \code{"x1 + x2 + x4"}). The predictor
+ranking is then \code{x1 + x3}, \code{x2}, \code{x4}. If the search selects \code{x1 + x2}
+instead, the candidates in the next step are \code{y ~ x1 + x2 + x3} and
+\code{y ~ x1 + x2 + x4}, so \code{x3} is still possible. Thus, a search that
+selects either \code{x1 + x2 + x4} or \code{x1 + x3} (but not terms of both) is not
+possible with one \code{search_terms} vector. For this, run one search for each
+set of terms, for example with \code{search_terms = c("x1 + x2", "x1 + x2 + x4")} and with \code{search_terms = "x1 + x3"}.
 }
 \section{Argument \code{d_test}}{
 If not \code{NULL}, then \code{d_test} needs to be a \code{list} with the following

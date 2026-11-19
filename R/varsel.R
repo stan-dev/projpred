@@ -6,7 +6,7 @@
 #' (number of predictor terms). The evaluation part determines the predictive
 #' performance of the submodels along the predictor ranking. A special method is
 #' [varsel.vsel()] which re-uses the search results from an earlier
-#' [varsel()] (or [cv_varsel()]) run, as illustrated in the main vignette.
+#' [varsel()] (or [cv_varsel()]) run (see section "Speed" of the main vignette).
 #'
 #' @param object An object of class `refmodel` (returned by [get_refmodel()] or
 #'   [init_refmodel()]) or an object that can be passed to argument `object` of
@@ -86,7 +86,42 @@
 #'   The intercept (`"1"`) is always included internally via `union()`, so
 #'   there's no difference between including it explicitly or omitting it. The
 #'   default `search_terms` considers all the terms in the reference model's
-#'   formula.
+#'   formula and, for each smooth term, the linear terms of its variables. A
+#'   smooth term can enter the search only after the linear terms of its
+#'   variables that are search terms without a smooth term; the smooth term then
+#'   adds the nonlinear part. To search a smooth term without its linear terms,
+#'   leave these linear terms out of `search_terms`.
+#' @param search_screen Only relevant for forward search. `NULL` (default) for
+#'   the plain forward search, or a single positive integer m for a screened
+#'   forward search: in each step, a cheap criterion ranks the candidates, and
+#'   only the m best candidates get an exact projection. This reduces the
+#'   number of projections from about p per step to at most m per step. The
+#'   selected terms and their order can differ from those of the plain forward
+#'   search. All screens need the default divergence minimizer. The criterion
+#'   depends on the model:
+#'   * Traditional projection with [binomial()] (logit link) or [poisson()]
+#'   (log link) submodels without multilevel terms, additive terms and
+#'   interactions with a factor: the score statistic of each candidate at the
+#'   current submodel, which approximates the reduction of the KL divergence.
+#'   The model matrix of the search terms must be possible to build (for
+#'   example, no missing values and no zero-variance columns). With offsets,
+#'   the score statistic approximates the reduction of the objective that the
+#'   submodels are fitted to, which has no offsets; the exact projections still
+#'   choose the term. We recommend m = 3.
+#'   * Augmented-data projection with the [brms::cumulative()] family (logit
+#'   or probit link), without offsets, multilevel terms and additive terms,
+#'   and with one model-matrix column per search term (for example, no
+#'   factors with more than two levels): the reduction of a weighted residual
+#'   sum of squares of the latent predictor. We recommend m = 10.
+#'   * Latent projection with multilevel terms, without offsets and additive
+#'   terms: the residual sum of squares of one [lme4::lmer()] fit per
+#'   candidate to the mean latent predictor of the projected draws. We
+#'   recommend m = 3.
+#'
+#'   In the other cases, `search_screen` is ignored and the plain forward
+#'   search runs. For Gaussian submodels with
+#'   the identity link, `search_screen` is ignored if projpred uses its
+#'   cross-product forward search for them.
 #' @param search_out Intended for internal use.
 #' @param verbose A single integer value from the set \eqn{\{0, 1, 2, 3,
 #'   4\}}{{0, 1, 2, 3, 4}} (for [varsel()], \eqn{3} and \eqn{4} have the same
@@ -102,7 +137,7 @@
 #'   upon exiting [varsel()]. Here, `seed` is used for clustering the reference
 #'   model's posterior draws (if `!is.null(nclusters)` or
 #'   `!is.null(nclusters_pred)`) and for drawing new group-level effects when
-#'   predicting from a multilevel submodel (however, not yet in case of a GAMM).
+#'   predicting from a multilevel submodel.
 #' @param ... For [varsel.default()]: Arguments passed to [get_refmodel()] as
 #'   well as to [varsel.refmodel()]. For [varsel.vsel()]: Arguments passed to
 #'   [varsel.refmodel()]. For [varsel.refmodel()]: Arguments passed to the
@@ -190,6 +225,25 @@
 #'   specify `search_terms = c("x2", "x3", "x2 + x3")` (or, in a simpler way
 #'   that leads to the same results, `search_terms = c("x2", "x3")`).
 #'
+#'   The elements of `search_terms` are not exclusive alternatives. A
+#'   candidate model consists of the `chosen` predictor terms and the terms of
+#'   one element, so terms from different elements can be in the same
+#'   submodel. For smooth terms, additional rules apply (see argument
+#'   `search_terms`). For example, consider a reference model with formula `y ~
+#'   x1 + x2 + x3 + x4` and `search_terms = c("x1 + x2", "x1 + x3", "x1 + x2 +
+#'   x4")`. After `y ~ 1`, the candidates are `y ~ x1 + x2` and `y ~ x1 +
+#'   x3`. If the search selects `x1 + x3`, the only candidate in the next step
+#'   is `y ~ x1 + x3 + x2`. This candidate comes from element `"x1 + x2"`,
+#'   because `x1` is already chosen. The only candidate in the step after that
+#'   is `y ~ x1 + x3 + x2 + x4` (from element `"x1 + x2 + x4"`). The predictor
+#'   ranking is then `x1 + x3`, `x2`, `x4`. If the search selects `x1 + x2`
+#'   instead, the candidates in the next step are `y ~ x1 + x2 + x3` and
+#'   `y ~ x1 + x2 + x4`, so `x3` is still possible. Thus, a search that
+#'   selects either `x1 + x2 + x4` or `x1 + x3` (but not terms of both) is not
+#'   possible with one `search_terms` vector. For this, run one search for each
+#'   set of terms, for example with `search_terms = c("x1 + x2", "x1 + x2 +
+#'   x4")` and with `search_terms = "x1 + x3"`.
+#'
 #' @return An object of class `vsel`. The elements of this object are not meant
 #'   to be accessed directly but instead via helper functions (see the main
 #'   vignette and [projpred-package]).
@@ -232,7 +286,8 @@ varsel.default <- function(object, ...) {
 #' @export
 varsel.vsel <- function(object, ...) {
   arg_nms_internal <- c("method", "ndraws", "nclusters", "nterms_max",
-                        "search_control", "penalty", "search_terms")
+                        "search_control", "penalty", "search_terms",
+                        "search_screen")
   arg_nms_internal_used <- intersect(arg_nms_internal, ...names())
   n_arg_nms_internal_used <- length(arg_nms_internal_used)
   if (n_arg_nms_internal_used > 0) {
@@ -250,6 +305,7 @@ varsel.vsel <- function(object, ...) {
     search_control = object[["args_search"]][["search_control"]],
     penalty = object[["args_search"]][["penalty"]],
     search_terms = object[["args_search"]][["search_terms"]],
+    search_screen = object[["args_search"]][["search_screen"]],
     search_out = list(search_path = object[["search_path"]]),
     ...
   ))
@@ -274,6 +330,7 @@ varsel.refmodel <- function(
     thresh = 1e-6,
     penalty = NULL,
     search_terms = NULL,
+    search_screen = NULL,
     search_out = NULL,
     seed = NA,
     ...
@@ -315,13 +372,12 @@ varsel.refmodel <- function(
   on.exit(proj_cache_exit(), add = TRUE)
 
   refmodel <- object
-  nterms_all <- count_terms_in_formula(refmodel$formula) - 1L
 
   # Parse arguments:
   args <- parse_args_varsel(
     refmodel = refmodel, method = method, refit_prj = refit_prj,
     nterms_max = nterms_max, nclusters = nclusters, search_terms = search_terms,
-    nterms_all = nterms_all, verbose = verbose
+    verbose = verbose, search_screen = search_screen
   )
   method <- args$method
   refit_prj <- args$refit_prj
@@ -329,6 +385,8 @@ varsel.refmodel <- function(
   nclusters <- args$nclusters
   search_terms <- args$search_terms
   search_terms_was_null <- args$search_terms_was_null
+  search_screen <- args$search_screen
+  nterms_all <- args$nterms_all
   verbose <- args$verbose
 
   # Pre-process `d_test`:
@@ -407,7 +465,8 @@ varsel.refmodel <- function(
       method = method, nterms_max = nterms_max, penalty = penalty,
       verbose = verbose, search_control = search_control,
       search_terms = search_terms,
-      search_terms_was_null = search_terms_was_null, ...
+      search_terms_was_null = search_terms_was_null,
+      search_screen = search_screen, ...
     )
   }
 
@@ -451,6 +510,7 @@ varsel.refmodel <- function(
         mu_test <- refmodel$family$linkinv(eta_test)
       } else {
         mu_test <- refmodel$mu_offs
+        eta_test <- ref_eta_offs(refmodel)
       }
     } else {
       newdata_for_ref <- d_test$data
@@ -471,7 +531,10 @@ varsel.refmodel <- function(
       y_wobs_test = y_wobs_test,
       data_aux_test = d_test$data %||% refmodel$fetch_data(),
       family = refmodel$family, wdraws = refmodel$wdraws_ref, mu = mu_test,
-      dis = refmodel$dis, cl_ref = seq_along(refmodel$wdraws_ref)
+      dis = refmodel$dis, cl_ref = seq_along(refmodel$wdraws_ref),
+      # The linear predictor gives the exact log-likelihood where the inverse
+      # link clamps `mu_test` (as in loo_varsel()):
+      eta = eta_test
     )
   }
 
@@ -495,6 +558,7 @@ varsel.refmodel <- function(
               loo_inds = NULL,
               K = NULL,
               validate_search = NULL,
+              loo_perturb_alpha = NULL,
               ### Not set to `NULL` because in K-fold CV (relevant when using
               ### cv_varsel.vsel() based on this `vsel` object), `cvfits = NULL`
               ### would mean to use `cvfun`; instead, the default should be
@@ -507,7 +571,9 @@ varsel.refmodel <- function(
                   method == "forward" && is.null(search_control)
                 ) list(...) else search_control,
                 penalty,
-                search_terms = if (search_terms_was_null) NULL else search_terms
+                search_terms =
+                  if (search_terms_was_null) NULL else search_terms,
+                search_screen
               ),
               clust_used_search = search_path$p_sel$clust_used,
               clust_used_eval = perf_eval_out[["clust_used"]],
@@ -539,11 +605,21 @@ varsel.refmodel <- function(
 .select <- function(refmodel, ndraws, nclusters, reweighting_args = NULL,
                     method, nterms_max, penalty, verbose,
                     verbose_line_length = 5, verbose_txt_add = "",
-                    search_control, return_outdmins = TRUE, ...) {
+                    search_control, return_outdmins = TRUE,
+                    search_screen = NULL, ...) {
   if (is.null(reweighting_args)) {
+    if (!is.null(refmodel$draws_shift)) {
+      # The shifted draws of perturb_refmodel(), which checked that they are
+      # finite:
+      refmodel <- perturb_draws(refmodel, refmodel$draws_shift)
+      stopifnot(!is.null(refmodel))
+      refmodel$draws_shift <- NULL
+    }
     p_sel <- get_refdist(refmodel, ndraws = ndraws, nclusters = nclusters)
   } else {
-    # Reweight the clusters (or thinned draws) according to the PSIS weights:
+    # Reweight the clusters (or thinned draws) according to the PSIS weights.
+    # With `draws_shift` (see perturb_refmodel()), get_p_clust() shifts the
+    # draws:
     p_sel <- get_p_clust(
       family = refmodel$family, eta = refmodel$eta, mu = refmodel$mu,
       mu_offs = refmodel$mu_offs, dis = refmodel$dis,
@@ -552,7 +628,8 @@ varsel.refmodel <- function(
         ndraws = ndraws,
         nclusters = nclusters,
         S = length(refmodel$wdraws_ref)
-      )[["clust_used"]]
+      )[["clust_used"]],
+      draws_shift = refmodel$draws_shift
     )
     p_sel <- mo_add_cache(p_sel, refmodel)
   }
@@ -570,7 +647,7 @@ varsel.refmodel <- function(
     search_path <- search_forward(
       p_ref = p_sel, refmodel = refmodel, nterms_max = nterms_max,
       verbose = verbose, search_control = search_control,
-      return_outdmins = return_outdmins, ...
+      return_outdmins = return_outdmins, search_screen = search_screen, ...
     )
   }
   verb_out(rep("-", verbose_line_length), verbose = verbose)
@@ -586,7 +663,8 @@ varsel.refmodel <- function(
 # them in with the default values. The purpose of this function is to avoid
 # repeating the same code both in varsel() and cv_varsel().
 parse_args_varsel <- function(refmodel, method, refit_prj, nterms_max,
-                              nclusters, search_terms, nterms_all, verbose) {
+                              nclusters, search_terms, verbose,
+                              search_screen = NULL) {
   search_terms_was_null <- is.null(search_terms)
   if (search_terms_was_null) {
     search_terms <- split_formula(refmodel$formula,
@@ -621,6 +699,21 @@ parse_args_varsel <- function(refmodel, method, refit_prj, nterms_max,
   # search starts:
   check_mo_monotone(refmodel, terms_ = search_terms, method = method)
 
+  if (!is.null(search_screen)) {
+    if (!is.numeric(search_screen) || length(search_screen) != 1 ||
+        !is.finite(search_screen) || search_screen < 1 ||
+        search_screen > .Machine$integer.max ||
+        search_screen != round(search_screen)) {
+      stop("Argument `search_screen` must be `NULL` or a single positive ",
+           "integer.")
+    }
+    search_screen <- as.integer(search_screen)
+    if (method != "forward") {
+      message("Argument `search_screen` only takes effect if ",
+              "`method = \"forward\"`.")
+    }
+  }
+
   stopifnot(!is.null(refit_prj))
   if (refit_prj && inherits(refmodel, "datafit")) {
     warning("For an `object` of class `datafit`, `refit_prj` is automatically ",
@@ -643,28 +736,30 @@ parse_args_varsel <- function(refmodel, method, refit_prj, nterms_max,
     )
   }
 
-  search_terms_unq <- unique(split_plus(search_terms))
-  max_nv_possible <- count_terms_chosen(search_terms_unq) - 1L
+  # The size of the largest submodel of the search (the submodel with all search
+  # terms):
+  nterms_all <- nterms_search_all(search_terms)
   if (is.null(nterms_max)) {
     nterms_max <- 19
-    if (nterms_max < max_nv_possible &&
+    if (nterms_max < nterms_all &&
         getOption("projpred.mssg_cut_search", TRUE)) {
       message("Cutting off the search at size ", nterms_max, ". Use argument ",
               "`nterms_max` to customize this.")
     }
   }
-  nterms_max <- min(max_nv_possible, nterms_max)
+  nterms_max <- min(nterms_all, nterms_max)
 
-  if (nterms_max == nterms_all && has_group_features &&
+  # The warning applies if the submodel with all search terms is reached and
+  # has group-level terms:
+  if (nterms_max == nterms_all &&
+      formula_contains_group_terms(make_formula(search_terms)) &&
       getOption("projpred.warn_instable_projections", TRUE) &&
       (refmodel$family$family == "gaussian" || refmodel$family$for_latent)) {
     warning(
-      "In case of the Gaussian family (also in case of the latent projection) ",
-      "and multilevel terms, the projection onto the full model can be ",
-      "instable and even lead to an error, see GitHub issue #323. If you ",
-      "experience this and may refrain from the projection onto the full ",
-      "model, set `nterms_max` to the number of predictor terms in the full ",
-      "model minus 1 (possibly accounting for submodel sizes skipped by ",
+      warn_instable_full_text(), " If you experience these problems and may ",
+      "refrain from the projection onto the full model, set `nterms_max` to ",
+      "the size of the submodel with all search terms minus 1 (here: ",
+      nterms_all - 1L, "; possibly accounting for submodel sizes skipped by ",
       "custom `search_terms`)."
     )
   }
@@ -672,5 +767,27 @@ parse_args_varsel <- function(refmodel, method, refit_prj, nterms_max,
   verbose <- as.integer(verbose)
 
   return(nlist(method, refit_prj, nterms_max, nclusters, search_terms,
-               search_terms_was_null, verbose))
+               search_terms_was_null, nterms_all, verbose,
+               search_screen))
+}
+
+# The text of the warning about the projection onto the full Gaussian (or
+# latent) multilevel model, used by varsel(), cv_varsel() and project(). If the
+# submodel has all terms of the reference model, it can reproduce the reference
+# model prediction of each projected draw or cluster. Then the residual SD of
+# the lme4 fit goes to 0, and the fit has no finite optimum. For one
+# group-level intercept term and q < n - p, the projected group-level SD goes
+# to the root mean square of the centered group-level effects of that
+# prediction times sqrt(q / (n - p)) (REML).
+warn_instable_full_text <- function() {
+  paste0(
+    "In case of the Gaussian family (also in case of the latent projection) ",
+    "and multilevel terms, the projection onto the full model can be ",
+    "instable and even lead to an error, see GitHub issue #323. If the ",
+    "submodel has all terms of the reference model, the projected ",
+    "group-level standard deviation (SD) is also too small by a factor. For ",
+    "one group-level intercept term with q levels (and no other group-level ",
+    "or smooth terms), n observations, p population-level coefficients and ",
+    "q < n - p, this factor is about sqrt(q / (n - p))."
+  )
 }

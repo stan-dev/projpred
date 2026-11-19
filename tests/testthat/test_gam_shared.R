@@ -7,7 +7,8 @@ dat_gs <- data.frame(x1 = sin(idx_gs), x2 = cos(1.3 * idx_gs),
                      f = factor(c("a", "b", "c")[idx_gs %% 3L + 1L]))
 n_draws_gs <- 4L
 for (s in seq_len(n_draws_gs)) {
-  dat_gs[[paste0(".y.", s)]] <- sin(1.5 * dat_gs$x3) + 0.5 * dat_gs$x1 +
+  # s(x3) has a curve (edf > 1 for all draws), s(x2) is linear:
+  dat_gs[[paste0(".y.", s)]] <- sin(3 * dat_gs$x3) + 0.5 * dat_gs$x1 +
     0.3 * cos(s * idx_gs)
 }
 wts_gs <- 1 + 0.4 * sin(2 * idx_gs)
@@ -18,11 +19,28 @@ fml_gs <- as.formula(paste0(
 divmin_gs <- function(shared) {
   opts_old <- options(projpred.gam_shared = shared)
   on.exit(options(opts_old))
-  suppressWarnings(divmin(
-    formula = fml_gs, data = dat_gs, family = extend_family(gaussian()),
-    weights = wts_gs, projpred_var = matrix(NA, n_gs, n_draws_gs),
-    projpred_ws_aug = matrix(NA, n_gs, n_draws_gs), verbose_divmin = FALSE
-  ))
+  divmin_call <- function() {
+    suppressWarnings(divmin(
+      formula = fml_gs, data = dat_gs, family = extend_family(gaussian()),
+      weights = wts_gs, projpred_var = matrix(NA, n_gs, n_draws_gs),
+      projpred_ws_aug = matrix(NA, n_gs, n_draws_gs), verbose_divmin = FALSE
+    ))
+  }
+  if (!shared) {
+    return(divmin_call())
+  }
+  # The shared fits must not fall back to draw-wise fits:
+  with_mocked_bindings(
+    divmin_call(),
+    fit_gam_callback = function(...) stop("draw-wise fallback")
+  )
+}
+
+# Removes the environment of a terms object (all.equal() does not compare the
+# attributes of terms objects, and identical() compares their environments):
+noenv <- function(x) {
+  attr(x, ".Environment") <- NULL
+  x
 }
 
 test_that("divmin() gives the same gam() fits with and without sharing", {
@@ -30,11 +48,70 @@ test_that("divmin() gives the same gam() fits with and without sharing", {
   fits_drawwise <- divmin_gs(FALSE)
   expect_length(fits_shared, n_draws_gs)
   for (s in seq_len(n_draws_gs)) {
+    info_s <- paste("draw", s)
     expect_s3_class(fits_shared[[s]], "gam")
     expect_equal(fits_shared[[s]], fits_drawwise[[s]], tolerance = 0,
-                 info = s)
+                 info = info_s)
     expect_identical(formula(fits_shared[[s]]),
-                     formula(fits_drawwise[[s]]), info = s)
+                     formula(fits_drawwise[[s]]), info = info_s)
+    for (el in c("terms", "pterms")) {
+      expect_identical(noenv(fits_shared[[s]][[el]]),
+                       noenv(fits_drawwise[[s]][[el]]),
+                       info = paste(info_s, el))
+    }
+    at_shared <- attributes(fits_shared[[s]]$model)
+    at_drawwise <- attributes(fits_drawwise[[s]]$model)
+    expect_identical(noenv(at_shared$terms), noenv(at_drawwise$terms),
+                     info = info_s)
+    at_shared$terms <- at_drawwise$terms <- NULL
+    expect_identical(at_shared, at_drawwise, info = info_s)
+  }
+})
+
+test_that("divmin() passes the arguments of gam() and drops the others", {
+  opts_old <- options(projpred.gam_shared = TRUE)
+  on.exit(options(opts_old))
+  divmin_args <- function(shared, ...) {
+    options(projpred.gam_shared = shared)
+    suppressWarnings(divmin(
+      formula = fml_gs, data = dat_gs, family = extend_family(gaussian()),
+      weights = wts_gs, projpred_var = matrix(NA, n_gs, n_draws_gs),
+      projpred_ws_aug = matrix(NA, n_gs, n_draws_gs), verbose_divmin = FALSE,
+      ...
+    ))
+  }
+  # The shared fits must not fall back to draw-wise fits:
+  divmin_shared <- function(...) {
+    with_mocked_bindings(
+      divmin_args(TRUE, ...),
+      fit_gam_callback = function(...) stop("draw-wise fallback")
+    )
+  }
+  fits_drawwise <- divmin_args(FALSE, method = "REML",
+                               control = list(keepData = TRUE),
+                               not_a_gam_arg = 1)
+  fits_shared <- divmin_shared(method = "REML",
+                               control = list(keepData = TRUE),
+                               not_a_gam_arg = 1)
+  for (s in seq_len(n_draws_gs)) {
+    info_s <- paste("draw", s)
+    expect_identical(fits_drawwise[[s]]$method, "REML", info = info_s)
+    expect_true(is.data.frame(fits_drawwise[[s]]$data), info = info_s)
+    expect_false(any(c("not_a_gam_arg", "projpred_var") %in%
+                       names(fits_drawwise[[s]]$call)), info = info_s)
+    expect_equal(fits_shared[[s]], fits_drawwise[[s]], tolerance = 0,
+                 info = info_s)
+  }
+  # An argument of the estimation that does not change `method`:
+  fits_default <- divmin_args(FALSE)
+  fits_drawwise <- divmin_args(FALSE, gamma = 1.4)
+  fits_shared <- divmin_shared(gamma = 1.4)
+  for (s in seq_len(n_draws_gs)) {
+    info_s <- paste("draw", s)
+    expect_gt(abs(sum(fits_drawwise[[s]]$edf) - sum(fits_default[[s]]$edf)),
+              0.1, label = info_s)
+    expect_equal(fits_shared[[s]], fits_drawwise[[s]], tolerance = 0,
+                 info = info_s)
   }
 })
 
@@ -45,7 +122,9 @@ test_that("subprd() gives the predictions of predict.gam() for gam fits", {
     prd_expected <- do.call(cbind, lapply(fits, function(fit) {
       predict(fit, newdata = nd_icpt)
     }))
-    expect_identical(subprd(fits, nd), prd_expected)
+    # subprd() multiplies one matrix for all draws, predict.gam() one vector
+    # per draw; the BLAS can round the two differently:
+    expect_equal(subprd(fits, nd), prd_expected, tolerance = 1e-12)
   }
   # Fits of different submodels:
   fit_other <- mgcv::gam(.y.1 ~ s(x3) + x1, data = dat_gs)

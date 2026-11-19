@@ -145,6 +145,13 @@ test_that("the projection cache keeps its size limit", {
   expect_null(proj_cache_get(store, "b"))
   expect_identical(proj_cache_get(store, "a"), val)
   expect_lte(proj_cache$bytes, 1.5 * val_bytes)
+  # A key of more than 10000 bytes (too long for a name) is not cached:
+  long_key <- strrep("x", 10001)
+  bytes_old <- proj_cache$bytes
+  proj_cache_put(store, long_key, val)
+  expect_null(proj_cache_get(store, long_key))
+  expect_identical(proj_cache$bytes, bytes_old)
+  expect_identical(proj_cache_get(store, "a"), val)
   # A nested call keeps the cache and its limit:
   options(projpred.proj_cache_mb = 0)
   proj_cache_enter()
@@ -292,16 +299,6 @@ test_that(paste(
   skip_if_not(run_vs)
   withr::local_preserve_seed()
   tstsetups <- names(vss)
-  ### TODO (GAMMs): Currently, the following test setups (can) lead to the error
-  ### ```
-  ### Error in t(as.matrix(b$reTrms$Zt[ii, ])) %*%
-  ### as.matrix(c(as.matrix(ranef[[i]]))) :
-  ###   non-conformable arguments
-  ### ```
-  ### thrown by predict.gamm4(). This needs to be fixed. For now, exclude these
-  ### test setups:
-  tstsetups <- grep("\\.gamm\\.", tstsetups, value = TRUE, invert = TRUE)
-  ###
   for (tstsetup in tstsetups) {
     args_vs_i <- args_vs[[tstsetup]]
     tstsetup_ref <- args_vs_i$tstsetup_ref
@@ -672,10 +669,12 @@ if (run_more) {
     skip_if_not(length(tstsetups) > 0)
     for (tstsetup in tstsetups) {
       args_vs_i <- args_vs[[tstsetup]]
+      # The group-level terms of an rstanarm::stan_gamm4() fit are not in
+      # `args_fit[[...]]$formula`, so use the reference model formula:
       if (identical(args_vs_i$nterms_max, unname(ntermss[args_vs_i$mod_nm])) &&
-          any(grepl("\\|", labels(terms(
-            args_fit[[args_vs_i$tstsetup_fit]]$formula
-          ))))) {
+          formula_contains_group_terms(
+            refmods[[args_vs_i$tstsetup_ref]]$formula
+          )) {
         warn_expected <- "the projection onto the full model can be instable"
       } else {
         warn_expected <- NA
@@ -1639,9 +1638,14 @@ test_that("`validate_search` works", {
     if (identical(args_cvvs_i$cv_method, "kfold")) {
       vsel_nms_valsearch_crr <- setdiff(vsel_nms_valsearch_crr, "ce")
     }
-    expect_equal(cvvs_valsearch[setdiff(vsel_nms, vsel_nms_valsearch_crr)],
-                 cvvss[[tstsetup]][setdiff(vsel_nms, vsel_nms_valsearch_crr)],
+    # Element `loo_perturb_alpha` differs only for LOO CV with
+    # `refit_prj = TRUE`, so the test checks it separately:
+    vsel_nms_eq <- setdiff(vsel_nms,
+                           c(vsel_nms_valsearch_crr, "loo_perturb_alpha"))
+    expect_equal(cvvs_valsearch[vsel_nms_eq], cvvss[[tstsetup]][vsel_nms_eq],
                  info = tstsetup)
+    # Without fold-wise searches, no search uses the weight perturbation:
+    expect_identical(cvvs_valsearch$loo_perturb_alpha, Inf, info = tstsetup)
     expect_identical(cvvs_valsearch$summaries$ref,
                      cvvss[[tstsetup]]$summaries$ref,
                      info = tstsetup)

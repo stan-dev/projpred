@@ -156,25 +156,42 @@ test_that(paste(
   "weight 0 has as the reference level"
 ), {
   skip_on_cran()
-  set.seed(2)
+  set.seed(4)
   n <- 40
   dat <- data.frame(x = rnorm(n), g = factor(rep(paste0("g", 1:5), 8)),
                     xc = factor(c(rep(c("a", "b"), length.out = n - 1), "r")))
-  for (s in 1:2) dat[[paste0(".y.", s)]] <- dat$x + rnorm(n)
+  # Group-level intercepts and slopes of `xc`, so that the fits of
+  # `(1 + xc | g)` are not singular. For a singular fit, getVb() of gamm4 can
+  # stop with "D[i,i] is negative" (in mgcv::mchol()) on some platforms.
+  b0 <- rnorm(5, sd = 1.5)
+  b1 <- rnorm(5, sd = 1.5)
+  eta <- dat$x + b0[dat$g] + b1[dat$g] * (dat$xc == "b")
+  for (s in 1:2) dat[[paste0(".y.", s)]] <- eta + rnorm(n)
+  dat_fit <- droplevels(dat[-n, ])
+  for (s in 1:2) {
+    dat_fit$y <- dat_fit[[paste0(".y.", s)]]
+    expect_false(lme4::isSingular(suppressMessages(
+      lme4::lmer(y ~ x + (1 + xc | g), data = dat_fit)
+    )), info = paste("draw", s))
+  }
   # Observation n is the only one with level "r", and it has weight 0:
   wobs <- c(rep(1, n - 1), 0)
   dat_ref <- dat
   dat_ref$xc[n] <- "a"
   dat_ref$xc <- droplevels(dat_ref$xc)
-  divmin_w0 <- function(fml) {
+  divmin_w0 <- function(fml, data = dat) {
     suppressWarnings(divmin(
-      formula = fml, data = dat, family = extend_family(gaussian()),
+      formula = fml, data = data, family = extend_family(gaussian()),
       weights = wobs, projpred_var = matrix(NA, n, 2),
       projpred_ws_aug = matrix(NA, n, 2), verbose_divmin = FALSE
     ))
   }
+  # Also for a factor only in a group-level term (lme4::mkNewReTrms() stops
+  # for a level that the fit does not know), with lmer() and gamm4():
   fmls <- list(glmm = cbind(.y.1, .y.2) ~ x + xc + (1 | g),
-               gam = cbind(.y.1, .y.2) ~ s(x) + xc)
+               gam = cbind(.y.1, .y.2) ~ s(x) + xc,
+               glmm_re = cbind(.y.1, .y.2) ~ x + (1 + xc | g),
+               gamm_re = cbind(.y.1, .y.2) ~ s(x) + (1 + xc | g))
   for (nm in names(fmls)) {
     fits <- divmin_w0(fmls[[nm]])
     expect_identical(attr(fits, "projpred_lost_lvls"),
@@ -183,6 +200,21 @@ test_that(paste(
       dat, attr(fits, "projpred_lost_lvls")
     ))
     expect_identical(prd, subprd(fits, dat_ref), info = nm)
+  }
+  # With sum contrasts in the data: drop_lost_levels() removes them, so the fit
+  # and the prediction (without the `contrasts` attributes, as in `mu_fun()`)
+  # use the default contrasts:
+  dat_sum <- dat
+  contrasts(dat_sum$xc) <- contr.sum(3)
+  for (nm in c("glmm_re", "gamm_re")) {
+    fits <- divmin_w0(fmls[[nm]], data = dat_sum)
+    expect_identical(attr(fits, "projpred_lost_lvls"),
+                     list(xc = list(lost = "r", ref = "a")), info = nm)
+    prd <- subprd(fits, recode_lost_levels(
+      strip_contrasts(dat_sum), attr(fits, "projpred_lost_lvls")
+    ))
+    expect_identical(prd, subprd(fits, dat_ref), info = nm)
+    expect_equal(prd, subprd(divmin_w0(fmls[[nm]]), dat_ref), info = nm)
   }
   # Augmented-data projection (rows: the observations within the response
   # categories):
@@ -200,8 +232,12 @@ test_that(paste(
                         ordered = fam_nm == "cumulative")
     fam <- structure(list(family = fam_nm, link = "logit"), class = "family")
     # With and without group-level terms (clmm() or polr(), mblogit() or
-    # multinom()):
-    for (fml in list(y ~ x + xc + (1 | g), y ~ x + xc)) {
+    # multinom()), and for clmm() with `xc` only in a group-level term:
+    fmls_aug <- list(y ~ x + xc + (1 | g), y ~ x + xc)
+    if (fam_nm == "cumulative") {
+      fmls_aug <- c(fmls_aug, list(y ~ x + (1 + xc | g)))
+    }
+    for (fml in fmls_aug) {
       info_txt <- paste(fam_nm, deparse(fml))
       fits <- suppressWarnings(divmin_augdat(
         formula = fml, data = dat_aug, family = fam,
@@ -248,6 +284,10 @@ test_that(paste(
   dat3$g <- factor(c(as.character(dat$g[-n]), "g9"))
   expect_null(lost_levels(dat3, keep = wobs != 0,
                           formula = .y.1 ~ x + g + (1 | g)))
+  # A numeric variable inside factor() in a group-level term:
+  expect_identical(lost_levels(dat2, keep = wobs != 0,
+                               formula = .y.1 ~ x + (1 + factor(z) | g)),
+                   list(z = list(lost = 9, ref = 1)))
   # Through proj_to_submodl() and the `mu_fun()` of a reference model:
   n_drws <- 4
   dat_r <- dat[, c("x", "g", "xc")]
@@ -272,6 +312,25 @@ test_that(paste(
   dat_r_ref$xc <- droplevels(dat_r_ref$xc)
   expect_equal(refm$mu_fun(submodl$outdmin),
                refm$mu_fun(submodl$outdmin, newdata = dat_r_ref))
+  # The same with `xc` only in a group-level term:
+  refm_re <- suppressWarnings(init_refmodel(
+    object = list(beta = rnorm(n_drws, 1, 0.1)), data = dat_r,
+    formula = y ~ x + (1 + xc | g), family = gaussian(),
+    ref_predfun = function(fit, newdata = NULL) {
+      outer((newdata %||% dat_r)$x, fit$beta)
+    },
+    dis = rep(1, n_drws)
+  ))
+  refm_re$wobs[n] <- 0
+  submodl_re <- suppressWarnings(proj_to_submodl(
+    predictor_terms = c("x", "(1 | g)", "(xc | g)"),
+    p_ref = get_refdist(refm_re, ndraws = 2), refmodel = refm_re,
+    verbose = FALSE
+  ))
+  expect_identical(attr(submodl_re$outdmin, "projpred_lost_lvls"),
+                   list(xc = list(lost = "r", ref = "a")))
+  expect_equal(refm_re$mu_fun(submodl_re$outdmin, obs = n),
+               refm_re$mu_fun(submodl_re$outdmin, newdata = dat_r_ref[n, ]))
   # No level is lost if observation n has a positive weight:
   wobs[n] <- 1
   expect_null(attr(divmin_w0(fmls$glmm), "projpred_lost_lvls"))

@@ -21,7 +21,10 @@
 #' @param predictor_terms If not `NULL`, then this needs to be a character
 #'   vector of predictor terms for the submodel onto which the projection will
 #'   be performed. Argument `nterms` is ignored in that case. For an `object`
-#'   which is not of class `vsel`, `predictor_terms` must not be `NULL`.
+#'   which is not of class `vsel`, `predictor_terms` must not be `NULL`. If a
+#'   submodel has a linear term and a smooth term of the same variable (for
+#'   example, `x` and `s(x)`), the projection drops the linear term and gives a
+#'   message. The coefficient of this linear term is not identifiable.
 #' @param refit_prj A single logical value indicating whether to fit the
 #'   submodels (again) (`TRUE`) or---if `object` is of class `vsel`---to re-use
 #'   the submodel fits from the full-data search that was run when creating
@@ -44,9 +47,8 @@
 #'   [project()]) upon exiting [project()]. Here, `seed` is used for clustering
 #'   the reference model's posterior draws (if `!is.null(nclusters)`) and for
 #'   drawing new group-level effects when predicting from a multilevel submodel
-#'   (however, not yet in case of a GAMM) and having global option
-#'   `projpred.mlvl_pred_new` set to `TRUE`. (Such a prediction takes place when
-#'   calculating output elements `dis` and `ce`.)
+#'   and having global option `projpred.mlvl_pred_new` set to `TRUE`. (Such a
+#'   prediction takes place when calculating output elements `dis` and `ce`.)
 #' @param verbose A single integer value from the set \eqn{\{0, 1, 2\}}{{0, 1,
 #'   2}} (if `!is.null(predictor_terms)`, \eqn{1} and \eqn{2} have the same
 #'   effect), indicating how much information (if any) to print out during the
@@ -296,16 +298,27 @@ project <- function(
   ## Warnings ---------------------------------------------------------------
 
   nterms_max <- max(nterms)
-  nterms_all <- count_terms_in_formula(refmodel$formula) - 1L
-  if (nterms_max == nterms_all &&
-      formula_contains_group_terms(refmodel$formula) &&
-      getOption("projpred.warn_instable_projections", TRUE) &&
-      (refmodel$family$family == "gaussian" || refmodel$family$for_latent)) {
-    warning(
-      "In case of the Gaussian family (also in case of the latent projection) ",
-      "and multilevel terms, the projection onto the full model can be ",
-      "instable and even lead to an error, see GitHub issue #323."
-    )
+  # Message about the linear terms that proj_to_submodl() drops (a linear term
+  # next to a smooth term of the same variable).
+  fml_max <- make_formula(predictor_terms[seq_len(nterms_max)])
+  dups_smooth <- smooth_covered_terms(fml_max)
+  if (length(dups_smooth) > 0 &&
+      getOption("projpred.mssg_smooth_linear", TRUE)) {
+    smooths <- extract_terms_response(fml_max)$additive_terms
+    smooths <- smooths[vapply(smooths, function(smooth) {
+      any(smooth_args(smooth) %in% dups_smooth)
+    }, logical(1))]
+    message("The projection drops the linear term(s) `",
+            paste(dups_smooth, collapse = "`, `"), "` from a submodel that ",
+            "also has the smooth term(s) `", paste(smooths, collapse = "`, `"),
+            "`. The coefficient of such a linear term is not identifiable.")
+  }
+  prd_trms_max <- predictor_terms[seq_len(nterms_max)]
+  if (getOption("projpred.warn_instable_projections", TRUE) &&
+      (refmodel$family$family == "gaussian" || refmodel$family$for_latent) &&
+      formula_contains_group_terms(make_formula(prd_trms_max)) &&
+      is_full_projection(prd_trms_max, object = object, refmodel = refmodel)) {
+    warning(warn_instable_full_text())
   }
 
   # Projection --------------------------------------------------------------
@@ -335,6 +348,28 @@ project <- function(
   # If there is only a single submodel size, just return the `projection` object
   # instead of returning it in a list of length 1:
   return(unlist_proj(projs))
+}
+
+# Whether the submodel with the predictor terms `prd_trms` has all of the search
+# terms of `object` (if `object` is a `vsel` object) or all of the terms of the
+# reference model (as in the table of possible predictor terms in project()).
+# A linear term next to a smooth term of the same variable does not count,
+# because the projection drops such a linear term.
+is_full_projection <- function(prd_trms, object, refmodel) {
+  if (inherits(object, "vsel")) {
+    search_terms_all <- object$args_search$search_terms %||%
+      split_formula(refmodel$formula, data = refmodel$fetch_data())
+  } else {
+    search_terms_all <- split_formula(refmodel$formula,
+                                      data = refmodel$fetch_data(),
+                                      add_lower_terms = FALSE)
+  }
+  trm_labels <- function(trms) {
+    fml <- flatten_formula(make_formula(trms), duplicates = FALSE)
+    return(norm_term_labels(labels(terms(fml))))
+  }
+  return(all(trm_labels(unique(split_plus(search_terms_all))) %in%
+               trm_labels(prd_trms)))
 }
 
 #' Print information about [project()] output

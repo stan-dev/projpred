@@ -311,6 +311,165 @@ test_that("select_possible_terms_size() works for non-redundant models", {
   )
 })
 
+test_that(paste(
+  "select_possible_terms_size() combines the terms of different search terms",
+  "(the example in the documentation of `search_terms`)"
+), {
+  allterms <- c("1", "x1 + x2", "x1 + x3", "x1 + x2 + x4")
+  for (use_info in c(FALSE, TRUE)) {
+    info_txt <- paste0("use_term_info = ", use_info)
+    # `size` counts the intercept:
+    expect_null(
+      select_possible_terms_size("1", allterms, size = 2,
+                                 use_term_info = use_info),
+      info = info_txt
+    )
+    expect_setequal(
+      select_possible_terms_size("1", allterms, size = 3,
+                                 use_term_info = use_info),
+      c("x1 + x2", "x1 + x3")
+    )
+    # After `x1 + x2`, `x3` is still a candidate (expect_setequal() has no
+    # `info` argument):
+    expect_setequal(
+      select_possible_terms_size(c("1", "x1 + x2"), allterms, size = 4,
+                                 use_term_info = use_info),
+      c("x3", "x4")
+    )
+    chosen <- c("1", "x1 + x3")
+    expect_identical(
+      select_possible_terms_size(chosen, allterms, size = 4,
+                                 use_term_info = use_info),
+      "x2",
+      info = info_txt
+    )
+    chosen <- c(chosen, "x2")
+    expect_identical(
+      select_possible_terms_size(chosen, allterms, size = 5,
+                                 use_term_info = use_info),
+      "x4",
+      info = info_txt
+    )
+  }
+})
+
+test_that(paste(
+  "select_possible_terms_size() adds a smooth term only after the linear",
+  "terms of its variables that are search terms"
+), {
+  allterms <- c("1", "s(x1)", "x2", "x1")
+  for (use_ti in c(FALSE, TRUE)) {
+    expect_identical(
+      select_possible_terms_size("1", allterms, size = 2,
+                                 use_term_info = use_ti),
+      c("x2", "x1"),
+      info = paste("use_term_info:", use_ti)
+    )
+  }
+  expect_identical(select_possible_terms_size(c("1", "x2"), allterms, size = 3),
+                   "x1")
+  expect_identical(select_possible_terms_size(c("1", "x1"), allterms, size = 3),
+                   c("s(x1)", "x2"))
+  # The submodel with all search terms has the same size on all search paths:
+  expect_identical(nterms_search_all(allterms), 3L)
+  dat <- data.frame(y = 1:4, x1 = 1:4, x2 = 1:4, g = gl(2, 2))
+  fml <- y ~ x2 + s(x1) + (1 | g)
+  expect_identical(
+    nterms_search_all(union("1", split_formula(fml, data = dat))), 4L
+  )
+  # Without the linear term in the search terms:
+  allterms <- c("1", "s(x1)", "x2")
+  expect_identical(select_possible_terms_size("1", allterms, size = 2),
+                   c("s(x1)", "x2"))
+  expect_identical(nterms_search_all(allterms), 2L)
+  # A smooth term of two variables:
+  allterms <- c("1", "t2(x1, x3)", "x1", "x3")
+  expect_identical(select_possible_terms_size(c("1", "x1"), allterms, size = 3),
+                   "x3")
+  expect_identical(
+    select_possible_terms_size(c("1", "x1", "x3"), allterms, size = 4),
+    "t2(x1, x3)"
+  )
+  allterms <- c("1", "t2(x1, x3)", "x1")
+  expect_identical(select_possible_terms_size(c("1", "x1"), allterms, size = 3),
+                   "t2(x1, x3)")
+  # A search term with the linear and the smooth term:
+  expect_identical(
+    select_possible_terms_size("1", c("1", "x1 + s(x1)", "x2"), size = 3),
+    "x1 + s(x1)"
+  )
+  # Linear terms in search terms with a smooth term do not count (otherwise,
+  # these two search terms would wait for each other):
+  expect_identical(
+    select_possible_terms_size("1", c("1", "x2 + s(x1)", "x1 + s(x2)"),
+                               size = 3),
+    c("x2 + s(x1)", "x1 + s(x2)")
+  )
+  # Non-syntactic names:
+  allterms <- c("1", "s(`my x`)", "`my x`")
+  expect_identical(select_possible_terms_size("1", allterms, size = 2),
+                   "`my x`")
+  expect_identical(
+    select_possible_terms_size(c("1", "`my x`"), allterms, size = 3),
+    "s(`my x`)"
+  )
+})
+
+test_that(paste(
+  "the warning about the projection onto the full multilevel model uses the",
+  "submodel with all search terms"
+), {
+  withr::local_options(projpred.warn_instable_projections = TRUE)
+  dat <- data.frame(y = 1:12, x1 = sin(1:12), x2 = cos(1:12), g = gl(3, 4))
+  refmod_fake <- function(fml) {
+    list(formula = fml, fetch_data = function(...) dat,
+         family = list(family = "gaussian", for_latent = FALSE,
+                       for_augdat = FALSE))
+  }
+  parse_args <- function(fml, search_terms) {
+    parse_args_varsel(refmod_fake(fml), method = "forward", refit_prj = TRUE,
+                      nterms_max = NULL, nclusters = 1,
+                      search_terms = search_terms, verbose = 0)
+  }
+  warn_full <- "the projection onto the full model can be instable"
+  # varsel() and cv_varsel():
+  warns <- capture_warnings(
+    args <- parse_args(y ~ x2 + s(x1) + (1 | g), NULL)
+  )
+  expect_match(warns, warn_full, all = FALSE)
+  expect_identical(args$nterms_all, 4L)
+  expect_equal(args$nterms_max, 4)
+  # The factor of the projected group-level SD and its condition:
+  expect_match(warns, "sqrt(q / (n - p))", fixed = TRUE, all = FALSE)
+  expect_match(warns, "q < n - p", fixed = TRUE, all = FALSE)
+  expect_match(warns, "(here: 3;", fixed = TRUE, all = FALSE)
+  expect_warning(args <- parse_args(y ~ x2 + s(x1) + (1 | g),
+                                    c("s(x1)", "x2", "(1 | g)")),
+                 warn_full)
+  expect_identical(args$nterms_all, 3L)
+  # Search terms without group-level terms:
+  expect_no_warning(args <- parse_args(y ~ x1 + x2 + (1 | g), c("x1", "x2")))
+  expect_identical(args$nterms_all, 2L)
+  # project(): a submodel with a smooth term and without the linear term of its
+  # variable is the full model:
+  refmod <- refmod_fake(y ~ s(x1) + (1 | g))
+  expect_true(is_full_projection(c("s(x1)", "(1 | g)"), refmod, refmod))
+  expect_true(is_full_projection(c("x1", "s(x1)", "(1 | g)"), refmod, refmod))
+  expect_false(is_full_projection(c("x1", "(1 | g)"), refmod, refmod))
+  vs <- structure(list(args_search = list(search_terms = NULL)),
+                  class = "vsel")
+  expect_true(is_full_projection(c("x1", "s(x1)", "(1 | g)"), vs, refmod))
+  vs$args_search$search_terms <- c("x1", "(1 | g)")
+  expect_true(is_full_projection(c("x1", "(1 | g)"), vs, refmod))
+  # Group-level slopes:
+  refmod <- refmod_fake(y ~ x1 + (x1 | g))
+  expect_true(is_full_projection(c("x1", "(x1 | g)"), refmod, refmod))
+  expect_false(is_full_projection(c("x1", "(1 | g)"), refmod, refmod))
+  vs$args_search$search_terms <- NULL
+  expect_true(is_full_projection(c("(1 | g)", "x1 + (x1 | g)"), vs, refmod))
+  expect_false(is_full_projection(c("(1 | g)", "x1 + (1 | g)"), vs, refmod))
+})
+
 test_that("split_plus() splits term strings only at the `+` between terms", {
   expect_identical(split_plus("x1"), "x1")
   expect_identical(split_plus(c("x1 + x2", "x3")), c("x1", "x2", "x3"))
@@ -327,4 +486,147 @@ test_that("split_plus() splits term strings only at the `+` between terms", {
   expect_identical(split_plus("`a b` + x2 + I(`a b`^2)"),
                    c("`a b`", "x2", "I(`a b`^2)"))
   expect_identical(split_plus(character(0)), character(0))
+  expect_identical(split_plus("a + (b + c)"), c("a", "(b + c)"))
+  expect_identical(split_plus("+x + y"), c("+x", "y"))
+  expect_identical(split_plus("a + NULL"), c("a", "NULL"))
+  # The order of the parts with `+` calls as right operands:
+  expect_identical(split_plus("a + `+`(b, `+`(c, d)) + e"),
+                   c("a", "b", "c", "d", "e"))
+  # A long chain of `+` (a left-deep call tree of 4999 levels):
+  long_terms <- paste0("x", seq_len(5000))
+  expect_identical(split_plus(paste(long_terms, collapse = " + ")), long_terms)
+})
+
+test_that(paste(
+  "collapse_ranked_predictors() gives the term of each model-matrix column,",
+  "also if a column name is the start of another column name"
+), {
+  withr::local_seed(7714)
+  n <- 60
+  dat <- data.frame(
+    x1 = rnorm(n), x3 = rnorm(n),
+    f = factor(sample(c("c", "a", "ab"), n, replace = TRUE),
+               levels = c("c", "a", "ab")),
+    g = factor(sample(c("u", "v", "w"), n, replace = TRUE))
+  )
+  dat$y <- rnorm(n)
+  # The column "fa" is the start of "fab", and "poly(x3, 10)1" is the start of
+  # "poly(x3, 10)10". The last four formulas have no such column names:
+  fmls <- list(y ~ x1 + f, y ~ x1 * f, y ~ g * f, y ~ f - 1,
+               y ~ x1 + poly(x3, 10), y ~ poly(x3, 10) * x1,
+               y ~ x1 + g + poly(x3, 2), y ~ poly(x3, 2) * g,
+               y ~ poly(x3, 2):g, y ~ x1:g)
+  for (fml in fmls) {
+    info <- paste(deparse(fml), collapse = "")
+    fr <- model.frame(fml, dat)
+    cols <- setdiff(colnames(model.matrix(fml, data = fr)), "(Intercept)")
+    labs <- attr(terms(fml), "term.labels")
+    # The columns of a term are next to each other, so the terms come in the
+    # order of the columns:
+    expect_identical(collapse_ranked_predictors(cols, fml, fr), labs,
+                     info = info)
+    expect_identical(collapse_ranked_predictors(rev(cols), fml, fr), rev(labs),
+                     info = info)
+  }
+  # An element that is not a column stays, and each term comes once:
+  fml <- y ~ x1 + f
+  fr <- model.frame(fml, dat)
+  expect_identical(
+    collapse_ranked_predictors(c("fab", NA, "x1", "fa"), fml, fr),
+    c("f", NA, "x1")
+  )
+})
+
+test_that(paste(
+  "collapse_ranked_predictors() gives the term for a term with several",
+  "columns and without contrasts"
+), {
+  skip_if_not_installed("splines")
+  withr::local_seed(7714)
+  dat <- data.frame(x1 = rnorm(60), x3 = rnorm(60), y = rnorm(60))
+  fml <- y ~ x1 + splines::ns(x3, df = 3)
+  fr <- model.frame(fml, dat)
+  cols <- setdiff(colnames(model.matrix(fml, data = fr)), "(Intercept)")
+  expect_identical(collapse_ranked_predictors(rev(cols), fml, fr),
+                   c("splines::ns(x3, df = 3)", "x1"))
+})
+
+test_that(paste(
+  "select_possible_terms_size() returns a long search term without line",
+  "breaks"
+), {
+  # as.character() of a formula breaks a right-hand side of this length (1289
+  # characters) into lines:
+  long_term <- paste0("v", 1:200, collapse = " + ")
+  allterms <- c("z", long_term)
+  for (use_term_info in c(FALSE, TRUE)) {
+    expect_identical(
+      select_possible_terms_size("z", allterms, size = 202,
+                                 use_term_info = use_term_info),
+      long_term,
+      info = as.character(use_term_info)
+    )
+  }
+  # A candidate that overlaps with the chosen terms:
+  expect_identical(
+    select_possible_terms_size("v1", allterms, size = 201),
+    paste0("v", 2:200, collapse = " + ")
+  )
+  expect_identical(to_character_rhs(as.formula(paste(". ~", long_term))),
+                   long_term)
+  # One term above 500 characters: split_plus() and the terms() label give the
+  # same text.
+  long_i <- paste0("I(", long_term, ")")
+  expect_identical(split_plus(paste("z +", long_i)), c("z", long_i))
+  lbls <- attr(terms(as.formula(paste("~ z +", long_i))), "term.labels")
+  expect_identical(norm_term_labels(lbls), c("z", long_i))
+})
+
+test_that(paste(
+  "smooth_covered_terms() finds the linear terms next to a smooth term of the",
+  "same variable, and flatten_formula() drops them with `duplicates = FALSE`"
+), {
+  expect_identical(smooth_covered_terms(y ~ x + s(x) + z), "x")
+  expect_identical(smooth_covered_terms(y ~ x + z + t2(x, z)), c("x", "z"))
+  expect_identical(smooth_covered_terms(y ~ x + s(log(z), x)), "x")
+  expect_identical(smooth_covered_terms(y ~ x + s(z)), character(0))
+  expect_identical(smooth_covered_terms(y ~ x + z), character(0))
+  expect_identical(
+    labels(terms(flatten_formula(y ~ x + s(x) + z + (1 | g),
+                                 duplicates = FALSE))),
+    c("z", "s(x)", "1 | g")
+  )
+})
+
+test_that(paste(
+  "parse_additive_terms() fails for a named argument of s() or t2() at any",
+  "position"
+), {
+  for (st in c("s(x, by = g)", "s(by = g, x)", "s(k = 5, x)", "s(x = x1)",
+               "t2(x, z, k = 4)", "t2(k = 4, x, z)", "log(s(x, k = 5))",
+               "s(poly(x, degree = 2))")) {
+    expect_error(parse_additive_terms(c("z", st)),
+                 "arguments other than predictors are not allowed",
+                 info = st)
+  }
+  expect_identical(parse_additive_terms(c("z", "s(x)", "t2(x, z)")),
+                   c("s(x)", "t2(x, z)"))
+  expect_identical(parse_additive_terms(c("s(log(z), x)", "s(X[, 1])")),
+                   c("s(log(z), x)", "s(X[, 1])"))
+  expect_error(extract_terms_response(y ~ x + g + s(by = g, x)),
+               "arguments other than predictors are not allowed")
+})
+
+test_that(paste(
+  "formula.gamm4() for an rstanarm::stan_gamm4() fit does not add the",
+  "variables of the smooth terms as linear terms"
+), {
+  # The elements of an rstanarm::stan_gamm4() fit that formula.gamm4() uses:
+  fit <- structure(list(formula = y ~ x + s(z),
+                        glmod = list(formula = y ~ x + s(z) + (1 + x | g))),
+                   class = "gamm4")
+  expect_setequal(labels(terms(formula(fit))), c("x", "s(z)", "x | g"))
+  # Without group-level terms, the formula does not change:
+  fit$glmod <- NULL
+  expect_identical(formula(fit), y ~ x + s(z))
 })

@@ -341,7 +341,7 @@ refmodel_tester <- function(
     "fit", "formula", "div_minimizer", "family", "eta", "mu", "mu_offs", "dis",
     "y", "fetch_data", "wobs", "wdraws_ref", "offset", "cvfun", "cvfits",
     "extract_model_data", "ref_predfun", "mu_fun", "cvrefbuilder", "y_oscale",
-    "nobs"
+    "nobs", "contrasts"
   )
   refmod_class_expected <- "refmodel"
   if (is_datafit) {
@@ -743,6 +743,7 @@ outdmin_tester_trad <- function(
     augdat_cats = NULL,
     allow_w_zero = FALSE,
     check_y_from_resp = TRUE,
+    uses_nagq = FALSE,
     seq_extensive_tests = seq_extensive_tests,
     nobsv = nobsv,
     info_str
@@ -797,7 +798,7 @@ outdmin_tester_trad <- function(
       }
     }
     subfit_nms <- c("alpha", "beta", "w", "formula", "x", "y", "xlvls",
-                    "terms")
+                    "terms", "contrasts")
     if (from_vsel_L1_search) {
       subfit_nms <- setdiff(subfit_nms, "y")
     }
@@ -903,9 +904,21 @@ outdmin_tester_trad <- function(
       }
     }
   } else if (has_grp && !has_add) {
+    # projpred's own Laplace fit (see mlvl_laplace()) for binomial and Poisson
+    # submodels with random intercepts only and without offsets (and without
+    # lme4::glmer() arguments such as `nAGQ`):
+    is_mlvl <- sub_fam %in% c("binomial", "poisson") && !with_offs &&
+      !uses_nagq && getOption("projpred.mlvl_laplace", TRUE) &&
+      !getOption("projpred.PQL", FALSE) &&
+      !is.null(mlvl_laplace_grps(sub_formul[[1]]))
     if (sub_fam == "gaussian") {
       for (j in seq_along(outdmin_totest)) {
         expect_s4_class(outdmin_totest[[!!j]], "lmerMod")
+      }
+    } else if (is_mlvl) {
+      for (j in seq_along(outdmin_totest)) {
+        expect_true(inherits(outdmin_totest[[!!j]], "projpred_mlvl"),
+                    info = info_str)
       }
     } else {
       for (j in seq_along(outdmin_totest)) {
@@ -935,6 +948,49 @@ outdmin_tester_trad <- function(
     ))
     mm_expected <- model.matrix(sub_formul_for_mm, data = sub_mf_expected)
     attr(mm_expected, "msgScaleX") <- character()
+
+    if (is_mlvl) {
+      grps_expected <- mlvl_laplace_grps(sub_formul[[1]])
+      for (j in seq_extensive_tests) {
+        expect_equal(formula(outdmin_totest[[!!j]]),
+                     flatten_formula(sub_formul[[j]]), info = info_str)
+        expect_identical(names(outdmin_totest[[!!j]]$coefficients),
+                         colnames(mm_expected), info = info_str)
+        expect_true(all(is.finite(outdmin_totest[[!!j]]$coefficients)),
+                    info = info_str)
+        expect_setequal(names(outdmin_totest[[!!j]]$sd), grps_expected)
+        expect_true(all(outdmin_totest[[!!j]]$sd >= 0), info = info_str)
+        for (g in grps_expected) {
+          expect_identical(
+            names(outdmin_totest[[!!j]]$ranef[[!!g]]),
+            levels(droplevels(as.factor(sub_data[[!!g]]))),
+            info = info_str
+          )
+        }
+        expect_identical(outdmin_totest[[!!j]]$convergence, 0L,
+                         info = info_str)
+      }
+      # The fixed effects of lme4::glmer() for the first of these draws (lme4
+      # >= 2.1-1 does not round non-integer responses):
+      j1 <- seq_extensive_tests[1]
+      if (utils::packageVersion("lme4") >= "2.1.1" && is.null(augdat_cats)) {
+        dat_j1 <- sub_data
+        dat_j1$.w_tst <- if (is.null(wobs_expected)) {
+          rep(1, nrow(sub_data))
+        } else if (is.matrix(wobs_expected)) {
+          wobs_expected[, j1]
+        } else {
+          wobs_expected
+        }
+        fit_g <- suppressWarnings(suppressMessages(lme4::glmer(
+          sub_formul[[j1]], data = dat_j1, family = get(sub_fam)(),
+          weights = .w_tst, control = lme4::glmerControl(optimizer = "bobyqa")
+        )))
+        expect_equal(outdmin_totest[[j1]]$coefficients, lme4::fixef(fit_g),
+                     tolerance = 1e-2, info = info_str)
+      }
+      return(invisible(TRUE))
+    }
 
     for (j in seq_extensive_tests) {
       # formula
@@ -986,14 +1042,17 @@ outdmin_tester_trad <- function(
                        model.frame(outdmin_totest[[!!j]]),
                        info = info_str)
       if (check_y_from_resp) {
-        expect_equal(
-          outdmin_totest[[!!j]]@frame[[
-            grep("y_|ybinprop", names(outdmin_totest[[!!j]]@frame),
-                 value = TRUE)
-          ]],
-          y_from_resp,
-          info = info_str
-        )
+        y_from_frame <- outdmin_totest[[j]]@frame[[
+          grep("y_|ybinprop", names(outdmin_totest[[j]]@frame), value = TRUE)
+        ]]
+        if (!is.null(augdat_cats) && !is.factor(y_from_frame)) {
+          # glmer_data() passes a 0/1 response instead of a factor:
+          y_orig <- eval(str2lang(as.character(sub_formul[[j]])[2]), sub_data)
+          expect_equal(y_from_frame, as.numeric(y_orig != levels(y_orig)[1]),
+                       info = info_str)
+        } else {
+          expect_equal(y_from_frame, y_from_resp, info = info_str)
+        }
       }
       if (!is.null(wobs_expected)) {
         expect_equal(structure(outdmin_totest[[!!j]]@frame$`(weights)`,
@@ -1151,7 +1210,50 @@ outdmin_tester_aug <- function(
     coef_nms <- strsplit(grp_trms_for_coef, "[[:blank:]]*\\+[[:blank:]]*")
     coef_nms <- union("1", coef_nms)
     coef_nms <- sub("^1$", "(Intercept)", unlist(coef_nms))
-    if (sub_fam %in% c("cumulative", "cumulative_rstanarm")) {
+    # projpred's own Laplace fit (see mlvl_laplace_cumul()) for cumulative
+    # submodels with a single group-level intercept term and without offsets
+    # (and without arguments for ordinal::clmm()):
+    is_mlvl_cumul <- sub_fam %in% c("cumulative", "cumulative_rstanarm") &&
+      identical(coef_nms, "(Intercept)") && !with_offs &&
+      getOption("projpred.mlvl_laplace", TRUE)
+    if (is_mlvl_cumul) {
+      for (j in seq_along(outdmin_totest)) {
+        expect_s3_class(outdmin_totest[[!!j]],
+                        c("projpred_mlvl_cumul", "projpred_mlvl"),
+                        exact = TRUE)
+      }
+      sub_formul_no_grp <- update(sub_formul, . ~ . - (1 | z.1))
+      coefs_nms_expected <- grep(
+        "Intercept",
+        colnames(model.matrix(sub_formul_no_grp, data = sub_data)),
+        value = TRUE, invert = TRUE
+      )
+      for (j in seq_extensive_tests) {
+        fit_j <- outdmin_totest[[j]]
+        expect_named(
+          fit_j$alpha,
+          paste(head(augdat_cats, -1), tail(augdat_cats, -1), sep = "|"),
+          info = info_str
+        )
+        expect_true(all(diff(fit_j$alpha) > 0), info = info_str)
+        expect_true(is.vector(fit_j$coefficients, "numeric"), info = info_str)
+        if (length(coefs_nms_expected)) {
+          expect_named(fit_j$coefficients, coefs_nms_expected, info = info_str)
+        } else {
+          expect_length(fit_j$coefficients, 0)
+        }
+        expect_true(all(is.finite(fit_j$coefficients)), info = info_str)
+        expect_named(fit_j$sd, "z.1", info = info_str)
+        expect_true(fit_j$sd >= 0, info = info_str)
+        expect_named(fit_j$ranef, "z.1", info = info_str)
+        expect_named(fit_j$ranef[["z.1"]],
+                     levels(droplevels(as.factor(sub_data$z.1))),
+                     info = info_str)
+        expect_identical(fit_j$lev, augdat_cats, info = info_str)
+        expect_identical(fit_j$convergence, 0L, info = info_str)
+        expect_equal(formula(fit_j), sub_formul, info = info_str)
+      }
+    } else if (sub_fam %in% c("cumulative", "cumulative_rstanarm")) {
       for (j in seq_along(outdmin_totest)) {
         expect_s3_class(outdmin_totest[[!!j]], "clmm")
       }
@@ -1408,6 +1510,9 @@ outdmin_tester_aug <- function(
 #   weights are allowed to have a value of zero (`TRUE`) or not (`FALSE`).
 # @param check_y_from_resp A single logical value indicating whether to check
 #   elements `outdmin_totest[[j]]@resp$y` for GLMMs (`TRUE`) or not (`FALSE`).
+# @param uses_nagq A single logical value indicating whether the divergence
+#   minimizer got argument `nAGQ` (then binomial and Poisson multilevel
+#   submodels are fitted by lme4::glmer(), not by mlvl_laplace()).
 # @param info_str A single character string giving information to be printed in
 #   case of failure.
 #
@@ -1426,6 +1531,7 @@ outdmin_tester <- function(
     augdat_cats = NULL,
     allow_w_zero = FALSE,
     check_y_from_resp = TRUE,
+    uses_nagq = FALSE,
     info_str
 ) {
   expect_type(outdmin_totest, "list")
@@ -1476,6 +1582,7 @@ outdmin_tester <- function(
       augdat_cats = augdat_cats,
       allow_w_zero = allow_w_zero,
       check_y_from_resp = check_y_from_resp,
+      uses_nagq = uses_nagq,
       seq_extensive_tests = seq_extensive_tests,
       nobsv = nobsv,
       info_str = info_str
@@ -1600,6 +1707,7 @@ refdist_tester <- function(refd,
 # @param from_vsel_L1_search A single logical value indicating whether `p` uses
 #   the L1 `search_path` of an object of class `vsel` for extracting the
 #   subfit(s) (`TRUE`) or not (`FALSE`).
+# @param uses_nagq Passed to outdmin_tester().
 # @param info_str A single character string giving information to be printed in
 #   case of failure.
 #
@@ -1612,6 +1720,7 @@ projection_tester <- function(p,
                               seed_expected = seed_tst,
                               prjdraw_weights_expected = NULL,
                               from_vsel_L1_search = FALSE,
+                              uses_nagq = FALSE,
                               info_str = "") {
   expect_s3_class(p, "projection")
   expect_type(p, "list")
@@ -1728,14 +1837,16 @@ projection_tester <- function(p,
   } else {
     augdat_cats_crr <- NULL
   }
+  # As proj_to_submodl(), with the contrasts of the reference model:
   outdmin_tester(p$outdmin,
                  nprjdraws_expected = nprjdraws_expected,
                  sub_formul = sub_formul_crr,
-                 sub_data = sub_data_crr,
+                 sub_data = set_contrasts(sub_data_crr, p$refmodel$contrasts),
                  sub_fam = p$refmodel$family$family,
                  wobs_expected = wobs_expected_crr,
                  prd_trms_vsel_L1_search = prd_trms_vsel_L1_search_crr,
                  augdat_cats = augdat_cats_crr,
+                 uses_nagq = uses_nagq,
                  info_str = info_str)
 
   # dis
@@ -2046,6 +2157,7 @@ vsel_tester <- function(
     K_expected = NULL,
     penalty_expected = NULL,
     search_terms_expected = NULL,
+    search_screen_expected = NULL,
     search_trms_empty_size = FALSE,
     search_control_expected = NULL,
     extra_tol = 1.1,
@@ -2165,11 +2277,12 @@ vsel_tester <- function(
     } else {
       augdat_cats_crr <- NULL
     }
+    # As proj_to_submodl(), with the contrasts of the reference model:
     outdmin_tester(
       vs$search_path$outdmins[[i]],
       nprjdraws_expected = nprjdraws_search_expected,
       sub_formul = sub_formul_crr,
-      sub_data = sub_data_crr,
+      sub_data = set_contrasts(sub_data_crr, vs$refmodel$contrasts),
       sub_fam = vs$refmodel$family$family,
       wobs_expected = wobs_expected_crr,
       prd_trms_vsel_L1_search = prd_trms_vsel_L1_search_crr,
@@ -2354,9 +2467,15 @@ vsel_tester <- function(
     expect_null(vs$summaries_fast, info = info_str)
   }
 
-  # nterms_all
+  # nterms_all (the size of the submodel with all search terms)
+  if (is.null(search_terms_expected)) {
+    search_terms_all <- split_formula(vs$refmodel$formula,
+                                      data = vs$refmodel$fetch_data())
+  } else {
+    search_terms_all <- search_terms_expected
+  }
   expect_identical(vs$nterms_all,
-                   count_terms_in_formula(vs$refmodel$formula) - 1L,
+                   count_terms_chosen(union("1", search_terms_all)) - 1L,
                    info = info_str)
 
   # nterms_max
@@ -2416,7 +2535,8 @@ vsel_tester <- function(
         NULL
       } else {
         union("1", search_terms_expected)
-      }
+      },
+      search_screen = search_screen_expected
     ),
     info = info_str
   )

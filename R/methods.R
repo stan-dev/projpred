@@ -85,10 +85,9 @@
 #'   `NA`, then the PRNG state is reset (to the state before calling
 #'   [proj_linpred()], [proj_epred()], or [proj_predict()]) upon exiting
 #'   [proj_linpred()], [proj_epred()], or [proj_predict()]. Here, `.seed` is
-#'   used for drawing new group-level effects
-#'   in case of a multilevel submodel (however, not yet in case of a GAMM) and
-#'   for drawing from the predictive distributions of the submodel(s) in case of
-#'   [proj_predict()]. If a clustered projection was performed, then in
+#'   used for drawing new group-level effects in case of a multilevel submodel
+#'   and for drawing from the predictive distributions of the submodel(s) in
+#'   case of [proj_predict()]. If a clustered projection was performed, then in
 #'   [proj_predict()], `.seed` is also used for drawing from the set of
 #'   projected clusters of posterior draws (see argument `nresample_clusters`).
 #'   If [project()] is called internally with `seed = NA` (or with `seed` being
@@ -640,9 +639,7 @@ proj_predict_aux <- function(proj, newdata, offsetnew, weightsnew,
 }
 
 # Needed to avoid a NOTE in `R CMD check`:
-if (getRversion() >= package_version("2.15.1")) {
-  utils::globalVariables("fontsize")
-}
+utils::globalVariables("fontsize")
 
 #' Plot predictive performance
 #'
@@ -809,7 +806,11 @@ plot.vsel <- function(
 ) {
   # Parse input:
   object <- x
-  validate_vsel_object_stats(object, stats, resp_oscale = resp_oscale)
+  stats_parsed <- parse_stats(stats)
+  stats <- stats_parsed$nms
+  custom_stats <- stats_parsed$custom
+  validate_vsel_object_stats(object, stats, resp_oscale = resp_oscale,
+                             custom_stats = custom_stats)
   baseline <- validate_baseline(object, baseline, deltas)
   if (!is.null(ranking_repel) && !requireNamespace("ggrepel", quietly = TRUE)) {
     warning("Package 'ggrepel' is needed for a non-`NULL` argument ",
@@ -824,6 +825,7 @@ plot.vsel <- function(
   # Define `nfeat_baseline` and a slightly modified variant that can be used for
   # .tabulate_stats()'s argument `nfeat_baseline`:
   nfeat_baseline <- get_nfeat_baseline(object, baseline, stats[1],
+                                       custom_stats = custom_stats,
                                        resp_oscale = resp_oscale)
   nfeat_baseline_mixed <- NULL
   if (isTRUE(deltas)) {
@@ -839,7 +841,8 @@ plot.vsel <- function(
   stats_table_all <- .tabulate_stats(object, stats, alpha = alpha,
                                      nfeat_baseline = nfeat_baseline_for_tab,
                                      nfeat_baseline_diff = nfeat_baseline_mixed,
-                                     resp_oscale = resp_oscale, ...)
+                                     resp_oscale = resp_oscale,
+                                     custom_stats = custom_stats, ...)
   if (identical(deltas, "mixed")) {
     stats_bs_init <- subset(stats_table_all,
                             stats_table_all$size == nfeat_baseline)
@@ -1190,14 +1193,20 @@ plot.vsel <- function(
     #                        direction = 1)
     ###
   }
-  if (all(stats %in% c("auc"))) {
+  stats_bs_ci <- c("auc", names(Filter(function(cs) {
+    cs$type == "aggregate"
+  }, custom_stats)))
+  if (all(stats %in% stats_bs_ci)) {
     ci_type <- "bootstrap "
   } else if (all(stats %in% c("gmpd"))) {
     ci_type <- "exponentiated normal-approximation "
   } else if (all(stats %in% c("mse", "rmse")) && isFALSE(deltas)) {
     ci_type <- "log-normal-approximation "
-  } else if (all(!stats %in% c("auc", "gmpd", "mse", "rmse")) ||
-             (all(!stats %in% c("auc", "gmpd")) &&
+  } else if (all(stats %in% c("acc", "pctcorr")) && isFALSE(deltas)) {
+    ci_type <- "logit-normal-approximation "
+  } else if (all(!stats %in% c(stats_bs_ci, "gmpd", "mse", "rmse", "acc",
+                               "pctcorr")) ||
+             (all(!stats %in% c(stats_bs_ci, "gmpd")) &&
               (identical(deltas, "mixed") || isTRUE(deltas)))) {
     ci_type <- "normal-approximation "
   } else {
@@ -1228,6 +1237,14 @@ plot.vsel <- function(
   } else {
     x_axis_sec <- waiver()
   }
+  if (length(custom_stats) > 0) {
+    facet_labs <- setNames(stats, stats)
+    facet_labs[names(custom_stats)] <- vapply(custom_stats, "[[", character(1),
+                                              "label")
+    facet_labeller <- labeller(statistic = facet_labs)
+  } else {
+    facet_labeller <- "label_value"
+  }
   hjust_val <- 0.5
   vjust_val <- 0.5
   if (!is.null(text_angle)) {
@@ -1253,7 +1270,7 @@ plot.vsel <- function(
     theme(axis.text.x.bottom = element_text(angle = text_angle,
                                             hjust = hjust_val,
                                             vjust = vjust_val)) +
-    facet_grid(statistic ~ ., scales = "free_y")
+    facet_grid(statistic ~ ., scales = "free_y", labeller = facet_labeller)
   if (!is.na(ranking_nterms_max) && !is.null(ranking_repel)) {
     if (identical(ranking_repel, "text")) {
       geom_repel_fun <- ggrepel::geom_text_repel
@@ -1293,8 +1310,9 @@ plot.vsel <- function(
 #'   same as `length(ranking(object)$fulldata)`. Note that `nterms_max` does not
 #'   count the intercept, so use `nterms_max = 0` for the intercept-only model.
 #'   For [plot.vsel()], `nterms_max` must be at least `1`.
-#' @param stats One or more character strings determining which performance
-#'   statistics (i.e., utilities or losses) to estimate based on the
+#' @param stats One or more character strings (or [custom_stat()] objects, see
+#'   below) determining which performance statistics (i.e., utilities or
+#'   losses) to estimate based on the
 #'   observations in the evaluation (or "test") set (in case of
 #'   cross-validation, these are all observations because they are partitioned
 #'   into multiple test sets; in case of [varsel()] with `d_test = NULL`, these
@@ -1336,12 +1354,22 @@ plot.vsel <- function(
 #'   observations. For this, the response category ("class") with highest
 #'   probability (the probabilities are model-based) is taken as the prediction
 #'   ("classification") for an observation. For the corresponding uncertainty
-#'   interval, a normal approximation is used.
+#'   interval, a logit-normal approximation is used if `deltas` is `FALSE`. The
+#'   standard error on the logit scale comes from the delta method. A normal
+#'   approximation is used if `deltas` is `TRUE` (or `"mixed"`, in case of
+#'   [plot.vsel()]). It is also used if `deltas` is `FALSE` and the estimate is
+#'   not strictly between 0 and 1 (an estimate outside of \[0, 1\] is possible
+#'   with subsampled LOO-CV).
 #'   * `"auc"`: area under the ROC curve (only available in the situations
 #'   mentioned in section "Details" below). For the corresponding standard error
 #'   and lower and upper uncertainty interval bounds, bootstrapping is used. Not
 #'   supported in case of subsampled LOO-CV (see argument `nloo` of
 #'   [cv_varsel()]).
+#'
+#'   For a user-defined statistic, use [custom_stat()]. `stats` then takes one
+#'   [custom_stat()] object, or a `list` of single character strings (built-in
+#'   statistics) and [custom_stat()] objects, for example
+#'   `stats = list("elpd", custom_stat(...))`.
 #' @param type One or more items from `"mean"`, `"se"`, `"lower"`, `"upper"`,
 #'   `"diff"`, `"diff.lower"`, `"diff.upper"`, and `"diff.se"` indicating which
 #'   of these to compute for each item from `stats` (mean, standard error, lower
@@ -1447,7 +1475,11 @@ summary.vsel <- function(
     cumulate = FALSE,
     ...
 ) {
-  validate_vsel_object_stats(object, stats, resp_oscale = resp_oscale)
+  stats_parsed <- parse_stats(stats)
+  stats <- stats_parsed$nms
+  custom_stats <- stats_parsed$custom
+  validate_vsel_object_stats(object, stats, resp_oscale = resp_oscale,
+                             custom_stats = custom_stats)
   baseline <- validate_baseline(object, baseline, deltas)
 
   # Initialize output:
@@ -1477,13 +1509,15 @@ summary.vsel <- function(
   # The full table of the performance statistics from `stats`:
   if (deltas) {
     nfeat_baseline_for_tab <- get_nfeat_baseline(object, baseline, stats[1],
+                                                 custom_stats = custom_stats,
                                                  resp_oscale = resp_oscale)
   } else {
     nfeat_baseline_for_tab <- NULL
   }
   stats_table_all <- .tabulate_stats(object, stats, alpha = alpha,
                                      nfeat_baseline = nfeat_baseline_for_tab,
-                                     resp_oscale = resp_oscale, ...)
+                                     resp_oscale = resp_oscale,
+                                     custom_stats = custom_stats, ...)
 
   # Extract the reference model performance results from `stats_table_all`:
   stats_table_ref <- subset(stats_table_all, stats_table_all$size == Inf)
@@ -1709,8 +1743,9 @@ print.vsel <- function(x, digits = getOption("projpred.digits", 2), ...) {
 #' @param object An object of class `vsel` (returned by [varsel()] or
 #'   [cv_varsel()]).
 #' @param stat Performance statistic (i.e., utility or loss) used for the
-#'   decision. See argument `stats` of [summary.vsel()] and [plot.vsel()] for
-#'   possible choices.
+#'   decision: a single character string or a single [custom_stat()] object.
+#'   See argument `stats` of [summary.vsel()] and [plot.vsel()] for possible
+#'   choices.
 #' @param pct A number giving the proportion (*not* percents) of the *relative*
 #'   null model utility one is willing to sacrifice. See section "Details" below
 #'   for more information.
@@ -1843,7 +1878,8 @@ suggest_size.vsel <- function(
     warnings = TRUE,
     ...
 ) {
-  if (length(stat) > 1) {
+  stat_parsed <- parse_stats(stat)
+  if (length(stat_parsed$nms) > 1) {
     stop("Only one statistic can be specified to suggest_size")
   }
   stats <- summary.vsel(object,
@@ -1852,8 +1888,9 @@ suggest_size.vsel <- function(
                         deltas = TRUE,
                         ...)
   stats <- stats$perf_sub
+  stat <- stat_parsed$nms
 
-  if (is_util(stat)) {
+  if (is_util(stat, stat_parsed$custom)) {
     sgn <- 1
   } else {
     sgn <- -1
@@ -1988,11 +2025,8 @@ replace_population_names <- function(population_effects, nm_scheme) {
       names(population_effects),
       nm_scheme = nm_scheme
     )
-    if (length(population_effects) > 0) {
-      # We could also use `recycle0 = TRUE` here, but that would
-      # require R >= 4.0.1.
-      names(population_effects) <- paste0("b_", names(population_effects))
-    }
+    names(population_effects) <- paste0("b_", names(population_effects),
+                                        recycle0 = TRUE)
   }
   return(population_effects)
 }
@@ -2191,9 +2225,30 @@ coef.subfit <- function(object, ...) {
   )))
 }
 
-# To process the multilevel variance components (from a submodel fit):
-proc_VarCorr <- function(group_vc_raw, nms_lats = NULL, ...) {
+# To process the multilevel variance components (from a submodel fit). With
+# `nm_scheme = "brms"`, the output holds the standard deviations and the
+# correlations. With `nm_scheme = "rstanarm"`, it holds the variances and the
+# covariances, as rstanarm does: per group, the lower triangle of the
+# covariance matrix (diagonal included) in column-major order.
+proc_VarCorr <- function(group_vc_raw, nms_lats = NULL, nm_scheme, ...) {
   group_vc <- unlist(lapply(group_vc_raw, function(vc_obj) {
+    if (nm_scheme == "rstanarm" && is.null(nms_lats)) {
+      cov_mat <- matrix(as.vector(unclass(vc_obj)), nrow = nrow(vc_obj),
+                        ncol = ncol(vc_obj))
+      coef_nms_vc <- rownames(vc_obj)
+      # Note: which() returns the indices in column-major order.
+      idxs <- which(lower.tri(cov_mat, diag = TRUE), arr.ind = TRUE)
+      # The names use the keys "sd" (diagonal) and "cor" (off-diagonal) that
+      # mknms_VarCorr() expects, although the values are the variances and the
+      # covariances:
+      nms_vc <- ifelse(
+        idxs[, "row"] == idxs[, "col"],
+        paste0("sd.", coef_nms_vc[idxs[, "row"]]),
+        paste0("cor.", coef_nms_vc[idxs[, "col"]], ".",
+               coef_nms_vc[idxs[, "row"]])
+      )
+      return(setNames(cov_mat[idxs], nms_vc))
+    }
     # The vector of standard deviations:
     if (is.null(nms_lats)) {
       vc_out <- c("sd" = attr(vc_obj, "stddev"))
@@ -2232,7 +2287,8 @@ proc_VarCorr <- function(group_vc_raw, nms_lats = NULL, ...) {
     }
     return(vc_out)
   }))
-  names(group_vc) <- mknms_VarCorr(names(group_vc), nms_lats = nms_lats, ...)
+  names(group_vc) <- mknms_VarCorr(names(group_vc), nms_lats = nms_lats,
+                                   nm_scheme = nm_scheme, ...)
   return(group_vc)
 }
 
@@ -2337,8 +2393,52 @@ get_subparams.glmerMod <- function(x, ...) {
 
 #' @noRd
 #' @export
+get_subparams.projpred_mlvl <- function(x, ...) {
+  population_effects <- replace_population_names(x$coefficients, ...)
+
+  # The structure of lme4::VarCorr() and lme4::ranef() for random intercepts:
+  int_nm <- "(Intercept)"
+  group_vc_raw <- lapply(x$sd, function(s) {
+    structure(matrix(s^2, 1, 1, dimnames = list(int_nm, int_nm)),
+              stddev = setNames(s, int_nm),
+              correlation = matrix(1, 1, 1, dimnames = list(int_nm, int_nm)))
+  })
+  group_vc <- proc_VarCorr(group_vc_raw,
+                           coef_nms = lapply(group_vc_raw, rownames), ...)
+
+  subparams <- c(population_effects, group_vc)
+
+  if (!getOption("projpred.mlvl_pred_new", FALSE)) {
+    group_ef_raw <- lapply(x$ranef, function(b) {
+      data.frame(setNames(list(unname(b)), int_nm), row.names = names(b),
+                 check.names = FALSE)
+    })
+    group_ef <- proc_ranef(group_ef_raw,
+                           coef_nms = lapply(group_vc_raw, rownames), ...)
+    subparams <- c(subparams, group_ef)
+  }
+
+  return(subparams)
+}
+
+# The parameters in the order of get_subparams.clmm(): thresholds, regression
+# coefficients, group-level standard deviation, group-level intercepts.
+#' @noRd
+#' @export
+get_subparams.projpred_mlvl_cumul <- function(x, ...) {
+  thres <- x$alpha
+  names(thres) <- mknms_thres(names(thres), ...)
+  return(c(thres, get_subparams.projpred_mlvl(x, ...)))
+}
+
+#' @noRd
+#' @export
 get_subparams.gamm4 <- function(x, ...) {
-  return(get_subparams.lm(x, ...))
+  # coef() of a gamm4 fit is `NULL`, so get_subparams.lm() would return no
+  # parameters:
+  stop("as.matrix.projection() and as_draws_matrix.projection() do not ",
+       "support submodels with smooth and group-level terms (GAMMs) yet.",
+       call. = FALSE)
 }
 
 #' @noRd
@@ -2403,16 +2503,8 @@ get_subparams.mmblogit <- function(x, ...) {
   subparams <- c(setNames(as.vector(coefs), nms), group_vc)
 
   if (!getOption("projpred.mlvl_pred_new", FALSE)) {
-    if (utils::packageVersion("mclogit") < "0.9") {
-      ncoefs_all <- length(all.vars(x$random$formula)) + 1L
-    } else {
-      ncoefs_all <- sapply(
-        setNames(x$random, names(x$groups)),
-        function(re_info_i) {
-          length(all.vars(re_info_i$formula)) + 1L
-        }
-      )
-    }
+    # The number of group-level coefficients per latent category:
+    ncoefs_all <- vapply(group_vc_raw, ncol, integer(1)) %/% ncol(x$D)
     group_ef <- proc_ranef(setNames(x$random.effects, names(x$groups)),
                            nms_lats = colnames(x$D),
                            ncoefs = ncoefs_all,
@@ -2446,11 +2538,31 @@ get_subparams.mmblogit <- function(x, ...) {
 #'   the returned matrix).
 #' @param ... Currently ignored.
 #'
-#' @details In case of the augmented-data projection for a multilevel submodel
+#' @details For a multilevel submodel, the group-level variance components
+#'   follow the naming scheme and the parametrization of the corresponding
+#'   package: With `nm_scheme = "rstanarm"`, the columns
+#'   `Sigma[<group>:<a>,<a>]` and `Sigma[<group>:<b>,<a>]` contain the
+#'   group-level variances and covariances (per group, the lower triangle of
+#'   the covariance matrix in column-major order). With `nm_scheme = "brms"`,
+#'   the columns `sd_<group>__<a>` and `cor_<group>__<a>__<b>` contain the
+#'   group-level standard deviations and correlations.
+#'
+#'   In case of the augmented-data projection for a multilevel submodel
 #'   of a [brms::categorical()] reference model, the multilevel parameters (and
 #'   therefore also their names) slightly differ from those in the \pkg{brms}
 #'   reference model fit (see section "Augmented-data projection" in
 #'   [extend_family()]'s documentation).
+#'
+#'   For a submodel with smooth terms (fitted with [mgcv::gam()]), the columns
+#'   of the smooth terms are the coefficients in the basis of `gam()`. The
+#'   reference model fit can use another basis ([rstanarm::stan_gamm4()] and
+#'   \pkg{brms} do so for `s()` terms). Then these columns do not match the
+#'   reference model parameters. For a submodel with smooth and group-level
+#'   terms (GAMM), the projected draws cannot be extracted yet (error).
+#'
+#'   For the latent projection, column `sigma` contains the projected latent
+#'   dispersion. If `<refmodel>$dis` consists of only `NA`s (see argument `dis`
+#'   of [init_refmodel()]), there is no column `sigma`.
 #'
 #' @return An \eqn{S_{\mathrm{prj}} \times Q}{S_prj x Q} matrix of projected
 #'   draws, with \eqn{S_{\mathrm{prj}}}{S_prj} denoting the number of projected
@@ -2484,12 +2596,10 @@ get_subparams.mmblogit <- function(x, ...) {
 #' # Since the draws have all the same weight here, we can treat them like
 #' # ordinary MCMC draws, e.g., we can summarize them using the `posterior`
 #' # package:
-#' if (requireNamespace("posterior", quietly = TRUE)) {
-#'   print(posterior::summarize_draws(
-#'     posterior::as_draws_matrix(prj_mat),
-#'     "median", "mad", function(x) quantile(x, probs = c(0.025, 0.975))
-#'   ))
-#' }
+#' print(posterior::summarize_draws(
+#'   posterior::as_draws_matrix(prj_mat),
+#'   "median", "mad", function(x) quantile(x, probs = c(0.025, 0.975))
+#' ))
 #' # Or visualize them using the `bayesplot` package:
 #' if (requireNamespace("bayesplot", quietly = TRUE)) {
 #'   print(bayesplot::mcmc_intervals(prj_mat))
@@ -2524,7 +2634,12 @@ as.matrix.projection <- function(x, nm_scheme = NULL,
   }
   stopifnot(nm_scheme %in% c("rstanarm", "brms"))
   res <- do.call(rbind, lapply(x$outdmin, get_subparams, nm_scheme = nm_scheme))
-  if (x$refmodel$family$family == "gaussian") res <- cbind(res, sigma = x$dis)
+  # If `<refmodel>$dis` is all `NA` (latent projection), there is no `sigma`
+  # column:
+  if (x$refmodel$family$family == "gaussian" &&
+      !(x$refmodel$family$for_latent && all(is.na(x$refmodel$dis)))) {
+    res <- cbind(res, sigma = x$dis)
+  }
   if (!x[["const_wdraws_prj"]]) {
     attr(res, "wdraws_prj") <- x[["wdraws_prj"]]
   }
@@ -2556,7 +2671,7 @@ as.matrix.projection <- function(x, nm_scheme = NULL,
 #'   \eqn{Q} the number of parameters. If the projected draws have nonconstant
 #'   weights, [posterior::weight_draws()] is applied internally.
 #'
-#' @examplesIf requireNamespace("rstanarm", quietly = TRUE) && requireNamespace("posterior", quietly = TRUE)
+#' @examplesIf requireNamespace("rstanarm", quietly = TRUE)
 #' # Data:
 #' dat_gauss <- data.frame(y = df_gaussian$y, df_gaussian$x)
 #'
@@ -2614,9 +2729,6 @@ as_draws.projection <- function(x, ...) {
 # argument `wdraws_prj`) to a `draws_matrix` (which will be weighted if `xmat`
 # possesses an argument `wdraws_prj`).
 mat2drmat <- function(xmat) {
-  if (!requireNamespace("posterior", quietly = TRUE)) {
-    stop("Please install the 'posterior' package.")
-  }
   drmat <- posterior::as_draws_matrix(structure(xmat, wdraws_prj = NULL))
   wdr <- attr(xmat, "wdraws_prj")
   if (!is.null(wdr)) {

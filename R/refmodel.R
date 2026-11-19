@@ -36,8 +36,13 @@
 #'   non-default methods of [get_refmodel()], an object of the corresponding
 #'   class.
 #' @param data A `data.frame` containing the data to use for the projection
-#'   predictive variable selection. Any `contrasts` attributes of the dataset's
-#'   columns are silently removed. For custom reference models, the columns of
+#'   predictive variable selection. The `contrasts` attributes of the factor
+#'   columns (see [contrasts()]) set the contrasts of these predictors in the
+#'   submodels; for other factors, the submodels use `options("contrasts")`.
+#'   The `stanreg` method of [get_refmodel()] takes the contrasts from the
+#'   \pkg{rstanarm} fit (except for [rstanarm::stan_gamm4()], which does not
+#'   store them), and \pkg{brms} sets these attributes. For custom reference
+#'   models, the columns of
 #'   `data` do not necessarily have to coincide with those of the dataset used
 #'   for fitting the reference model, but keep in mind that a row-subset of
 #'   `data` is used for argument `newdata` of `ref_predfun` during \eqn{K}-fold
@@ -68,7 +73,11 @@
 #' @param extract_model_data A function for fetching some variables (response,
 #'   observation weights, offsets) from the original dataset (supplied to
 #'   argument `data`) or from a new dataset. May be `NULL` for using an internal
-#'   default that essentially corresponds to [y_wobs_offs()]. See also section
+#'   default that essentially corresponds to [y_wobs_offs()]. For a 2-column
+#'   binomial response (successes and failures), this internal default uses the
+#'   sums of the two columns (the numbers of trials) as observation weights.
+#'   Then a `newdata` in prediction functions must contain the variables of the
+#'   response columns, or the call must supply `weightsnew`. See also section
 #'   "Argument `extract_model_data`" below.
 #' @param family An object of class `family` representing the observation model
 #'   (i.e., the distributional family for the response) of the *submodels*.
@@ -95,6 +104,8 @@
 #'   `NULL` for using an internal default. Only one of `cvfits` and `cvfun`
 #'   needs to be provided (for \eqn{K}-fold CV). Note that `cvfits` takes
 #'   precedence over `cvfun`, i.e., if both are provided, `cvfits` is used.
+#'   For [get_refmodel.stanreg()], `cvfun = NULL` uses an internal default
+#'   based on [rstanarm::kfold.stanreg()].
 #' @param cvrefbuilder For \eqn{K}-fold CV only. A function that, given a
 #'   reference model fit for fold \eqn{k \in \{1, ..., K\}}{k = 1, ..., K},
 #'   returns an object of the same type as [init_refmodel()] does. The reference
@@ -107,7 +118,12 @@
 #'   `projpred_k` are appended as attributes). Argument `cvrefbuilder` may be
 #'   `NULL` for using an internal default: [get_refmodel()] if `object` is not
 #'   `NULL` and a function calling [init_refmodel()] appropriately (with the
-#'   assumption `dis = 0`) if `object` is `NULL`.
+#'   assumption `dis = 0`) if `object` is `NULL`. For [get_refmodel.stanreg()],
+#'   `cvrefbuilder = NULL` uses an internal default that calls [get_refmodel()]
+#'   on the fold-wise fit with the arguments `latent`, `dis`, and `...` of the
+#'   original call and with `called_from_cvrefbuilder = TRUE`. A custom
+#'   `cvrefbuilder` is needed, for example, if the reference model uses custom
+#'   functions that depend on the posterior draws (see [extend_family()]).
 #' @param called_from_cvrefbuilder A single logical value indicating whether
 #'   [init_refmodel()] is called from a `cvrefbuilder` function (`TRUE`) or not
 #'   (`FALSE`). Currently, `TRUE` only causes some warnings to be suppressed
@@ -141,6 +157,14 @@
 #' In multilevel (group-level) terms, function calls on the right-hand side of
 #' the `|` character (e.g., `(1 | gr(group_variable))`, which is possible in
 #' \pkg{brms}) are currently not allowed in \pkg{projpred}.
+#'
+#' Group terms with a \pkg{brms} correlation ID, such as `(1 + x |p| g)`, are
+#' used without the ID (here `(1 + x | g)`), and a message tells about this.
+#' Group terms with `||` (uncorrelated group-level effects) are currently not
+#' supported. If a grouping factor has more than one group term, such as
+#' `(1 | g) + (0 + x | g)`, the submodels merge these terms into one term with
+#' correlations (here `(x | g)`), and [init_refmodel()] gives a warning (no
+#' warning if all these terms have the same \pkg{brms} correlation ID).
 #'
 #' For additive models (still an experimental feature), only [mgcv::s()] and
 #' [mgcv::t2()] are currently supported as smooth terms. Furthermore, these need
@@ -695,7 +719,8 @@ predict.refmodel <- function(object, newdata = NULL, ynew = NULL,
         }
       }
       loglik <- refmodel$family$ll_fun(
-        refmodel$family$linkinv(eta), refmodel$dis, ynew, weightsnew
+        refmodel$family$linkinv(eta), refmodel$dis, ynew, weightsnew,
+        eta = eta
       )
       S <- ncol(loglik)
       marg_obs <- 1
@@ -847,11 +872,34 @@ get_refmodel.default <- function(object, family = NULL, ...) {
                        ...))
 }
 
+# With argument `random`, rstanarm::stan_gamm4() stores the model frame as the
+# `data` element of the fit. For an expression in the formula (for example
+# `cbind(y, n - y)`), the model frame has a column for the expression, but no
+# column for the variables in the expression. This function returns the names
+# of these variables.
+gamm4_vars_miss <- function(object) {
+  data <- object$data
+  trms <- attr(data, "terms")
+  if (is.null(object$glmod) || !is.data.frame(data) || is.null(trms)) {
+    return(character())
+  }
+  vars <- as.list(attr(trms, "variables"))[-1]
+  vars_expr <- unlist(lapply(Filter(Negate(is.name), vars), all.vars))
+  return(setdiff(vars_expr, names(data)))
+}
+
 #' @rdname refmodel-init-get
 #' @export
-get_refmodel.stanreg <- function(object, latent = FALSE, dis = NULL, ...) {
+get_refmodel.stanreg <- function(object, latent = FALSE, dis = NULL,
+                                 cvfun = NULL, cvrefbuilder = NULL, ...) {
   if (!requireNamespace("rstanarm", quietly = TRUE)) {
     stop("Please install the 'rstanarm' package.")
+  }
+  if (!is.null(cvfun) && !is.function(cvfun)) {
+    stop("Argument `cvfun` must be a function or `NULL`.")
+  }
+  if (!is.null(cvrefbuilder) && !is.function(cvrefbuilder)) {
+    stop("Argument `cvrefbuilder` must be a function or `NULL`.")
   }
 
   # Family ------------------------------------------------------------------
@@ -875,6 +923,17 @@ get_refmodel.stanreg <- function(object, latent = FALSE, dis = NULL, ...) {
 
   data <- object$data
   stopifnot(is.data.frame(data))
+  # rstanarm stores the contrasts of the fit in `object$contrasts`, not as
+  # attributes of the factor columns (init_refmodel() takes them from these
+  # attributes). A matrix for other levels (for example, if the fit dropped an
+  # unused level) is left out:
+  for (nm in intersect(names(object$contrasts), names(data))) {
+    ctr <- object$contrasts[[nm]]
+    if (is.factor(data[[nm]]) && is.null(attr(data[[nm]], "contrasts")) &&
+        (!is.matrix(ctr) || nrow(ctr) == nlevels(data[[nm]]))) {
+      contrasts(data[[nm]]) <- ctr
+    }
+  }
 
   # Weights (for the observations):
   if (family$family == "binomial" && length(object$weights) > 0) {
@@ -932,12 +991,32 @@ get_refmodel.stanreg <- function(object, latent = FALSE, dis = NULL, ...) {
 
   if (inherits(object, "gamm4")) {
     formula <- formula.gamm4(object)
+    vars_miss <- gamm4_vars_miss(object)
+    if (length(vars_miss) > 0) {
+      stop("The `data` element of this rstanarm::stan_gamm4() fit (with ",
+           "argument `random`) lacks the variable(s) ",
+           paste0("`", vars_miss, "`", collapse = ", "), " of the model ",
+           "formula. This is rstanarm issue #545 ",
+           "(https://github.com/stan-dev/rstanarm/issues/545). To work around ",
+           "it, set `fit$data` to the data frame that you gave to ",
+           "stan_gamm4(), for example with `fit$data <- dat`. Use only the ",
+           "rows that the fit used. Then call get_refmodel() again. K-fold CV ",
+           "with the default `cvfun` still fails because of the same issue.")
+    }
+    if (!is.null(object$glmod) && nrow(data) != NROW(object$y)) {
+      stop("The `data` element of this rstanarm::stan_gamm4() fit has ",
+           nrow(data), " rows, but the fit has ", NROW(object$y),
+           " rows. Use only the rows that the fit used. The fit leaves out ",
+           "rows with missing values and rows outside of `subset`.")
+    }
   } else {
     formula <- formula(object)
   }
 
   stopifnot(inherits(formula, "formula"))
-  formula <- expand_formula(formula, data)
+  # Expand `.` with the columns of the fit data, not with the internal
+  # columns for the weights and offsets:
+  formula <- expand_formula(formula, object$data)
   response_name <- extract_terms_response(formula)$response
   if (length(response_name) == 2) {
     if (family$family != "binomial") {
@@ -1045,20 +1124,28 @@ get_refmodel.stanreg <- function(object, latent = FALSE, dis = NULL, ...) {
     return(linpred_out)
   }
 
-  cvfun <- function(folds) {
-    # Use `cores = 1` because of rstanarm issue #551. In fact, this issue only
-    # affects Windows systems, but since `cores = 1` leads to an *inner*
-    # parallelization (i.e., across chains, not across CV folds) with
-    # `stan_cores <- getOption("mc.cores", 1)` cores, this should also be
-    # suitable for other systems:
-    kfold(
-      object, K = max(folds), save_fits = TRUE, folds = folds, cores = 1
-    )$fits[, "fit"]
+  if (is.null(cvfun)) {
+    cvfun <- function(folds) {
+      # Use `cores = 1` because of rstanarm issue #551. In fact, this issue
+      # only affects Windows systems, but since `cores = 1` leads to an *inner*
+      # parallelization (i.e., across chains, not across CV folds) with
+      # `stan_cores <- getOption("mc.cores", 1)` cores, this should also be
+      # suitable for other systems:
+      kfold(
+        object, K = max(folds), save_fits = TRUE, folds = folds, cores = 1
+      )$fits[, "fit"]
+    }
   }
 
-  cvrefbuilder <- function(cvfit) {
-    get_refmodel(cvfit, latent = latent, dis = dis,
-                 called_from_cvrefbuilder = TRUE, ...)
+  if (is.null(cvrefbuilder)) {
+    # Keep the user's `dis` (possibly `NULL`) for the folds. The default set
+    # below uses the full-data `sigma`; with `NULL`, each fold takes `sigma`
+    # from its own refit.
+    dis_user <- dis
+    cvrefbuilder <- function(cvfit) {
+      get_refmodel(cvfit, latent = latent, dis = dis_user,
+                   called_from_cvrefbuilder = TRUE, ...)
+    }
   }
 
   # Miscellaneous -----------------------------------------------------------
@@ -1171,7 +1258,8 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
   data <- na.fail(data)
   stopifnot(is.data.frame(data))
   formula <- mo_formula_env(formula)
-  formula <- expand_formula(formula, data)
+  fml_ids <- rm_group_ids(formula, verbose = !called_from_cvrefbuilder)
+  formula <- expand_formula(fml_ids$formula, data)
   if (!as.logical(attr(terms(formula), "intercept"))) {
     # Add an intercept to `formula` so that we always project onto submodels
     # *including* an intercept (see the discussion at #96):
@@ -1184,14 +1272,25 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
   check_mo_terms(fml_extractions)
   response_name <- fml_extractions$response
   if (length(response_name) == 2) {
-    if (family$family != "binomial") {
+    if (family_resp(family) != "binomial") {
       stop("For non-binomial families, a two-column response is not allowed.")
-    } else if (family$for_augdat) {
-      stop("Currently, the augmented-data projection may not be combined with ",
-           "a 2-column response.")
+    } else if (family$for_augdat || family$for_latent) {
+      stop("Currently, the ",
+           if (family$for_augdat) "augmented-data" else "latent",
+           " projection may not be combined with a 2-column response. ",
+           binom_trials_hint(family, "2col"), call. = FALSE)
     }
   } else if (length(response_name) > 2) {
     stop("The response is not allowed to have more than two columns.")
+  }
+  # 2-column binomial response: the default `extract_model_data` below uses the
+  # row sums (the numbers of trials) as observation weights.
+  wrhs_2col <- NULL
+  if (length(response_name) == 2) {
+    wrhs_2col <- as.formula(
+      paste0("~ (", response_name[1], ") + (", response_name[2], ")"),
+      env = environment(formula)
+    )
   }
   # Remove parentheses from the response:
   response_name <- gsub("[()]", "", response_name)
@@ -1210,28 +1309,40 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
       warning("Support for additive models is still experimental.")
     }
   }
-  if (length(grp_trms) > 0 &&
+  # Terms of one grouping factor with the same brms ID are one correlated block
+  # in brms, so merging them does not add correlations:
+  grp_fctrs_mult <- setdiff(grp_fctrs_multi(grp_trms),
+                            fml_ids$grp_fctrs_shared_id)
+  if (length(grp_fctrs_mult) > 0 && !called_from_cvrefbuilder) {
+    warning("The reference model formula has more than one group term for ",
+            "the grouping factor(s) ",
+            paste0("`", grp_fctrs_mult, "`", collapse = ", "), ". The ",
+            "submodels merge the group terms of a grouping factor into one ",
+            "term with correlations (for example, `(1 | g) + (0 + x | g)` ",
+            "becomes `(x | g)`), so they can have correlations that the ",
+            "reference model does not have.")
+  }
+  # The multilevel submodel fitters estimate the group-level SDs by
+  # (approximate) maximum marginal likelihood. They assume binomial (or
+  # multinomial) noise around the reference predictions, which have no noise.
+  # With little information per group, the estimates are then near zero.
+  # Gaussian submodels (also those of the latent projection) estimate the
+  # residual SD. Poisson submodels get more information per observation for
+  # large counts.
+  if (proper_model && length(grp_trms) > 0 &&
       getOption("projpred.warn_instable_projections", TRUE) &&
-      !called_from_cvrefbuilder) {
-    if (family$for_augdat) {
-      warning(
-        "For multilevel models, the augmented-data projection may not work ",
-        "properly. The latent projection may be a remedy. See section ",
-        "\"Troubleshooting\" of the main vignette for more information."
-      )
-    } else if (family$family == "binomial") {
-      warning(
-        "For multilevel binomial models, the traditional projection may not ",
-        "work properly. The latent projection may be a remedy. See section ",
-        "\"Troubleshooting\" of the main vignette for more information."
-      )
-    } else if (family$family == "poisson") {
-      warning(
-        "For multilevel Poisson models, the traditional projection may take ",
-        "very long. The latent projection may be a remedy. See section ",
-        "\"Troubleshooting\" of the main vignette for more information."
-      )
-    }
+      !called_from_cvrefbuilder &&
+      (family$for_augdat || family$family == "binomial")) {
+    warning(
+      "For multilevel models with a binomial response or with the ",
+      "augmented-data projection, the projected group-level standard ",
+      "deviations can be near zero. Then the search can rank group-level ",
+      "terms too low. Near-zero estimates are likely if the groups have few ",
+      "observations or the observations have few trials (one trial in the ",
+      "augmented-data projection). The latent projection may be a remedy (not ",
+      "for the brms::categorical() family). See section \"Troubleshooting\" ",
+      "of the main vignette for more information."
+    )
   }
   if (family$family == "categorical" &&
       length(fml_extractions$offset_terms) > 0) {
@@ -1242,7 +1353,8 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
   # Functions ---------------------------------------------------------------
 
   extract_model_data_usr <- extract_model_data
-  if (is.null(extract_model_data_usr)) {
+  emd_default <- is.null(extract_model_data_usr)
+  if (emd_default) {
     # The internal default for `extract_model_data`:
     extract_model_data_usr <- function(object, newdata, wrhs = NULL,
                                        orhs = NULL, extract_y = TRUE) {
@@ -1255,6 +1367,19 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
         }
       } else {
         resp_fml <- NULL
+      }
+      if (is.null(wrhs) && !is.null(wrhs_2col)) {
+        # The response variables that are columns of `data` must also be
+        # columns of `newdata` (others, such as a constant number of trials,
+        # come from the formula environment):
+        vars_2col <- intersect(all.vars(wrhs_2col), names(data))
+        if (!all(vars_2col %in% names(newdata))) {
+          stop("For a reference model with a 2-column response, the ",
+               "observation weights (numbers of trials) for `newdata` come ",
+               "from the response columns. Supply these columns in `newdata` ",
+               "or supply argument `weightsnew`.")
+        }
+        wrhs <- wrhs_2col
       }
       return(y_wobs_offs(newdata = newdata, wrhs = wrhs, orhs = orhs,
                          resp_form = resp_fml))
@@ -1274,14 +1399,7 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
            "init_refmodel() needs to return an element `offset` with length ",
            "equal to the number of observations.")
     }
-    if (family$for_augdat && !all(mdat$weights == 1)) {
-      stop("Currently, the augmented-data projection may not be combined with ",
-           "observation weights (other than 1).")
-    }
-    if (family$for_latent && !all(mdat$weights == 1)) {
-      stop("Currently, the latent projection may not be combined with ",
-           "observation weights (other than 1).")
-    }
+    check_wobs_aug_lat(family, mdat$weights)
     return(mdat)
   }
 
@@ -1407,11 +1525,18 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
       linpred_out <- unname(linpred_out)
 
       if (excl_offs) {
-        # Observation weights are not needed here, so we can use the default of
-        # `wrhs = NULL` (using something like `wrhs = rep(1, nrow(newdata %||%
-        # data))` would cause a warning in newer brms versions):
-        offs <- extract_model_data(fit, newdata = newdata,
-                                   extract_y = FALSE)$offset
+        # Observation weights are not needed here, so use the default
+        # `wrhs = NULL` (weights of 1 would cause a warning in newer brms
+        # versions). The internal default `extract_model_data` gets weights of 1
+        # only for a 2-column response, so that it does not need the response
+        # columns in `newdata`:
+        offs <- extract_model_data(
+          fit, newdata = newdata,
+          wrhs = if (emd_default && !is.null(wrhs_2col)) {
+            rep(1, nrow(newdata %||% data))
+          },
+          extract_y = FALSE
+        )$offset
         stopifnot(length(offs) %in% c(1L, n_obs))
         if (family$family %in% fams_neg_linpred()) {
           linpred_out <- linpred_out + offs
@@ -1470,7 +1595,14 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
       # instead of building them again for every projection:
       pred_sub <- subprd_fitted(fits, nobs = nrow(data))
     }
+    # The submodel fits store their contrasts. The stored `data` have no
+    # `contrasts` attributes (see strip_contrasts() below), so only new data
+    # need this step:
+    newdata_usr <- newdata
     newdata <- fetch_data(data, obs = obs, newdata = newdata)
+    if (!is.null(newdata_usr)) {
+      newdata <- strip_contrasts(newdata)
+    }
     if (is.null(offset)) {
       offset <- rep(0, nrow(newdata))
     } else {
@@ -1525,8 +1657,12 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
       cvrefbuilder <- function(cvfit) {
         init_refmodel(
           object = NULL,
-          data = fetch_data_wrapper(obs = setdiff(seq_len(nrow(data)),
-                                                  cvfit$omitted)),
+          data = set_contrasts(
+            fetch_data_wrapper(obs = setdiff(seq_len(nrow(data)),
+                                             cvfit$omitted)),
+            # Assigned below, before this function is called:
+            ctrs
+          ),
           formula = formula,
           family = family,
           div_minimizer = div_minimizer,
@@ -1591,8 +1727,14 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
     y_oscale <- NULL
   }
 
-  # Add (transformed) response under the (possibly) new name:
-  data[, response_name] <- y
+  # Add (transformed) response under the (possibly) new name. For a 2-column
+  # response, a 1-column `y` holds the first column (the successes), so the
+  # second column of `data` must stay as it is:
+  if (NCOL(y) == 1) {
+    data[, response_name[1]] <- y
+  } else {
+    data[, response_name] <- y
+  }
 
   target <- get_standard_y(y, weights, family)
   y <- target$y
@@ -1625,17 +1767,10 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
     }
   }
 
-  # Already performed by extract_model_data(), but repeated here because
-  # get_standard_y() might have altered the observation weights (in case of a
-  # 2-column `y`):
-  if (family$for_augdat && !all(weights == 1)) {
-    stop("Currently, the augmented-data projection may not be combined with ",
-         "observation weights (other than 1).")
-  }
-  if (family$for_latent && !all(weights == 1)) {
-    stop("Currently, the latent projection may not be combined with ",
-         "observation weights (other than 1).")
-  }
+  # Already performed by extract_model_data(). get_standard_y() changes the
+  # observation weights only for a 2-column `y`, which the augmented-data and
+  # the latent projection reject above, so this is only a guard:
+  check_wobs_aug_lat(family, weights)
 
   if (!proper_model && !all(offset == 0)) {
     # Disallow offsets for `datafit`s because the submodel fitting does not take
@@ -1644,14 +1779,12 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
     stop("For a `datafit`, offsets are not allowed.")
   }
 
-  # For avoiding the warning "contrasts dropped from factor <factor_name>" when
-  # predicting for each projected draw, e.g., for submodels fit with lm()/glm():
-  has_contr <- sapply(data, function(data_col) {
-    !is.null(attr(data_col, "contrasts"))
-  })
-  for (idx_col in which(has_contr)) {
-    attr(data[[idx_col]], "contrasts") <- NULL
-  }
+  # The contrasts of the factor predictors (`contrasts` attributes of the
+  # columns of `data`). The stored data have no such attributes, which avoids
+  # the warning "contrasts dropped from factor <factor_name>" in predictions.
+  # set_contrasts() sets them again where the submodels are fit:
+  ctrs <- contrasts_from_data(data, vars = all.vars(formula[[3]]))
+  data <- strip_contrasts(data)
 
   # Needed for rstanarm (and possibly custom) multilevel models with `:` between
   # grouping variables (reason: repair_re() currently requires a corresponding
@@ -1720,15 +1853,6 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
       } else {
         dis <- rep(NA, ndraws)
       }
-      if (all(is.na(dis))) {
-        message(
-          "Since `<refmodel>$dis` will consist of only `NA`s, downstream ",
-          "analyses based on this reference model object won't be able to use ",
-          "log predictive density (LPD) values on latent scale. Furthermore, ",
-          "proj_predict() won't be able to draw from the latent Gaussian ",
-          "distribution."
-        )
-      }
     } else if (!has_dispersion(family)) {
       dis <- rep(NA, ndraws)
     } else {
@@ -1772,7 +1896,7 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
     fit = object, formula, div_minimizer, family, eta, mu, mu_offs, dis, y,
     fetch_data = fetch_data_wrapper, wobs = weights, wdraws_ref, offset, cvfun,
     cvfits, extract_model_data, ref_predfun, mu_fun, cvrefbuilder,
-    y_oscale = y_oscale %||% y, nobs = nrow(data)
+    y_oscale = y_oscale %||% y, nobs = nrow(data), contrasts = ctrs
   )
   if (proper_model) {
     class(refmodel) <- "refmodel"
@@ -1781,4 +1905,47 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
   }
 
   return(refmodel)
+}
+
+# The response family on the original scale (for the latent projection, the
+# family of the extended object is gaussian()).
+family_resp <- function(family) {
+  if (isTRUE(family$for_latent)) family$family_oscale else family$family
+}
+
+# Workarounds for a binomial model with more than one trial per observation,
+# which the augmented-data and the latent projection do not support. For the
+# binomial family, projpred uses the observation weights as the numbers of
+# trials. `what` is "weights" (trials as observation weights) or "2col" (a
+# 2-column response). The 2-column message does not name the traditional
+# projection: with the default `extract_model_data`, init_refmodel() reads only
+# the first column there and uses weights of 1.
+binom_trials_hint <- function(family, what) {
+  deagg <- paste("de-aggregate the data into Bernoulli trials (one row per",
+                 "trial, with a 0/1 response).")
+  if (what == "weights") {
+    trad <- paste0(
+      "The traditional projection",
+      if (isTRUE(family$for_latent)) " (`latent = FALSE`)",
+      " supports more than one trial per observation."
+    )
+    paste("For the binomial family, projpred uses the observation weights as",
+          "the numbers of trials.", trad, "Alternatively,", deagg)
+  } else {
+    paste("As a workaround,", deagg)
+  }
+}
+
+# Stop if the augmented-data or the latent projection gets observation weights
+# other than 1. For the binomial family, the message names the workarounds.
+check_wobs_aug_lat <- function(family, weights) {
+  if (!family$for_augdat && !family$for_latent) return(invisible(TRUE))
+  if (all(weights == 1)) return(invisible(TRUE))
+  prj_type <- if (family$for_augdat) "augmented-data" else "latent"
+  msg <- paste0("Currently, the ", prj_type, " projection may not be ",
+                "combined with observation weights (other than 1).")
+  if (identical(family_resp(family), "binomial")) {
+    msg <- paste(msg, binom_trials_hint(family, "weights"))
+  }
+  stop(msg, call. = FALSE)
 }

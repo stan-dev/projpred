@@ -890,3 +890,229 @@ test_that(paste(
   expect_equal(as.numeric(lpreds), as.numeric(lpreds_man),
                tolerance = 1e-14)
 })
+
+test_that(paste(
+  "subprd() of a GAMM uses the smooth bases of the training data for any",
+  "`newdata`, and repair_re() works for GAMMs"
+), {
+  withr::local_seed(seed2_tst)
+
+  # Data and fits -----------------------------------------------------------
+
+  n_grp <- 8L
+  n <- 80L
+  dat <- data.frame(
+    x = runif(n), z = rnorm(n),
+    g = factor(paste0("g", rep(seq_len(n_grp), length.out = n)))
+  )
+  u <- matrix(rnorm(2 * n_grp, sd = 0.6), ncol = 2)
+  dat$y <- sin(2 * pi * dat$x) + u[dat$g, 1] + u[dat$g, 2] * dat$z +
+    rnorm(n, sd = 0.3)
+  dat$y_pois <- rpois(n, exp(0.5 + sin(2 * pi * dat$x) + u[dat$g, 1]))
+  fit_tst <- function(d, fml = y ~ s(x) + z, rnd = ~ (1 + z | g),
+                      family = gaussian()) {
+    fit_gamm_callback(formula = fml, projpred_formula_no_random = fml,
+                      projpred_random = rnd, data = d, family = family)
+  }
+  # The population-level part from the `gam` component (as recommended in the
+  # documentation of gamm4::gamm4()):
+  lpreds_pop <- function(fit, nd) {
+    unname(as.vector(predict(fit$gam, newdata = nd)))
+  }
+  lpreds_man <- function(fit, nd) {
+    re <- lme4::ranef(fit$mer, condVar = FALSE)$g
+    lpreds_pop(fit, nd) + re[as.character(nd$g), "(Intercept)"] +
+      re[as.character(nd$g), "z"] * nd$z
+  }
+  fit <- fit_tst(dat)
+
+  # Existing group levels ---------------------------------------------------
+
+  expect_equal(unname(subprd(list(fit), newdata = dat)[, 1]),
+               unname(fitted(fit$mer)), tolerance = 1e-8)
+  expect_equal(unname(predict(fit)[, 1]), unname(fitted(fit$mer)),
+               tolerance = 1e-8)
+  lpreds_all <- subprd(list(fit), newdata = dat)[, 1]
+  rows_list <- list(all = seq_len(n), all_lvls = seq_len(2 * n_grp),
+                    two_lvls = which(dat$g %in% c("g1", "g2")), one_row = 5L)
+  for (rows_nm in names(rows_list)) {
+    nd <- dat[rows_list[[rows_nm]], , drop = FALSE]
+    lpreds <- subprd(list(fit), newdata = nd)
+    expect_identical(dim(lpreds), c(nrow(nd), 1L), info = rows_nm)
+    expect_equal(unname(lpreds[, 1]), lpreds_man(fit, nd), tolerance = 1e-12,
+                 info = rows_nm)
+    # The prediction for a row does not depend on the other rows of `newdata`:
+    expect_equal(unname(lpreds[, 1]),
+                 unname(lpreds_all[rows_list[[rows_nm]]]), tolerance = 1e-12,
+                 info = rows_nm)
+  }
+
+  # A group level that is not in the training data --------------------------
+
+  fit_lost <- fit_tst(droplevels(dat[dat$g != "g1", ]))
+  nd <- dat[dat$g %in% c("g1", "g2"), ]
+  is_g1 <- nd$g == "g1"
+  set.seed(seed3_tst)
+  lpreds <- subprd(list(fit_lost), newdata = nd)[, 1]
+  set.seed(seed3_tst)
+  ranmulti <- mvtnorm::rmvnorm(
+    n = 1, sigma = lme4::VarCorr(fit_lost$mer)$g[, , drop = FALSE],
+    checkSymmetry = FALSE
+  )
+  expect_equal(unname(lpreds[!is_g1]), lpreds_man(fit_lost, nd[!is_g1, ]),
+               tolerance = 1e-12)
+  expect_equal(unname(lpreds[is_g1]),
+               lpreds_pop(fit_lost, nd[is_g1, ]) + ranmulti[1, 1] +
+                 ranmulti[1, 2] * nd$z[is_g1],
+               tolerance = 1e-12)
+
+  # Option `projpred.mlvl_pred_new` -----------------------------------------
+
+  withr::local_options(projpred.mlvl_pred_new = TRUE)
+  set.seed(seed3_tst)
+  lpreds <- subprd(list(fit), newdata = nd)[, 1]
+  set.seed(seed3_tst)
+  ranmulti <- mvtnorm::rmvnorm(
+    n = 2, sigma = lme4::VarCorr(fit$mer)$g[, , drop = FALSE],
+    checkSymmetry = FALSE
+  )
+  lvl_idx <- ifelse(is_g1, 1L, 2L)
+  expect_equal(unname(lpreds),
+               lpreds_pop(fit, nd) + ranmulti[lvl_idx, 1] +
+                 ranmulti[lvl_idx, 2] * nd$z,
+               tolerance = 1e-12)
+  withr::local_options(projpred.mlvl_pred_new = FALSE)
+
+  # Poisson family (linear predictors on the link scale) --------------------
+
+  fit_pois <- fit_tst(dat, fml = y_pois ~ s(x), rnd = ~ (1 | g),
+                      family = poisson())
+  lpreds_all <- subprd(list(fit_pois), newdata = dat)[, 1]
+  expect_equal(unname(lpreds_all),
+               unname(predict(fit_pois$mer, type = "link")), tolerance = 1e-8)
+  rows <- rows_list$two_lvls
+  expect_equal(unname(subprd(list(fit_pois), newdata = dat[rows, ])[, 1]),
+               unname(lpreds_all[rows]), tolerance = 1e-12)
+})
+
+test_that(paste(
+  "subprd() of the GAMM fits of several draws gives the predictions of",
+  "predict.gamm4() for each fit, also for new group levels"
+), {
+  withr::local_seed(4917)
+  n <- 120L
+  dat <- data.frame(
+    x = runif(n), z = rnorm(n),
+    g = factor(paste0("g", rep(1:8, length.out = n))),
+    h = factor(paste0("h", rep(1:5, each = 24)))
+  )
+  fit_draws <- function(d, fml = y ~ s(x) + z, rnd = ~ (1 + z | g),
+                        family = gaussian(), n_draws = 3L) {
+    lapply(seq_len(n_draws), function(s) {
+      d$y <- sin(2 * pi * d$x) + 0.3 * d$z + rnorm(nrow(d), sd = 0.4)
+      d$y_pois <- rpois(nrow(d), exp(0.3 + sin(2 * pi * d$x)))
+      # Some fits of these small data give a CHOLMOD warning 'not positive
+      # definite'. This test checks only the predictions, so muffle it:
+      withCallingHandlers(
+        fit_gamm_callback(formula = fml, projpred_formula_no_random = fml,
+                          projpred_random = rnd, data = d, family = family),
+        warning = function(w) {
+          if (grepl("cholmod warning 'not positive definite'",
+                    tolower(conditionMessage(w)), fixed = TRUE)) {
+            invokeRestart("muffleWarning")
+          }
+        }
+      )
+    })
+  }
+  # Count the calls of predict.gamm4() (the draw-by-draw path of subprd()):
+  calls <- new.env()
+  calls$n <- 0L
+  ns <- asNamespace("projpred")
+  suppressMessages(trace(
+    "predict.gamm4", where = ns, print = FALSE,
+    tracer = bquote(
+      assign("n", get("n", envir = .(calls)) + 1L, envir = .(calls))
+    )
+  ))
+  on.exit(suppressMessages(untrace("predict.gamm4", where = ns)), add = TRUE)
+  subprd_n_pred <- function(fits, nd) {
+    n_bef <- calls$n
+    set.seed(5521)
+    prd <- subprd(fits, newdata = nd)
+    list(prd = prd, n_pred = calls$n - n_bef)
+  }
+  # Compare with predict.gamm4() for each fit (with the same random numbers for
+  # new group levels). subprd() must predict all draws at once:
+  expect_drawwise <- function(fits, nd, info) {
+    nd_icpt <- cbind(`(Intercept)` = rep(1, nrow(nd)), nd)
+    res <- subprd_n_pred(fits, nd)
+    prd <- res$prd
+    expect_identical(res$n_pred, 0L, info = info)
+    set.seed(5521)
+    prd_expected <- do.call(cbind, lapply(fits, function(fit) {
+      predict(fit, newdata = nd_icpt)
+    }))
+    expect_equal(prd, prd_expected, tolerance = 1e-12, info = info)
+    return(invisible(prd))
+  }
+  # Independent of the code of predict.gamm4() for the group-level part (only
+  # for group levels that occur in the fits): the population-level part from the
+  # `gam` component plus the group-level effects from ranef():
+  lpreds_man <- function(fits, nd) {
+    do.call(cbind, lapply(fits, function(fit) {
+      re <- lme4::ranef(fit$mer, condVar = FALSE)
+      lp <- unname(as.vector(predict(fit$gam, newdata = nd)))
+      for (vnm in all.vars(fit$random)) {
+        if (!vnm %in% names(re)) next
+        lvls <- as.character(nd[[vnm]])
+        for (cnm in colnames(re[[vnm]])) {
+          x_cnm <- if (cnm == "(Intercept)") 1 else nd[[cnm]]
+          lp <- lp + re[[vnm]][lvls, cnm] * x_cnm
+        }
+      }
+      lp
+    }))
+  }
+
+  fits <- fit_draws(dat)
+  prd <- expect_drawwise(fits, dat, "training data")
+  expect_equal(prd, lpreds_man(fits, dat), tolerance = 1e-12)
+  expect_drawwise(fits, dat[c(5, 3, 40), ], "subset")
+  fits_lost <- fit_draws(droplevels(dat[dat$g != "g1", ]))
+  expect_drawwise(fits_lost, dat[dat$g %in% c("g1", "g2"), ], "new level")
+  withr::with_options(
+    list(projpred.mlvl_pred_new = TRUE),
+    expect_drawwise(fits, dat[1:30, ], "projpred.mlvl_pred_new")
+  )
+  fits_two <- fit_draws(dat, rnd = ~ (1 | g) + (1 | h))
+  nd_two <- dat[c(1, 2, 50, 99), ]
+  prd <- expect_drawwise(fits_two, nd_two, "two grouping variables")
+  expect_equal(prd, lpreds_man(fits_two, nd_two), tolerance = 1e-12)
+  fits_two_lost <- fit_draws(droplevels(dat[dat$h != "h1", ]),
+                             rnd = ~ (1 | g) + (1 | h))
+  expect_drawwise(fits_two_lost, nd_two, "two grouping variables, new level")
+  fits_pois <- fit_draws(dat, fml = y_pois ~ s(x), rnd = ~ (1 | g),
+                         family = poisson())
+  expect_drawwise(fits_pois, dat, "Poisson")
+
+  # Fits of different submodels or with different group levels go through
+  # predict.gamm4() one by one:
+  nd <- dat[dat$g %in% c("g1", "g2"), ]
+  nd_icpt <- cbind(`(Intercept)` = rep(1, nrow(nd)), nd)
+  fits_other <- list(
+    terms = c(fits[1], fit_draws(dat, fml = y ~ s(x), n_draws = 1L)),
+    random = c(fits[1], fit_draws(dat, rnd = ~ (1 | g), n_draws = 1L)),
+    levels = c(fits[1], fits_lost[1])
+  )
+  for (nm in names(fits_other)) {
+    fits_nm <- fits_other[[nm]]
+    res <- subprd_n_pred(fits_nm, nd)
+    prd <- res$prd
+    expect_identical(res$n_pred, length(fits_nm), info = nm)
+    set.seed(5521)
+    prd_expected <- cbind(predict(fits_nm[[1]], newdata = nd_icpt),
+                          predict(fits_nm[[2]], newdata = nd_icpt))
+    expect_equal(prd, prd_expected, tolerance = 1e-12, info = nm)
+  }
+})

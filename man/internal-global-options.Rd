@@ -7,7 +7,7 @@
 The following global options are for internal use:
 \itemize{
 \item \code{projpred.mssg_ndraws}, \code{projpred.mssg_cut_search}, \code{projpred.mssg_time},
-\code{projpred.warn_wobs_ppd}, \code{projpred.warn_additive_experimental},
+\code{projpred.mssg_smooth_linear}, \code{projpred.warn_wobs_ppd}, \code{projpred.warn_additive_experimental},
 \code{projpred.warn_allrandom_dis}, \code{projpred.warn_instable_projections},
 \code{projpred.warn_cvrefbuilder_NULL}, \code{projpred.warn_kfold_refits}: A single
 logical value indicating whether to throw certain messages or warnings
@@ -15,9 +15,6 @@ logical value indicating whether to throw certain messages or warnings
 meaning of these global options, see their occurrences in the codebase. With
 the exception of \code{projpred.warn_allrandom_dis}, these global options are
 currently used in the unit tests to deactivate these messages and warnings.
-Global option \code{projpred.warn_instable_projections} is also used (invisibly)
-in the latent vignette to suppress the corresponding warnings while
-illustrating the underlying issue (instable projections).
 \item \code{projpred.additional_checks}: A single logical value indicating whether to
 run some additional checks that are not necessary to be run when users call
 the corresponding \pkg{projpred} functions. Currently, these checks are
@@ -46,6 +43,11 @@ validated search for Gaussian submodels with the identity link (including
 the latent projection) from cross-products of the model matrix (default
 \code{TRUE}). With \code{FALSE}, \pkg{projpred} projects onto each candidate submodel
 draw by draw. The cross-products are used only with a positive \code{regul}.
+\item \code{projpred.categ_mlvl_mblogit}: A single logical value indicating whether to
+fit the multilevel submodels of the augmented-data projection for the
+\code{\link[brms:categorical]{brms::categorical()}} family with \code{\link[mclogit:mblogit]{mclogit::mblogit()}} (\code{TRUE}) or with
+\pkg{projpred}'s own implementation of the PQL algorithm of
+\code{\link[mclogit:mblogit]{mclogit::mblogit()}} (\code{FALSE}, the default).
 }
 }
 \keyword{internal}

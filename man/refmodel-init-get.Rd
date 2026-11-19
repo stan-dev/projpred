@@ -21,7 +21,14 @@ get_refmodel(object, ...)
 
 \method{get_refmodel}{default}(object, family = NULL, ...)
 
-\method{get_refmodel}{stanreg}(object, latent = FALSE, dis = NULL, ...)
+\method{get_refmodel}{stanreg}(
+  object,
+  latent = FALSE,
+  dis = NULL,
+  cvfun = NULL,
+  cvrefbuilder = NULL,
+  ...
+)
 
 init_refmodel(
   object,
@@ -70,7 +77,9 @@ family).}
 
 \item{latent}{A single logical value indicating whether to use the latent
 projection (\code{TRUE}) or not (\code{FALSE}). Note that setting \code{latent = TRUE}
-causes all arguments starting with \code{augdat_} to be ignored.}
+causes all arguments starting with \code{augdat_} to be ignored. The latent
+projection does not support the \code{\link[brms:categorical]{brms::categorical()}} family; use the
+augmented-data projection for it.}
 
 \item{dis}{A vector of posterior draws for the reference model's dispersion
 parameter or---more precisely---the posterior values for the reference
@@ -81,9 +90,42 @@ parameter, but \code{object} is \code{NULL} (in which case \code{0} is used for 
 Note that for the \code{\link[=gaussian]{gaussian()}} \code{family}, \code{dis} is the standard deviation,
 not the variance.}
 
+\item{cvfun}{For \eqn{K}-fold CV only. A function that, given a fold indices
+vector, fits the reference model separately for each fold and returns the
+\eqn{K} model fits as a \code{list}. If \code{object} is \code{NULL}, \code{cvfun} may be
+\code{NULL} for using an internal default. Only one of \code{cvfits} and \code{cvfun}
+needs to be provided (for \eqn{K}-fold CV). Note that \code{cvfits} takes
+precedence over \code{cvfun}, i.e., if both are provided, \code{cvfits} is used.
+For \code{\link[=get_refmodel.stanreg]{get_refmodel.stanreg()}}, \code{cvfun = NULL} uses an internal default
+based on \code{\link[rstanarm:kfold.stanreg]{rstanarm::kfold.stanreg()}}.}
+
+\item{cvrefbuilder}{For \eqn{K}-fold CV only. A function that, given a
+reference model fit for fold \eqn{k \in \{1, ..., K\}}{k = 1, ..., K},
+returns an object of the same type as \code{\link[=init_refmodel]{init_refmodel()}} does. The reference
+model fit for fold \eqn{k} is the \eqn{k}-th element of the return value of
+\code{cvfun} or the \eqn{k}-th element of the \code{list} supplied to \code{cvfits}
+(either here in \code{\link[=init_refmodel]{init_refmodel()}} or in \code{\link[=cv_varsel.refmodel]{cv_varsel.refmodel()}}), extended
+by elements \code{omitted} (containing the indices of the left-out observations
+in that fold) and \code{projpred_k} (containing the integer \eqn{k}) if that
+\eqn{k}-th element is a \code{list} itself (otherwise, \code{omitted} and
+\code{projpred_k} are appended as attributes). Argument \code{cvrefbuilder} may be
+\code{NULL} for using an internal default: \code{\link[=get_refmodel]{get_refmodel()}} if \code{object} is not
+\code{NULL} and a function calling \code{\link[=init_refmodel]{init_refmodel()}} appropriately (with the
+assumption \code{dis = 0}) if \code{object} is \code{NULL}. For \code{\link[=get_refmodel.stanreg]{get_refmodel.stanreg()}},
+\code{cvrefbuilder = NULL} uses an internal default that calls \code{\link[=get_refmodel]{get_refmodel()}}
+on the fold-wise fit with the arguments \code{latent}, \code{dis}, and \code{...} of the
+original call and with \code{called_from_cvrefbuilder = TRUE}. A custom
+\code{cvrefbuilder} is needed, for example, if the reference model uses custom
+functions that depend on the posterior draws (see \code{\link[=extend_family]{extend_family()}}).}
+
 \item{data}{A \code{data.frame} containing the data to use for the projection
-predictive variable selection. Any \code{contrasts} attributes of the dataset's
-columns are silently removed. For custom reference models, the columns of
+predictive variable selection. The \code{contrasts} attributes of the factor
+columns (see \code{\link[=contrasts]{contrasts()}}) set the contrasts of these predictors in the
+submodels; for other factors, the submodels use \code{options("contrasts")}.
+The \code{stanreg} method of \code{\link[=get_refmodel]{get_refmodel()}} takes the contrasts from the
+\pkg{rstanarm} fit (except for \code{\link[rstanarm:stan_gamm4]{rstanarm::stan_gamm4()}}, which does not
+store them), and \pkg{brms} sets these attributes. For custom reference
+models, the columns of
 \code{data} do not necessarily have to coincide with those of the dataset used
 for fitting the reference model, but keep in mind that a row-subset of
 \code{data} is used for argument \code{newdata} of \code{ref_predfun} during \eqn{K}-fold
@@ -119,15 +161,12 @@ submodel onto which the reference model is projected. See also section
 \item{extract_model_data}{A function for fetching some variables (response,
 observation weights, offsets) from the original dataset (supplied to
 argument \code{data}) or from a new dataset. May be \code{NULL} for using an internal
-default that essentially corresponds to \code{\link[=y_wobs_offs]{y_wobs_offs()}}. See also section
+default that essentially corresponds to \code{\link[=y_wobs_offs]{y_wobs_offs()}}. For a 2-column
+binomial response (successes and failures), this internal default uses the
+sums of the two columns (the numbers of trials) as observation weights.
+Then a \code{newdata} in prediction functions must contain the variables of the
+response columns, or the call must supply \code{weightsnew}. See also section
 "Argument \code{extract_model_data}" below.}
-
-\item{cvfun}{For \eqn{K}-fold CV only. A function that, given a fold indices
-vector, fits the reference model separately for each fold and returns the
-\eqn{K} model fits as a \code{list}. If \code{object} is \code{NULL}, \code{cvfun} may be
-\code{NULL} for using an internal default. Only one of \code{cvfits} and \code{cvfun}
-needs to be provided (for \eqn{K}-fold CV). Note that \code{cvfits} takes
-precedence over \code{cvfun}, i.e., if both are provided, \code{cvfits} is used.}
 
 \item{cvfits}{For \eqn{K}-fold CV only. A \code{list} containing the \eqn{K}
 reference model refits from which reference model objects are created. This
@@ -136,20 +175,6 @@ vector giving the fold indices (one fold index per observation). Only one
 of \code{cvfits} and \code{cvfun} needs to be provided (for \eqn{K}-fold CV). Note
 that \code{cvfits} takes precedence over \code{cvfun}, i.e., if both are provided,
 \code{cvfits} is used.}
-
-\item{cvrefbuilder}{For \eqn{K}-fold CV only. A function that, given a
-reference model fit for fold \eqn{k \in \{1, ..., K\}}{k = 1, ..., K},
-returns an object of the same type as \code{\link[=init_refmodel]{init_refmodel()}} does. The reference
-model fit for fold \eqn{k} is the \eqn{k}-th element of the return value of
-\code{cvfun} or the \eqn{k}-th element of the \code{list} supplied to \code{cvfits}
-(either here in \code{\link[=init_refmodel]{init_refmodel()}} or in \code{\link[=cv_varsel.refmodel]{cv_varsel.refmodel()}}), extended
-by elements \code{omitted} (containing the indices of the left-out observations
-in that fold) and \code{projpred_k} (containing the integer \eqn{k}) if that
-\eqn{k}-th element is a \code{list} itself (otherwise, \code{omitted} and
-\code{projpred_k} are appended as attributes). Argument \code{cvrefbuilder} may be
-\code{NULL} for using an internal default: \code{\link[=get_refmodel]{get_refmodel()}} if \code{object} is not
-\code{NULL} and a function calling \code{\link[=init_refmodel]{init_refmodel()}} appropriately (with the
-assumption \code{dis = 0}) if \code{object} is \code{NULL}.}
 
 \item{called_from_cvrefbuilder}{A single logical value indicating whether
 \code{\link[=init_refmodel]{init_refmodel()}} is called from a \code{cvrefbuilder} function (\code{TRUE}) or not
@@ -203,6 +228,14 @@ submodels.
 In multilevel (group-level) terms, function calls on the right-hand side of
 the \code{|} character (e.g., \code{(1 | gr(group_variable))}, which is possible in
 \pkg{brms}) are currently not allowed in \pkg{projpred}.
+
+Group terms with a \pkg{brms} correlation ID, such as \code{(1 + x |p| g)}, are
+used without the ID (here \code{(1 + x | g)}), and a message tells about this.
+Group terms with \code{||} (uncorrelated group-level effects) are currently not
+supported. If a grouping factor has more than one group term, such as
+\code{(1 | g) + (0 + x | g)}, the submodels merge these terms into one term with
+correlations (here \code{(x | g)}), and \code{\link[=init_refmodel]{init_refmodel()}} gives a warning (no
+warning if all these terms have the same \pkg{brms} correlation ID).
 
 For additive models (still an experimental feature), only \code{\link[mgcv:s]{mgcv::s()}} and
 \code{\link[mgcv:t2]{mgcv::t2()}} are currently supported as smooth terms. Furthermore, these need

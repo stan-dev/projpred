@@ -94,13 +94,19 @@ makepredictcall.mo_basis <- function(var, call) {
 
 # Does the expression `expr` contain a call of mo()?
 has_mo_call <- function(expr) {
-  if (!is.call(expr)) {
-    return(FALSE)
+  # A loop with a stack of calls, not recursion: the call tree of a long `+`
+  # chain (a formula with many terms) is deep.
+  stack <- if (is.call(expr)) list(expr) else list()
+  while (length(stack) > 0L) {
+    e <- stack[[length(stack)]]
+    stack[[length(stack)]] <- NULL
+    if (is_mo_call(e)) {
+      return(TRUE)
+    }
+    args <- as.list(e)[-1L]
+    stack <- c(stack, args[vapply(args, is.call, logical(1))])
   }
-  if (is_mo_call(expr)) {
-    return(TRUE)
-  }
-  return(any(vapply(as.list(expr)[-1L], has_mo_call, logical(1))))
+  return(FALSE)
 }
 
 # Is the expression `expr` a call of mo() (also with a namespace)?
@@ -581,13 +587,8 @@ stop_mo_unsupported <- function(why) {
 # elements can be sums of terms, as in `search_terms`), without the
 # intercept.
 split_term_exprs <- function(terms_) {
-  split_plus <- function(e) {
-    if (is.call(e) && identical(e[[1L]], as.name("+")) && length(e) == 3L) {
-      return(c(split_plus(e[[2L]]), split_plus(e[[3L]])))
-    }
-    return(list(e))
-  }
-  exprs <- unlist(lapply(terms_, function(trm) split_plus(str2lang(trm))))
+  # Splits without recursion (see split_plus()):
+  exprs <- lapply(split_plus(terms_), str2lang)
   return(Filter(function(e) !(is.numeric(e) && e %in% c(0, 1)), exprs))
 }
 

@@ -5,13 +5,6 @@
 # properties of the projection (known solutions, observation weights), not
 # the equality with a direct call of the same fitter.
 
-# lme4 < 2.1-1 fits binomial glmer() submodels to rounded data and cannot
-# estimate the group-level standard deviation of Poisson glmer() submodels.
-skip_if_lme4_rounds <- function() {
-  skip_if(utils::packageVersion("lme4") < "2.1.1",
-          "lme4 < 2.1-1 rounds non-integer binomial and Poisson data")
-}
-
 # Data with `n_grp` groups of `n_per` observations. The linear predictor `eta`
 # has the group-level effects with standard deviation `sd_grp`.
 # The state of the random number generator is restored at the end.
@@ -140,18 +133,80 @@ to_augdat_form <- function(d) {
   rbind(d1, d0)
 }
 
+# The glmer() code path (`mlvl_laplace = FALSE`: no Laplace fit of projpred).
 fit_glmer_test <- function(formula, data, family, weights, ...) {
   suppressWarnings(suppressMessages(fit_glmer_callback(
     formula, projpred_formula_no_random = NA, projpred_random = NA,
-    family = family, data = data, weights = weights, ...
+    family = family, data = data, weights = weights, mlvl_laplace = FALSE, ...
   )))
 }
+
+# The `nAGQ` value of a glmer() fit.
+nAGQ_of <- function(fit) {
+  unname(fit@devcomp$dims[["nAGQ"]])
+}
+
+test_that(paste(
+  "a binomial glmer() submodel with non-integer data and the default `nAGQ`",
+  "is not fitted to rounded data (all lme4 versions)"
+), {
+  d <- dat_binom_singular()
+  fam <- extend_family(binomial())
+  coef_glm <- coef(suppressWarnings(glm(y ~ x + f, data = d,
+                                        family = binomial())))
+  # Traditional projection: non-integer responses.
+  fit <- fit_glmer_test(y ~ x + f + (1 | g), d, fam,
+                        weights = rep(1, nrow(d)))
+  expect_equal(unname(lme4::fixef(fit)), unname(coef_glm), tolerance = 1e-3)
+  expect_identical(nAGQ_of(fit), 1L)
+  # Augmented-data projection: 0/1 responses with non-integer weights.
+  d_aug <- to_augdat_form(d)
+  fit_aug <- fit_glmer_test(y ~ x + f + (1 | g), d_aug, fam,
+                            weights = d_aug$w_aug)
+  expect_equal(unname(lme4::fixef(fit_aug)), unname(coef_glm),
+               tolerance = 1e-3)
+  expect_identical(nAGQ_of(fit_aug), 1L)
+})
+
+test_that(paste(
+  "the refit of a binomial glmer() submodel after a PIRLS error uses",
+  "`nAGQ = 20`, or the `nAGQ` from `...` plus 1"
+), {
+  d <- dat_fitters()
+  d$y <- plogis(d$eta)
+  testthat::local_mocked_bindings(lme4_needs_glmer_family = function() TRUE)
+  # A glmer() that records `nAGQ` and the family name and fails in its first
+  # call:
+  nAGQ_calls <- list()
+  fam_calls <- character()
+  glmer_mock <- lme4::glmer
+  body(glmer_mock) <- quote({
+    nAGQ_calls[[length(nAGQ_calls) + 1L]] <<- nAGQ
+    fam_calls <<- c(fam_calls, family$family)
+    if (length(nAGQ_calls) == 1L) {
+      stop("PIRLS step-halvings failed to reduce deviance")
+    }
+    "fit"
+  })
+  environment(glmer_mock) <- environment()
+  testthat::local_mocked_bindings(glmer = glmer_mock, .package = "lme4")
+  fit <- fit_glmer_test(y ~ x + (1 | g), d, extend_family(binomial()),
+                        weights = rep(1, nrow(d)))
+  expect_identical(fit, "fit")
+  expect_identical(nAGQ_calls, list(1L, 20L))
+  # The refit also gets the family from glmer_family():
+  expect_identical(fam_calls, rep("binomial_projpred", 2))
+  nAGQ_calls <- list()
+  fit <- fit_glmer_test(y ~ x + (1 | g), d, extend_family(binomial()),
+                        weights = rep(1, nrow(d)), nAGQ = 3L)
+  expect_identical(fit, "fit")
+  expect_identical(nAGQ_calls, list(3L, 4L))
+})
 
 test_that(paste(
   "a binomial glmer() submodel with fractional responses gives the glm()",
   "solution for a singular fit"
 ), {
-  skip_if_lme4_rounds()
   d <- dat_binom_singular()
   coef_glm <- coef(suppressWarnings(glm(y ~ x + f, data = d,
                                         family = binomial())))
@@ -167,7 +222,6 @@ test_that(paste(
   "the traditional and the augmented-data form of a binomial glmer()",
   "submodel give the same fit"
 ), {
-  skip_if_lme4_rounds()
   # A singular fit and a fit with theta > 0 (10 groups of 30 observations):
   withr::local_seed(11)
   g <- factor(rep(1:10, each = 30))
@@ -204,7 +258,6 @@ test_that(paste(
   "a Poisson glmer() submodel with non-integer responses estimates the",
   "group-level standard deviation"
 ), {
-  skip_if_lme4_rounds()
   withr::local_seed(4)
   g <- factor(rep(seq_len(8), each = 6))
   x <- rnorm(48)
@@ -219,6 +272,157 @@ test_that(paste(
   expect_gt(abs(theta - 1), 1e-4)
   expect_gt(theta, 0.2)
   expect_true(is.finite(as.numeric(logLik(fit))))
+})
+
+test_that(paste(
+  "glmer_family() renames the binomial and the Poisson family and keeps",
+  "their aic for integer data"
+), {
+  testthat::local_mocked_bindings(lme4_needs_glmer_family = function() TRUE)
+  withr::local_seed(5309)
+  mu <- plogis(rnorm(20))
+  ntr <- rpois(20, 4) + 1
+  w1 <- rep(1, 20)
+  fam_b <- glmer_family(extend_family(binomial()))
+  expect_identical(fam_b$family, "binomial_projpred")
+  expect_identical(fam_b$dispersion, 1)
+  # Proportions (with the numbers of trials as weights or as `n`), 0/1
+  # responses, and zero counts at the bounds of `mu`:
+  y <- rbinom(20, ntr, mu) / ntr
+  expect_equal(fam_b$aic(y, w1, mu, ntr, 0), binomial()$aic(y, w1, mu, ntr, 0),
+               tolerance = 1e-12)
+  expect_equal(fam_b$aic(y, ntr, mu, ntr, 0),
+               binomial()$aic(y, ntr, mu, ntr, 0), tolerance = 1e-12)
+  y01 <- rbinom(20, 1, mu)
+  expect_equal(fam_b$aic(y01, w1, mu, w1, 0),
+               binomial()$aic(y01, w1, mu, w1, 0), tolerance = 1e-12)
+  expect_equal(fam_b$aic(c(0, 1), c(1, 1), c(0, 1), c(1, 1), 0), 0)
+  lam <- exp(rnorm(20))
+  ycnt <- rpois(20, lam)
+  fam_p <- glmer_family(extend_family(poisson()))
+  expect_identical(fam_p$family, "poisson_projpred")
+  expect_equal(fam_p$aic(ycnt, w1, lam, ntr, 0),
+               poisson()$aic(ycnt, w1, lam, ntr, 0), tolerance = 1e-12)
+  # Non-integer responses:
+  expect_true(is.finite(fam_p$aic(lam, w1, lam, w1, 0)))
+  expect_true(is.finite(fam_b$aic(mu, w1, mu, ntr, 0)))
+  # Other families, and the other lme4 versions:
+  expect_identical(glmer_family(extend_family(gaussian()))$family, "gaussian")
+  testthat::with_mocked_bindings(
+    expect_identical(glmer_family(extend_family(poisson()))$family, "poisson"),
+    lme4_needs_glmer_family = function() FALSE
+  )
+  # The control (lme4 >= 2.1-0 has `disp_dof_correction`) and the data:
+  has_disp_dof <- "disp_dof_correction" %in%
+    names(formals(lme4::glmerControl))
+  ctrl <- glmer_control(lme4::glmerControl(), family = fam_b)
+  expect_identical(isFALSE(ctrl$disp_dof_correction), has_disp_dof)
+  ctrl <- glmer_control(list(optimizer = "bobyqa"), family = fam_p)
+  expect_identical(names(ctrl),
+                   c("optimizer", if (has_disp_dof) "disp_dof_correction"))
+  expect_identical(glmer_control(lme4::glmerControl(), family = binomial()),
+                   lme4::glmerControl())
+  d <- data.frame(y = factor(c("a", "b", "b")), x = 1:3)
+  expect_identical(glmer_data(d, y ~ x, family = fam_b)$y, c(0, 1, 1))
+  expect_identical(glmer_data(d, relevel(y, "b") ~ x, family = fam_b), d)
+  expect_identical(glmer_data(d, y ~ x, family = binomial()), d)
+  expect_identical(glmer_data(d, y ~ x, family = fam_p), d)
+  d$y <- c(TRUE, FALSE, TRUE)
+  expect_identical(glmer_data(d, y ~ x, family = fam_b), d)
+})
+
+test_that(paste(
+  "the family from glmer_family() gives the fit of lme4's family for integer",
+  "data"
+), {
+  testthat::local_mocked_bindings(lme4_needs_glmer_family = function() TRUE)
+  d <- dat_fitters()
+  w1 <- rep(1, nrow(d))
+  withr::local_seed(2)
+  d$y_poisson <- rpois(nrow(d), exp(d$eta))
+  d$y_binomial <- rbinom(nrow(d), 1, plogis(d$eta))
+  for (nm in c("poisson", "binomial")) {
+    fml <- as.formula(paste0("y_", nm, " ~ x + (1 | g)"))
+    fam <- extend_family(get(nm)())
+    fit <- fit_glmer_test(fml, d, fam, weights = w1)
+    expect_identical(fit@resp$family$family, paste0(nm, "_projpred"))
+    fit_lme4 <- suppressMessages(lme4::glmer(
+      fml, data = d, family = get(nm)(),
+      control = lme4::glmerControl(optimizer = "bobyqa")
+    ))
+    expect_equal(pars_mer(fit), pars_mer(fit_lme4), tolerance = 1e-4,
+                 info = nm)
+    expect_equal(unname(lme4::VarCorr(fit)$g[1]),
+                 unname(lme4::VarCorr(fit_lme4)$g[1]), tolerance = 1e-4,
+                 info = nm)
+  }
+})
+
+test_that(paste(
+  "a Poisson glmer() submodel with non-integer responses and without",
+  "group-level variation gives the glm() solution"
+), {
+  withr::local_seed(4)
+  g <- factor(rep(seq_len(8), each = 6))
+  x <- rnorm(48)
+  # (lme4 gives a PIRLS error for an exact fit, so the data have some noise.)
+  d <- data.frame(y = exp(0.5 + 0.4 * x + rnorm(48, sd = 0.01)), x = x, g = g)
+  coef_glm <- coef(suppressWarnings(glm(y ~ x, data = d, family = poisson())))
+  fit <- fit_glmer_test(y ~ x + (1 | g), d, extend_family(poisson()),
+                        weights = rep(1, nrow(d)))
+  # A singular fit (with lme4's Poisson objective, which is infinite for these
+  # data, theta stays at its start value 1):
+  expect_lt(unname(lme4::getME(fit, "theta")), 1e-3)
+  expect_equal(unname(lme4::fixef(fit)), unname(coef_glm), tolerance = 1e-4)
+})
+
+test_that(paste(
+  "Poisson glmer() and gamm4() submodels with non-integer responses give no",
+  "convergence warning"
+), {
+  d <- dat_fitters()
+  mu <- exp(cbind(d$eta, d$eta + 0.3 * d$z))
+  for (rhs in c("x + (1 | g)", "s(z) + x + (1 | g)")) {
+    expect_no_warning(
+      fits <- with_r_printing(
+        divmin_tst(rhs, d, extend_family(poisson()), mu, throw_warn = TRUE,
+                   check_conv = TRUE)
+      ),
+      message = "converge"
+    )
+    expect_length(fits, 2)
+  }
+})
+
+test_that(paste(
+  "a Poisson gamm4() submodel with non-integer responses estimates the",
+  "group-level standard deviation"
+), {
+  d <- dat_fitters()
+  d$y <- exp(d$eta)
+  fam <- extend_family(poisson())
+  w1 <- rep(1, nrow(d))
+  fit_gamm <- suppressWarnings(suppressMessages(fit_gamm_callback(
+    formula = y ~ x + (1 | g), projpred_formula_no_random = y ~ x,
+    projpred_random = ~ (1 | g), data = d, family = fam, weights = w1
+  )))
+  fit_glmer <- fit_glmer_test(y ~ x + (1 | g), d, fam, weights = w1)
+  theta_gamm <- unname(lme4::getME(fit_gamm$mer, "theta"))
+  # theta is estimated (with lme4's Poisson objective, which is infinite for
+  # these data, theta stays at its start value 1):
+  expect_gt(abs(theta_gamm - 1), 1e-3)
+  expect_equal(theta_gamm, unname(lme4::getME(fit_glmer, "theta")),
+               tolerance = 1e-2)
+  expect_equal(unname(lme4::fixef(fit_gamm$mer)),
+               unname(lme4::fixef(fit_glmer)), tolerance = 1e-3)
+  # With a smooth term:
+  fit_s <- suppressWarnings(
+    divmin_tst("s(z) + x + (1 | g)", d, fam, d$y)
+  )[[1]]
+  theta_s <- lme4::getME(fit_s$mer, "theta")
+  theta_g <- unname(theta_s[grep("^g\\.", names(theta_s))])
+  expect_length(theta_g, 1)
+  expect_gt(abs(theta_g - 1), 1e-3)
 })
 
 test_that(paste(
@@ -257,6 +461,7 @@ test_that(paste(
 test_that(paste(
   "observations with weight 0 do not change a binomial glmer() submodel fit"
 ), {
+  withr::local_options(projpred.mlvl_laplace = FALSE)
   d <- dat_fitters()
   mu <- plogis(d$eta)
   w <- rep(1, nrow(d))
@@ -281,7 +486,7 @@ test_that(paste(
   "a glmer() submodel fit with integer weights equals the fit to the data",
   "with duplicated observations"
 ), {
-  skip_if_lme4_rounds()
+  withr::local_options(projpred.mlvl_laplace = FALSE)
   d <- dat_fitters()
   idxs_dupl <- c(seq_len(nrow(d)), idxs_w2)
   w <- rep(1, nrow(d))
@@ -353,6 +558,119 @@ test_that(paste(
   }
 })
 
+# mgcv::gam() -------------------------------------------------------------
+
+test_that(paste(
+  "gam_outer_conv() reads the result of each smoothing parameter optimizer"
+), {
+  expect_true(gam_outer_conv(NULL))
+  expect_true(gam_outer_conv(list(conv = "full convergence", iter = 5)))
+  expect_false(gam_outer_conv(list(conv = "step failed", iter = 5)))
+  expect_false(gam_outer_conv(list(conv = "iteration limit reached")))
+  # Only the iteration limits (nlm() code 4, optim() code 1) are
+  # non-convergence:
+  for (code in 1:5) {
+    expect_identical(gam_outer_conv(list(minimum = 1, code = code)),
+                     code != 4, info = paste("nlm() code", code))
+  }
+  for (code in c(0, 1, 51, 52)) {
+    expect_identical(gam_outer_conv(list(par = 1, convergence = code)),
+                     code != 1, info = paste("optim() code", code))
+  }
+})
+
+# Fits of mgcv::gam() to the data of dat_fitters(). Tests that need a fit that
+# did not converge skip if mgcv converges (its stopping rules decide).
+fit_gam_tst <- function(formula, ...) {
+  d <- dat_fitters()
+  d$y_gauss <- d$eta
+  d$y_binom <- plogis(d$eta)
+  # A linear function of `x` and `z`: the smoothing parameters of s(z) and s(x)
+  # go to infinity.
+  d$y_lin <- -0.2 + 0.7 * d$x + 0.5 * d$z + 0.3 * sin(3 * seq_len(nrow(d)))
+  suppressWarnings(mgcv::gam(formula, data = d, ...))
+}
+
+test_that(paste(
+  "check_conv_s() accepts converged gam() submodel fits of each smoothing",
+  "parameter optimizer"
+), {
+  fml_gauss <- y_gauss ~ s(z) + x
+  # For this linear function, nlm() can stop with code 5:
+  fml_lin <- y_lin ~ s(z, k = 5) + s(x, k = 5)
+  expect_true(check_conv_s(fit_gam_tst(fml_gauss)))
+  for (opt in c("newton", "bfgs", "nlm", "optim")) {
+    expect_true(check_conv_s(fit_gam_tst(
+      fml_gauss, method = "REML", optimizer = c("outer", opt)
+    )), info = opt)
+    expect_true(check_conv_s(fit_gam_tst(
+      fml_lin, method = "REML", optimizer = c("outer", opt)
+    )), info = paste(opt, "linear"))
+  }
+  expect_true(check_conv_s(fit_gam_tst(fml_gauss, method = "REML",
+                                       optimizer = "efs")))
+  expect_true(check_conv_s(fit_gam_tst(y_gauss ~ s(z, fx = TRUE) + x)))
+})
+
+test_that(paste(
+  "check_conv_s() detects a gam() submodel fit at the iteration limit of nlm()"
+), {
+  fit_nlm <- fit_gam_tst(y_gauss ~ s(z) + x, method = "REML",
+                         optimizer = c("outer", "nlm"),
+                         control = mgcv::gam.control(nlm = list(iterlim = 1)))
+  skip_if_not(identical(fit_nlm$outer.info$code, 4L),
+              "nlm() converged in one iteration")
+  expect_false(check_conv_s(fit_nlm))
+})
+
+test_that(paste(
+  "check_conv_s() detects a gam() submodel fit at the iteration limit of the",
+  "P-IRLS iterations"
+), {
+  fit_pirls <- fit_gam_tst(y_binom ~ s(z) + x, family = binomial(),
+                           control = mgcv::gam.control(maxit = 1))
+  skip_if_not(isFALSE(fit_pirls$converged), "P-IRLS converged")
+  expect_false(check_conv_s(fit_pirls))
+})
+
+test_that(paste(
+  "check_conv_s() detects a gam() submodel fit with a step failure of the",
+  "Newton optimizer"
+), {
+  fit_newton <- fit_gam_tst(y_binom ~ s(z) + x, family = binomial(),
+                            method = "REML",
+                            control = mgcv::gam.control(
+                              newton = list(maxHalf = 0)
+                            ))
+  skip_if_not(identical(fit_newton$outer.info$conv, "step failed"),
+              "no step failure")
+  expect_false(check_conv_s(fit_newton))
+})
+
+test_that(paste(
+  "divmin() warns if the smoothing parameter optimization of gam() submodel",
+  "fits stops at the iteration limit without a warning of mgcv"
+), {
+  d <- dat_fitters()
+  mu <- cbind(d$eta, d$eta + 0.3 * d$z)
+  divmin_nlm <- function(iterlim, check_conv = TRUE) {
+    with_r_printing(divmin_tst(
+      "s(z) + x", d, extend_family(gaussian()), mu, throw_warn = TRUE,
+      check_conv = check_conv, method = "REML",
+      optimizer = c("outer", "nlm"),
+      control = mgcv::gam.control(nlm = list(iterlim = iterlim))
+    ))
+  }
+  expect_no_warning(fits <- divmin_nlm(100))
+  expect_length(fits, 2)
+  fits_lim <- divmin_nlm(1, check_conv = FALSE)
+  skip_if_not(all(vapply(fits_lim, function(fit) {
+    identical(fit$outer.info$code, 4L)
+  }, logical(1))), "nlm() converged in one iteration")
+  expect_warning(divmin_nlm(1),
+                 "^2 out of 2 submodel fits .* might not have converged")
+})
+
 # gamm4::gamm4() ----------------------------------------------------------
 
 test_that(paste(
@@ -374,10 +692,20 @@ test_that(paste(
 })
 
 test_that(paste(
+  "as.matrix.projection() stops for a gamm4() submodel (its parameter",
+  "extraction get_subparams() stops)"
+), {
+  d <- dat_fitters()
+  fit_gamm <- divmin_tst("s(z) + x + (1 | g)", d, extend_family(gaussian()),
+                         d$eta)[[1]]
+  expect_error(get_subparams(fit_gamm, nm_scheme = "rstanarm"),
+               "do not support submodels with smooth and group-level terms")
+})
+
+test_that(paste(
   "the traditional and the augmented-data form of a binomial gamm4()",
   "submodel give the same fit"
 ), {
-  skip_if_lme4_rounds()
   d <- dat_fitters()
   mu <- plogis(d$eta)
   fit_trad <- divmin_tst("s(z) + x + (1 | g)", d, extend_family(binomial()),
@@ -392,6 +720,73 @@ test_that(paste(
   expect_equal(coef(fit_aug$gam), coef(fit_trad$gam), tolerance = 1e-4)
   expect_equal(lme4::getME(fit_aug$mer, "theta"),
                lme4::getME(fit_trad$mer, "theta"), tolerance = 1e-3)
+})
+
+test_that(paste(
+  "fit_gamm_callback() passes the family from glmer_family() and its",
+  "control to gamm4()"
+), {
+  ctrl_used <- NULL
+  fam_used <- NULL
+  testthat::local_mocked_bindings(
+    gamm4 = function(...) {
+      ctrl_used <<- list(...)$control
+      fam_used <<- list(...)$family
+      stop("mocked gamm4()")
+    },
+    .package = "gamm4"
+  )
+  d <- dat_fitters()
+  fit_gamm_mocked <- function(family, y) {
+    d$y <- y
+    expect_error(fit_gamm_callback(
+      formula = y ~ s(z) + x + (1 | g),
+      projpred_formula_no_random = y ~ s(z) + x,
+      projpred_random = ~ (1 | g), data = d, family = family,
+      weights = rep(1, nrow(d))
+    ), "mocked gamm4")
+    return(ctrl_used)
+  }
+  fam_binom <- extend_family(binomial())
+  ctrl <- fit_gamm_mocked(extend_family(poisson()), plogis(d$eta))
+  expect_identical(ctrl$optimizer, c("bobyqa", "bobyqa"))
+  # The family from glmer_family() and its control:
+  suffix <- if (lme4_needs_glmer_family()) "_projpred" else ""
+  expect_identical(fam_used$family, paste0("poisson", suffix))
+  expect_identical(isFALSE(ctrl$disp_dof_correction),
+                   lme4_needs_glmer_family() &&
+                     "disp_dof_correction" %in%
+                       names(formals(lme4::glmerControl)))
+  ctrl <- fit_gamm_mocked(fam_binom, plogis(d$eta))
+  expect_identical(fam_used$family, paste0("binomial", suffix))
+  ctrl <- fit_gamm_mocked(extend_family(gaussian()), d$eta)
+  expect_identical(fam_used$family, "gaussian")
+})
+
+test_that(paste(
+  "fit_gamm_callback() stops after the optimx refit for a binomial submodel",
+  "with non-integer data"
+), {
+  skip_if_not_installed("optimx")
+  optimizers <- list()
+  testthat::local_mocked_bindings(
+    gamm4 = function(...) {
+      optimizers[[length(optimizers) + 1L]] <<- list(...)$control$optimizer
+      stop("Downdated VtV is not positive definite")
+    },
+    .package = "gamm4"
+  )
+  d <- dat_fitters()
+  d$y <- plogis(d$eta)
+  expect_error(fit_gamm_callback(
+    formula = y ~ s(z) + x + (1 | g),
+    projpred_formula_no_random = y ~ s(z) + x,
+    projpred_random = ~ (1 | g), data = d, family = extend_family(binomial()),
+    weights = rep(1, nrow(d))
+  ), "cannot fix this automatically")
+  # The first fit and the refit with optimx:
+  expect_length(optimizers, 2L)
+  expect_identical(optimizers[[2]], c("optimx", "optimx"))
 })
 
 # ordinal::clmm() ---------------------------------------------------------
@@ -412,6 +807,7 @@ test_that(paste(
   "a clmm() submodel fit without group-level variation equals the polr()",
   "fit"
 ), {
+  withr::local_options(projpred.mlvl_laplace = FALSE)
   d <- dat_fitters(sd_grp = 0)
   probs <- probs_cumul(d$eta)
   fit_clmm <- divmin_augdat_tst("x + (1 | g)", d, fam_cumul, probs)[[1]]
@@ -433,6 +829,7 @@ test_that(paste(
   "observations with weight 0 do not change a clmm() submodel fit, and",
   "integer weights equal duplicated observations"
 ), {
+  withr::local_options(projpred.mlvl_laplace = FALSE)
   d <- dat_fitters(sd_grp = 2)
   probs <- probs_cumul(d$eta)
   fit <- divmin_augdat_tst("x + (1 | g)", d, fam_cumul, probs)[[1]]
@@ -543,10 +940,6 @@ test_that(paste(
   for (sd_grp in c(0.8, 0)) {
     d <- dat_fitters(sd_grp = sd_grp)
     for (nm in names(cases)) {
-      if (nm == "lmer" &&
-          utils::packageVersion("lme4") < lmer_shared_lme4_min) {
-        next
-      }
       info <- paste(nm, "sd_grp:", sd_grp)
       args <- cases[[nm]]
       res_shared <- divmin_shared_tst(args$opt_nm, TRUE, args$count_fun,

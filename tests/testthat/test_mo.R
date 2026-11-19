@@ -948,32 +948,32 @@ test_that(paste(
 test_that(paste(
   "the parallel case of divmin() gives the same monotonic projections"
 ), {
-  skip_if_not_installed("foreach")
-  skip_if_not_installed("iterators")
-  # Use a registered backend, otherwise the sequential one:
-  if (!foreach::getDoParRegistered()) {
-    foreach::registerDoSEQ()
-  }
+  # The parallel branch of divmin() without workers: par_lapply() runs its
+  # tasks in this R session (`.backend = NULL`).
+  n_par <- 0L
+  par_lapply_orig <- get("par_lapply", envir = asNamespace("projpred"))
+  testthat::local_mocked_bindings(
+    par_backend = function(...) "future",
+    par_lapply = function(..., .backend) {
+      n_par <<- n_par + 1L
+      par_lapply_orig(..., .backend = NULL)
+    },
+    .package = "projpred"
+  )
   opts_old <- options(projpred.parallel_proj_trigger = Inf)
   on.exit(options(opts_old), add = TRUE)
   for (fam in list(gaussian(), binomial())) {
     refm <- mo_nonmono_refm(fam, eff_x = c(0, 0.4, 0.8, 1.2, 1.6),
                             dip_mean = -0.4, dip_sd = 0.4)
     options(projpred.parallel_proj_trigger = Inf)
+    n_par <- 0L
     prj_seq <- project(refm, predictor_terms = c("mo(x)", "z"), ndraws = 20,
                        verbose = FALSE)
+    expect_identical(n_par, 0L, info = fam$family)
     options(projpred.parallel_proj_trigger = 1)
-    cnt <- new.env()
-    cnt$n <- 0
-    trace(foreach::foreach,
-          bquote(assign("n", get("n", envir = .(cnt)) + 1, envir = .(cnt))),
-          print = FALSE, where = asNamespace("foreach"))
-    prj_par <- tryCatch(
-      project(refm, predictor_terms = c("mo(x)", "z"), ndraws = 20,
-              verbose = FALSE),
-      finally = untrace(foreach::foreach, where = asNamespace("foreach"))
-    )
-    expect_gt(cnt$n, 0)
+    prj_par <- project(refm, predictor_terms = c("mo(x)", "z"), ndraws = 20,
+                       verbose = FALSE)
+    expect_gt(n_par, 0L)
     expect_equal(prj_coefs(prj_par), prj_coefs(prj_seq), tolerance = 1e-12,
                  info = fam$family)
   }

@@ -18,6 +18,7 @@ cv_varsel(object, ...)
   K = object$K \%||\% if (!inherits(object, "datafit")) 5 else 10,
   cvfits = object$cvfits,
   validate_search = object$validate_search \%||\% TRUE,
+  loo_perturb_alpha = NULL,
   ...
 )
 
@@ -41,8 +42,10 @@ cv_varsel(object, ...)
   nlambda = 150,
   thresh = 1e-06,
   validate_search = TRUE,
+  loo_perturb_alpha = 10,
   seed = NA,
   search_terms = NULL,
+  search_screen = NULL,
   search_out = NULL,
   parallel = getOption("projpred.parallel_cv", FALSE),
   ...
@@ -96,6 +99,16 @@ the computation is faster, but the predictive performance estimates
 of the selected submodels are optimistically biased. However, these fast
 biased estimates can be useful to obtain initial information on the
 usefulness of projection predictive variable selection.}
+
+\item{loo_perturb_alpha}{A single positive number. It sets the concentration
+\eqn{\alpha} of the weight perturbation in the fold-wise searches of LOO CV
+(see section "Note"). With a smaller value, the weights have a larger
+variation. \code{Inf} turns the weight perturbation off. The weights apply only
+with \code{cv_method = "LOO"}, \code{validate_search = TRUE} and \code{refit_prj = TRUE},
+and not to fold-wise predictor rankings that \code{\link[=cv_varsel.vsel]{cv_varsel.vsel()}} re-uses.
+For \code{\link[=cv_varsel.vsel]{cv_varsel.vsel()}}, \code{NULL} (the default) uses the value stored in
+\code{object} if this value is finite or if \code{\link[=cv_varsel.vsel]{cv_varsel.vsel()}} re-uses the
+fold-wise predictor rankings, and 10 otherwise.}
 
 \item{method}{The method for the search part. Possible options are
 \code{"forward"} for forward search and \code{"L1"} for L1 search. See also section
@@ -192,8 +205,9 @@ results can be obtained again if needed. Passed to argument \code{seed} of
 clustering the reference model's posterior draws (if \code{!is.null(nclusters)}
 or \code{!is.null(nclusters_pred)}), for subsampling PSIS-LOO CV folds (if
 \code{nloo} is smaller than the number of observations), for sampling the folds
-in \eqn{K}-fold CV, and for drawing new group-level effects when predicting
-from a multilevel submodel (however, not yet in case of a GAMM).}
+in \eqn{K}-fold CV, for the weights of the weight perturbation (see section
+"Note"), and for drawing new group-level effects when predicting from a
+multilevel submodel.}
 
 \item{search_terms}{Only relevant for forward search. A custom character
 vector of predictor term blocks to consider for the search. Section
@@ -201,7 +215,45 @@ vector of predictor term blocks to consider for the search. Section
 The intercept (\code{"1"}) is always included internally via \code{union()}, so
 there's no difference between including it explicitly or omitting it. The
 default \code{search_terms} considers all the terms in the reference model's
-formula.}
+formula and, for each smooth term, the linear terms of its variables. A
+smooth term can enter the search only after the linear terms of its
+variables that are search terms without a smooth term; the smooth term then
+adds the nonlinear part. To search a smooth term without its linear terms,
+leave these linear terms out of \code{search_terms}.}
+
+\item{search_screen}{Only relevant for forward search. \code{NULL} (default) for
+the plain forward search, or a single positive integer m for a screened
+forward search: in each step, a cheap criterion ranks the candidates, and
+only the m best candidates get an exact projection. This reduces the
+number of projections from about p per step to at most m per step. The
+selected terms and their order can differ from those of the plain forward
+search. All screens need the default divergence minimizer. The criterion
+depends on the model:
+\itemize{
+\item Traditional projection with \code{\link[=binomial]{binomial()}} (logit link) or \code{\link[=poisson]{poisson()}}
+(log link) submodels without multilevel terms, additive terms and
+interactions with a factor: the score statistic of each candidate at the
+current submodel, which approximates the reduction of the KL divergence.
+The model matrix of the search terms must be possible to build (for
+example, no missing values and no zero-variance columns). With offsets,
+the score statistic approximates the reduction of the objective that the
+submodels are fitted to, which has no offsets; the exact projections still
+choose the term. We recommend m = 3.
+\item Augmented-data projection with the \code{\link[brms:cumulative]{brms::cumulative()}} family (logit
+or probit link), without offsets, multilevel terms and additive terms,
+and with one model-matrix column per search term (for example, no
+factors with more than two levels): the reduction of a weighted residual
+sum of squares of the latent predictor. We recommend m = 10.
+\item Latent projection with multilevel terms, without offsets and additive
+terms: the residual sum of squares of one \code{\link[lme4:lmer]{lme4::lmer()}} fit per
+candidate to the mean latent predictor of the projected draws. We
+recommend m = 3.
+}
+
+In the other cases, \code{search_screen} is ignored and the plain forward
+search runs. For Gaussian submodels with
+the identity link, \code{search_screen} is ignored if projpred uses its
+cross-product forward search for them.}
 
 \item{search_out}{Intended for internal use.}
 
@@ -225,7 +277,7 @@ search part with the training data of each CV fold separately (an exception
 is explained in section "Note" below) and by running the evaluation part on
 the corresponding test set of each CV fold. A special method is
 \code{\link[=cv_varsel.vsel]{cv_varsel.vsel()}} because it re-uses the search results from an earlier
-\code{\link[=cv_varsel]{cv_varsel()}} (or \code{\link[=varsel]{varsel()}}) run, as illustrated in the main vignette.
+\code{\link[=cv_varsel]{cv_varsel()}} (or \code{\link[=varsel]{varsel()}}) run (see section "Speed" of the main vignette).
 }
 \details{
 Arguments \code{ndraws}, \code{nclusters}, \code{nclusters_pred}, and \code{ndraws_pred}
@@ -281,6 +333,21 @@ two candidates. At the last model size of 3, \code{y ~ x1 + x2 + x3} would be
 the only candidate. As another example, to exclude \code{x1} from the search,
 specify \code{search_terms = c("x2", "x3", "x2 + x3")} (or, in a simpler way
 that leads to the same results, \code{search_terms = c("x2", "x3")}).
+
+The elements of \code{search_terms} are not exclusive alternatives. A
+candidate model consists of the \code{chosen} predictor terms and the terms of
+one element, so terms from different elements can be in the same
+submodel. For smooth terms, additional rules apply (see argument
+\code{search_terms}). For example, consider a reference model with formula \code{y ~ x1 + x2 + x3 + x4} and \code{search_terms = c("x1 + x2", "x1 + x3", "x1 + x2 + x4")}. After \code{y ~ 1}, the candidates are \code{y ~ x1 + x2} and \code{y ~ x1 + x3}. If the search selects \code{x1 + x3}, the only candidate in the next step
+is \code{y ~ x1 + x3 + x2}. This candidate comes from element \code{"x1 + x2"},
+because \code{x1} is already chosen. The only candidate in the step after that
+is \code{y ~ x1 + x3 + x2 + x4} (from element \code{"x1 + x2 + x4"}). The predictor
+ranking is then \code{x1 + x3}, \code{x2}, \code{x4}. If the search selects \code{x1 + x2}
+instead, the candidates in the next step are \code{y ~ x1 + x2 + x3} and
+\code{y ~ x1 + x2 + x4}, so \code{x3} is still possible. Thus, a search that
+selects either \code{x1 + x2 + x4} or \code{x1 + x3} (but not terms of both) is not
+possible with one \code{search_terms} vector. For this, run one search for each
+set of terms, for example with \code{search_terms = c("x1 + x2", "x1 + x2 + x4")} and with \code{search_terms = "x1 + x3"}.
 }
 \note{
 If \code{validate_search} is \code{FALSE}, the search is not included in the CV
@@ -291,6 +358,27 @@ moderate, the fast PSIS-LOO CV along the full-data search path is likely to
 have optimistic bias in the middle of the search path. This result can be
 used to guide further actions and the optimistic bias can be greatly
 reduced by using \code{validate_search = TRUE}.
+
+With \code{cv_method = "LOO"} and \code{validate_search = TRUE}, the search runs
+again in each LOO fold. With \code{refit_prj = TRUE} (the default), the search
+of each LOO fold uses weight perturbation with Bayesian bootstrap
+observation weights. This makes the LOO estimates jump less between
+neighboring submodel sizes, which reduces their variance. Furthermore, the
+standard errors then include more of the variation that comes from the
+selection. For fold \eqn{i}, the weights are \eqn{n} times a
+Dirichlet(\eqn{\alpha}, ..., \eqn{\alpha}) draw, with the weight of
+observation \eqn{i} set to 0. A first-order approximation shifts the draws
+of the reference model toward the posterior under these weights. The search
+paths then vary more between the folds, which makes the performance
+estimates of the submodel sizes more stable. The actual performance
+evaluation of each fold does not use the weights. It projects onto the
+submodels of the fold-wise search path, so the weights change only which
+submodels it evaluates. With \code{refit_prj = FALSE}, the performance
+evaluation re-uses the submodel fits of the search, so the search does not
+use the weights either. Argument \code{loo_perturb_alpha} sets \eqn{\alpha}
+(default 10). The \code{vsel} object stores the value that the fold-wise
+searches used (\code{Inf} if they did not use weights). \code{\link[=cv_varsel.vsel]{cv_varsel.vsel()}}
+re-uses the fold-wise predictor rankings only for the same value.
 
 PSIS uses the Pareto-\eqn{\hat{k}} diagnostic to assess the reliability of
 PSIS-LOO CV. Global option \code{projpred.warn_psis} (default \code{TRUE}) controls
@@ -329,13 +417,18 @@ parallel. Costly parts are the fold-wise searches and performance
 evaluations in case of \code{validate_search = TRUE}. (Note that in case of
 \eqn{K}-fold CV, the \eqn{K} reference model refits are not affected by
 argument \code{parallel}; only \pkg{projpred}'s CV is affected.) The
-parallelization is powered by the \pkg{foreach} package. Thus, any parallel
-(or sequential) backend compatible with \pkg{foreach} can be used, e.g.,
-the backends from packages \pkg{doParallel}, \pkg{doMPI}, or
-\pkg{doFuture}. For GLMs, this CV parallelization should work reliably, but
-for other models (such as GLMMs), it may lead to excessive memory usage
+parallelization uses the workers of the current plan of the
+\pkg{future} package (set up with, e.g.,
+\code{future::plan(future.mirai::mirai_multisession, workers = 4)} or
+\code{future::plan(future::multisession, workers = 4)}), see section
+"Parallelization" in \link{projpred-package}. Without such workers, the CV
+runs sequentially, with a warning. Each CV fold has its own random
+number stream (also with \code{parallel = FALSE}), so for a given seed, the
+results depend neither on argument \code{parallel} nor on the number of
+workers. For GLMs, this CV parallelization should work reliably, but for
+other models (such as GLMMs), it may lead to excessive memory usage
 which in turn may crash the R session (on Unix systems, setting an
-appropriate memory limit via \code{\link[unix:rlimit_as]{unix::rlimit_as()}} may avoid crashing the
+appropriate memory limit via \code{unix::rlimit_as()} may avoid crashing the
 whole machine). However, the problem of excessive memory usage is less
 pronounced for the CV parallelization than for the projection
 parallelization described in \link{projpred-package}. In that regard, the CV

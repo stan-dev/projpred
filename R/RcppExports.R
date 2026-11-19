@@ -5,6 +5,10 @@ categ_fit_multi_c <- function(x, w_all, ncat, icpt, thresh, maxit) {
     .Call('_projpred_categ_fit_multi_c', PACKAGE = 'projpred', x, w_all, ncat, icpt, thresh, maxit)
 }
 
+clust_moments_c <- function(mu, mu_offs, dis, wn, cl, nclusters, need_var) {
+    .Call('_projpred_clust_moments_c', PACKAGE = 'projpred', mu, mu_offs, dis, wn, cl, nclusters, need_var)
+}
+
 cumul_fit_multi_c <- function(x, w_all, ncat, offset, link, thresh, maxit) {
     .Call('_projpred_cumul_fit_multi_c', PACKAGE = 'projpred', x, w_all, ncat, offset, link, thresh, maxit)
 }
@@ -27,5 +31,17 @@ glm_ridge_native_c <- function(x, y, weights, offset, family_code, link_code, la
 
 glm_ridge_native_multi_c <- function(x, y, weights, offset, family_code, link_code, lambda, intercept, penalty, beta_init, w_init, thresh, qa_updates_max, ls_iter_max = 100L, debug = FALSE) {
     .Call('_projpred_glm_ridge_native_multi_c', PACKAGE = 'projpred', x, y, weights, offset, family_code, link_code, lambda, intercept, penalty, beta_init, w_init, thresh, qa_updates_max, ls_iter_max, debug)
+}
+
+mlvl_cumul_c <- function(alpha, beta, tau, x, grp, nlev, y, w, u, link, want_grad, tol = 1e-10, maxit = 50L) {
+    .Call('_projpred_mlvl_cumul_c', PACKAGE = 'projpred', alpha, beta, tau, x, grp, nlev, y, w, u, link, want_grad, tol, maxit)
+}
+
+mlvl_laplace_c <- function(theta, beta, x, grp, nlev, y, w, offset, u, fam, want_grad, tol = 1e-10, maxit = 50L) {
+    .Call('_projpred_mlvl_laplace_c', PACKAGE = 'projpred', theta, beta, x, grp, nlev, y, w, offset, u, fam, want_grad, tol, maxit)
+}
+
+wcol_moments_c <- function(mu, idx, scale, wobs, sum_w) {
+    .Call('_projpred_wcol_moments_c', PACKAGE = 'projpred', mu, idx, scale, wobs, sum_w)
 }
 

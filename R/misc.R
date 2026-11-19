@@ -40,6 +40,143 @@ log_sum_exp <- function(x) {
   max_x + log(sum(exp(x - max_x)))
 }
 
+# Evaluate `expr` and then restore the RNG state (and the RNG kind if `expr`
+# changed it).
+with_preserved_seed <- function(expr) {
+  old_kind <- RNGkind()
+  had_seed <- exists(".Random.seed", envir = globalenv(), inherits = FALSE)
+  if (had_seed) {
+    old_seed <- get(".Random.seed", envir = globalenv(), inherits = FALSE)
+  }
+  on.exit({
+    if (!identical(RNGkind(), old_kind)) {
+      suppressWarnings(RNGkind(old_kind[1], old_kind[2], old_kind[3]))
+    }
+    if (had_seed) {
+      assign(".Random.seed", old_seed, envir = globalenv())
+    } else if (exists(".Random.seed", envir = globalenv(), inherits = FALSE)) {
+      rm(".Random.seed", envir = globalenv())
+    }
+  })
+  expr
+}
+
+# Base seed for the weights of the weight perturbation, drawn from the current
+# RNG stream without advancing it.
+perturb_base_seed <- function() {
+  with_preserved_seed(sample.int(.Machine$integer.max, 1))
+}
+
+# Observation weights n * Dirichlet(alpha, ..., alpha). They use their own seed
+# and generator, so sequential and parallel runs give the same weights.
+perturb_weights <- function(n, alpha, seed) {
+  g <- with_preserved_seed({
+    set.seed(seed, kind = "Mersenne-Twister", normal.kind = "Inversion",
+             sample.kind = "Rejection")
+    stats::rgamma(n, alpha)
+  })
+  w <- n * g / sum(g)
+  if (!all(is.finite(w))) {
+    stop("Argument `loo_perturb_alpha` is too small: the perturbation ",
+         "weights are not finite.")
+  }
+  w
+}
+
+# `TRUE` if all values of the numeric array `x` are finite. min() and max() do
+# not copy `x`. They return NA, NaN or +-Inf if a value of `x` is not finite:
+all_finite <- function(x) {
+  length(x) == 0 || (is.finite(min(x)) && is.finite(max(x)))
+}
+
+# Reference model for the search of LOO fold i with weight perturbation. It
+# multiplies `wobs` by w = n * Dirichlet(alpha, ..., alpha), with w_i set to 0.
+# Each draw of the linear predictor of observation k moves by the first-order
+# change of its posterior mean under these weights:
+#   c_s = sum_{j != i} (w_j - 1) log p(y_j | theta_s),
+#   cbar = sum_s omega_s c_s,
+#   delta_k = sum_s omega_s (c_s - cbar) eta_ks,
+# where omega are the PSIS-LOO weights of fold i (`lw_i`, log scale). The log
+# of the dispersion moves in the same way. `ll` is the S x n log-likelihood
+# matrix of the reference draws. Returns `NULL` if the shifted linear
+# predictors, means (with and without offsets) or dispersions are not finite.
+#
+# With the identity link (`linkinv` returns its argument) and without offsets
+# (Gaussian and latent projection), the shifted `eta`, `mu` and `mu_offs` are
+# all `eta + delta`. Then the draws
+# are not shifted here: `mu` and `mu_offs` are set to `eta`, and the element
+# `draws_shift` holds `delta`. .select() passes it to get_p_clust(), which adds
+# it to the cluster means. Code that uses `eta`, `mu` or `mu_offs` of the
+# result in another way must add `draws_shift` first.
+perturb_refmodel <- function(refmodel, i, ll, lw_i, alpha, seed) {
+  n <- ncol(ll)
+  w <- perturb_weights(n, alpha, seed)
+  w[i] <- 0
+  dw <- w - 1
+  dw[i] <- 0
+  om <- exp(lw_i - log_sum_exp(lw_i))
+  cc <- drop(ll %*% dw)
+  cd <- om * (cc - sum(om * cc))
+  if (!all(is.finite(cd))) {
+    return(NULL)
+  }
+  shift <- drop(refmodel$eta %*% cd)
+  fam <- refmodel$family
+  if (identical(fam$link, "identity") && !isTRUE(fam$for_augdat) &&
+      all(refmodel$offset == 0)) {
+    # Each shifted draw is between min(eta) + min(shift) and max(eta) +
+    # max(shift), so it is finite if these two sums are. (The check can also
+    # reject finite shifted draws, but only for values near 1e308.)
+    if (length(refmodel$eta) > 0 &&
+        !(is.finite(min(refmodel$eta) + min(shift)) &&
+          is.finite(max(refmodel$eta) + max(shift)))) {
+      return(NULL)
+    }
+    refmodel$mu <- refmodel$eta
+    refmodel$mu_offs <- refmodel$eta
+    refmodel$draws_shift <- shift
+  } else {
+    refmodel <- perturb_draws(refmodel, shift)
+    if (is.null(refmodel)) {
+      return(NULL)
+    }
+  }
+  if (!any(is.na(refmodel$dis)) && all(refmodel$dis > 0)) {
+    ldis <- log(refmodel$dis)
+    refmodel$dis <- exp(ldis + sum(ldis * cd))
+  }
+  if (!any(is.na(refmodel$dis)) && !all(is.finite(refmodel$dis))) {
+    return(NULL)
+  }
+  refmodel$wobs <- refmodel$wobs * w
+  refmodel
+}
+
+# Adds `shift` (one value per observation) to each draw of the linear predictor
+# of `refmodel` and computes `mu` and `mu_offs` again. Returns `NULL` if a
+# value is not finite.
+perturb_draws <- function(refmodel, shift) {
+  refmodel$eta <- refmodel$eta + shift
+  # With a bounded inverse link (logit, probit), an infinite `eta` gives a
+  # finite `mu`, so check `eta` itself:
+  if (!all_finite(refmodel$eta)) {
+    return(NULL)
+  }
+  refmodel$mu <- refmodel$family$linkinv(refmodel$eta)
+  if (!all_finite(refmodel$mu)) {
+    return(NULL)
+  }
+  if (!all(refmodel$offset == 0)) {
+    refmodel$mu_offs <- refmodel$family$linkinv(ref_eta_offs(refmodel))
+    if (!all_finite(refmodel$mu_offs)) {
+      return(NULL)
+    }
+  } else {
+    refmodel$mu_offs <- refmodel$mu
+  }
+  refmodel
+}
+
 linkfun_raw <- function(x, link_nm) {
   if (link_nm %in% c("logistic")) {
     link_nm <- "logit"
@@ -62,6 +199,17 @@ ilinkfun_raw <- function(x, link_nm) {
   }
   basic_ilink <- binomial(link = link_nm)$linkinv
   return(basic_ilink(x))
+}
+
+# The linear predictor of the reference model draws with the offsets, which
+# gives `refmodel$mu_offs` (as in init_refmodel()). `family$ll_fun()` uses it
+# where the inverse link clamps `mu_offs`.
+ref_eta_offs <- function(refmodel) {
+  if (refmodel$family$family %in% fams_neg_linpred()) {
+    return(refmodel$eta - refmodel$offset)
+  } else {
+    return(refmodel$eta + refmodel$offset)
+  }
 }
 
 .auc <- function(x) {
@@ -142,7 +290,8 @@ validate_num_folds <- function(k, n) {
   }
 }
 
-validate_vsel_object_stats <- function(object, stats, resp_oscale = TRUE) {
+validate_vsel_object_stats <- function(object, stats, resp_oscale = TRUE,
+                                       custom_stats = list()) {
   if (!inherits(object, c("vsel"))) {
     stop("The object is not a variable selection object. Run variable ",
          "selection first")
@@ -153,8 +302,7 @@ validate_vsel_object_stats <- function(object, stats, resp_oscale = TRUE) {
   }
   resp_oscale <- object$refmodel$family$for_latent && resp_oscale
 
-  trad_stats <- c("elpd", "mlpd", "gmpd", "mse", "rmse", "R2",
-                  "acc", "pctcorr", "auc")
+  trad_stats <- builtin_stats()
   trad_stats_binom_only <- c("acc", "pctcorr", "auc")
   augdat_stats <- c("elpd", "mlpd", "gmpd", "acc", "pctcorr")
   resp_oscale_stats_fac <- augdat_stats
@@ -168,7 +316,17 @@ validate_vsel_object_stats <- function(object, stats, resp_oscale = TRUE) {
     fam_ch <- object$refmodel$family$family
   }
   for (stat in stats) {
-    if (object$refmodel$family$for_augdat) {
+    if (stat %in% names(custom_stats)) {
+      if (object$refmodel$family$for_augdat) {
+        stop("Currently, the augmented-data projection may not be combined ",
+             "with a custom performance statistic.")
+      }
+      if (resp_oscale && !is.null(object$refmodel$family$cats)) {
+        stop("Currently, the latent projection with `resp_oscale = TRUE` and ",
+             "a non-`NULL` element `family$cats` may not be combined with a ",
+             "custom performance statistic.")
+      }
+    } else if (object$refmodel$family$for_augdat) {
       if (!stat %in% augdat_stats) {
         stop("Currently, the augmented-data projection may not be combined ",
              "with performance statistic `\"", stat, "\"`.")
@@ -426,12 +584,42 @@ eta_for_kmeans <- function(eta, rank_max = floor(min(dim(eta)) / 4),
 get_p_clust <- function(family, eta, mu, mu_offs, dis, nclusters = 10,
                         wobs = rep(1, dim(mu)[1]),
                         wdraws = rep(1, dim(mu)[2]), cl = NULL,
-                        clust_used_forced = NULL) {
+                        clust_used_forced = NULL, as_moments = FALSE,
+                        draws_shift = NULL) {
+  # `draws_shift` (from perturb_refmodel()): the draws of `eta`, `mu` and
+  # `mu_offs` are the given ones plus `draws_shift` (one value per
+  # observation). If each cluster has at least one draw and a finite nonzero
+  # weight sum, at least one cluster has several draws, and
+  # `family$predvar_mix` is used, then the cluster means move by the shift, and
+  # the within-cluster variances do not change. In the other cases, the shifted
+  # draws are computed here.
+  #
+  # With `as_moments = TRUE`, the function returns `NULL` or, for a given `cl`
+  # with one draw per cluster, finite nonzero weights and a
+  # `family$predvar_mix`, a list without the observations x clusters matrices
+  # `mu`, `mu_offs` and `var`. Instead, the list has `draws_offs` (the input
+  # `mu_offs`), the draw `idx` and the factor `ws` of each cluster (cluster
+  # center `ws[j] * mu_offs[, idx[j]]`), and `draws_predvar` (the predictive
+  # variance of cluster j for all observations). The function also returns
+  # the list for non-finite projected draws, where `draws_predvar` can be
+  # wrong (see `mu_var` below). perf_eval_gauss() detects them with the
+  # weighted sums of squares and then uses the full result.
+  # (The names do not start with "mu" or "var", because `$` matches partial
+  # names.) With `draws_shift`, the function returns `NULL`: the callers of
+  # `as_moments` do not use `draws_shift`.
+  if (as_moments && (is.null(cl) || !is.null(draws_shift))) {
+    # Without `cl`, do not run kmeans() twice (here and in the call without
+    # `as_moments`):
+    return(NULL)
+  }
   # cluster the draws in the latent space if no clustering provided
   if (is.null(cl)) {
     # Note: A seed is not set here because this function is not exported and has
     # a calling stack at the beginning of which a seed is set.
 
+    if (!is.null(draws_shift)) {
+      eta <- eta + draws_shift
+    }
     out <- kmeans(eta_for_kmeans(eta), nclusters, iter.max = 50)
     cl <- out$cluster # cluster indices for each draw
   } else if (typeof(cl) == "list") {
@@ -444,37 +632,154 @@ get_p_clust <- function(family, eta, mu, mu_offs, dis, nclusters = 10,
   }
 
   # (Re)compute the cluster centers, because they may be different from the ones
-  # returned by kmeans() if the draws have differing weights.
+  # returned by kmeans() if the draws have differing weights. `cl` has one
+  # element per draw (column of `mu`).
   # Number of clusters (assumes labeling "1, ..., nclusters"):
   nclusters <- max(cl, na.rm = TRUE)
-  # Cluster centers:
-  centers <- matrix(0, nrow = dim(mu)[1], ncol = nclusters)
-  # The same centers, but taking offsets into account:
-  centers_offs <- matrix(0, nrow = dim(mu_offs)[1], ncol = nclusters)
-  # Cluster weights:
-  wcluster <- rep(0, nclusters)
-  # Dispersion parameter draws aggregated within each cluster:
-  dis_agg <- rep(NA_real_, nclusters)
-  # Predictive variances:
-  predvar <- matrix(nrow = dim(mu)[1], ncol = nclusters)
+  # Draw indices of each cluster (one pass over `cl`; draws with `cl` `NA` are
+  # in no cluster). match() compares numbers, as `cl == j` does:
+  cl_ind <- match(cl, seq_len(nclusters))
+  ind_by_cl <- split(seq_along(cl),
+                     factor(cl_ind, levels = seq_len(nclusters)))
   eps <- 1e-10
-  for (j in 1:nclusters) {
-    ind <- which(cl == j)
+  nobs <- dim(mu)[1]
+  # Use `family$predvar_mix` only if `family$predvar` is the function that it
+  # belongs to (a user can replace `family$predvar`):
+  use_mix <- !is.null(family$predvar_mix) &&
+    identical(family$predvar, attr(family$predvar_mix, "predvar"))
+  # The weighted mean of `dis^2` and the weighted variance of `mu_offs` within
+  # the clusters are needed only if `family$predvar_mix` uses them:
+  need_var <- use_mix && !isFALSE(attr(family$predvar_mix, "uses_moments"))
+  if (as_moments && !all(lengths(ind_by_cl) == 1L)) {
+    return(NULL)
+  }
+  wsum_cl <- NULL
+  if (!is.null(draws_shift)) {
+    ndraws_cl <- lengths(ind_by_cl)
+    wsum_cl <- vapply(ind_by_cl, function(ind) sum(wdraws[ind]), numeric(1),
+                      USE.NAMES = FALSE)
+    if (!(use_mix && any(ndraws_cl > 1L) && all(ndraws_cl > 0L) &&
+          all(is.finite(wsum_cl) & wsum_cl != 0))) {
+      # `eta` is used only by kmeans() above. Without offsets, `mu` and
+      # `mu_offs` are one object (identical() then returns at once), and one
+      # shifted matrix is sufficient:
+      if (identical(mu_offs, mu)) {
+        mu <- mu + draws_shift
+        mu_offs <- mu
+      } else {
+        mu <- mu + draws_shift
+        mu_offs <- mu_offs + draws_shift
+      }
+      draws_shift <- NULL
+    }
+  }
+  if (all(lengths(ind_by_cl) == 1L)) {
+    # One draw per cluster (thinned draws, or as many clusters as draws). This
+    # gives the same results as the cluster loop at the end, for all clusters
+    # at once.
+    idx <- unlist(ind_by_cl, use.names = FALSE)
+    wcluster <- unname(as.numeric(wdraws[idx]))
+    ws <- wcluster / wcluster * (1 - eps)
+    # Usually, all draws are used in their order, and `w / w` is exactly 1
+    # (for a finite nonzero weight), so that `ws` is `1 - eps`. Then one
+    # product with a scalar gives the centers, without copies of the draws:
+    all_draws <- identical(idx, seq_len(ncol(mu)))
+    if (as_moments) {
+      if (!use_mix || anyNA(ws)) {
+        return(NULL)
+      }
+      return(list(
+        moments_only = TRUE, draws_offs = mu_offs, idx = idx, ws = ws,
+        draws_predvar = drop(family$predvar_mix(as.numeric(dis[idx])^2, 0,
+                                                1L)),
+        dis = unname(as.numeric(dis[idx]) * ws),
+        wdraws_prj = wcluster / sum(wcluster),
+        const_wdraws_prj = length(unique(wcluster / sum(wcluster))) == 1,
+        nprjdraws = nclusters,
+        cl = cl, wdraws_orig = wdraws,
+        clust_used = clust_used_forced %||% TRUE
+      ))
+    }
+    ws_mult <- if (!anyNA(ws)) 1 - eps else rep(ws, each = nobs)
+    scale_draws <- function(m) {
+      if (!all_draws) {
+        m <- unclass(m)[, idx, drop = FALSE]
+      }
+      out <- m * ws_mult
+      attributes(out) <- list(dim = dim(out))
+      out
+    }
+    centers <- scale_draws(mu)
+    centers_offs <- scale_draws(mu_offs)
+    dis_agg <- unname(as.numeric(dis[idx]) * ws)
+    if (use_mix) {
+      # The variance across one draw is 0 (NaN for a non-finite `mu_offs`, as
+      # in rowvar_wdraws()):
+      mu_var <- 0
+      if (need_var) {
+        mu_offs_idx <- unclass(mu_offs)
+        if (!all_draws) {
+          mu_offs_idx <- mu_offs_idx[, idx, drop = FALSE]
+        }
+        if (length(mu_offs_idx) > 0 && !all(is.finite(range(mu_offs_idx)))) {
+          mu_var <- (mu_offs_idx - mu_offs_idx)^2
+          attributes(mu_var) <- list(dim = dim(mu_var))
+        }
+      }
+      predvar <- family$predvar_mix(as.numeric(dis[idx])^2, mu_var, nobs)
+    }
+  } else {
+    # Several draws in a cluster: weighted moments of the draws in compiled
+    # code. The results differ from the cluster loop only by rounding.
+    wcluster <- wsum_cl %||%
+      vapply(ind_by_cl, function(ind) sum(wdraws[ind]), numeric(1),
+             USE.NAMES = FALSE)
+    wn <- as.numeric(wdraws) / wcluster[cl_ind]
+    wn[is.na(cl_ind)] <- 0
+    mom <- clust_moments_c(
+      mu, mu_offs, as.numeric(dis)[seq_along(cl)], wn,
+      ifelse(is.na(cl_ind), -1L, cl_ind - 1L), nclusters, need_var
+    )
+    if (!is.null(draws_shift)) {
+      # The weights sum to 1 within each cluster, so the means move by the
+      # shift, and the variances do not change:
+      mom$mu <- mom$mu + draws_shift
+      mom$mu_offs <- mom$mu_offs + draws_shift
+    }
+    centers <- mom$mu * (1 - eps)
+    centers_offs <- mom$mu_offs * (1 - eps)
+    dis_agg <- mom$dis * (1 - eps)
+    if (use_mix) {
+      predvar <- family$predvar_mix(mom$dis2, mom$var_offs, nobs)
+    }
+  }
+  # The cluster loop: for the predictive variances without
+  # `family$predvar_mix`, and for the clusters with a weight sum of 0, Inf or
+  # NaN, or without draws (so that NA and NaN propagate as in the loop):
+  ind_loop <- which(!is.finite(wcluster) | wcluster == 0)
+  if (!use_mix) {
+    predvar <- matrix(nrow = nobs, ncol = nclusters)
+    ind_loop <- seq_len(nclusters)
+  }
+  for (j in ind_loop) {
+    ind <- ind_by_cl[[j]]
     # Compute normalized weights within the j-th cluster; `1 - eps` is for
     # numerical stability:
-    ws <- wdraws[ind] / sum(wdraws[ind]) * (1 - eps)
-
-    # Center of the j-th cluster:
-    centers[, j] <- mu[, ind, drop = FALSE] %*% ws
-    # The same centers, but taking offsets into account:
-    centers_offs[, j] <- mu_offs[, ind, drop = FALSE] %*% ws
-    # Unnormalized weight for the j-th cluster:
-    wcluster[j] <- sum(wdraws[ind])
-    # Aggregated dispersion parameter for the j-th cluster:
-    dis_agg[j] <- crossprod(dis[ind], ws)
+    ws_j <- wdraws[ind] / sum(wdraws[ind]) * (1 - eps)
     # Predictive variance for the j-th cluster:
-    predvar[, j] <- family$predvar(mu_offs[, ind, drop = FALSE], dis[ind], ws)
+    predvar[, j] <- family$predvar(mu_offs[, ind, drop = FALSE], dis[ind],
+                                   ws_j)
+    if (is.finite(wcluster[j]) && wcluster[j] != 0) {
+      next
+    }
+    # Center of the j-th cluster:
+    centers[, j] <- mu[, ind, drop = FALSE] %*% ws_j
+    # The same centers, but taking offsets into account:
+    centers_offs[, j] <- mu_offs[, ind, drop = FALSE] %*% ws_j
+    # Aggregated dispersion parameter for the j-th cluster:
+    dis_agg[j] <- crossprod(dis[ind], ws_j)
   }
+  predvar <- unname(predvar)
   wcluster <- wcluster / sum(wcluster)
 
   # combine the results
@@ -546,13 +851,6 @@ nlist <- function(...) {
     names(dots)[!has_name] <- nms[!has_name]
   }
   dots
-}
-
-# The `%||%` special binary (infix) operator from brms (equivalent to the
-# `%ORifNULL%` operator from rstanarm):
-`%||%` <- function(x, y) {
-  if (is.null(x)) x <- y
-  x
 }
 
 #' Execute a function call
@@ -784,8 +1082,18 @@ proj_cache_exit <- function() {
   return(invisible())
 }
 
+# Whether `key` can be the name of an entry. `[[` and assign() make a symbol
+# from the key, and a symbol has a limit of 10000 bytes, so long keys are not
+# cached:
+proj_cache_key_ok <- function(key) {
+  nchar(key, type = "bytes") < 10000L
+}
+
 # The entry `key` of store `store`, or `NULL` if there is none:
 proj_cache_get <- function(store, key) {
+  if (!proj_cache_key_ok(key)) {
+    return(NULL)
+  }
   ent <- store$cur[[key]]
   if (!is.null(ent)) {
     return(ent$value)
@@ -801,6 +1109,9 @@ proj_cache_get <- function(store, key) {
 
 # Stores `value` as entry `key` of store `store`:
 proj_cache_put <- function(store, key, value) {
+  if (!proj_cache_key_ok(key)) {
+    return(invisible())
+  }
   proj_cache_add(store, key, list(value = value,
                                   bytes = as.numeric(utils::object.size(value))))
   return(invisible())
@@ -891,12 +1202,24 @@ all_ia_perms <- function(ia, is_split = FALSE) {
   } else {
     ia_split <- strsplit(ia, ":")[[1]]
   }
-  ia_perms_split <- gtools::permutations(n = length(ia_split),
-                                         r = length(ia_split),
-                                         v = ia_split, set = FALSE)
+  ia_perms_split <- matrix(ia_split[perm_idxs(length(ia_split))],
+                           ncol = length(ia_split))
   return(unlist(
     apply(ia_perms_split, 1, paste, collapse = ":", simplify = FALSE)
   ))
+}
+
+# All permutations of `seq_len(n)` as the rows of a matrix, in lexicographic
+# order (a matrix with one row and no columns for `n = 0`).
+perm_idxs <- function(n) {
+  if (n <= 1L) {
+    return(matrix(seq_len(n), nrow = 1L, ncol = n))
+  }
+  sub_perms <- perm_idxs(n - 1L)
+  return(do.call(rbind, lapply(seq_len(n), function(i) {
+    cbind(i, matrix(seq_len(n)[-i][sub_perms], ncol = n - 1L),
+          deparse.level = 0)
+  })))
 }
 
 # Reorders the main-effect terms involved in a single interaction term `ia`
@@ -940,16 +1263,500 @@ element_unq <- function(list_obj, nm) {
   return(el_unq)
 }
 
-use_progressr <- function() {
-  getOption("projpred.use_progressr",
-            requireNamespace("progressr", quietly = TRUE) &&
-              interactive() &&
-              identical(foreach::getDoParName(), "doFuture"))
+# Returns `fun` with a new enclosing environment that holds only the objects
+# `nms` of `env` (its parent is `topenv(env)`, here the projpred namespace). A
+# parallel backend then serializes these objects together with `fun`, not the
+# whole `env`. `nms` must list every free variable of `fun` that is a local
+# of `env`; a missing name is looked up in the namespace instead (test
+# "the object lists of the loop functions ..." in test_parallel.R).
+fun_with_objs <- function(fun, nms, env = parent.frame()) {
+  environment(fun) <- list2env(mget(nms, envir = env, inherits = FALSE),
+                               parent = topenv(env))
+  return(fun)
 }
 
-sqrt_cut0 <- function(x) {
+# `refmodel` without `mu_offs` and `eta` if they are identical to `mu`
+# (`mu_offs` without offsets, `eta` with the identity link). In memory, these
+# are often one matrix, but a serialized reference model holds a copy of each.
+# Element `draws_same_as_mu` names the removed elements.
+refmodel_drop_dup_draws <- function(refmodel) {
+  if (is.null(refmodel$mu)) {
+    return(refmodel)
+  }
+  same <- c(mu_offs = identical(refmodel$mu_offs, refmodel$mu),
+            eta = identical(refmodel$eta, refmodel$mu))
+  for (nm in names(same)[same]) {
+    refmodel[nm] <- list(NULL)
+  }
+  refmodel["draws_same_as_mu"] <- list(names(same)[same])
+  return(refmodel)
+}
+
+# `refmodel` with the elements that refmodel_drop_dup_draws() removed. Other
+# reference models stay as they are.
+refmodel_restore_draws <- function(refmodel) {
+  for (nm in refmodel$draws_same_as_mu) {
+    refmodel[[nm]] <- refmodel$mu
+  }
+  refmodel["draws_same_as_mu"] <- NULL
+  return(refmodel)
+}
+
+# The objects of the init_refmodel() environment that mu_fun() and
+# fetch_data() of a reference model use (see refmodel_for_folds()):
+refmodel_fun_objs <- c("data", "family", "proj_predfun",
+                       "proj_predfun_is_subprd")
+
+# A copy of `refmodel` for the parallel CV folds (one_obs() in loo_varsel();
+# one_fold() in kfold_varsel(), for the full-data reference model and for the
+# reference models of the folds). The folds use the data, the draws, `family`,
+# `div_minimizer`, mu_fun() and fetch_data() of the reference model, but not
+# the reference model fit, its fold fits (`cvfits`), and the functions that
+# need the fit (ref_predfun(), extract_model_data(), cvfun(), cvrefbuilder();
+# kfold_varsel() calls ref_predfun() before the parallel loop). Without the
+# copy, the workers get the fit and load the packages that it needs (e.g.,
+# brms or rstanarm), which takes seconds and memory. The copy has `NULL` for the fits and
+# not_in_folds() for these functions. mu_fun() and fetch_data() of
+# init_refmodel() share an environment that also holds the fit, so they get
+# an environment with only the objects that they use. Other mu_fun() and
+# fetch_data() functions stay as they are. With `formula_env`, the formula of
+# the copy gets a small environment (see formula_for_folds(); for the
+# reference model of a K-fold fold). The copy has `mu_offs` and `eta` only if
+# they differ from `mu` (see refmodel_drop_dup_draws()); the fold functions
+# restore them.
+refmodel_for_folds <- function(refmodel, formula_env = NULL) {
+  # The family functions of the latent and the augmented-data projection, and
+  # family functions from other packages, can hold the fit in their
+  # environments. The copy cannot remove the fit from there, so the workers get
+  # the reference model as it is, also its formula. (Without `formula_env`,
+  # the environment of the formula stays as it is. Functions of the user, e.g.,
+  # a custom `proj_predfun`, also stay as they are. They can also hold the
+  # fit.)
+  fam_pkgs <- vapply(Filter(is.function, refmodel$family), function(f) {
+    environmentName(topenv(environment(f) %||% baseenv()))
+  }, character(1))
+  if (isTRUE(refmodel$family$for_latent) ||
+      isTRUE(refmodel$family$for_augdat) ||
+      !all(fam_pkgs %in% c("base", "stats", "projpred"))) {
+    return(refmodel_drop_dup_draws(refmodel))
+  }
+  out <- refmodel
+  out["fit"] <- list(NULL)
+  out["cvfits"] <- list(NULL)
+  for (nm in intersect(c("ref_predfun", "extract_model_data", "cvfun",
+                         "cvrefbuilder"), names(out))) {
+    out[[nm]] <- not_in_folds
+  }
+  env <- environment(refmodel$mu_fun)
+  if (is.environment(env) &&
+      identical(environment(refmodel$fetch_data), env) &&
+      all(vapply(refmodel_fun_objs, exists, logical(1), envir = env,
+                 inherits = FALSE))) {
+    env_new <- list2env(mget(refmodel_fun_objs, envir = env, inherits = FALSE),
+                        parent = topenv(env))
+    # The data can have formula attributes (e.g., "terms" and "formula" for
+    # rstanarm::stan_gamm4()) with the environment of the model fitting, which
+    # can hold the fit. projpred does not use these attributes, so give them
+    # the environment of the reference model formula:
+    for (anm in names(attributes(env_new$data))) {
+      if (inherits(attr(env_new$data, anm), "formula")) {
+        environment(attr(env_new$data, anm)) <- environment(refmodel$formula)
+      }
+    }
+    environment(out$mu_fun) <- env_new
+    environment(out$fetch_data) <- env_new
+  }
+  if (!is.null(formula_env)) {
+    out$formula <- formula_for_folds(out$formula,
+                                     data_nms = names(out$fetch_data(obs = 1L)),
+                                     env_parent = formula_env)
+  }
+  return(refmodel_drop_dup_draws(out))
+}
+
+# The formula of the reference model of a K-fold fold can have the environment
+# of the refit call (e.g., of rstanarm::kfold(), if the call of the fit has
+# the formula as an expression). That environment can hold the fits, and its
+# ancestors can be the namespace of the package of the fit. This function
+# returns `formula` with a new environment that holds only the objects that
+# the formula uses from the old environment and its ancestors, up to the first
+# namespace or the global environment (without the names of the data columns
+# `data_nms`, which the data provides). The parent of the new environment is
+# `env_parent` (the environment of the full-data formula). So a name that the
+# old environment found only in a namespace among its ancestors (e.g., a
+# function of the package of the fit that is not exported) is looked up from
+# `env_parent` instead. A formula whose environment is a namespace, the
+# global, the base or the empty environment, or `env_parent` stays as it is.
+formula_for_folds <- function(formula, data_nms, env_parent) {
+  is_top <- function(env) {
+    isNamespace(env) || identical(env, globalenv()) ||
+      identical(env, baseenv()) || identical(env, emptyenv())
+  }
+  env <- environment(formula)
+  if (!is.environment(env) || is_top(env) || identical(env, env_parent)) {
+    return(formula)
+  }
+  nms <- setdiff(all.names(formula, unique = TRUE), data_nms)
+  objs <- list()
+  while (!is_top(env) && !identical(env, env_parent)) {
+    for (nm in setdiff(nms, names(objs))) {
+      if (exists(nm, envir = env, inherits = FALSE)) {
+        # A function argument without a value gives an error here; the
+        # formula cannot use it:
+        obj <- tryCatch(list(get(nm, envir = env, inherits = FALSE)),
+                        error = function(e) NULL)
+        if (!is.null(obj)) {
+          objs[nm] <- obj
+        }
+      }
+    }
+    env <- parent.env(env)
+  }
+  environment(formula) <- list2env(objs, parent = env_parent)
+  return(formula)
+}
+
+not_in_folds <- function(...) {
+  stop("This function of the reference model is not available in the ",
+       "parallel CV folds.")
+}
+
+use_progressr <- function() {
+  getOption("projpred.use_progressr",
+            requireNamespace("progressr", quietly = TRUE) && interactive())
+}
+
+# State of the parallelization within this R session: whether par_backend()
+# has warned (`warned`), and the workers that par_check_workers() checked last
+# (`key_checked`).
+par_state <- new.env(parent = emptyenv())
+
+# The backend of the parallel loops (CV folds, projected draws): "future" if
+# the plan of the future package is not sequential, otherwise `NULL` with a
+# warning (the caller then runs sequentially). With `warn_once = TRUE`, the
+# warning comes only once per R session (for the loops over the projected
+# draws, which run many times).
+par_backend <- function(warn_once = FALSE) {
+  has_future <- requireNamespace("future", quietly = TRUE)
+  if (has_future && !inherits(future::plan(), "sequential")) {
+    return("future")
+  }
+  if (!warn_once || !isTRUE(par_state$warned)) {
+    if (warn_once) {
+      par_state$warned <- TRUE
+    }
+    warning(
+      "A parallel run was requested, but there are no parallel workers, so ",
+      "running sequentially. ",
+      if (!has_future) "Install the future package. ",
+      "Set up workers with, e.g., ",
+      "`future::plan(future.mirai::mirai_multisession, workers = 4)` or ",
+      "`future::plan(future::multisession, workers = 4)` (see section ",
+      "\"Parallelization\" in `?projpred`)."
+    )
+  }
+  return(NULL)
+}
+
+# Applies `.FUN` to the elements of `.X` on the parallel workers and returns
+# the results in a list, as lapply() (but without the names of `.X`). The
+# arguments in `...` go to each call of `.FUN`. `.backend` is the value of
+# par_backend(): `NULL` if there are no workers.
+#
+# The elements are split into consecutive chunks (by default one per worker;
+# global option `projpred.parallel_chunks_per_worker`), and each chunk is one
+# task (see par_chunk()). A task gets `.FUN`, the arguments in `...`, and the
+# elements of its chunk, but no other object of the calling functions. `.FUN`
+# goes to the workers with its enclosing environment, so keep that environment
+# small (see fun_with_objs()).
+#
+# With `.rng = TRUE`, each element gets its own L'Ecuyer-CMRG stream, made
+# here from the RNG of this R session. So the results depend neither on the
+# plan of the future package nor on the number of workers or chunks. Without
+# a backend (`.backend = NULL`), the elements run as one task in this R
+# session, which gives the same results as the workers.
+#
+# The workers get the global options of projpred, except those of the
+# parallelization (so the workers run their loops sequentially), the global
+# options `contrasts` and `na.action`, which the submodel fits use, and the
+# objects of the global environment that the tasks need (see par_globals()).
+#
+# With `.progress = TRUE`, the tasks signal one progressr update per element
+# (if use_progressr()). An error in a task stops the call; the tasks that did
+# not finish are canceled.
+par_lapply <- function(.X, .FUN, ..., .backend, .rng = FALSE,
+                       .progress = FALSE) {
+  n <- length(.X)
+  if (n == 0L) {
+    return(list())
+  }
+  opts <- options()
+  opts <- opts[grepl("^projpred\\.", names(opts)) |
+                 names(opts) %in% c("contrasts", "na.action")]
+  opts_prll <- c("projpred.parallel_proj_trigger", "projpred.prll_prj_trigger",
+                 "projpred.parallel_cv", "projpred.prll_cv")
+  opts[opts_prll] <- list(NULL)
+  seeds <- if (.rng) par_rng_streams(n)
+  task <- list(fun = .FUN, args = list(...), opts = opts)
+  if (is.null(.backend)) {
+    # This R session has the objects of its global environment:
+    return(par_chunk(list(xs = .X, seeds = seeds), task))
+  }
+  task$globs <- par_globals(list(.FUN, list(...), .X))
+  par_check_workers()
+  n_chunks <- as.integer(max(1, min(
+    n, future::nbrOfWorkers() *
+      getOption("projpred.parallel_chunks_per_worker", 1L)
+  )))
+  chunks <- lapply(parallel::splitIndices(n, n_chunks), function(idxs) {
+    list(xs = .X[idxs], seeds = seeds[idxs])
+  })
+  if (.progress && use_progressr()) {
+    task$progress <- progressr::progressor(n)
+  }
+  done <- FALSE
+  futs <- list()
+  on.exit(if (!done) future::cancel(futs), add = TRUE)
+  # The globals are given by name, so future does not search for them (and
+  # the futures do not hold the frames of the calling functions). The workers
+  # load projpred when they get par_chunk(). It goes inside `task`: as a
+  # global of its own, future does not send it if it finds it on the search
+  # path (as with pkgload::load_all()), and then the workers need it there.
+  task$run <- par_chunk
+  for (chunk in chunks) {
+    futs <- c(futs, list(future::future(
+      task$run(chunk, task),
+      globals = list(chunk = chunk, task = task),
+      seed = NULL, envir = baseenv()
+    )))
+  }
+  res <- future::value(futs)
+  done <- TRUE
+  return(do.call(c, unname(res)))
+}
+
+# The objects of the global environment that the workers need for the objects
+# in the list `objs` (the function, the arguments and the elements of
+# par_lapply()). A function goes to a worker with its environment, but a
+# function of the global environment (e.g., a function of a custom reference
+# model that is defined in a script, also inside local() or another function
+# of the script) goes without the objects of the global environment that it
+# uses. So for each such function in `objs` (see
+# global_closures()), the globals package finds these objects from the code
+# of the function (also the objects that these use). This does not find
+# objects whose names the code builds at run time (e.g., in get()); global
+# option `projpred.export_to_workers` can name such objects. With that option
+# set to `FALSE`, the workers get no objects of the global environment.
+par_globals <- function(objs) {
+  nms <- getOption("projpred.export_to_workers", character())
+  if (isFALSE(nms)) {
+    return(list())
+  }
+  if (!is.character(nms)) {
+    stop("Global option `projpred.export_to_workers` must be a character ",
+         "vector or `FALSE`.")
+  }
+  genv <- globalenv()
+  # (Without the globals package, only the option gives objects.)
+  if (requireNamespace("globals", quietly = TRUE)) {
+    for (fun in global_closures(objs)) {
+      globs <- globals::cleanup(globals::globalsOf(
+        fun, envir = environment(fun), recursive = TRUE, mustExist = FALSE
+      ))
+      where <- attr(globs, "where")
+      nms <- c(nms, Filter(function(nm) identical(where[[nm]], genv),
+                           names(globs)))
+    }
+  }
+  # The tasks set the RNG state themselves:
+  return(mget(setdiff(unique(nms), ".Random.seed"), envir = genv))
+}
+
+# The functions that `x` reaches through list elements and through the
+# environments of functions (with their parent environments, up to a
+# namespace or the global environment) and whose environment is the global
+# environment or has it as an ancestor before any namespace. Environments
+# that are stored as objects (e.g., R6 objects) are not searched, and active
+# bindings are not read. The search reads the objects of the environments of
+# functions, so it evaluates function arguments that were not evaluated yet.
+global_closures <- function(x) {
+  genv <- globalenv()
+  seen <- list()
+  out <- list()
+  is_top <- function(env) {
+    isNamespace(env) || identical(env, genv) || identical(env, baseenv()) ||
+      identical(env, emptyenv()) || !is.null(attr(env, "name"))
+  }
+  walk_env <- function(env, depth) {
+    if (is_top(env) || any(vapply(seen, identical, logical(1), env))) {
+      return(invisible())
+    }
+    seen[[length(seen) + 1L]] <<- env
+    for (nm in setdiff(ls(env, all.names = TRUE), "...")) {
+      if (bindingIsActive(nm, env)) {
+        next
+      }
+      # An argument without a value gives an error here:
+      obj <- tryCatch(list(get(nm, envir = env, inherits = FALSE)),
+                      error = function(e) NULL)
+      if (!is.null(obj)) {
+        walk(obj[[1]], depth + 1L)
+      }
+    }
+    walk_env(parent.env(env), depth + 1L)
+  }
+  walk <- function(x, depth) {
+    if (depth > 20L || isS4(x)) {
+      return(invisible())
+    }
+    if (is.function(x)) {
+      env <- environment(x)
+      if (is.null(env)) {
+        return(invisible())
+      }
+      if (identical(topenv(env), genv)) {
+        out[[length(out) + 1L]] <<- x
+      }
+      walk_env(env, depth + 1L)
+    } else if (is.list(x)) {
+      for (el in x) {
+        walk(el, depth + 1L)
+      }
+    }
+    return(invisible())
+  }
+  walk(x, 0L)
+  return(unique(out))
+}
+
+# One task of par_lapply(): applies `.task$fun` to the elements `.chunk$xs`,
+# with the arguments `.task$args`, the global options `.task$opts`, the
+# objects `.task$globs` in the global environment, and the RNG stream
+# `.chunk$seeds[[j]]` for element `j` (if there are streams). Afterwards, the
+# options, the global environment and the RNG state of the worker are as
+# before.
+par_chunk <- function(.chunk, .task) {
+  opts_old <- options(.task$opts)
+  on.exit(options(opts_old))
+  genv <- globalenv()
+  if (length(.task$globs) > 0) {
+    nms <- names(.task$globs)
+    nms_new <- setdiff(nms, ls(genv, all.names = TRUE))
+    globs_old <- mget(setdiff(nms, nms_new), envir = genv, inherits = FALSE)
+    on.exit({
+      rm(list = intersect(nms_new, ls(genv, all.names = TRUE)), envir = genv)
+      list2env(globs_old, envir = genv)
+    }, add = TRUE)
+    list2env(.task$globs, envir = genv)
+  }
+  if (!is.null(.chunk$seeds)) {
+    seed_old <- get0(".Random.seed", envir = genv, inherits = FALSE)
+    on.exit({
+      if (is.null(seed_old)) {
+        rm(list = ".Random.seed", envir = genv)
+      } else {
+        assign(".Random.seed", seed_old, envir = genv)
+      }
+    }, add = TRUE)
+  }
+  lapply(seq_along(.chunk$xs), function(j) {
+    if (!is.null(.chunk$seeds)) {
+      assign(".Random.seed", .chunk$seeds[[j]], envir = genv)
+    }
+    out <- do_call(.task$fun, c(list(.chunk$xs[[j]]), .task$args))
+    if (!is.null(.task$progress)) {
+      .task$progress()
+    }
+    out
+  })
+}
+
+# `n` consecutive L'Ecuyer-CMRG streams (see parallel::nextRNGStream()). The
+# first one starts at a seed drawn from the RNG of this R session:
+par_rng_streams <- function(n) {
+  seed <- c(10407L, sample.int(.Machine$integer.max, 6L))
+  seeds <- vector("list", n)
+  for (i in seq_len(n)) {
+    seeds[[i]] <- seed
+    seed <- parallel::nextRNGStream(seed)
+  }
+  return(seeds)
+}
+
+# lapply() over `seq_len(n)` in this R session, with the RNG streams that
+# par_lapply() gives to its elements with `.rng = TRUE` (so a sequential loop
+# gives the results of the parallel one). Afterwards, the RNG state is the one
+# after the draw for the streams.
+seq_lapply_rng <- function(n, fun) {
+  if (n == 0L) {
+    return(list())
+  }
+  par_chunk(list(xs = seq_len(n), seeds = par_rng_streams(n)),
+            list(fun = fun, args = list()))
+}
+
+# Calls `.fun` with the arguments in the list `.args` and in `...` (for
+# par_lapply() over a list of argument lists):
+call_with_args <- function(.args, .fun, ...) {
+  do_call(.fun, c(.args, list(...)))
+}
+
+# Stops if a worker of the future plan does not load the projpred of this R
+# session (same version, same path). The functions of the tasks have the
+# projpred namespace as an ancestor of their environments, so a worker uses
+# the functions of the projpred that it loads. By default, this is the installed
+# projpred, also if this R session uses pkgload::load_all(). One task does the
+# check, on one worker, and only if the workers or the projpred of this R
+# session changed since the last check.
+par_check_workers <- function() {
+  info_fun <- function() {
+    tryCatch(
+      c(as.character(getNamespaceVersion("projpred")),
+        normalizePath(getNamespaceInfo("projpred", "path"), mustWork = FALSE)),
+      error = function(e) c(NA_character_, conditionMessage(e))
+    )
+  }
+  info_main <- unname(info_fun())
+  key <- list(class(future::plan()), future::nbrOfWorkers(), info_main)
+  if (identical(par_state$key_checked, key)) {
+    return(invisible(TRUE))
+  }
+  par_state$key_checked <- NULL
+  environment(info_fun) <- baseenv()
+  info_wrk <- unname(future::value(future::future(
+    info_fun(), globals = list(info_fun = info_fun), seed = NULL,
+    envir = baseenv()
+  )))
+  if (is.na(info_wrk[1])) {
+    stop("The parallel workers cannot load projpred: ", info_wrk[2])
+  }
+  if (!identical(info_wrk, info_main)) {
+    stop("The parallel workers load projpred ", info_wrk[1], " from '",
+         info_wrk[2], "', but this R session uses projpred ", info_main[1],
+         " from '", info_main[2], "'. Set up the workers so that they load ",
+         "the same projpred (see section \"Parallelization\" in `?projpred`).")
+  }
+  par_state$key_checked <- key
+  return(invisible(TRUE))
+}
+
+# Square root of a variance estimate. A negative `x` that is numerically zero
+# gives 0. A clearly negative `x` gives an error. Estimates from subsampled
+# LOO-CV can be negative; for them, use `neg_to_zero = TRUE`. Then a clearly
+# negative `x` gives 0 and a warning of class `projpred_negvar` (with element
+# `stat`).
+sqrt_cut0 <- function(x, neg_to_zero = FALSE, stat = NULL) {
   if (!is.na(x) && sign(x) == -1) {
     if (abs(x) < 1e3 * sqrt(.Machine$double.eps)) {
+      x <- 0
+    } else if (neg_to_zero) {
+      warning(structure(
+        class = c("projpred_negvar", "warning", "condition"),
+        list(message = paste0("The variance estimate for `", stat, "` is ",
+                              "negative (", format(x, digits = 3), "). The ",
+                              "standard error is set to 0."),
+             call = NULL, stat = stat)
+      ))
       x <- 0
     } else {
       stop("Negative (and numerically non-zero) value used as input to ",
@@ -1018,4 +1825,77 @@ verbose_from_deprecated_option <- function(verbose, with_cv = FALSE,
     )
   }
   return(verbose)
+}
+
+# The contrast matrices of the factor columns `vars` of `data` that have a
+# `contrasts` attribute (for example, set by brms or by the user). The matrices
+# are evaluated now, so a later change of `options("contrasts")` does not change
+# them. Returns `NULL` if no such column has this attribute.
+contrasts_from_data <- function(data, vars = names(data)) {
+  nms <- intersect(vars, names(data))
+  # contrasts() needs at least two levels:
+  has_contr <- vapply(nms, function(nm) {
+    is.factor(data[[nm]]) && nlevels(data[[nm]]) >= 2 &&
+      !is.null(attr(data[[nm]], "contrasts"))
+  }, logical(1))
+  if (!any(has_contr)) {
+    return(NULL)
+  }
+  return(lapply(setNames(nm = nms[has_contr]), function(nm) {
+    ctr <- as.matrix(contrasts(data[[nm]]))
+    rownames(ctr) <- levels(data[[nm]])
+    ctr
+  }))
+}
+
+# Removes the `contrasts` attributes of the columns of `data`. Fitters store the
+# contrasts that they used and use them for new data, but new data with such an
+# attribute give the warning "contrasts dropped from factor <name>".
+strip_contrasts <- function(data) {
+  if (!is.data.frame(data)) {
+    return(data)
+  }
+  # One pass over the columns as a list: `[[.data.frame` for each column is
+  # slow for data with many columns, and the projections call this often:
+  has_contr <- !vapply(lapply(data, attr, which = "contrasts"), is.null,
+                       logical(1), USE.NAMES = FALSE)
+  for (j in which(has_contr)) {
+    attr(data[[j]], "contrasts") <- NULL
+  }
+  return(data)
+}
+
+# Sets the contrast matrices `ctrs` (from contrasts_from_data()) as attribute
+# `contrasts` of the factor columns of `data`, so that the submodel fitters use
+# them. A column with other levels than its matrix, or with a level that no row
+# has, keeps the default contrasts (model.frame() with `drop.unused.levels =
+# TRUE` would drop the attribute with a warning).
+set_contrasts <- function(data, ctrs) {
+  if (length(ctrs) == 0 || !is.data.frame(data)) {
+    return(data)
+  }
+  for (nm in intersect(names(ctrs), names(data))) {
+    if (is.factor(data[[nm]]) &&
+        identical(levels(data[[nm]]), rownames(ctrs[[nm]])) &&
+        all(tabulate(data[[nm]], nbins = nlevels(data[[nm]])) > 0)) {
+      attr(data[[nm]], "contrasts") <- ctrs[[nm]]
+    }
+  }
+  return(data)
+}
+
+# The contrast matrices (see contrasts_from_data()) of the factors in the
+# left-hand sides of the group-level terms of `random` (a formula such as
+# `~ (1 + f | g)`), as set in `data`. The grouping variables are left out. A
+# factor with a level that no row has is left out, because model.frame() with
+# `drop.unused.levels = TRUE` drops its `contrasts` attribute.
+re_contrasts <- function(data, random) {
+  vars <- unlist(lapply(reformulas::findbars(random), function(bar) {
+    all.vars(bar[[2]])
+  }))
+  vars <- Filter(function(nm) {
+    x <- data[[nm]]
+    !is.factor(x) || all(tabulate(x, nbins = nlevels(x)) > 0)
+  }, intersect(unique(vars), names(data)))
+  return(contrasts_from_data(data, vars = vars))
 }

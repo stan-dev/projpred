@@ -5,6 +5,15 @@
 ##   terms, response and a boolean global intercept indicating whether the
 ##   intercept is included or not.
 extract_terms_response <- function(formula) {
+  # The result depends only on the expression of `formula` (not on its
+  # environment):
+  key <- c(class(formula), deparse(formula, width.cutoff = 500L))
+  cached_by_strings("extract_terms_response", key, function() {
+    extract_terms_response_uncached(formula)
+  })
+}
+
+extract_terms_response_uncached <- function(formula) {
   tt <- terms(formula)
   terms_ <- attr(tt, "term.labels")
   ## when converting the terms_ to a list the first element is
@@ -51,19 +60,28 @@ expand_formula <- function(formula, data) {
   return(formula(terms(formula, data = data)))
 }
 
-remove_duplicates <- function(formula) {
+# Returns the arguments of a smooth term, for example c("x", "z") for
+# "s(x, z)". projpred does not allow other arguments of s() and t2() (see
+# parse_additive_terms()).
+smooth_args <- function(smooth) {
+  cl <- str2lang(smooth)
+  return(unname(vapply(as.list(cl)[-1], deparse_combine, character(1))))
+}
+
+# Returns the linear terms of `formula` that are also an argument of a smooth
+# term, for example `x` next to `s(x)`. With the default bases of mgcv, the smooth term
+# contains the linear term, so the coefficient of the linear term is not
+# identifiable. Interaction terms (such as `x:z` next to `t2(x, z)`) are not
+# checked.
+smooth_covered_terms <- function(formula) {
   terms <- extract_terms_response(formula)
   linear <- terms$individual_terms
-  additive <- unlist(regmatches(
-    terms$additive_terms,
-    gregexpr("(?<=\\().*?(?=\\))",
-             terms$additive_terms,
-             perl = TRUE)
-  ))
-  additive <- trimws(unique(unlist(
-    strsplit(paste0(additive, collapse = ","), ",")
-  )))
-  dups <- linear[!is.na(match(linear, additive))]
+  covered <- unique(unlist(lapply(terms$additive_terms, smooth_args)))
+  return(linear[linear %in% covered])
+}
+
+remove_duplicates <- function(formula) {
+  dups <- smooth_covered_terms(formula)
   if (length(dups) > 0) {
     update(formula, as.formula(paste0(
       ". ~ . - ",
@@ -101,10 +119,17 @@ extract_response <- function(response) {
 # @return Character vector of parsed group terms, but as extracted by
 #   labels(terms()), i.e., lacking the surrounding parentheses.
 parse_group_terms <- function(group_terms) {
+  if (any(grepl("\\|\\|", group_terms))) {
+    stop("projpred does not support group terms with `||` (uncorrelated ",
+         "group-level effects) yet. You can write `(x || g)` as ",
+         "`(1 | g) + (0 + x | g)`, but then the submodels merge these terms ",
+         "into one term with correlations.")
+  }
   has_call <- sapply(strsplit(group_terms, "\\|"), function(grp_trm_split) {
     if (length(grp_trm_split) != 2) {
-      stop("Unexpected number of `|` characters in group terms. Please ",
-           "notify the package maintainer.")
+      stop("projpred does not support group terms with more than one `|` ",
+           "character (except for `(<terms> |<ID>| <group>)` in the ",
+           "reference model formula) or a `|` inside a function call.")
     }
     grepl("\\(", grp_trm_split[2])
   })
@@ -113,6 +138,69 @@ parse_group_terms <- function(group_terms) {
          "character are not allowed.")
   }
   return(group_terms)
+}
+
+# Remove the correlation IDs of brms group terms: `(<terms> |<ID>| <group>)`
+# becomes `(<terms> | <group>)`. R parses `a |id| g` as `(a | id) | g`. Only
+# the `+`, `-` and `(` calls of the right-hand side are searched, so a `|`
+# inside another call (for example `I(a | b | c)`) does not change. With
+# `verbose = TRUE`, a message names the removed IDs. The output is a list with
+# the new `formula` and `grp_fctrs_shared_id`, the grouping factors with more
+# than one term, all with the same ID (brms correlates these terms).
+rm_group_ids <- function(formula, verbose = TRUE) {
+  ids <- character()
+  fctrs <- character()
+  # As in the term labels of terms(): one string, with backticks:
+  dprs <- function(x) {
+    paste(deparse(x, width.cutoff = 500L, backtick = TRUE), collapse = " ")
+  }
+  rm_id <- function(e) {
+    if (!is.call(e)) {
+      return(e)
+    }
+    if (identical(e[[1]], as.name("|")) && length(e) == 3 &&
+        is.call(e[[2]]) && identical(e[[2]][[1]], as.name("|")) &&
+        length(e[[2]]) == 3) {
+      ids <<- c(ids, dprs(e[[2]][[3]]))
+      fctrs <<- c(fctrs, dprs(e[[3]]))
+      e[[2]] <- e[[2]][[2]]
+      return(e)
+    }
+    if (identical(e[[1]], as.name("|")) && length(e) == 3) {
+      # A group term without an ID:
+      ids <<- c(ids, "")
+      fctrs <<- c(fctrs, dprs(e[[3]]))
+      return(e)
+    }
+    if (as.character(e[[1]])[1] %in% c("+", "-", "(")) {
+      for (i in seq_along(e)[-1]) {
+        e[[i]] <- rm_id(e[[i]])
+      }
+    }
+    return(e)
+  }
+  formula[[length(formula)]] <- rm_id(formula[[length(formula)]])
+  if (any(nzchar(ids)) && verbose) {
+    message("Removing the correlation ID(s) ",
+            paste0("`", unique(ids[nzchar(ids)]), "`", collapse = ", "),
+            " from the group terms of the reference model formula. The ",
+            "submodels contain only the predictor of the response, so they ",
+            "do not have correlations with the group terms of other ",
+            "responses or distributional parameters.")
+  }
+  # The grouping factors with more than one term, all with the same ID:
+  shared <- vapply(split(ids, fctrs), function(ids_f) {
+    length(ids_f) > 1 && all(nzchar(ids_f)) && length(unique(ids_f)) == 1
+  }, logical(1))
+  return(list(formula = formula,
+              grp_fctrs_shared_id = names(shared)[shared]))
+}
+
+# The grouping factors that have more than one group term. `group_terms` as in
+# parse_group_terms().
+grp_fctrs_multi <- function(group_terms) {
+  grp_fctrs <- trimws(sub("^.*\\|", "", group_terms))
+  return(unique(grp_fctrs[duplicated(grp_fctrs)]))
 }
 
 ## Parse additive terms (smooth terms) from a list of individual terms. See
@@ -131,11 +219,29 @@ parse_additive_terms <- function(terms) {
   smooth <- unlist(lapply(smooth_terms, function(st) {
     grep(make_function_regexp(st), terms, value = TRUE)
   }))
-  if (any(grepl("\\(.+,.*=.+\\)", smooth))) {
+  if (any(vapply(smooth, function(st) has_named_smooth_arg(str2lang(st)),
+                 logical(1)))) {
     stop("In s() and t2() terms, arguments other than predictors are not ",
          "allowed.")
   }
   return(smooth)
+}
+
+# Checks whether a call to s() or t2() in the expression `e` contains a named
+# argument (for example `k = 5` or `by = g`) at any position, also in a call
+# inside the s() or t2() call (for example `s(poly(x, degree = 2))`).
+has_named_smooth_arg <- function(e, in_smooth = FALSE) {
+  if (!is.call(e)) {
+    return(FALSE)
+  }
+  fn <- e[[1]]
+  in_smooth <- in_smooth ||
+    (is.name(fn) && as.character(fn) %in% c("s", "t2"))
+  if (in_smooth && any(nzchar(names(e)[-1]))) {
+    return(TRUE)
+  }
+  return(any(vapply(as.list(e)[-1], has_named_smooth_arg, logical(1),
+                    in_smooth = in_smooth)))
 }
 
 make_function_regexp <- function(fname) {
@@ -651,19 +757,63 @@ count_terms_in_group_term <- function(term) {
   return(length(terms_))
 }
 
+# Cache for results that depend only on strings (term labels, formula text).
+# The fold-wise searches of cv_varsel() and the steps of a search use the same
+# strings again, so these results are computed once. The cache is a
+# utils::hashtab(), so a key can be any character vector (with names and `NA`)
+# or a list of atomic vectors. The cache is emptied when it has `max_n`
+# entries; otherwise it stays for the R session.
+string_cache <- new.env(parent = emptyenv())
+
+# The value of `compute()` for `key` (a character vector or a list of atomic
+# vectors), from the cache if possible. `type` separates the functions that
+# use the cache.
+cached_by_strings <- function(type, key, compute, max_n = 10000L) {
+  tab <- string_cache$tab
+  if (is.null(tab)) {
+    tab <- utils::hashtab("identical")
+    string_cache$tab <- tab
+  }
+  k <- list(type, key)
+  hit <- utils::gethash(tab, k)
+  if (!is.null(hit)) {
+    return(hit[[1]])
+  }
+  value <- compute()
+  if (utils::numhash(tab) >= max_n) {
+    utils::clrhash(tab)
+  }
+  utils::sethash(tab, k, list(value))
+  return(value)
+}
+
 # The parts of the term strings `term_strings` (for example "x1 + x2" or
 # "I(a + b) + (1 | g)") at the `+` signs that join terms. A `+` inside a call
 # (as in I(a + b) or log(x + 1)) does not split. The parts are deparsed again,
 # so their spacing is that of terms() labels (for example "poly(x3, 2)" for
 # "poly(x3,2)"), and non-syntactic names keep their backticks.
 split_plus <- function(term_strings) {
+  # A loop, not recursion: the call tree of a long `+` chain is deep. The loop
+  # goes down the left operands and puts the right operands on a stack (`top`
+  # is the index of its last element), so the parts come in their order.
   parts_of <- function(expr) {
-    if (is.call(expr) && identical(expr[[1L]], as.name("+")) &&
-        length(expr) == 3L) {
-      return(c(parts_of(expr[[2L]]), parts_of(expr[[3L]])))
+    parts <- character()
+    stack <- list(expr)
+    top <- 1L
+    while (top > 0L) {
+      e <- stack[[top]]
+      top <- top - 1L
+      while (is.call(e) && identical(e[[1L]], as.name("+")) &&
+             length(e) == 3L) {
+        top <- top + 1L
+        stack[top] <- list(e[[3L]])
+        e <- e[[2L]]
+      }
+      parts[length(parts) + 1L] <- join_lines(
+        paste(deparse(e, width.cutoff = 500L, backtick = TRUE), collapse = "\n")
+      )
     }
-    return(paste(deparse(expr, width.cutoff = 500L, backtick = TRUE),
-                 collapse = " "))
+    return(parts)
   }
   return(as.character(unlist(
     lapply(term_strings, function(x) parts_of(str2lang(x))),
@@ -672,20 +822,29 @@ split_plus <- function(term_strings) {
 }
 
 # Term labels with the variables of an interaction in sorted order, so that, for
-# example, "x2:x1" and "x1:x2" are equal (as for terms()).
+# example, "x2:x1" and "x1:x2" are equal (as for terms()). The lines of a long
+# label are joined (see join_lines()).
 norm_term_labels <- function(labels) {
-  vapply(strsplit(labels, ":", fixed = TRUE), function(parts) {
-    paste(sort(trimws(parts)), collapse = ":")
-  }, character(1))
+  cached_by_strings("norm_term_labels", labels, function() {
+    vapply(strsplit(join_lines(labels), ":", fixed = TRUE), function(parts) {
+      paste(sort(trimws(parts)), collapse = ":")
+    }, character(1))
+  })
 }
 
 # For each search term: its term labels (see norm_term_labels()) and, for a
 # search term with one label, the string that select_possible_terms_size()
-# returns for it. Computed once per search, so that
+# returns for it. Cached for each set of search terms, so that
 # select_possible_terms_size() does not parse the same formulas again for each
 # candidate and step. Returns `NULL` if a search term has a smooth, group-level
 # or offset term or no intercept (the fast path does not cover these cases).
 search_term_info <- function(search_terms) {
+  cached_by_strings("search_term_info", search_terms, function() {
+    search_term_info_uncached(search_terms)
+  })
+}
+
+search_term_info_uncached <- function(search_terms) {
   info <- lapply(search_terms, function(x) {
     if (identical(x, "1")) {
       return(list(labels = character(0), label_out = "1"))
@@ -748,15 +907,26 @@ select_possible_terms_size_simple <- function(chosen, terms, size, term_info,
 ## @param chosen A list of currently chosen terms
 ## @param terms A list of all possible terms
 ## @param size Maximum allowed size
-## @param term_info Optional output of search_term_info() for `terms`
-select_possible_terms_size <- function(chosen, terms, size, term_info = NULL) {
+## @param use_term_info A single logical value indicating whether to use
+##   search_term_info() for `terms` (faster; the result is the same)
+select_possible_terms_size <- function(chosen, terms, size,
+                                       use_term_info = FALSE) {
   if (size < 1) {
     stop("size must be at least 1")
   }
+  key <- list(size, use_term_info, chosen, terms)
+  cached_by_strings("select_possible_terms_size", key, function() {
+    select_possible_terms_size_uncached(chosen, terms, size, use_term_info)
+  })
+}
+
+select_possible_terms_size_uncached <- function(chosen, terms, size,
+                                                use_term_info = FALSE) {
+  term_info <- if (use_term_info) search_term_info(terms) else NULL
 
   # The terms of the already chosen submodel (the same for all candidates):
   terms_chosen <- extract_terms_response(make_formula(c(chosen)))
-  if (!is.null(term_info) && all(terms %in% names(term_info)) &&
+  if (!is.null(term_info) &&
       length(terms_chosen$additive_terms) == 0 &&
       length(terms_chosen$group_terms) == 0 &&
       isTRUE(terms_chosen$global_intercept)) {
@@ -769,18 +939,38 @@ select_possible_terms_size <- function(chosen, terms, size, term_info = NULL) {
              terms_chosen$additive_terms,
              perl = TRUE)
   ))
+  # A smooth term can enter only after the linear terms of its variables if
+  # these linear terms are search terms (without a smooth term). With the
+  # default bases of mgcv, a smooth term contains the linear term, so the smooth
+  # term then adds the nonlinear part, and a submodel has the same size on all
+  # search paths. Names are compared without backticks, as smooth_args() gives
+  # them:
+  unquote <- function(nms) gsub("`", "", nms, fixed = TRUE)
+  linear_search <- unique(unquote(unlist(lapply(terms, function(x) {
+    tt <- extract_terms_response(make_formula(x))
+    if (length(tt$additive_terms) > 0) {
+      return(NULL)
+    }
+    return(tt$individual_terms)
+  }))))
   valid_sub_trm_combs <- lapply(terms, function(x) {
     ## if we are adding a linear term whose smooth is already
     ## included, we reject it
     terms_new <- extract_terms_response(make_formula(x))
     linear <- terms_new$individual_terms
+    smooth_vars <- unquote(unlist(lapply(terms_new$additive_terms,
+                                         smooth_args)))
+    if (!all(intersect(smooth_vars, linear_search) %in%
+               unquote(c(terms_chosen$individual_terms, linear)))) {
+      return(NA)
+    }
     dups <- setdiff(linear[!is.na(match(linear, additive))], chosen)
 
     size_crr <- count_terms_chosen(c(chosen, x)) - length(dups)
     if (size_crr == size) {
       if (length(dups) > 0) {
         tt <- terms(formula(paste("~", x, "-", paste(dups, collapse = "-"))))
-        x <- setdiff(attr(tt, "term.labels"), chosen)
+        x <- setdiff(join_lines(attr(tt, "term.labels")), chosen)
         if (grepl("\\|", x) && !grepl("[()]", x)) {
           x <- paste0("(", x, ")")
         }
@@ -814,7 +1004,14 @@ select_possible_terms_size <- function(chosen, terms, size, term_info = NULL) {
 ## @return a character vector containing only the right hand side.
 to_character_rhs <- function(rhs) {
   chr <- as.character(rhs)
-  return(chr[length(chr)])
+  return(join_lines(chr[length(chr)]))
+}
+
+# Deparsed code (from as.character(), deparse() or terms() labels) breaks a long
+# expression into lines. Join the lines with one space, as in a short
+# expression.
+join_lines <- function(x) {
+  gsub("[[:space:]]*\n[[:space:]]*", " ", x)
 }
 
 ## Given a refmodel structure, count the number of terms included.
@@ -830,6 +1027,14 @@ count_terms_chosen <- function(list_of_terms, duplicates = TRUE) {
   return(
     count_terms_in_formula(flatten_formula(formula, duplicates = duplicates))
   )
+}
+
+# The size of the submodel with all of the search terms `search_terms` (not
+# counting the intercept), that is, the largest size of a forward search. With
+# the default search terms, this counts a linear term and a smooth term of the
+# same variable as two terms (see select_possible_terms_size()).
+nterms_search_all <- function(search_terms) {
+  return(count_terms_chosen(unique(split_plus(search_terms))) - 1L)
 }
 
 ## Helper function to evaluate right hand side formulas in a context
@@ -887,52 +1092,35 @@ lhs <- function(x) {
   if (length(x) == 3L) update(x, . ~ 1) else NULL
 }
 
-# Collapse "raw" predictor terms representing contrasts, dummy codings, or
-# polynomial terms into their corresponding original terms from a model formula.
+# Collapse "raw" predictor terms (the columns of the model matrix, for example
+# those of contrasts, dummy codings, or polynomial terms) into their
+# corresponding original terms from a model formula.
 #
-# @param path Vector of ranked "raw" predictor terms ("raw" means that these
-#   terms may represent contrasts, dummy codings, or polynomial terms).
+# @param path Vector of ranked "raw" predictor terms: column names of
+#   `model.matrix(formula, data = data)`.
 # @param formula The model formula (from which the ranking in `path` was
 #   derived).
 # @param data The model data (from which the ranking in `path` was derived).
 #
-# @return A character vector of collapsed predictor terms (i.e., all of these
-#   returned predictor terms occur in `formula`).
+# @return A character vector of collapsed predictor terms, in the order of their
+#   first column in `path`. These terms occur in `formula`; an element of `path`
+#   that is not a column (for example `NA`) is returned as it is.
 collapse_ranked_predictors <- function(path, formula, data) {
-  tt <- terms(formula)
-  terms_ <- attr(tt, "term.labels")
-  # Match the columns of terms with mo() calls exactly: a substring replacement
-  # for column `mo(x)1` would also change column `mo(x)10`. The substring
-  # replacements for the other terms do not change these columns:
-  is_mo <- vapply(terms_, function(term) {
-    has_mo_call(str2lang(term))
-  }, logical(1), USE.NAMES = FALSE)
-  path_mo <- rep(NA_character_, length(path))
-  for (term in terms_[is_mo]) {
-    x <- model.matrix(as.formula(paste("~ 1 +", term)), data = data)
-    path_mo[path %in% setdiff(colnames(x), "(Intercept)")] <- term
-  }
-  is_path_mo <- !is.na(path_mo)
-  path_other <- path[!is_path_mo]
-  for (term in terms_[!is_mo]) {
-    # TODO: In the following model.matrix() call, allow user-specified contrasts
-    # to be passed to argument `contrasts.arg`. The `contrasts.arg` default
-    # (`NULL`) uses `options("contrasts")` internally, but it might be more
-    # convenient to let users specify contrasts directly. At that occasion,
-    # contrasts should also be tested thoroughly (not done until now).
-    x <- model.matrix(as.formula(paste("~ 1 +", term)), data = data)
-    if (length(attr(x, "contrasts")) == 0 &&
-        !grepl("^poly[m]*\\(.+\\)$", term)) {
-      next
-    }
-    x <- x[, colnames(x) != "(Intercept)", drop = FALSE]
-    for (col_nm in colnames(x)) {
-      path_other <- gsub(esc_chars(col_nm), term, path_other)
-    }
-  }
-  path[!is_path_mo] <- path_other
-  path[is_path_mo] <- path_mo[is_path_mo]
-  return(unique(path))
+  # `data` is the model frame of search_L1(), with the contrasts of the
+  # reference model:
+  x <- model.matrix(formula, data = data)
+  # Match the columns to the terms by the "assign" attribute (0: the
+  # intercept), not by the text of the column names:
+  term_idx <- attr(x, "assign")
+  # The labels of a long term have line breaks (see join_lines()). Its column
+  # names can also have them; join_lines() on `path` and on the column names
+  # keeps the match also if `path` has joined column names:
+  term_labels <- join_lines(attr(terms(formula, data = data), "term.labels"))
+  path <- join_lines(path)
+  term_of_col <- term_labels[term_idx[term_idx > 0]]
+  path_terms <- term_of_col[match(path, join_lines(colnames(x)[term_idx > 0]))]
+  path_terms[is.na(path_terms)] <- path[is.na(path_terms)]
+  return(unique(path_terms))
 }
 
 split_formula_random_gamm4 <- function(formula) {
@@ -967,14 +1155,10 @@ formula.gamm4 <- function(x, ...) {
     paste0("(", t, ")")
   }))
   ref <- paste(ref, collapse = " + ")
-  updated <- update(formula, paste(". ~ . + ", ref))
-  form <- flatten_formula(update(
-    updated,
-    paste(
-      ". ~",
-      paste(split_formula(updated), collapse = " + ")
-    )
-  ))
+  # Keep only the terms of the model, as for a model without group-level
+  # terms. The search adds the linear terms of the smooth variables as
+  # candidates.
+  form <- flatten_formula(update(formula, paste(". ~ . + ", ref)))
   # TODO (GAMMs): Once rstanarm issue #253 has been resolved, we probably need
   # to include offset terms here (in the output of formula.gamm4()) as well.
   return(form)

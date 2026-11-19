@@ -7,6 +7,8 @@
 #' @import ggplot2
 #' @importFrom rstantools posterior_linpred
 #' @importFrom loo kfold
+#' @importFrom methods as
+#' @importFrom posterior as_draws as_draws_matrix
 #'
 #' @description
 #'
@@ -73,19 +75,72 @@
 #'     projection in case of the [binomial()] or [brms::bernoulli()] family):
 #'     [lme4::lmer()] (the returned object inherits from class `lmerMod`) for
 #'     the [gaussian()] family, [lme4::glmer()] (the returned object inherits
-#'     from class `glmerMod`) for all other families. For [lme4::glmer()],
+#'     from class `glmerMod`) for all other families. Exception: for the
+#'     [binomial()] family with the logit link and the [poisson()] family with
+#'     the log link, if all group-level terms are random intercepts
+#'     `(1 | <group>)`, \pkg{projpred} uses its own fit (the returned object
+#'     inherits from class `projpred_mlvl`). This fit minimizes the Laplace
+#'     approximation of [lme4::glmer()] (with `nAGQ = 1`), without rounding
+#'     non-integer responses. \pkg{projpred} uses [lme4::glmer()] instead if
+#'     the fit does not converge, if the submodel has an offset, a
+#'     rank-deficient model matrix or more than 500 group levels in total, if
+#'     `...` contains arguments of
+#'     [lme4::glmer()] (for example `control` or `nAGQ`), or if global option
+#'     `projpred.mlvl_laplace` is `FALSE`. After a fit that does not converge,
+#'     the [lme4::glmer()] fit is returned as class `projpred_mlvl`, too.
+#'     [as_glmerMod()] converts an object of class `projpred_mlvl` to class
+#'     `glmerMod`. For [lme4::glmer()],
 #'     \pkg{projpred} uses `control = lme4::glmerControl(optimizer = "bobyqa")`,
 #'     so both optimization stages use BOBYQA. A `control` argument in `...`
 #'     replaces this default in the first fit. After some \pkg{lme4} errors,
 #'     \pkg{projpred} refits with its own settings and ignores this `control`.
+#'     \pkg{lme4} versions before 2.1-1 evaluate the objective of
+#'     [lme4::glmer()] for the [binomial()] and the [poisson()] family with
+#'     rounding: they round non-integer binomial responses and weights, and
+#'     the objective is infinite for non-integer Poisson responses (then the
+#'     group-level standard deviations stay at their start values). With
+#'     these \pkg{lme4} versions, \pkg{projpred} passes a copy of these
+#'     families with another name (ending in `_projpred`) and an `aic`
+#'     function without rounding. The submodel fits then have this family
+#'     name, so for example [lme4::simulate.merMod()] does not work for them.
 #'     + For the augmented-data projection: [ordinal::clmm()] (the returned
 #'     object inherits from class `clmm`) for the [brms::cumulative()] family,
 #'     [mclogit::mblogit()] (the returned object inherits from class `mmblogit`)
-#'     for the [brms::categorical()] family.
+#'     for the [brms::categorical()] family. Exception: for the
+#'     [brms::cumulative()] family, if the only group-level term is a random
+#'     intercept `(1 | <group>)`, \pkg{projpred} uses its own fit (the returned
+#'     object inherits from classes `projpred_mlvl_cumul` and `projpred_mlvl`).
+#'     This fit minimizes the Laplace approximation that [ordinal::clmm()]
+#'     uses, for the links of [brms::cumulative()] (`logit`, `probit`,
+#'     `probit_approx`, `cloglog`, `cauchit`). \pkg{projpred} uses
+#'     [ordinal::clmm()] instead if the fit does not converge, if the submodel
+#'     has an offset or a rank-deficient model matrix, if `...` contains
+#'     arguments of [ordinal::clmm()] or of its optimizers (for example
+#'     `method` or `control`), or if global option `projpred.mlvl_laplace` is
+#'     `FALSE`. After a fit that does not converge, the [ordinal::clmm()] fit
+#'     is returned as class `projpred_mlvl_cumul`, too. For [ordinal::clmm()]
+#'     with a single group-level term `(1 | <group>)`, \pkg{projpred} uses
+#'     `method = "ucminf"` and `grad = "forward"` (see
+#'     [ordinal::clmm.control()]). If this fit fails or does not converge,
+#'     \pkg{projpred} refits with the default settings of [ordinal::clmm()]. An
+#'     argument `method` or `control` in `...` replaces this default. For the
+#'     `cloglog` and `loglog` links, \pkg{projpred} always uses
+#'     `useMatrix = TRUE` (see [ordinal::clmm.control()]) and does not use
+#'     `ucminf()`. The code of [ordinal::clmm()] for a single group-level term
+#'     uses the other of these two links. For the [brms::categorical()] family,
+#'     \pkg{projpred} only supports `catCov = "free"` (see
+#'     [mclogit::mblogit()]).
 #' * Submodel without multilevel but additive terms: [mgcv::gam()] (the returned
-#' object inherits from class `gam`).
+#' object inherits from class `gam`). \pkg{projpred} uses the default `method`
+#' of [mgcv::gam()]. For the [poisson()] family, the responses of the
+#' traditional projection are not integers. Then [mgcv::gam()] with
+#' `method = "REML"` or `method = "ML"` stops with an error. Such a `method`
+#' can come from `...` or (\pkg{mgcv} >= 1.9-5) from global option
+#' `mgcv.gam.method`.
 #' * Submodel with multilevel and additive terms: [gamm4::gamm4()] (within
-#' \pkg{projpred}, the returned object inherits from class `gamm4`).
+#' \pkg{projpred}, the returned object inherits from class `gamm4`). For the
+#' [binomial()] and the [poisson()] family, \pkg{projpred} passes the same
+#' family as to [lme4::glmer()] (see above).
 #'
 #' # Verbosity, messages, warnings, errors
 #'
@@ -106,51 +161,82 @@
 #'
 #' # Parallelization
 #'
-#' The projection of the reference model onto a submodel can be run in parallel
-#' (across the projected draws). This is powered by the \pkg{foreach} package.
-#' Thus, any parallel (or sequential) backend compatible with \pkg{foreach} can
-#' be used, e.g., the backends from packages \pkg{doParallel}, \pkg{doMPI}, or
-#' \pkg{doFuture}. Using the global option `projpred.parallel_proj_trigger`, the
-#' number of projected draws below which no parallelization is applied (even if
-#' a parallel backend is registered) can be modified. Such a "trigger" threshold
-#' exists because of the computational overhead of a parallelization which makes
-#' the projection parallelization only useful for a sufficiently large number of
-#' projected draws. By default, the projection parallelization is turned off,
-#' which can also be achieved by supplying `Inf` (or `NULL`) to option
-#' `projpred.parallel_proj_trigger`. Note that we cannot recommend the
-#' projection parallelization on Windows because in our experience, the
-#' parallelization overhead is larger there, causing a parallel run to take
-#' longer than a sequential run. Also note that the projection parallelization
-#' works well for submodels which are GLMs (and hence also for the latent
-#' projection if the submodel has no multilevel or additive predictor terms),
-#' but for all other types of submodels, the fitted submodel objects are quite
-#' big, which---when running in parallel---may lead to excessive memory usage
-#' which in turn may crash the R session (on Unix systems, setting an
-#' appropriate memory limit via [unix::rlimit_as()] may avoid crashing the whole
-#' machine). Thus, we currently cannot recommend parallelizing projections onto
-#' submodels which are GLMs (in this context, the latent projection onto a
-#' submodel without multilevel and without additive terms may be regarded as a
-#' projection onto a submodel which is a GLM). However, for [cv_varsel()], there
-#' is also a *CV* parallelization (i.e., a parallelization of \pkg{projpred}'s
-#' cross-validation) which can be activated via argument `parallel` (which in
-#' turn can be controlled via global option `projpred.parallel_cv`).
+#' \pkg{projpred} can run two kinds of computations in parallel: the fold-wise
+#' computations of [cv_varsel()] (the *CV* parallelization, activated via
+#' argument `parallel` of [cv_varsel()], which in turn can be controlled via
+#' global option `projpred.parallel_cv`) and the projections of the single
+#' draws (or clusters) of the reference model onto a submodel (the
+#' *projection* parallelization, see below).
 #'
-#' For the CV parallelization, global option `projpred.export_to_workers` may be
-#' set to a character vector of names of objects to export from the global
-#' environment to the parallel workers.
+#' Both use the parallel workers of the current plan of the \pkg{future}
+#' package, e.g., `future::plan(future.mirai::mirai_multisession, workers = 4)`
+#' from the \pkg{future.mirai} package or
+#' `future::plan(future::multisession, workers = 4)`. In our experiments with
+#' 8 workers, the first parallel call with the workers of \pkg{future.mirai}
+#' was faster than with those of `future::multisession`, and the workers of
+#' \pkg{future.mirai} returned big results faster (see the projection
+#' parallelization below). So we recommend the workers of \pkg{future.mirai}.
+#' With the sequential plan of \pkg{future} (the default), a parallel run is
+#' not possible, so \pkg{projpred} then runs sequentially and
+#' throws a warning. The workers must be able to load the same
+#' \pkg{projpred} installation as the main R session; \pkg{projpred} checks
+#' this. (If the main R session uses \pkg{projpred} via
+#' `pkgload::load_all()` or `devtools::load_all()`, the workers need to load
+#' the same source directory in the same way.) The parallelization is not
+#' tested on Windows.
+#'
+#' The projection parallelization is controlled by global option
+#' `projpred.parallel_proj_trigger`: the number of projected draws below which
+#' the projections of the draws are not run in parallel (even if parallel
+#' workers are set up). Such a "trigger" threshold exists because of the
+#' computational overhead of a parallelization. By default, the projection
+#' parallelization is turned off, which can also be achieved by supplying
+#' `Inf` (or `NULL`) to option `projpred.parallel_proj_trigger`. The
+#' projection parallelization is mainly useful for submodels with multilevel
+#' or additive terms: for most other submodels, \pkg{projpred} fits all
+#' projected draws in a single call, which does not run in parallel. It is
+#' useful for [varsel()], [project()], and [cv_varsel()] without fold-wise
+#' computations; with the CV parallelization, the workers do not run the
+#' projections of their folds in parallel. Note that the fitted submodel
+#' objects of multilevel and additive submodels are quite big,
+#' which---when running in parallel---may lead to excessive memory usage
+#' which in turn may crash the R session (on Unix systems, setting an
+#' appropriate memory limit via `unix::rlimit_as()` may avoid crashing the
+#' whole machine). The workers also need time to return these objects to the
+#' main R session: in our experiments with 16 workers of
+#' `future::multisession`, this took longer than a sequential run, whereas
+#' 16 workers of \pkg{future.mirai} gave a clear speedup. So for the
+#' projection parallelization, we recommend the workers of
+#' \pkg{future.mirai}.
+#'
+#' In the fold-wise computations of [cv_varsel()], each CV fold has its own
+#' random number stream (L'Ecuyer-CMRG), which \pkg{projpred} derives from the
+#' random number generator of the main R session, with and without the CV
+#' parallelization. So for a given seed, the results depend neither on
+#' argument `parallel`, nor on the number of workers, nor on the plan of the
+#' \pkg{future} package.
+#'
+#' A function goes to a parallel worker with its enclosing environments up
+#' to, but not including, the global environment. So if a function of a
+#' custom reference model is defined in a script and uses other objects of
+#' the global environment, the workers need these objects.
+#' If the \pkg{globals} package is installed, \pkg{projpred} finds them from
+#' the code of such functions and sends them to the workers. This cannot find
+#' objects whose names the code creates at run time (e.g., with [get()]).
+#' Global option `projpred.export_to_workers` may be set to a character vector
+#' of names of such objects, to export them from the global environment to
+#' the parallel workers as well. Setting that option to `FALSE` turns off any
+#' export of objects of the global environment.
 #'
 #' During parallelization (either of the projection or the CV), progression
-#' updates can be received via the \pkg{progressr} package. This only works if
-#' the \pkg{doFuture} backend is used for parallelization, e.g., via
-#' `doFuture::registerDoFuture()` and `future::plan(future::multisession,
-#' workers = 4)`. In that case, the \pkg{progressr} package can be used, e.g.,
-#' by calling `progressr::handlers(global = TRUE)` before running the projection
-#' or the CV in parallel. The \pkg{projpred} package also offers the global
-#' option `projpred.use_progressr` for controlling whether to use the
-#' \pkg{progressr} package (`TRUE` or `FALSE`), but since that global option
-#' defaults to `requireNamespace("progressr", quietly = TRUE) && interactive()
-#' && identical(foreach::getDoParName(), "doFuture")`, it usually does not need
-#' to be set by the user.
+#' updates can be received via the \pkg{progressr} package, e.g., by calling
+#' `progressr::handlers(global = TRUE)` before running the projection or the
+#' CV in parallel. The \pkg{projpred} package also offers the global option
+#' `projpred.use_progressr` for controlling whether to use the \pkg{progressr}
+#' package (`TRUE` or `FALSE`), but since that global option defaults to
+#' `requireNamespace("progressr", quietly = TRUE) && interactive()`, it usually
+#' does not need to be set by the user. Messages and warnings from the workers
+#' are shown in the main R session.
 #'
 #' # Monotonic terms
 #'
@@ -254,7 +340,7 @@
 #'
 #' The following global options are for internal use:
 #' * `projpred.mssg_ndraws`, `projpred.mssg_cut_search`, `projpred.mssg_time`,
-#' `projpred.warn_wobs_ppd`, `projpred.warn_additive_experimental`,
+#' `projpred.mssg_smooth_linear`, `projpred.warn_wobs_ppd`, `projpred.warn_additive_experimental`,
 #' `projpred.warn_allrandom_dis`, `projpred.warn_instable_projections`,
 #' `projpred.warn_cvrefbuilder_NULL`, `projpred.warn_kfold_refits`: A single
 #' logical value indicating whether to throw certain messages or warnings
@@ -262,9 +348,6 @@
 #' meaning of these global options, see their occurrences in the codebase. With
 #' the exception of `projpred.warn_allrandom_dis`, these global options are
 #' currently used in the unit tests to deactivate these messages and warnings.
-#' Global option `projpred.warn_instable_projections` is also used (invisibly)
-#' in the latent vignette to suppress the corresponding warnings while
-#' illustrating the underlying issue (instable projections).
 #' * `projpred.additional_checks`: A single logical value indicating whether to
 #' run some additional checks that are not necessary to be run when users call
 #' the corresponding \pkg{projpred} functions. Currently, these checks are
@@ -293,6 +376,11 @@
 #' the latent projection) from cross-products of the model matrix (default
 #' `TRUE`). With `FALSE`, \pkg{projpred} projects onto each candidate submodel
 #' draw by draw. The cross-products are used only with a positive `regul`.
+#' * `projpred.categ_mlvl_mblogit`: A single logical value indicating whether to
+#' fit the multilevel submodels of the augmented-data projection for the
+#' [brms::categorical()] family with [mclogit::mblogit()] (`TRUE`) or with
+#' \pkg{projpred}'s own implementation of the PQL algorithm of
+#' [mclogit::mblogit()] (`FALSE`, the default).
 #'
 #' @name internal-global-options
 #' @keywords internal
