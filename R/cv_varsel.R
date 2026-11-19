@@ -1453,8 +1453,9 @@ warn_pareto <- function(pareto_k, S, n, warn_txt) {
 }
 
 # The number of Pareto k values above `threshold`. As in loo::psis(), a k value
-# that could not be estimated (`NA`, `NaN` or `-Inf`, for example because the
-# tail of the ratios underflows to 0) counts as `Inf`.
+# that could not be estimated (`NA` or `NaN`, for example because the tail of
+# the ratios underflows to 0) counts as `Inf`. `-Inf` (from some posterior
+# versions in this case) also counts as `Inf`.
 n_high_pareto_k <- function(pareto_k, threshold) {
   pareto_k[is.na(pareto_k) | pareto_k == -Inf] <- Inf
   return(sum(pareto_k > threshold))

@@ -12,6 +12,9 @@ test_that(paste(
   ".ps_khat_threshold() gives the threshold of posterior, capped at 0.7"
 ), {
   for (S in c(40, 100, 1000, 2200, 4000, 1e5)) {
+    expect_equal(.ps_khat_threshold(S),
+                 min(posterior::ps_khat_threshold(S), 0.7), info = S)
+    # The values of loo's internal function:
     expect_equal(.ps_khat_threshold(S), min(1 - 1 / log10(S), 0.7),
                  info = S)
   }
@@ -70,15 +73,19 @@ test_that(paste(
   # The k values of loo::E_loo():
   k_eloo <- new.env()
   ns_loo <- asNamespace("loo")
+  skip_if_not(exists("E_loo.matrix", ns_loo, inherits = FALSE))
   withr::defer(suppressMessages(untrace("E_loo.matrix", where = ns_loo)))
   suppressMessages(trace(
     "E_loo.matrix", where = ns_loo, print = FALSE,
     exit = bquote(assign("k", returnValue()$pareto_k, envir = .(k_eloo)))
   ))
   warns_lat <- character()
+  # With 5 projected draws, cv_varsel() gives a message about SIS:
   cvvs <- withCallingHandlers(
-    cv_varsel(ref, cv_method = "LOO", validate_search = FALSE,
-              nclusters_pred = 5, nterms_max = 1, seed = 1, verbose = FALSE),
+    suppressMessages(cv_varsel(
+      ref, cv_method = "LOO", validate_search = FALSE, nclusters_pred = 5,
+      nterms_max = 1, seed = 1, verbose = FALSE
+    )),
     warning = function(w) {
       if (grepl("recalculation of the latent response",
                 conditionMessage(w), fixed = TRUE)) {
@@ -92,11 +99,77 @@ test_that(paste(
   k <- k_eloo$k
   expect_length(k, n)
   thres <- .ps_khat_threshold(S)
-  # The k value of observation 1 could not be estimated (or is above the
-  # threshold):
-  expect_true(is.na(k[1]) || k[1] > thres)
+  # The k value of observation 1 could not be estimated (`NA` or `-Inf`,
+  # depending on the posterior version) or is above the threshold:
+  expect_true(is.na(k[1]) || k[1] == -Inf || k[1] > thres)
   k_inf <- replace(k, is.na(k) | k == -Inf, Inf)
   expect_length(warns_lat, 1)
   expect_match(warns_lat, sprintf("some (%d / %d)", sum(k_inf > thres), n),
+               fixed = TRUE)
+})
+
+test_that(paste(
+  "cv_varsel() with LOO counts the Pareto k values of the submodel evaluation",
+  "with the threshold for the number of projected draws"
+), {
+  skip_on_cran()
+  # setup.R turns off the Pareto k warnings:
+  withr::local_options(projpred.warn_psis = TRUE)
+  withr::local_seed(8135)
+  n <- 30
+  S <- 4000
+  S_prj <- 30
+  dat <- data.frame(x1 = rnorm(n), x2 = rnorm(n))
+  dat$y <- 0.5 * dat$x1 + rnorm(n)
+  beta <- rbind(rnorm(S, 0, 0.2), rnorm(S, 0.5, 0.2), rnorm(S, 0, 0.2))
+  ref <- init_refmodel(
+    object = list(beta = beta), data = dat, formula = y ~ x1 + x2,
+    family = gaussian(), dis = rep(1, S),
+    ref_predfun = function(fit, newdata = NULL) {
+      nd <- if (is.null(newdata)) dat else newdata
+      cbind(1, as.matrix(nd[, c("x1", "x2")])) %*% fit$beta
+    }
+  )
+  # The number of draws and the k values of each loo::psis() call:
+  psis_calls <- new.env()
+  psis_calls$out <- list()
+  ns_loo <- asNamespace("loo")
+  skip_if_not(exists("psis.matrix", ns_loo, inherits = FALSE))
+  withr::defer(suppressMessages(untrace("psis.matrix", where = ns_loo)))
+  suppressMessages(trace(
+    "psis.matrix", where = ns_loo, print = FALSE,
+    exit = bquote(assign("out", c(
+      get("out", envir = .(psis_calls)),
+      list(list(S = dim(returnValue())[1],
+                k = loo::pareto_k_values(returnValue())))
+    ), envir = .(psis_calls)))
+  ))
+  warns_sub <- character()
+  cvvs <- withCallingHandlers(
+    cv_varsel(ref, cv_method = "LOO", validate_search = FALSE,
+              nclusters_pred = S_prj, nterms_max = 1, seed = 1,
+              verbose = FALSE),
+    warning = function(w) {
+      if (grepl("PSIS-LOO weights given", conditionMessage(w),
+                fixed = TRUE)) {
+        warns_sub <<- c(warns_sub, conditionMessage(w))
+      }
+      invokeRestart("muffleWarning")
+    }
+  )
+  expect_s3_class(cvvs, "vsel")
+  out_sub <- Filter(function(o) o$S == S_prj, psis_calls$out)
+  expect_length(out_sub, 1)
+  k_sub <- out_sub[[1]]$k
+  thres_prj <- .ps_khat_threshold(S_prj)
+  thres_ref <- .ps_khat_threshold(S)
+  # The fixture has k values between the two thresholds, so that the count
+  # depends on the threshold:
+  expect_true(any(k_sub > thres_prj & k_sub <= thres_ref))
+  expect_length(warns_sub, 1)
+  expect_match(warns_sub, sprintf(
+    "Some (%d / %d) ", n_high_pareto_k(k_sub, thres_prj), n
+  ), fixed = TRUE)
+  expect_match(warns_sub, sprintf("are > %s.", round(thres_prj, 2)),
                fixed = TRUE)
 })
