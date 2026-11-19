@@ -12,7 +12,13 @@ p_clust_loop <- function(family, mu, mu_offs, dis, wdraws, cl) {
   eps <- 1e-10
   for (j in seq_len(nclusters)) {
     ind <- which(cl == j)
-    ws <- wdraws[ind] / sum(wdraws[ind]) * (1 - eps)
+    # A cluster with weight sum 0 uses equal weights for its center (and keeps
+    # projection weight 0):
+    w_in <- wdraws[ind]
+    if (length(ind) > 0 && isTRUE(sum(w_in) == 0)) {
+      w_in <- rep(1, length(ind))
+    }
+    ws <- w_in / sum(w_in) * (1 - eps)
     centers[, j] <- mu[, ind, drop = FALSE] %*% ws
     centers_offs[, j] <- mu_offs[, ind, drop = FALSE] %*% ws
     wcluster[j] <- sum(wdraws[ind])
@@ -111,6 +117,38 @@ test_that("get_p_clust() gives the results of the cluster loop", {
     # One draw, one observation:
     inp_1 <- p_clust_inputs(fam, n = 1, S = 1)
     expect_p_clust_loop(fam, inp_1, cl = 1L, info = paste(fam$family, "S 1"))
+  }
+})
+
+test_that(paste(
+  "get_p_clust() gives a cluster with weight sum 0 finite centers and",
+  "projection weight 0"
+), {
+  fams <- list(extend_family(gaussian()), extend_family(poisson()))
+  for (fam in fams) {
+    inp <- p_clust_inputs(fam)
+    S <- ncol(inp$mu)
+    cl_cases <- list(one_draw = seq_len(S),
+                     several_draws = rep(1:8, length.out = S))
+    for (case_name in names(cl_cases)) {
+      cl <- cl_cases[[case_name]]
+      info <- paste(fam$family, case_name)
+      # All draws of cluster 2 have weight 0 (as PSIS-LOO weights that
+      # underflow to 0):
+      w <- inp$wdraws
+      w[cl == 2] <- 0
+      out <- get_p_clust(family = fam, eta = inp$eta, mu = inp$mu,
+                         mu_offs = inp$mu_offs, dis = inp$dis, wdraws = w,
+                         cl = cl)
+      expect_true(all(is.finite(out$mu)), info = info)
+      expect_true(all(is.finite(out$mu_offs)), info = info)
+      expect_true(all(is.finite(out$var)), info = info)
+      expect_identical(out$wdraws_prj[2], 0, info = info)
+      # The center of cluster 2 is the mean of its draws:
+      expect_equal(unclass(out$mu)[, 2],
+                   rowMeans(inp$mu[, cl == 2, drop = FALSE]) * (1 - 1e-10),
+                   info = info)
+    }
   }
 })
 

@@ -431,3 +431,52 @@ test_that(paste(
                  info = nm)
   }
 })
+
+test_that(paste(
+  "cv_varsel() with LOO and validated search works if the PSIS weights of",
+  "all draws of a cluster underflow to 0"
+), {
+  skip_on_cran()
+  withr::local_seed(5311)
+  withr::local_options(projpred.warn_cvrefbuilder_NULL = FALSE)
+  n <- 30
+  S <- 40
+  x <- matrix(rnorm(n * 3), n, 3, dimnames = list(NULL, paste0("x", 1:3)))
+  dat <- data.frame(x)
+  dat$y <- rpois(n, exp(0.5 + 0.5 * x[, 1]))
+  beta <- rbind(rnorm(S, 0.5, 0.1), rnorm(S, 0.5, 0.1),
+                matrix(rnorm(2 * S, 0, 0.1), 2, S))
+  # Draws 1 to 4 predict a huge mean for observation 1. If observation 1 is
+  # left out, the PSIS weights of all other draws underflow to 0, so the
+  # clusters (or thinned draws) without draws 1 to 4 get weight sum 0:
+  ref_predfun <- function(fit, newdata = NULL) {
+    nd <- if (is.null(newdata)) dat else newdata
+    eta <- cbind(1, as.matrix(nd[, colnames(x)])) %*% fit$beta
+    if (is.null(newdata)) {
+      eta[1, 1:4] <- 20
+    }
+    eta
+  }
+  ref <- init_refmodel(object = list(beta = beta), data = dat,
+                       formula = y ~ x1 + x2 + x3, family = poisson(),
+                       ref_predfun = ref_predfun)
+  muffle_pareto <- function(expr) {
+    withCallingHandlers(expr, warning = function(w) {
+      if (grepl("Pareto", conditionMessage(w))) {
+        invokeRestart("muffleWarning")
+      }
+    })
+  }
+  args_draws <- list(clusters = list(nclusters = 5, nclusters_pred = 5),
+                     thinned = list(ndraws = S, ndraws_pred = S))
+  for (case_name in names(args_draws)) {
+    cvvs <- muffle_pareto(do.call(cv_varsel, c(
+      list(ref, cv_method = "LOO", validate_search = TRUE, nterms_max = 2,
+           seed = 1, verbose = FALSE),
+      args_draws[[case_name]]
+    )))
+    expect_s3_class(cvvs, "vsel")
+    lppd <- sapply(cvvs$summaries$sub, `[[`, "lppd")
+    expect_true(all(is.finite(lppd)), info = case_name)
+  }
+})
