@@ -26,13 +26,16 @@ If you read this from a place other than <https://mc-stan.org/projpred/news/inde
 * Faster predictions of additive multilevel submodels (`gamm4::gamm4()`): one linear-predictor matrix and one random-effects design serve all projected draws. For example, the predictions for 2000 observations and 100 projected draws are about 28 times faster. (GitHub: #239, #639)
 * Faster reweighting of the clusters of the reference model draws in `cv_varsel()` with `validate_search = TRUE`. For example, `cv_varsel()` with `validate_search = TRUE` and 400 clusters is about 2 times faster for a Gaussian model with 382 observations. (GitHub: #601)
 * New argument `loo_perturb_alpha` of `cv_varsel()`. With LOO, `validate_search = TRUE` and `refit_prj = TRUE`, the fold-wise searches use observation weight perturbation, so the LOO estimates jump less between submodel sizes. This changes the default results. (GitHub: #603, #620)
-* The parallelization now uses the **future** package instead of **foreach**. Set up the workers with, e.g., `future::plan(future::multisession, workers = 4)`; without workers, a parallel run gives a warning and runs sequentially. A **foreach** backend (e.g., from `doParallel::registerDoParallel()`) has no effect anymore. (GitHub: #629)
+* The parallelization now uses the **future** package instead of **foreach**. Set up the workers with, e.g., `future::plan(future.mirai::mirai_multisession, workers = 4)`; without workers, a parallel run gives a warning and runs sequentially. A **foreach** backend (e.g., from `doParallel::registerDoParallel()`) has no effect anymore. (GitHub: #629)
 * Global options `projpred.foreach_errorhandling` and `projpred.foreach_verbose` are removed. (GitHub: #629)
 * In `cv_varsel()`, each CV fold now has its own random number stream, so for a given seed, the results depend neither on `parallel` nor on the number of workers. Results of folds that draw random numbers (e.g., in K-fold CV) differ from earlier versions. (GitHub: #629)
 * Faster weight perturbation in `cv_varsel()` with `validate_search = TRUE` for Gaussian models and the latent projection. For example, `cv_varsel()` with 400 clusters is about 9 % faster for a Gaussian model with 382 observations. (GitHub: #621)
 * The forward search adds a smooth term only after the linear terms of its variables, so the full model has the same size on all search paths. The full-model warnings use the size of the submodel with all search terms. This changes the default results of additive models. (GitHub: #638)
 * Faster binomial (logit) and Poisson (log) multilevel submodels with group-level intercepts only: projpred's own Laplace fit (class `projpred_mlvl`). `cv_varsel()` with `validate_search = TRUE` is about 8 times faster. (GitHub: #644)
 * The fits of these submodels (for example, in element `outdmin` of `project()` output) have class `projpred_mlvl` instead of `glmerMod`. The new function `as_glmerMod()` converts such a fit to class `glmerMod`. (GitHub: #644)
+* New argument `search_screen` of `varsel()` and `cv_varsel()`: a faster forward search for binomial (logit) and Poisson (log) submodels, which projects only the `search_screen` best candidates per step, ranked by a score statistic. (GitHub: #646)
+* Faster multilevel submodels of the `brms::cumulative()` family with a single group-level intercept term: projpred's own Laplace fit (class `projpred_mlvl_cumul`) instead of `ordinal::clmm()`. `cv_varsel()` with `validate_search = TRUE` is about 6 times faster. (GitHub: #645)
+* Argument `search_screen` now also screens the candidates for cumulative models with the augmented-data projection (without multilevel terms) and for the latent projection with multilevel terms. (GitHub: #647)
 
 ## Minor changes
 
@@ -49,6 +52,7 @@ If you read this from a place other than <https://mc-stan.org/projpred/news/inde
 * The parallel LOO and K-fold CV of `cv_varsel()` send the reference models without their fits to the workers, so the workers do not load **brms** or **rstanarm** and need less memory. (GitHub: #629)
 * The parallel workers now get the objects of the global environment that functions of a custom reference model use (found from the code, with the **globals** package). Global option `projpred.export_to_workers` can name more objects; `FALSE` turns this off. (GitHub: #629)
 * Improved error message for a binomial model with more than one trial per observation. Latent projection now stops for the brms families `beta_binomial()`, `zero_inflated_binomial()` and `zero_inflated_beta_binomial()`. (GitHub: #530, #624)
+* With `latent = TRUE`, no message about an `NA` dispersion, and no `latent_ilink` message for families whose inverse link gives the mean (e.g., negative binomial, Weibull). Without a dispersion, `as.matrix()` of a projection has no `sigma` column. (GitHub: #656)
 
 ## Bug fixes and maintenance
 
@@ -88,6 +92,7 @@ If you read this from a place other than <https://mc-stan.org/projpred/news/inde
 * `get_refmodel()` now stops with an error that names the missing variables and gives a workaround. This applies to `rstanarm::stan_gamm4()` fits with argument `random` and an expression in the formula, such as `cbind(y, n - y)`. (GitHub: #148, #634)
 * Fixed errors in `cv_varsel()` with `cv_method = "LOO"` and `validate_search = TRUE` if a factor is only in a group-level term of a submodel (as with `search_terms`) and a level of it occurs only in the left-out observation. (GitHub: #635)
 * Fixed the error "length of 'dimnames' [1] not equal to array extent" in the predictions of multilevel `brms::categorical()` submodels with a factor in a group-level term, such as `(1 + f | g)`. `catCov` values other than `"free"` now give an error. (GitHub: #635, #640)
+* With `latent = TRUE`, `get_refmodel()` and `init_refmodel()` give an informative error for `brms::categorical()` and the unsupported **brms** families with several linear predictors (for example `multinomial()`). (GitHub: #658)
 
 
 # projpred 2.11.0

@@ -56,6 +56,10 @@ reference model fit can use another basis (\code{\link[rstanarm:stan_gamm4]{rsta
 \pkg{brms} do so for \code{s()} terms). Then these columns do not match the
 reference model parameters. For a submodel with smooth and group-level
 terms (GAMM), the projected draws cannot be extracted yet (error).
+
+For the latent projection, column \code{sigma} contains the projected latent
+dispersion. If \verb{<refmodel>$dis} consists of only \code{NA}s (see argument \code{dis}
+of \code{\link[=init_refmodel]{init_refmodel()}}), there is no column \code{sigma}.
 }
 \examples{
 \dontshow{if (requireNamespace("rstanarm", quietly = TRUE)) withAutoprint(\{ # examplesIf}

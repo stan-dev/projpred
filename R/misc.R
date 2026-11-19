@@ -1421,6 +1421,7 @@ par_backend <- function(warn_once = FALSE) {
       "running sequentially. ",
       if (!has_future) "Install the future package. ",
       "Set up workers with, e.g., ",
+      "`future::plan(future.mirai::mirai_multisession, workers = 4)` or ",
       "`future::plan(future::multisession, workers = 4)` (see section ",
       "\"Parallelization\" in `?projpred`)."
     )
