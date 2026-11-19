@@ -279,6 +279,8 @@ mlvl_from_merMod <- function(fit, formula, failed) {
 # uses another order of the draws).
 subprd_mlvl <- function(fits, newdata) {
   stopifnot(!is.null(newdata))
+  # Cumulative fits have their own function (subprd_mlvl_cumul()):
+  stopifnot(!inherits(fits[[1]], "projpred_mlvl_cumul"))
   pred_new <- getOption("projpred.mlvl_pred_new", FALSE)
   # Group levels, as in repair_re.merMod():
   grps <- names(fits[[1]]$sd)
@@ -404,6 +406,9 @@ subprd_mlvl <- function(fits, newdata) {
 as_glmerMod <- function(object, data, weights = NULL) {
   if (!inherits(object, "projpred_mlvl")) {
     stop("`object` must be of class `projpred_mlvl`.")
+  }
+  if (inherits(object, "projpred_mlvl_cumul")) {
+    stop("as_glmerMod() does not support fits of the cumulative family.")
   }
   if (is.null(object$coefficients) || is.null(object$sd)) {
     stop("`object` has no parameter estimates.")
