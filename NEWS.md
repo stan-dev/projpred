@@ -35,7 +35,7 @@ If you read this from a place other than <https://mc-stan.org/projpred/news/inde
 * The fits of these submodels (for example, in element `outdmin` of `project()` output) have class `projpred_mlvl` instead of `glmerMod`. The new function `as_glmerMod()` converts such a fit to class `glmerMod`. (GitHub: #644)
 * New argument `search_screen` of `varsel()` and `cv_varsel()`: a faster forward search for binomial (logit) and Poisson (log) submodels, which projects only the `search_screen` best candidates per step, ranked by a score statistic. (GitHub: #646)
 * Faster multilevel submodels of the `brms::cumulative()` family with a single group-level intercept term: projpred's own Laplace fit (class `projpred_mlvl_cumul`) instead of `ordinal::clmm()`. `cv_varsel()` with `validate_search = TRUE` is about 6 times faster. (GitHub: #645)
-* Argument `search_screen` now also screens the candidates for cumulative models with the augmented-data projection and for the latent projection with multilevel terms. (GitHub: #647)
+* Argument `search_screen` now also screens the candidates for cumulative models with the augmented-data projection (without multilevel terms) and for the latent projection with multilevel terms. (GitHub: #647)
 
 ## Minor changes
 

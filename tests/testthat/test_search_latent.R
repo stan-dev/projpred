@@ -266,6 +266,8 @@ test_that("the cumulative screen returns `NULL` outside its conditions", {
   expect_lat_fallback(refm_latcum(link = "cloglog"), fun, info = "cloglog")
   expect_lat_fallback(refm_latcum(family_nm = "cumulative_rstanarm"), fun,
                       info = "cumulative_rstanarm")
+  expect_lat_fallback(refm_latcum(fml = y ~ x1 + x2 + x3 + (1 | g)), fun,
+                      info = "group-level term")
 })
 
 test_that("the cumulative screen prints its message and the progress", {
