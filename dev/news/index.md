@@ -268,8 +268,9 @@
   [\#600](https://github.com/stan-dev/projpred/issues/600))
 - The parallel
   [`cv_varsel()`](https://mc-stan.org/projpred/dev/reference/cv_varsel.md)
-  with `validate_search = TRUE` sends less data to the workers. (GitHub:
-  [\#611](https://github.com/stan-dev/projpred/issues/611))
+  sends less data to the workers. (GitHub:
+  [\#611](https://github.com/stan-dev/projpred/issues/611),
+  [\#663](https://github.com/stan-dev/projpred/issues/663))
 - The uncertainty interval of `stats = "acc"` with `deltas = FALSE` now
   uses a logit-normal approximation instead of a normal approximation.
   (GitHub: [\#503](https://github.com/stan-dev/projpred/issues/503),
