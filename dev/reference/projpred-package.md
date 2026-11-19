@@ -112,16 +112,19 @@ by projpred's internal default `div_minimizer` functions, see
     optimization stages use BOBYQA. A `control` argument in `...`
     replaces this default in the first fit. After some lme4 errors,
     projpred refits with its own settings and ignores this `control`.
-    For [`lme4::glmer()`](https://rdrr.io/pkg/lme4/man/glmer.html) fits
-    of the [`binomial()`](https://rdrr.io/r/stats/family.html) family
-    (also the fit after an own fit that does not converge), lme4
-    versions before 2.1-1 round non-integer responses and weights in the
-    objective of
-    [`lme4::glmer()`](https://rdrr.io/pkg/lme4/man/glmer.html) with
-    `nAGQ >= 1`. With these lme4 versions, projpred uses `nAGQ = 0` for
-    such submodels unless `nAGQ` is set via `...`. Then the fixed
-    effects and the group-level effects do not depend on the rounded
-    objective; the group-level standard deviations still do.
+    lme4 versions before 2.1-1 evaluate the objective of
+    [`lme4::glmer()`](https://rdrr.io/pkg/lme4/man/glmer.html) for the
+    [`binomial()`](https://rdrr.io/r/stats/family.html) and the
+    [`poisson()`](https://rdrr.io/r/stats/family.html) family with
+    rounding: they round non-integer binomial responses and weights, and
+    the objective is infinite for non-integer Poisson responses (then
+    the group-level standard deviations stay at their start values).
+    With these lme4 versions, projpred passes a copy of these families
+    with another name (ending in `_projpred`) and an `aic` function
+    without rounding. The submodel fits then have this family name, so
+    for example
+    [`lme4::simulate.merMod()`](https://rdrr.io/pkg/lme4/man/simulate.merMod.html)
+    does not work for them.
 
   - For the augmented-data projection:
     [`ordinal::clmm()`](https://rdrr.io/pkg/ordinal/man/clmm.html) (the
@@ -170,11 +173,23 @@ by projpred's internal default `div_minimizer` functions, see
 
 - Submodel without multilevel but additive terms:
   [`mgcv::gam()`](https://rdrr.io/pkg/mgcv/man/gam.html) (the returned
-  object inherits from class `gam`).
+  object inherits from class `gam`). projpred uses the default `method`
+  of [`mgcv::gam()`](https://rdrr.io/pkg/mgcv/man/gam.html). For the
+  [`poisson()`](https://rdrr.io/r/stats/family.html) family, the
+  responses of the traditional projection are not integers. Then
+  [`mgcv::gam()`](https://rdrr.io/pkg/mgcv/man/gam.html) with
+  `method = "REML"` or `method = "ML"` stops with an error. Such a
+  `method` can come from `...` or (mgcv \>= 1.9-5) from global option
+  `mgcv.gam.method`.
 
 - Submodel with multilevel and additive terms:
   [`gamm4::gamm4()`](https://rdrr.io/pkg/gamm4/man/gamm4.html) (within
-  projpred, the returned object inherits from class `gamm4`).
+  projpred, the returned object inherits from class `gamm4`). For the
+  [`binomial()`](https://rdrr.io/r/stats/family.html) and the
+  [`poisson()`](https://rdrr.io/r/stats/family.html) family, projpred
+  passes the same family as to
+  [`lme4::glmer()`](https://rdrr.io/pkg/lme4/man/glmer.html) (see
+  above).
 
 ## Verbosity, messages, warnings, errors
 
@@ -210,19 +225,19 @@ clusters) of the reference model onto a submodel (the *projection*
 parallelization, see below).
 
 Both use the parallel workers of the current plan of the future package,
-e.g., `future::plan(future::multisession, workers = 4)`. Plans from
-other packages for future can be used as well, e.g.,
-`future::plan(future.mirai::mirai_multisession, workers = 4)` from the
-future.mirai package. In our experiments with 8 workers, the first
-parallel call with the workers of future.mirai was faster than with
-those of
+e.g., `future::plan(future.mirai::mirai_multisession, workers = 4)` from
+the future.mirai package or
+`future::plan(future::multisession, workers = 4)`. In our experiments
+with 8 workers, the first parallel call with the workers of future.mirai
+was faster than with those of
 [`future::multisession`](https://future.futureverse.org/reference/multisession.html),
 and the workers of future.mirai returned big results faster (see the
-projection parallelization below). With the sequential plan of future
-(the default), a parallel run is not possible, so projpred then runs
-sequentially and throws a warning. The workers must be able to load the
-same projpred installation as the main R session; projpred checks this.
-(If the main R session uses projpred via
+projection parallelization below). So we recommend the workers of
+future.mirai. With the sequential plan of future (the default), a
+parallel run is not possible, so projpred then runs sequentially and
+throws a warning. The workers must be able to load the same projpred
+installation as the main R session; projpred checks this. (If the main R
+session uses projpred via
 [`pkgload::load_all()`](https://pkgload.r-lib.org/reference/load_all.html)
 or `devtools::load_all()`, the workers need to load the same source
 directory in the same way.) The parallelization is not tested on

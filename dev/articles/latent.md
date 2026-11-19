@@ -141,30 +141,27 @@ models”](https://mc-stan.org/projpred/articles/projpred.html#modtypes)).
 In this example, we will illustrate that in case of a family supported
 by **projpred**’s traditional projection (here the
 [`poisson()`](https://rdrr.io/r/stats/family.html) family), the latent
-projection can improve runtime and results of the variable selection
-compared to **projpred**’s traditional projection, at least if the L1
-search is used (see argument `method` of
-[`varsel()`](https://mc-stan.org/projpred/dev/reference/varsel.md) and
-[`cv_varsel()`](https://mc-stan.org/projpred/dev/reference/cv_varsel.md)).
+projection can reduce the runtime of the variable selection compared to
+the traditional projection.
 
 ### Data
 
-First, we generate a training and a test dataset with a
-Poisson-distributed response:
+First, we generate a dataset with a Poisson-distributed response. The
+linear predictor depends on 4 continuous predictors and 1 categorical
+predictor, and there are 20 noise predictors:
 
 ``` r
 
-# Number of observations in the training dataset (= number of observations in
-# the test dataset):
-N <- 71
+# Number of observations:
+N <- 100
 # Data-generating function:
-sim_poiss <- function(nobs = 2 * N, ncon = 10, ncats = 4, nnoise = 39) {
+sim_poiss <- function(nobs = N, ncon = 4, ncats = 4, nnoise = 20) {
   # Regression coefficients for continuous predictors:
-  coefs_con <- rnorm(ncon)
+  coefs_con <- seq(from = 0.2, to = 0.8, length.out = ncon)
   # Continuous predictors:
   dat_sim <- matrix(rnorm(nobs * ncon), ncol = ncon)
   # Start linear predictor:
-  linpred <- 2.1 + dat_sim %*% coefs_con
+  linpred <- 1.4 + dat_sim %*% coefs_con
   
   # Categorical predictor:
   dat_sim <- data.frame(
@@ -173,7 +170,7 @@ sim_poiss <- function(nobs = 2 * N, ncon = 10, ncats = 4, nnoise = 39) {
               labels = paste0("cat", seq_len(ncats)))
   )
   # Regression coefficients for the categorical predictor:
-  coefs_cat <- rnorm(ncats)
+  coefs_cat <- seq(from = 0.2, to = 0.8, length.out = ncats)
   # Continue linear predictor:
   linpred <- linpred + coefs_cat[dat_sim$xcat]
   
@@ -194,8 +191,6 @@ sim_poiss <- function(nobs = 2 * N, ncon = 10, ncats = 4, nnoise = 39) {
 # Generate data:
 set.seed(300417)
 dat_poiss <- sim_poiss()
-dat_poiss_train <- head(dat_poiss, N)
-dat_poiss_test <- tail(dat_poiss, N)
 ```
 
 ### Reference model
@@ -213,19 +208,19 @@ library(rstanarm)
 ``` r
 
 # Number of regression coefficients:
-( D <- sum(grepl("^x", names(dat_poiss_train))) )
+( D <- sum(grepl("^x", names(dat_poiss))) )
 ```
 
-    [1] 50
+    [1] 25
 
 ``` r
 
 # Prior guess for the number of relevant (i.e., non-zero) regression
 # coefficients:
-p0 <- 10
+p0 <- 5
 # Prior guess for the overall magnitude of the response values, see Table 1 of
 # Piironen and Vehtari (2017, DOI: 10.1214/17-EJS1337SI):
-mu_prior <- 100
+mu_prior <- 10
 # Hyperprior scale for tau, the global shrinkage parameter:
 tau0 <- p0 / (D - p0) / sqrt(mu_prior) / sqrt(N)
 # Set this manually if desired:
@@ -235,24 +230,21 @@ ncores <- parallel::detectCores(logical = FALSE)
 ncores <- min(ncores, 2L)
 ###
 options(mc.cores = ncores)
-refm_fml <- as.formula(paste("y", "~", paste(
-  grep("^x", names(dat_poiss_train), value = TRUE),
-  collapse = " + "
-)))
+# All other columns of the data are predictors:
+refm_fml <- y ~ .
 refm_fit_poiss <- stan_glm(
   formula = refm_fml,
   family = poisson(),
-  data = dat_poiss_train,
+  data = dat_poiss,
   prior = hs(global_scale = tau0, slab_df = 100, slab_scale = 1),
   ### Only for the sake of speed (not recommended in general):
   chains = 2, iter = 1000,
+  ### In general, use defaults or explicitly define
+  ### chains = 4, iter = 4000,
   ###
   refresh = 0
 )
 ```
-
-Due to the technical reasons for which we reduced `chains` and `iter` in
-this vignette, we ignore the bulk-ESS warning here.
 
 ### Variable selection using the latent projection
 
@@ -260,13 +252,11 @@ Within **projpred**, we define the reference model object explicitly and
 set `latent = TRUE` in the corresponding
 [`get_refmodel()`](https://mc-stan.org/projpred/dev/reference/refmodel-init-get.md)
 call (see section [“Implementation”](#impl)) so that the latent
-projection is used in downstream functions. Since we have a hold-out
-test dataset available, we can use
-[`varsel()`](https://mc-stan.org/projpred/dev/reference/varsel.md) with
-argument `d_test` instead of
-[`cv_varsel()`](https://mc-stan.org/projpred/dev/reference/cv_varsel.md).
-Furthermore, we measure the runtime to be able to compare it to the
-traditional projection’s later:
+projection is used in downstream functions. We run
+[`cv_varsel()`](https://mc-stan.org/projpred/dev/reference/cv_varsel.md)
+with its defaults: PSIS-LOO CV and validated search. Furthermore, we
+measure the runtime to be able to compare it to the traditional
+projection’s later:
 
 ``` r
 
@@ -275,42 +265,25 @@ library(projpred)
 
 ``` r
 
-d_test_lat_poiss <- list(
-  data = dat_poiss_test,
-  offset = rep(0, nrow(dat_poiss_test)),
-  weights = rep(1, nrow(dat_poiss_test)),
-  ### Here, we are not interested in latent-scale post-processing, so we can set
-  ### element `y` to a vector of `NA`s:
-  y = rep(NA, nrow(dat_poiss_test)),
-  ###
-  y_oscale = dat_poiss_test$y
-)
 refm_poiss <- get_refmodel(refm_fit_poiss, latent = TRUE)
-```
-
-    Since `<refmodel>$dis` will consist of only `NA`s, downstream analyses based on this reference model object won't be able to use log predictive density (LPD) values on latent scale. Furthermore, proj_predict() won't be able to draw from the latent Gaussian distribution.
-
-``` r
-
-time_lat <- system.time(vs_lat <- varsel(
+time_lat <- system.time(cvvs_lat <- cv_varsel(
   refm_poiss,
-  d_test = d_test_lat_poiss,
-  ### Only for demonstrating an issue with the traditional projection in the
-  ### next step (not recommended in general):
-  method = "L1",
-  ###
-  ### Only for the sake of speed (not recommended in general):
-  nclusters_pred = 20,
-  ###
-  nterms_max = 14,
   ### In interactive use, we recommend not to deactivate the verbose mode:
   verbose = 0,
   ###
-  ### For comparability with varsel() based on the traditional projection:
   seed = 95930
-  ###
 ))
 ```
+
+    Cutting off the search at size 19. Use argument `nterms_max` to customize this.
+
+    Warning: Some Pareto k diagnostic values are too high. See help('pareto-k-diagnostic') for details.
+
+    Warning: Some (6 / 100) Pareto k's for the reference model's PSIS-LOO weights
+    are > 0.67.
+
+    Warning: In the recalculation of the latent response values, some (6 / 100) expectation-specific Pareto k-values are > 0.67.
+    In general, we recommend K-fold CV in this case.
 
 ``` r
 
@@ -318,11 +291,15 @@ print(time_lat)
 ```
 
        user  system elapsed 
-      0.326   0.001   0.221 
+     19.010   0.015   5.112 
 
-The message telling that `<refmodel>$dis` consists of only `NA`s will
-not concern us here because we will only focus on response-scale
-post-processing.
+The warnings about high Pareto \\\hat{k}\\ values concern only a few of
+the 100 observations. With the short MCMC run of this vignette (1000
+posterior draws), the threshold for a reliable Pareto \\\hat{k}\\ is
+about 0.67 ([Vehtari et al. 2022](#ref-vehtari_pareto_2022)). In a real
+analysis, we would run more MCMC iterations, check the Pareto
+\\\hat{k}\\ values again, and use \\K\\-fold CV (`cv_method = "kfold"`)
+if many of them are high.
 
 In order to decide for a submodel size, we first inspect the
 [`plot()`](https://rdrr.io/r/graphics/plot.default.html) results. In
@@ -345,17 +322,24 @@ plots in this vignette.
 
 ``` r
 
+ggplot2::theme_set(bayesplot::theme_default(base_family = "sans"))
 options(projpred.plot_vsel_size_position = "secondary_x")
-( gg_lat <- plot(vs_lat, stats = "gmpd", deltas = TRUE) )
+( gg_lat <- plot(cvvs_lat, stats = "gmpd", deltas = TRUE) )
 ```
 
-![](latent_files/figure-html/plot_vsel_lat-1.png)
+![Plot of the ratio of the geometric mean predictive density (GMPD) of
+each submodel to that of the reference model, with uncertainty bars, for
+the latent projection of the Poisson model. The top x-axis shows the
+submodel size and the bottom x-axis the predictor added at each size. A
+dashed horizontal line at 1 marks the reference model. The ratio
+increases with the size, reaches the reference model and then levels
+off.](latent_files/figure-html/plot_vsel_lat-1.png)
 
-Based on this plot, we decide for a submodel size of 11:
+Based on this plot, we decide for a submodel size of 5:
 
 ``` r
 
-size_decided_lat <- 11
+size_decided_lat <- 5
 ```
 
 This is also the size that
@@ -364,23 +348,22 @@ would suggest:
 
 ``` r
 
-suggest_size(vs_lat, stat = "gmpd")
+suggest_size(cvvs_lat, stat = "gmpd")
 ```
 
-    [1] 11
+    [1] 5
 
-In the predictor ranking up to the selected size of 11, we can see that
+In the predictor ranking up to the selected size of 5, we can see that
 **projpred** has correctly selected the truly relevant predictors first
 and only then the noise predictors:
 
 ``` r
 
-rk_lat <- ranking(vs_lat)
+rk_lat <- ranking(cvvs_lat)
 ( predictors_final_lat <- head(rk_lat[["fulldata"]], size_decided_lat) )
 ```
 
-     [1] "x.4"  "x.6"  "x.10" "x.3"  "x.1"  "x.2"  "x.8"  "x.7"  "xcat" "x.5" 
-    [11] "x.9" 
+    [1] "x.4"  "x.3"  "x.2"  "xcat" "x.1" 
 
 We will skip post-selection inference here (see the main vignette for a
 demonstration of post-selection inference), but note that
@@ -396,69 +379,80 @@ analogous functionality is available in
 
 ### Variable selection using the traditional projection
 
-We will now look at what **projpred**’s traditional projection would
-have given. For this, we increase `nterms_max` because this will reveal
-an issue with this approach:
+We now run the same
+[`cv_varsel()`](https://mc-stan.org/projpred/dev/reference/cv_varsel.md)
+call with **projpred**’s traditional projection. For a Poisson submodel,
+each projection is an iterative fit, and validated search repeats the
+search for each of the 100 LOO CV folds. To keep the runtime of this
+vignette short, we use fewer clusters in the performance evaluation
+(`nclusters_pred = 20`) and search only up to size 10
+(`nterms_max = 10`):
 
 ``` r
 
-d_test_trad_poiss <- d_test_lat_poiss
-d_test_trad_poiss$y <- d_test_trad_poiss$y_oscale
-d_test_trad_poiss$y_oscale <- NULL
-time_trad <- system.time(vs_trad <- varsel(
+time_trad <- system.time(cvvs_trad <- cv_varsel(
   refm_fit_poiss,
-  d_test = d_test_trad_poiss,
-  ### Only for demonstrating an issue with the traditional projection (not
-  ### recommended in general):
-  method = "L1",
-  ###
   ### Only for the sake of speed (not recommended in general):
   nclusters_pred = 20,
+  nterms_max = 10,
   ###
-  nterms_max = 30,
   ### In interactive use, we recommend not to deactivate the verbose mode:
   verbose = 0,
   ###
-  ### For comparability with varsel() based on the latent projection:
   seed = 95930
-  ###
 ))
 ```
 
-``` r
+    Warning: Some Pareto k diagnostic values are too high. See help('pareto-k-diagnostic') for details.
 
-print(time_trad)
-```
-
-       user  system elapsed 
-      0.914   0.000   0.523 
+    Warning: Some (6 / 100) Pareto k's for the reference model's PSIS-LOO weights
+    are > 0.67.
 
 ``` r
 
-( gg_trad <- plot(vs_trad, stats = "gmpd", deltas = TRUE) )
+rbind(latent = time_lat, traditional = time_trad)[, "elapsed"]
 ```
 
-![](latent_files/figure-html/post_vs_trad-1.png) As these results show,
-the traditional projection takes longer than the latent projection,
-although the difference is rather small on absolute scale (which is due
-to the fact that the L1 search is already quite fast). More importantly
-however, the predictor ranking contains several noise terms before truly
-relevant ones, causing the predictive performance of the reference model
-not to be reached before submodel size 28.
+         latent traditional 
+          5.112      69.512 
+
+``` r
+
+suggest_size(cvvs_trad, stat = "gmpd")
+```
+
+    [1] 5
+
+``` r
+
+head(ranking(cvvs_trad)[["fulldata"]], size_decided_lat)
+```
+
+    [1] "x.4"  "x.3"  "x.2"  "xcat" "x.1" 
+
+``` r
+
+( gg_trad <- plot(cvvs_trad, stats = "gmpd", deltas = TRUE) )
+```
+
+![Plot of the ratio of the geometric mean predictive density (GMPD) of
+each submodel to that of the reference model, with uncertainty bars, for
+the traditional projection of the Poisson model. The top x-axis shows
+the submodel size and the bottom x-axis the predictor added at each
+size. A dashed horizontal line at 1 marks the reference model. The ratio
+increases with the size, reaches the reference model and then levels
+off.](latent_files/figure-html/plot_vsel_trad-1.png)
+
+The traditional projection takes much longer than the latent projection
+(see the elapsed times in seconds above), although it uses the smaller
+settings. It selects the same 5 predictor terms first.
 
 ### Conclusion
 
 This example showed that the latent projection can be advantageous also
-for families supported by **projpred**’s traditional projection by
-improving the runtime as well as the results of the variable selection.
-
-An important point is that we have used L1 search here. In case of the
-latent projection, a forward search would have given only slightly
-different results. However, in case of the traditional projection, a
-forward search would have given markedly better results (in particular,
-all of the noise terms would have been selected after the truly relevant
-ones). Thus, the conclusions made here for L1 search cannot be
-transmitted easily to forward search.
+for families supported by **projpred**’s traditional projection. Both
+projections selected the truly relevant predictor terms first, but the
+latent projection was much faster.
 
 ## Example: Negative binomial distribution
 
@@ -487,7 +481,7 @@ the pseudo-variance \\\tilde{\sigma}^2\\.
 refm_fit_nebin <- stan_glm(
   formula = refm_fml,
   family = neg_binomial_2(),
-  data = dat_poiss_train,
+  data = dat_poiss,
   prior = hs(global_scale = tau0, slab_df = 100, slab_scale = 1),
   ### Only for the sake of speed (not recommended in general):
   chains = 2, iter = 1000,
@@ -496,8 +490,9 @@ refm_fit_nebin <- stan_glm(
 )
 ```
 
-Again, we ignore the bulk-ESS warning due to the technical reasons for
-which we reduced `chains` and `iter` in this vignette.
+If a warning about a low effective sample size (ESS) appears, we ignore
+it here because of the technical reasons for which we reduced `chains`
+and `iter` in this vignette.
 
 ### Variable selection using the latent projection
 
@@ -541,33 +536,23 @@ latent_ppd_oscale_nebin <- function(ilpreds_resamp,
 refm_nebin <- get_refmodel(refm_fit_nebin, latent = TRUE,
                            latent_ll_oscale = latent_ll_oscale_nebin,
                            latent_ppd_oscale = latent_ppd_oscale_nebin)
-```
-
-    Defining `latent_ilink` as a function which calls `family$linkinv`, but there is no guarantee that this will work for all families. If relying on `family$linkinv` is not appropriate or if this raises an error in downstream functions, supply a custom `latent_ilink` function (which is also allowed to return only `NA`s if response-scale post-processing is not needed).
-
-    Since `<refmodel>$dis` will consist of only `NA`s, downstream analyses based on this reference model object won't be able to use log predictive density (LPD) values on latent scale. Furthermore, proj_predict() won't be able to draw from the latent Gaussian distribution.
-
-``` r
-
-vs_nebin <- varsel(
+cvvs_nebin <- cv_varsel(
   refm_nebin,
-  d_test = d_test_lat_poiss,
-  ### Only for the sake of speed (not recommended in general):
-  method = "L1",
-  nclusters_pred = 20,
-  ###
-  nterms_max = 14,
   ### In interactive use, we recommend not to deactivate the verbose mode:
   verbose = 0
   ###
 )
 ```
 
-Again, the message telling that `<refmodel>$dis` consists of only `NA`s
-will not concern us here because we will only focus on response-scale
-post-processing. The message concerning `latent_ilink` can be safely
-ignored here (the internal default based on `family$linkinv` works
-correctly in this case).
+    Cutting off the search at size 19. Use argument `nterms_max` to customize this.
+
+    Warning: Some Pareto k diagnostic values are too high. See help('pareto-k-diagnostic') for details.
+
+    Warning: Some (2 / 100) Pareto k's for the reference model's PSIS-LOO weights
+    are > 0.67.
+
+    Warning: In the recalculation of the latent response values, some (2 / 100) expectation-specific Pareto k-values are > 0.67.
+    In general, we recommend K-fold CV in this case.
 
 Again, we first inspect the
 [`plot()`](https://rdrr.io/r/graphics/plot.default.html) results to
@@ -575,50 +560,45 @@ decide for a submodel size:
 
 ``` r
 
-( gg_nebin <- plot(vs_nebin, stats = "gmpd", deltas = TRUE) )
+( gg_nebin <- plot(cvvs_nebin, stats = "gmpd", deltas = TRUE) )
 ```
 
-![](latent_files/figure-html/plot_vsel_nebin-1.png)
+![The same kind of plot for the latent projection of the negative
+binomial model. The ratio increases with the size, rises slightly above
+1 and then slowly decreases towards 1. The first 5 predictors of the
+ranking are the 5 truly relevant
+ones.](latent_files/figure-html/plot_vsel_nebin-1.png)
 
-For the decision of the final submodel size, we act as if we preferred
-accuracy over sparsity in their trade-off mentioned in the [main
-vignette](https://mc-stan.org/projpred/articles/projpred.html#decision-size),
-so we decide for a submodel size of 11:
+Based on this plot, we decide for a submodel size of 5:
 
 ``` r
 
-size_decided_nebin <- 11
+size_decided_nebin <- 5
 ```
 
-This is not the size that
+This is also the size that
 [`suggest_size()`](https://mc-stan.org/projpred/dev/reference/suggest_size.md)
-would suggest, but as mentioned in the main vignette and in the
-documentation,
-[`suggest_size()`](https://mc-stan.org/projpred/dev/reference/suggest_size.md)
-provides only a quite heuristic decision (so we stick with our manual
-decision here):
+would suggest:
 
 ``` r
 
-suggest_size(vs_nebin, stat = "gmpd")
+suggest_size(cvvs_nebin, stat = "gmpd")
 ```
 
-    [1] 10
+    [1] 5
 
 As we can see from the predictor ranking included in the plot, our
-selected 11 predictor terms lack one truly relevant predictor (`x.9`)
-and include one noise term (`xn.29`). More explicitly, our selected
-predictor terms are:
+selected 5 predictor terms are exactly the truly relevant ones. More
+explicitly, our selected predictor terms are:
 
 ``` r
 
-rk_nebin <- ranking(vs_nebin)
+rk_nebin <- ranking(cvvs_nebin)
 ( predictors_final_nebin <- head(rk_nebin[["fulldata"]],
                                  size_decided_nebin) )
 ```
 
-     [1] "x.4"   "x.6"   "x.10"  "x.3"   "x.1"   "x.2"   "x.8"   "xn.29" "x.7"  
-    [10] "xcat"  "x.5"  
+    [1] "x.4"  "x.3"  "x.2"  "xcat" "x.1" 
 
 Again, we will skip post-selection inference here (see the main vignette
 for a demonstration of post-selection inference).
@@ -691,7 +671,7 @@ refm_fit_weib <- brms::brm(
   formula = yobs | cens(is_censored) ~ .,
   family = brms::weibull(),
   data = dat_sim_weib,
-  prior = brms::prior(R2D2(mean_R2 = 0.4, prec_R2 = 2.5, cons_D2 = 1)),
+  prior = brms::prior(R2D2(mean_R2 = 1/3, prec_R2 = 3)),
   ### Only for the sake of speed (not recommended in general):
   chains = 2,
   ###
@@ -771,16 +751,8 @@ refm_weib <- get_refmodel(
 )
 ```
 
-    Defining `latent_ilink` as a function which calls `family$linkinv`, but there is no guarantee that this will work for all families. If relying on `family$linkinv` is not appropriate or if this raises an error in downstream functions, supply a custom `latent_ilink` function (which is also allowed to return only `NA`s if response-scale post-processing is not needed).
-
-    Since `<refmodel>$dis` will consist of only `NA`s, downstream analyses based on this reference model object won't be able to use log predictive density (LPD) values on latent scale. Furthermore, proj_predict() won't be able to draw from the latent Gaussian distribution.
-
-Again, the message telling that `<refmodel>$dis` consists of only `NA`s
-will not concern us here because we will only focus on response-scale
-post-processing. The message concerning `latent_ilink` can be safely
-ignored here (the internal default based on `family$linkinv` works
-correctly in this case). The functions above use the shape draws of the
-full-data fit (`refm_shape`). This is correct for
+The functions above use the shape draws of the full-data fit
+(`refm_shape`). This is correct for
 [`varsel()`](https://mc-stan.org/projpred/dev/reference/varsel.md) and
 for the LOO CV that we use below. For K-fold CV, see section [“K-fold CV
 with custom response-scale functions”](#kfold-custom).
@@ -790,59 +762,20 @@ Run
 
 ``` r
 
-# For running projpred's CV in parallel (see cv_varsel()'s argument `parallel`):
-# Note: Parallel processing is disabled during package building to avoid issues
-use_parallel <- FALSE  # Set to TRUE for actual parallel processing
-if (use_parallel) {
-  future::plan(future::multisession, workers = ncores)
-}
 cvvs_weib <- cv_varsel(
   refm_weib,
-  ### Only for the sake of speed (not recommended in general):
-  method = "L1",
-  nloo = min(N_surv, 10),
-  nterms_max = 11,
-  nclusters_pred = 20,
-  ###
-  parallel = use_parallel,
   ### In interactive use, we recommend not to deactivate the verbose mode:
   verbose = 0
-  ###
 )
 ```
 
-    Warning: Some Pareto k diagnostic values are too high. See help('pareto-k-diagnostic') for details.
+    Cutting off the search at size 19. Use argument `nterms_max` to customize this.
 
-    Warning: Some (2 / 500) Pareto k's for the reference model's PSIS-LOO weights
-    are > 0.7.
-
-    Warning: In the recalculation of the latent response values, some (8 / 500) expectation-specific Pareto k-values are > 0.7.
-    In general, we recommend K-fold CV in this case.
-
-    Warning: Some Pareto k diagnostic values are too high. See help('pareto-k-diagnostic') for details.
-
-    Warning: Some (2 / 500) Pareto k's for the reference model's PSIS-LOO weights
-    are > 0.7.
-
-    Warning: In the recalculation of the latent response values, some (8 / 500) expectation-specific Pareto k-values are > 0.7.
-    In general, we recommend K-fold CV in this case.
-
-    Using standard importance sampling (SIS) due to a small number of clusters.
-
-``` r
-
-# Tear down the CV parallelization setup:
-if (use_parallel) {
-  future::plan(future::sequential)
-}
-```
-
-In this case, we will ignore the warnings about high Pareto-\\\hat{k}\\
-values because we chose quite rough settings (e.g., only 2 MCMC chains)
-in this vignette (for technical reasons). We will also ignore the
-warning that SIS is used (instead of PSIS) because this is due to
-`nclusters_pred = 20` which we used only to speed up the building of the
-vignette.
+As in the Poisson example, warnings about high Pareto \\\hat{k}\\ values
+can come from the short MCMC run of this vignette. In a real analysis,
+we would run more MCMC iterations, check the Pareto \\\hat{k}\\ values
+again, and use \\K\\-fold CV (`cv_method = "kfold"`) if many of them are
+high.
 
 Plot the results:
 
@@ -851,15 +784,44 @@ Plot the results:
 plot(cvvs_weib, stats = "mlpd", deltas = TRUE)
 ```
 
-![](latent_files/figure-html/weibull_plot_cvvs-1.png) Hence, the truly
-relevant predictors are identified correctly.
+![Plot of the MLPD difference between each submodel and the reference
+model, with uncertainty bars, for the Weibull model with right-censored
+observations. The top x-axis shows the submodel size and the bottom
+x-axis the predictor added at each size. The first 10 predictors are the
+10 truly relevant ones. The difference increases with the size and then
+levels off close to zero (dashed
+line).](latent_files/figure-html/weibull_plot_cvvs-1.png) Hence, the
+truly relevant predictors are identified correctly.
 
-Project onto the submodel consisting of the first `n_pred_truth`
-predictors and perform a “posterior-projection predictive check” (PPPC):
+Based on this plot, we decide for a submodel size of 10:
 
 ``` r
 
-predictors_final_weib <- head(ranking(cvvs_weib)[["fulldata"]], n_pred_truth)
+size_decided_weib <- 10
+```
+
+This is not the size that
+[`suggest_size()`](https://mc-stan.org/projpred/dev/reference/suggest_size.md)
+would suggest, but as mentioned in the main vignette and in the
+documentation,
+[`suggest_size()`](https://mc-stan.org/projpred/dev/reference/suggest_size.md)
+provides only a quite heuristic decision (so we stick with our manual
+decision here):
+
+``` r
+
+suggest_size(cvvs_weib, stat = "mlpd")
+```
+
+    [1] 8
+
+Project onto the submodel of this size and perform a
+“posterior-projection predictive check” (PPPC):
+
+``` r
+
+predictors_final_weib <- head(ranking(cvvs_weib)[["fulldata"]],
+                              size_decided_weib)
 prj_weib <- project(refm_weib, predictor_terms = predictors_final_weib)
 prj_predict_weib <- proj_predict(prj_weib)
 ```
@@ -870,7 +832,6 @@ prj_predict_weib <- proj_predict(prj_weib)
 
 ``` r
 
-bayesplot::bayesplot_theme_set(ggplot2::theme_bw())
 bayesplot::ppc_km_overlay(y = dat_sim_weib$yobs, yrep = prj_predict_weib,
                           status_y = 1 - dat_sim_weib$is_censored)
 ```
@@ -878,7 +839,11 @@ bayesplot::ppc_km_overlay(y = dat_sim_weib$yobs, yrep = prj_predict_weib,
     Note: `extrapolation_factor` now defaults to 1.2 (20%).
     To display all posterior predictive draws, set `extrapolation_factor = Inf`.
 
-![](latent_files/figure-html/weibull_pppc-1.png)
+![Kaplan-Meier overlay plot with the time on the x-axis and the survival
+probability on the y-axis: the Kaplan-Meier curve of the observed times
+as a dark line, and the Kaplan-Meier curves of predictive draws from the
+Weibull submodel as light lines. The light lines are close to the dark
+line.](latent_files/figure-html/weibull_pppc-1.png)
 
 As expected, this PPPC indicates that this submodel is a reasonable one
 (keeping in mind that such a PPPC is just a single model-diagnostic
@@ -908,7 +873,7 @@ refm_fit_lnorm <- brms::brm(
   formula = yobs | cens(is_censored) ~ .,
   family = brms::lognormal(),
   data = dat_sim_lnorm,
-  prior = brms::prior(R2D2(mean_R2 = 0.4, prec_R2 = 2.5, cons_D2 = 1)),
+  prior = brms::prior(R2D2(mean_R2 = 1/3, prec_R2 = 3)),
   ### Only for the sake of speed (not recommended in general):
   chains = 2,
   ###
@@ -978,84 +943,46 @@ latent_ppd_oscale_lnorm <- function(
 refm_lnorm <- get_refmodel(
   refm_fit_lnorm,
   latent = TRUE,
+  latent_ilink = function(lpreds, cl_ref,
+                          wdraws_ref = rep(1, length(cl_ref))) lpreds,
   latent_ll_oscale = latent_ll_oscale_lnorm,
   latent_ppd_oscale = latent_ppd_oscale_lnorm,
   dis = as.matrix(refm_fit_lnorm)[, "sigma", drop = FALSE]
 )
 ```
 
-    Defining `latent_ilink` as a function which calls `family$linkinv`, but there is no guarantee that this will work for all families. If relying on `family$linkinv` is not appropriate or if this raises an error in downstream functions, supply a custom `latent_ilink` function (which is also allowed to return only `NA`s if response-scale post-processing is not needed).
-
-The message concerning `latent_ilink` can be safely ignored here (the
-internal default based on `family$linkinv` works correctly in this
-case). Argument `dis` contains the `sigma` draws of the full-data fit.
-For K-fold CV, see section [“K-fold CV with custom response-scale
-functions”](#kfold-custom).
+Argument `latent_ilink` returns the latent predictors unchanged, because
+the two custom functions use them as `meanlog`. Argument `dis` contains
+the `sigma` draws of the full-data fit. For K-fold CV, see section
+[“K-fold CV with custom response-scale functions”](#kfold-custom).
 
 Run
 [`cv_varsel()`](https://mc-stan.org/projpred/dev/reference/cv_varsel.md):
 
 ``` r
 
-# For running projpred's CV in parallel (see cv_varsel()'s argument `parallel`):
-# Note: Parallel processing is disabled during package building to avoid issues
-use_parallel <- FALSE  # Set to TRUE for actual parallel processing
-if (use_parallel) {
-  future::plan(future::multisession, workers = ncores)
-}
 cvvs_lnorm <- cv_varsel(
   refm_lnorm,
-  ### Only for the sake of speed (not recommended in general):
-  method = "L1",
-  nloo = min(N_surv, 10),
-  nterms_max = 11,
-  nclusters_pred = 20,
-  ###
-  parallel = use_parallel,
   ### In interactive use, we recommend not to deactivate the verbose mode:
   verbose = 0
-  ###
 )
 ```
 
-    Warning: Some Pareto k diagnostic values are too high. See help('pareto-k-diagnostic') for details.
-
-    Warning: Some (6 / 500) Pareto k's for the reference model's PSIS-LOO weights
-    are > 0.7.
-
-    Warning: Input contains infinite or NA values, is constant or has constant
-    tail. Fitting of generalized Pareto distribution not performed.
-
-    Warning: In the recalculation of the latent response values, some (12 / 500) expectation-specific Pareto k-values are > 0.7.
-    In general, we recommend K-fold CV in this case.
+    Cutting off the search at size 19. Use argument `nterms_max` to customize this.
 
     Warning: Some Pareto k diagnostic values are too high. See help('pareto-k-diagnostic') for details.
 
     Warning: Some (6 / 500) Pareto k's for the reference model's PSIS-LOO weights
     are > 0.7.
 
-    Warning: Input contains infinite or NA values, is constant or has constant
-    tail. Fitting of generalized Pareto distribution not performed.
-
-    Warning: In the recalculation of the latent response values, some (12 / 500) expectation-specific Pareto k-values are > 0.7.
+    Warning: In the recalculation of the latent response values, some (10 / 500) expectation-specific Pareto k-values are > 0.7.
     In general, we recommend K-fold CV in this case.
 
-    Using standard importance sampling (SIS) due to a small number of clusters.
-
-``` r
-
-# Tear down the CV parallelization setup:
-if (use_parallel) {
-  future::plan(future::sequential)
-}
-```
-
-In this case, we will ignore the warnings about high Pareto-\\\hat{k}\\
-values because we chose quite rough settings (e.g., only 2 MCMC chains)
-in this vignette (for technical reasons). We will also ignore the
-warning that SIS is used (instead of PSIS) because this is due to
-`nclusters_pred = 20` which we used only to speed up the building of the
-vignette.
+As in the Poisson example, warnings about high Pareto \\\hat{k}\\ values
+can come from the short MCMC run of this vignette. In a real analysis,
+we would run more MCMC iterations, check the Pareto \\\hat{k}\\ values
+again, and use \\K\\-fold CV (`cv_method = "kfold"`) if many of them are
+high.
 
 Plot the results:
 
@@ -1064,15 +991,37 @@ Plot the results:
 plot(cvvs_lnorm, stats = "mlpd", deltas = TRUE)
 ```
 
-![](latent_files/figure-html/lognormal_plot_cvvs-1.png) Hence, the truly
-relevant predictors are identified correctly.
+![The same kind of plot for the log-normal model with right-censored
+observations. The first 10 predictors are the 10 truly relevant ones.
+The difference increases with the size and then levels off close to zero
+(dashed line).](latent_files/figure-html/lognormal_plot_cvvs-1.png)
+Hence, the truly relevant predictors are identified correctly.
 
-Project onto the submodel consisting of the first `n_pred_truth`
-predictors and perform a “posterior-projection predictive check” (PPPC):
+Based on this plot, we decide for a submodel size of 10:
 
 ``` r
 
-predictors_final_lnorm <- head(ranking(cvvs_lnorm)[["fulldata"]], n_pred_truth)
+size_decided_lnorm <- 10
+```
+
+This is also the size that
+[`suggest_size()`](https://mc-stan.org/projpred/dev/reference/suggest_size.md)
+would suggest:
+
+``` r
+
+suggest_size(cvvs_lnorm, stat = "mlpd")
+```
+
+    [1] 10
+
+Project onto the submodel of this size and perform a
+“posterior-projection predictive check” (PPPC):
+
+``` r
+
+predictors_final_lnorm <- head(ranking(cvvs_lnorm)[["fulldata"]],
+                               size_decided_lnorm)
 prj_lnorm <- project(refm_lnorm, predictor_terms = predictors_final_lnorm)
 prj_predict_lnorm <- proj_predict(prj_lnorm)
 ```
@@ -1090,7 +1039,9 @@ bayesplot::ppc_km_overlay(y = dat_sim_lnorm$yobs, yrep = prj_predict_lnorm,
     Note: `extrapolation_factor` now defaults to 1.2 (20%).
     To display all posterior predictive draws, set `extrapolation_factor = Inf`.
 
-![](latent_files/figure-html/lognormal_pppc-1.png)
+![The same Kaplan-Meier overlay plot for the log-normal submodel. The
+light lines are close to the dark
+line.](latent_files/figure-html/lognormal_pppc-1.png)
 
 As expected, this PPPC indicates that this submodel is a reasonable one
 (keeping in mind that such a PPPC is just a single model-diagnostic
@@ -1188,13 +1139,7 @@ refm_nebin_kfold <- get_refmodel_nebin(
 )
 ```
 
-    Defining `latent_ilink` as a function which calls `family$linkinv`, but there is no guarantee that this will work for all families. If relying on `family$linkinv` is not appropriate or if this raises an error in downstream functions, supply a custom `latent_ilink` function (which is also allowed to return only `NA`s if response-scale post-processing is not needed).
-
-    Since `<refmodel>$dis` will consist of only `NA`s, downstream analyses based on this reference model object won't be able to use log predictive density (LPD) values on latent scale. Furthermore, proj_predict() won't be able to draw from the latent Gaussian distribution.
-
-As before, the messages concerning `<refmodel>$dis` and `latent_ilink`
-can be ignored here. Then
-`cv_varsel(refm_nebin_kfold, cv_method = "kfold")` uses the
+Then `cv_varsel(refm_nebin_kfold, cv_method = "kfold")` uses the
 `reciprocal_dispersion` draws of the fold-wise refit in each fold. We do
 not run K-fold CV here, because it refits the reference model \\K\\
 times. For the Weibull example, define `refm_shape` inside such a
@@ -1227,6 +1172,10 @@ Piironen, Juho, and Aki Vehtari. 2017. “Sparsity Information and
 Regularization in the Horseshoe and Other Shrinkage Priors.” *Electronic
 Journal of Statistics* 11 (2): 5018–51.
 <https://doi.org/10.1214/17-EJS1337SI>.
+
+Vehtari, Aki, Daniel Simpson, Andrew Gelman, Yuling Yao, and Jonah
+Gabry. 2022. *Pareto Smoothed Importance Sampling*. arXiv.
+<https://doi.org/10.48550/arXiv.1507.02646>.
 
 Weber, Frank, Änne Glass, and Aki Vehtari. 2025. “Projection Predictive
 Variable Selection for Discrete Response Families with Finite Support.”

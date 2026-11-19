@@ -163,9 +163,9 @@
   [\#620](https://github.com/stan-dev/projpred/issues/620))
 - The parallelization now uses the **future** package instead of
   **foreach**. Set up the workers with, e.g.,
-  `future::plan(future::multisession, workers = 4)`; without workers, a
-  parallel run gives a warning and runs sequentially. A **foreach**
-  backend (e.g., from
+  `future::plan(future.mirai::mirai_multisession, workers = 4)`; without
+  workers, a parallel run gives a warning and runs sequentially. A
+  **foreach** backend (e.g., from
   [`doParallel::registerDoParallel()`](https://rdrr.io/pkg/doParallel/man/registerDoParallel.html))
   has no effect anymore. (GitHub:
   [\#629](https://github.com/stan-dev/projpred/issues/629))
@@ -220,6 +220,10 @@
   [`cv_varsel()`](https://mc-stan.org/projpred/dev/reference/cv_varsel.md)
   with `validate_search = TRUE` is about 6 times faster. (GitHub:
   [\#645](https://github.com/stan-dev/projpred/issues/645))
+- Argument `search_screen` now also screens the candidates for
+  cumulative models with the augmented-data projection (without
+  multilevel terms) and for the latent projection with multilevel terms.
+  (GitHub: [\#647](https://github.com/stan-dev/projpred/issues/647))
 
 ### Minor changes
 
@@ -233,6 +237,8 @@
 - **loo** \>= 2.10.1, **posterior** \>= 1.7.0 and **gamm4** \>= 0.3-0
   are now required, and **gtools** is no longer needed. (GitHub:
   [\#605](https://github.com/stan-dev/projpred/issues/605))
+- **lme4** \>= 2.0-1 is now required. (GitHub:
+  [\#655](https://github.com/stan-dev/projpred/issues/655))
 - The warning about the projection onto the full Gaussian (or latent)
   multilevel model now says that the projected group-level SD is too
   small. It also gives the approximate factor. (GitHub:
@@ -289,6 +295,12 @@
   `zero_inflated_beta_binomial()`. (GitHub:
   [\#530](https://github.com/stan-dev/projpred/issues/530),
   [\#624](https://github.com/stan-dev/projpred/issues/624))
+- With `latent = TRUE`, no message about an `NA` dispersion, and no
+  `latent_ilink` message for families whose inverse link gives the mean
+  (e.g., negative binomial, Weibull). Without a dispersion,
+  [`as.matrix()`](https://rdrr.io/r/base/matrix.html) of a projection
+  has no `sigma` column. (GitHub:
+  [\#656](https://github.com/stan-dev/projpred/issues/656))
 
 ### Bug fixes and maintenance
 
@@ -404,12 +416,6 @@
   category probabilities in the augmented-data projection (cumulative,
   categorical and binomial families). (GitHub:
   [\#618](https://github.com/stan-dev/projpred/issues/618))
-- With lme4 versions before 2.1-1, binomial submodels with multilevel
-  terms (and no additive terms) that
-  [`lme4::glmer()`](https://rdrr.io/pkg/lme4/man/glmer.html) fits now
-  use `nAGQ = 0` for non-integer responses or weights, unless `nAGQ` is
-  set via `...`. Their coefficients were fitted to rounded data before.
-  (GitHub: [\#616](https://github.com/stan-dev/projpred/issues/616))
 - Removed line breaks from the names of search terms above about 500
   characters in
   [`ranking()`](https://mc-stan.org/projpred/dev/reference/ranking.md),
@@ -505,6 +511,31 @@
   `catCov` values other than `"free"` now give an error. (GitHub:
   [\#635](https://github.com/stan-dev/projpred/issues/635),
   [\#640](https://github.com/stan-dev/projpred/issues/640))
+- With lme4 versions before 2.1-1, binomial and Poisson submodels with
+  group-level terms are now fitted correctly to non-integer data.
+  Before, the group-level standard deviations of Poisson submodels
+  stayed at 1. These Poisson fits are also faster, so
+  [`init_refmodel()`](https://mc-stan.org/projpred/dev/reference/refmodel-init-get.md)
+  no longer warns about their run time. (GitHub:
+  [\#616](https://github.com/stan-dev/projpred/issues/616),
+  [\#655](https://github.com/stan-dev/projpred/issues/655))
+- The warning of
+  [`init_refmodel()`](https://mc-stan.org/projpred/dev/reference/refmodel-init-get.md)
+  for multilevel models with a binomial response or with the
+  augmented-data projection now gives the cause. The projected
+  group-level standard deviations can be near zero, and then the search
+  can rank group-level terms too low. (GitHub:
+  [\#353](https://github.com/stan-dev/projpred/issues/353),
+  [\#655](https://github.com/stan-dev/projpred/issues/655))
+- With `latent = TRUE`,
+  [`get_refmodel()`](https://mc-stan.org/projpred/dev/reference/refmodel-init-get.md)
+  and
+  [`init_refmodel()`](https://mc-stan.org/projpred/dev/reference/refmodel-init-get.md)
+  give an informative error for
+  [`brms::categorical()`](https://paulbuerkner.com/brms/reference/brmsfamily.html)
+  and the unsupported **brms** families with several linear predictors
+  (for example `multinomial()`). (GitHub:
+  [\#658](https://github.com/stan-dev/projpred/issues/658))
 
 ## projpred 2.11.0
 

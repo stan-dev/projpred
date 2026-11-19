@@ -153,14 +153,15 @@ the <code><a href="https://rdrr.io/pkg/lme4/man/glmer.html" class="external-link
 so both optimization stages use BOBYQA. A <code>control</code> argument in <code>...</code>
 replaces this default in the first fit. After some <span class="pkg">lme4</span> errors,
 <span class="pkg">projpred</span> refits with its own settings and ignores this <code>control</code>.
-For <code><a href="https://rdrr.io/pkg/lme4/man/glmer.html" class="external-link">lme4::glmer()</a></code> fits of the <code><a href="https://rdrr.io/r/stats/family.html" class="external-link">binomial()</a></code> family (also the fit after
-an own fit that does not converge), <span class="pkg">lme4</span> versions before 2.1-1
-round non-integer responses and weights in the objective of
-<code><a href="https://rdrr.io/pkg/lme4/man/glmer.html" class="external-link">lme4::glmer()</a></code> with <code>nAGQ &gt;= 1</code>. With these <span class="pkg">lme4</span> versions,
-<span class="pkg">projpred</span> uses <code>nAGQ = 0</code> for such submodels unless <code>nAGQ</code> is set
-via <code>...</code>. Then the fixed effects and the group-level effects do not
-depend on the rounded objective; the group-level standard deviations
-still do.</p></li>
+<span class="pkg">lme4</span> versions before 2.1-1 evaluate the objective of
+<code><a href="https://rdrr.io/pkg/lme4/man/glmer.html" class="external-link">lme4::glmer()</a></code> for the <code><a href="https://rdrr.io/r/stats/family.html" class="external-link">binomial()</a></code> and the <code><a href="https://rdrr.io/r/stats/family.html" class="external-link">poisson()</a></code> family with
+rounding: they round non-integer binomial responses and weights, and
+the objective is infinite for non-integer Poisson responses (then the
+group-level standard deviations stay at their start values). With
+these <span class="pkg">lme4</span> versions, <span class="pkg">projpred</span> passes a copy of these
+families with another name (ending in <code>_projpred</code>) and an <code>aic</code>
+function without rounding. The submodel fits then have this family
+name, so for example <code><a href="https://rdrr.io/pkg/lme4/man/simulate.merMod.html" class="external-link">lme4::simulate.merMod()</a></code> does not work for them.</p></li>
 <li><p>For the augmented-data projection: <code><a href="https://rdrr.io/pkg/ordinal/man/clmm.html" class="external-link">ordinal::clmm()</a></code> (the returned
 object inherits from class <code>clmm</code>) for the <code><a href="https://paulbuerkner.com/brms/reference/brmsfamily.html" class="external-link">brms::cumulative()</a></code> family,
 <code><a href="https://melff.github.io/mclogit/reference/mblogit.html" class="external-link">mclogit::mblogit()</a></code> (the returned object inherits from class <code>mmblogit</code>)
@@ -190,9 +191,16 @@ uses the other of these two links. For the <code><a href="https://paulbuerkner.c
 <code><a href="https://melff.github.io/mclogit/reference/mblogit.html" class="external-link">mclogit::mblogit()</a></code>).</p></li>
 </ul></li>
 <li><p>Submodel without multilevel but additive terms: <code><a href="https://rdrr.io/pkg/mgcv/man/gam.html" class="external-link">mgcv::gam()</a></code> (the returned
-object inherits from class <code>gam</code>).</p></li>
+object inherits from class <code>gam</code>). <span class="pkg">projpred</span> uses the default <code>method</code>
+of <code><a href="https://rdrr.io/pkg/mgcv/man/gam.html" class="external-link">mgcv::gam()</a></code>. For the <code><a href="https://rdrr.io/r/stats/family.html" class="external-link">poisson()</a></code> family, the responses of the
+traditional projection are not integers. Then <code><a href="https://rdrr.io/pkg/mgcv/man/gam.html" class="external-link">mgcv::gam()</a></code> with
+<code>method = "REML"</code> or <code>method = "ML"</code> stops with an error. Such a <code>method</code>
+can come from <code>...</code> or (<span class="pkg">mgcv</span> &gt;= 1.9-5) from global option
+<code>mgcv.gam.method</code>.</p></li>
 <li><p>Submodel with multilevel and additive terms: <code><a href="https://rdrr.io/pkg/gamm4/man/gamm4.html" class="external-link">gamm4::gamm4()</a></code> (within
-<span class="pkg">projpred</span>, the returned object inherits from class <code>gamm4</code>).</p></li>
+<span class="pkg">projpred</span>, the returned object inherits from class <code>gamm4</code>). For the
+<code><a href="https://rdrr.io/r/stats/family.html" class="external-link">binomial()</a></code> and the <code><a href="https://rdrr.io/r/stats/family.html" class="external-link">poisson()</a></code> family, <span class="pkg">projpred</span> passes the same
+family as to <code><a href="https://rdrr.io/pkg/lme4/man/glmer.html" class="external-link">lme4::glmer()</a></code> (see above).</p></li>
 </ul></div>
     <div class="section level2">
     <h2 id="verbosity-messages-warnings-errors">Verbosity, messages, warnings, errors<a class="anchor" aria-label="anchor" href="#verbosity-messages-warnings-errors"></a></h2>
@@ -218,13 +226,13 @@ global option <code>projpred.parallel_cv</code>) and the projections of the sing
 draws (or clusters) of the reference model onto a submodel (the
 <em>projection</em> parallelization, see below).</p>
 <p>Both use the parallel workers of the current plan of the <span class="pkg">future</span>
-package, e.g., <code>future::plan(future::multisession, workers = 4)</code>. Plans
-from other packages for <span class="pkg">future</span> can be used as well, e.g.,
-<code>future::plan(future.mirai::mirai_multisession, workers = 4)</code> from the
-<span class="pkg">future.mirai</span> package. In our experiments with 8 workers, the first
-parallel call with the workers of <span class="pkg">future.mirai</span> was faster than with
-those of <code><a href="https://future.futureverse.org/reference/multisession.html" class="external-link">future::multisession</a></code>, and the workers of <span class="pkg">future.mirai</span>
-returned big results faster (see the projection parallelization below).
+package, e.g., <code>future::plan(future.mirai::mirai_multisession, workers = 4)</code>
+from the <span class="pkg">future.mirai</span> package or
+<code>future::plan(future::multisession, workers = 4)</code>. In our experiments with
+8 workers, the first parallel call with the workers of <span class="pkg">future.mirai</span>
+was faster than with those of <code><a href="https://future.futureverse.org/reference/multisession.html" class="external-link">future::multisession</a></code>, and the workers of
+<span class="pkg">future.mirai</span> returned big results faster (see the projection
+parallelization below). So we recommend the workers of <span class="pkg">future.mirai</span>.
 With the sequential plan of <span class="pkg">future</span> (the default), a parallel run is
 not possible, so <span class="pkg">projpred</span> then runs sequentially and
 throws a warning. The workers must be able to load the same

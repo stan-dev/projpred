@@ -145,6 +145,9 @@ reference model fit can use another basis (<code><a href="https://mc-stan.org/rs
 <span class="pkg">brms</span> do so for <code>s()</code> terms). Then these columns do not match the
 reference model parameters. For a submodel with smooth and group-level
 terms (GAMM), the projected draws cannot be extracted yet (error).</p>
+<p>For the latent projection, column <code>sigma</code> contains the projected latent
+dispersion. If <code>&lt;refmodel&gt;$dis</code> consists of only <code>NA</code>s (see argument <code>dis</code>
+of <code><a href="refmodel-init-get.html">init_refmodel()</a></code>), there is no column <code>sigma</code>.</p>
     </div>
 
     <div class="section level2">

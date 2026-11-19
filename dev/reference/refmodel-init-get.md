@@ -115,7 +115,10 @@ init_refmodel(
 
   A single logical value indicating whether to use the latent projection
   (`TRUE`) or not (`FALSE`). Note that setting `latent = TRUE` causes
-  all arguments starting with `augdat_` to be ignored.
+  all arguments starting with `augdat_` to be ignored. The latent
+  projection does not support the
+  [`brms::categorical()`](https://paulbuerkner.com/brms/reference/brmsfamily.html)
+  family; use the augmented-data projection for it.
 
 - dis:
 

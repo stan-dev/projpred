@@ -95,7 +95,8 @@ library(rstanarm)
 
 For our **rstanarm** reference model, we use the Gaussian distribution
 as the `family` for our response. With respect to the predictors, we
-only include the linear main effects of all 20 predictor variables.
+only include the linear main effects of all 20 predictor variables. The
+formula `y ~ .` uses all other columns of the data as predictors.
 Compared to the more complex types of reference models supported by
 **projpred** (see section [“Supported types of models”](#modtypes)
 below), this is a quite simple reference model which is sufficient,
@@ -152,13 +153,14 @@ ncores <- min(ncores, 2L)
 options(mc.cores = ncores)
 set.seed(50780)
 refm_fit <- stan_glm(
-  y ~ X1 + X2 + X3 + X4 + X5 + X6 + X7 + X8 + X9 + X10 + X11 + X12 + X13 + X14 +
-    X15 + X16 + X17 + X18 + X19 + X20,
+  y ~ .,
   family = gaussian(),
   data = dat_gauss,
   prior = hs(global_scale = tau0),
   ### Only for the sake of speed (not recommended in general):
   chains = 2, iter = 1000,
+  ### In general, use defaults or explicitly define
+  ### chains = 4, iter = 4000,
   ###
   refresh = 0
 )
@@ -224,189 +226,61 @@ thorough protection against overfitting[^4],
 with `validate_search = TRUE` is recommended over
 [`varsel()`](https://mc-stan.org/projpred/dev/reference/varsel.md) and
 [`cv_varsel()`](https://mc-stan.org/projpred/dev/reference/cv_varsel.md)
-with `validate_search = FALSE`. Nonetheless, a preliminary and
-comparatively fast run of
+with `validate_search = FALSE`. For large models, a preliminary run of
 [`varsel()`](https://mc-stan.org/projpred/dev/reference/varsel.md) or
 [`cv_varsel()`](https://mc-stan.org/projpred/dev/reference/cv_varsel.md)
 with `validate_search = FALSE` can give a rough idea of the performance
-of the submodels and can be used for finding a suitable value for
-argument `nterms_max` in subsequent runs (argument `nterms_max` imposes
-a limit on the submodel size up to which the search is continued and is
-thus able to reduce the runtime considerably).
+of the submodels. It can also help to choose argument `nterms_max` (the
+largest submodel size of the search) for the run with validated search
+(see section [“Speed”](#speed)).
 
-### Preliminary `cv_varsel()` run
+### `cv_varsel()` run
 
-To illustrate a preliminary
+Here, we run
 [`cv_varsel()`](https://mc-stan.org/projpred/dev/reference/cv_varsel.md)
-run with `validate_search = FALSE`, we set `nterms_max` to the number of
-predictor terms in the full model, i.e., `nterms_max = 20`. To speed up
-the building of the vignette (this is not recommended in general), we
-choose the `"L1"` search `method` and set `refit_prj` to `FALSE`.
+with its defaults: PSIS-LOO CV (`cv_method = "LOO"`), validated search
+(`validate_search = TRUE`) and forward search (`method = "forward"`).
+For a Gaussian reference model with the identity link and without
+multilevel or additive terms, like this one, **projpred** computes the
+forward search and the LOO CV with validated search from cross-products
+of the model matrix. This run takes only a few seconds.
+
+The code below also shows how **projpred**’s CV can be parallelized with
+the **future** package (we disable the parallelization for the vignette
+build). The LOO folds are then split among the parallel workers. For a
+model as small as this one, the parallelization overhead can be larger
+than the runtime gain. We use the workers of the **future.mirai**
+package because the first parallel call was faster with them than with
+[`future::multisession`](https://future.futureverse.org/reference/multisession.html).
+For more details, see section “Parallelization” in the package
+documentation
+([online](https://mc-stan.org/projpred/reference/projpred-package.html))
+or type
+[`` ?`projpred-package` ``](https://mc-stan.org/projpred/dev/reference/projpred-package.md).
+
+If PSIS-LOO CV is not reliable (for example, if many Pareto \\\hat{k}\\
+values are high), \\K\\-fold CV (`cv_method = "kfold"`) is an
+alternative. Then
+[`run_cvfun()`](https://mc-stan.org/projpred/dev/reference/run_cvfun.md)
+can run the \\K\\ reference model refits once, so that several
+[`cv_varsel()`](https://mc-stan.org/projpred/dev/reference/cv_varsel.md)
+calls can use them (see argument `cvfits` of
+[`cv_varsel()`](https://mc-stan.org/projpred/dev/reference/cv_varsel.md)).
 
 ``` r
 
-# Preliminary cv_varsel() run:
-cvvs_fast <- cv_varsel(
-  refm_obj,
-  validate_search = FALSE,
-  ### Only for the sake of speed (not recommended in general):
-  method = "L1",
-  refit_prj = FALSE,
-  ###
-  nterms_max = 20,
-  ### In interactive use, we recommend not to deactivate the verbose mode:
-  verbose = 0
-  ### 
-)
-```
-
-To find a suitable value for `nterms_max` in subsequent
-[`cv_varsel()`](https://mc-stan.org/projpred/dev/reference/cv_varsel.md)
-runs, we take a look at a plot of at least one predictive performance
-statistic in dependence of the submodel size. Here, we choose the mean
-log predictive density (MLPD; see the documentation for argument `stats`
-of
-[`summary.vsel()`](https://mc-stan.org/projpred/dev/reference/summary.vsel.md)
-for details) as the only performance statistic. Since we will be using
-the following plot only to determine `nterms_max` for subsequent
-[`cv_varsel()`](https://mc-stan.org/projpred/dev/reference/cv_varsel.md)
-runs, we can omit the predictor ranking from the plot by setting
-`ranking_nterms_max` to `NA` (which requires
-`size_position = "primary_x_bottom"`, which we set here via its global
-option, just like argument `text_angle`):
-
-``` r
-
-options(projpred.plot_vsel_size_position = "primary_x_bottom")
-options(projpred.plot_vsel_text_angle = 0)
-plot(cvvs_fast, stats = "mlpd", ranking_nterms_max = NA)
-```
-
-![](projpred_files/figure-html/plot_vsel_fast-1.png) This plot suggests
-that the submodel MLPD levels off from submodel size 8 on. However, we
-used L1 search with `refit_prj = FALSE`, which means that the
-projections employed for the predictive performance evaluation are
-L1-penalized, which is usually undesired ([Piironen et al. 2020, sec.
-4](#ref-piironen_projective_2020)). Thus, to investigate the impact of
-`refit_prj = FALSE`, we re-run
-[`cv_varsel()`](https://mc-stan.org/projpred/dev/reference/cv_varsel.md),
-but this time with the default of `refit_prj = TRUE` and re-using the
-search results (as well as the CV-related arguments such as
-`validate_search`; see section “Usage” in
-[`?cv_varsel.vsel`](https://mc-stan.org/projpred/dev/reference/cv_varsel.md))
-from the former
-[`cv_varsel()`](https://mc-stan.org/projpred/dev/reference/cv_varsel.md)
-call (this is done by applying
-[`cv_varsel()`](https://mc-stan.org/projpred/dev/reference/cv_varsel.md)
-to `cvvs_fast` instead of `refm_obj` so that the
-[`cv_varsel()`](https://mc-stan.org/projpred/dev/reference/cv_varsel.md)
-generic dispatches to the
-[`cv_varsel.vsel()`](https://mc-stan.org/projpred/dev/reference/cv_varsel.md)
-method that was introduced in **projpred** 2.8.0[^5]). To save time, we
-also set `nclusters_pred` to a comparatively low value of `20`:
-
-``` r
-
-# Preliminary cv_varsel() run with `refit_prj = TRUE`:
-cvvs_fast_refit <- cv_varsel(
-  cvvs_fast,
-  ### Only for the sake of speed (not recommended in general):
-  nclusters_pred = 20,
-  ###
-  ### In interactive use, we recommend not to deactivate the verbose mode:
-  verbose = 0
-  ### 
-)
-```
-
-    Using standard importance sampling (SIS) due to a small number of clusters.
-
-Here, we ignore the warning that SIS is used (instead of PSIS) because
-this is due to `nclusters_pred = 20` which we used only to speed up the
-building of the vignette.
-
-With the `refit_prj = TRUE` results, the predictive performance plot
-from above now looks as follows:
-
-``` r
-
-plot(cvvs_fast_refit, stats = "mlpd", ranking_nterms_max = NA)
-```
-
-![](projpred_files/figure-html/plot_vsel_fast_refit-1.png) This refined
-plot confirms that the submodel MLPD does not change much after submodel
-size 8, so in our final
-[`cv_varsel()`](https://mc-stan.org/projpred/dev/reference/cv_varsel.md)
-run, we set `nterms_max` to a value slightly higher than 8 (here: 9) to
-ensure that we see the MLPD leveling off. The search results from the
-initial `cvvs_fast` object could now be re-used again (via
-[`cv_varsel.vsel()`](https://mc-stan.org/projpred/dev/reference/cv_varsel.md))
-for investigating the sensitivity of the results to changes in
-`nclusters_pred` (or `ndraws_pred`). Here, we skip this for the sake of
-brevity and instead head over to the final
-[`cv_varsel()`](https://mc-stan.org/projpred/dev/reference/cv_varsel.md)
-run.
-
-### Final `cv_varsel()` run
-
-For this final
-[`cv_varsel()`](https://mc-stan.org/projpred/dev/reference/cv_varsel.md)
-run (with `validate_search = TRUE`, as recommended), we use a \\K\\-fold
-CV with a small number of folds (`K = 2`) to make this vignette build
-faster. In practice, we recommend using either the default of
-`cv_method = "LOO"` (possibly subsampled, see argument `nloo` of
-[`cv_varsel()`](https://mc-stan.org/projpred/dev/reference/cv_varsel.md))
-or a larger value for `K` if this is possible in terms of computation
-time. Here, we also perform the \\K\\ reference model refits outside of
-[`cv_varsel()`](https://mc-stan.org/projpred/dev/reference/cv_varsel.md).
-Although not strictly necessary here, this is helpful in practice
-because often,
-[`cv_varsel()`](https://mc-stan.org/projpred/dev/reference/cv_varsel.md)
-needs to be re-run multiple times in order to try out different argument
-settings. We also show how **projpred**’s CV (i.e., the CV comprising
-search and performance evaluation, after refitting the reference model
-\\K\\ times) can be parallelized (though we disable it here for vignette
-building). In practice, parallelization is of little use with only
-`K = 2` folds and fast fold-wise operations, as the parallelization
-overhead eats up any runtime improvements. Note that for this final
-[`cv_varsel()`](https://mc-stan.org/projpred/dev/reference/cv_varsel.md)
-run, we cannot make use of
-[`cv_varsel.vsel()`](https://mc-stan.org/projpred/dev/reference/cv_varsel.md)
-(by applying
-[`cv_varsel()`](https://mc-stan.org/projpred/dev/reference/cv_varsel.md)
-to `cvvs_fast` or `cvvs_fast_refit` instead of `refm_obj`) because of
-the change in `nterms_max` (here: 9, for `cvvs_fast` and
-`cvvs_fast_refit`: 20).
-
-``` r
-
-# Refit the reference model K times:
-cv_fits <- run_cvfun(
-  refm_obj,
-  ### Only for the sake of speed (not recommended in general):
-  K = 2
-  ###
-)
 # For running projpred's CV in parallel (see cv_varsel()'s argument `parallel`):
 # Note: Parallel processing is disabled during package building to avoid issues
 use_parallel <- FALSE  # Set to TRUE for actual parallel processing
 if (use_parallel) {
-  future::plan(future::multisession, workers = ncores)
+  future::plan(future.mirai::mirai_multisession, workers = ncores)
 }
-# Final cv_varsel() run:
 cvvs <- cv_varsel(
   refm_obj,
-  cv_method = "kfold",
-  cvfits = cv_fits,
-  ### Only for the sake of speed (not recommended in general):
-  method = "L1",
-  nclusters_pred = 20,
-  ###
-  nterms_max = 9,
   parallel = use_parallel,
   ### In interactive use, we recommend not to deactivate the verbose mode:
   verbose = 0
-  ### 
+  ###
 )
 # Tear down the CV parallelization setup:
 if (use_parallel) {
@@ -414,20 +288,18 @@ if (use_parallel) {
 }
 ```
 
-#### Predictive performance plot from final `cv_varsel()` run
+#### Predictive performance plot from the `cv_varsel()` run
 
-We can now select a final submodel size by looking at a predictive
-performance plot similar to the one created for the preliminary
-[`cv_varsel()`](https://mc-stan.org/projpred/dev/reference/cv_varsel.md)
-run above. By default, the performance statistics are plotted on their
-actual scale and the uncertainty bars match this scale, but argument
-`deltas` of
+We can now select a submodel size by looking at a predictive performance
+plot. By default, the performance statistics are plotted on their actual
+scale and the uncertainty bars match this scale, but argument `deltas`
+of
 [`plot.vsel()`](https://mc-stan.org/projpred/dev/reference/plot.vsel.md)
 offers two more options:
 
 - With `deltas = TRUE`, the performance statistics are plotted on
-  *difference scale*, i.e., as differences[^6] from the baseline
-  model[^7] and the uncertainty bars match this scale,
+  *difference scale*, i.e., as differences[^5] from the baseline
+  model[^6] and the uncertainty bars match this scale,
 - With `deltas = "mixed"`, the performance statistics (i.e., their point
   estimates) are plotted on the actual scale, but the uncertainty bars
   visualize the difference-scale uncertainty.
@@ -438,47 +310,65 @@ final submodel size), we plot with `deltas = TRUE` here
 (`deltas = "mixed"` would be another good choice). We also set
 `show_cv_proportions = TRUE` (via its global option) for illustrative
 purposes, which becomes clearer in section [“Predictor ranking(s) from
-final `cv_varsel()` run and identification of the selected
-submodel”](#rksel):
+the `cv_varsel()` run and identification of the selected
+submodel”](#rksel). The search ran up to submodel size 19 (here, the
+default of argument `nterms_max` of
+[`cv_varsel()`](https://mc-stan.org/projpred/dev/reference/cv_varsel.md)).
+To keep the labels readable, the plot shows only the sizes up to 12
+(argument `nterms_max` of
+[`plot.vsel()`](https://mc-stan.org/projpred/dev/reference/plot.vsel.md)):
 
 ``` r
 
+ggplot2::theme_set(bayesplot::theme_default(base_family = "sans"))
+options(projpred.plot_vsel_size_position = "primary_x_bottom")
+options(projpred.plot_vsel_text_angle = 0)
 options(projpred.plot_vsel_show_cv_proportions = TRUE)
-plot(cvvs, stats = "mlpd", deltas = TRUE)
+plot(cvvs, stats = "mlpd", deltas = TRUE, nterms_max = 12)
 ```
 
-![](projpred_files/figure-html/plot_vsel-1.png)
+![Plot of the MLPD difference between each submodel and the reference
+model against the submodel size from 0 to 12, with uncertainty bars.
+Below each size, the x-axis shows the predictor that the full-data
+search added and the proportion of CV folds that put this predictor at
+the same position. A dashed horizontal line at zero marks the reference
+model. The difference reaches zero at size 7 and stays slightly above
+zero for larger sizes.](projpred_files/figure-html/plot_vsel-1.png)
 
 #### Decision for final submodel size
 
-Based on that final predictive performance plot, we decide for a
-submodel size. Usually, the aim is to find the smallest submodel size
-where the predictive performance of the submodels levels off and is
-close enough to the reference model’s predictive performance (the dashed
-red horizontal line).
+Based on that predictive performance plot, we decide for a submodel
+size. Usually, the aim is to find the smallest submodel size where the
+predictive performance of the submodels levels off and is close enough
+to the reference model’s predictive performance (the dashed red
+horizontal line).
 
 Sometimes, the plot may be ambiguous because after reaching the
 reference model’s performance, the submodels’ performance may keep
 increasing (and hence become even better than the reference model’s
-performance[^8]). In that case, one has to find a suitable trade-off
+performance[^7]). In that case, one has to find a suitable trade-off
 between predictive performance (accuracy) and model size (sparsity) in
 the context of subject-matter knowledge.
 
 Here, we decide for a submodel size of 7 because it seems to provide the
 best trade-off between sparsity and accuracy (size 7 is the smallest
 size where the submodel MLPD is close enough to the reference model MLPD
-and from size 7 on, the submodel MLPD levels off).
+and from size 7 on, the submodel MLPD levels off). At sizes 7 to 10, the
+submodels predict slightly better than the reference model. The
+reference model also includes 12 predictors with little or no effect,
+and their posterior uncertainty adds predictive variance, which the
+projection onto the smaller submodels removes.
 
 ``` r
 
 size_decided <- 7
 ```
 
-In section [“Predictor ranking(s) from final `cv_varsel()` run and
+In section [“Predictor ranking(s) from the `cv_varsel()` run and
 identification of the selected submodel”](#rksel), the predictor ranking
 and the (CV) ranking proportions that are shown in the plot (below the
-submodel sizes on the x-axis) are explained in detail—and also how they
-could have been incorporated into our decision for a submodel size.
+submodel sizes on the x-axis) are explained in detail, together with how
+they support our decision for a submodel size.
 
 The
 [`suggest_size()`](https://mc-stan.org/projpred/dev/reference/suggest_size.md)
@@ -497,7 +387,7 @@ suggest_size(cvvs, stat = "mlpd")
 In this case, that heuristic gives the same final submodel size (`7`) as
 our manual decision.
 
-#### Predictive performance table from final `cv_varsel()` run
+#### Predictive performance table from the `cv_varsel()` run
 
 A tabular representation of the plot created by
 [`plot.vsel()`](https://mc-stan.org/projpred/dev/reference/plot.vsel.md)
@@ -535,8 +425,9 @@ as follows:
 smmry <- summary(cvvs,
                  stats = "mlpd",
                  type = c("mean", "lower", "upper"),
-                 deltas = TRUE)
-print(smmry, digits = 1)
+                 deltas = TRUE,
+                 nterms_max = 12)
+print(smmry, digits = 2)
 ```
 
 
@@ -547,25 +438,28 @@ print(smmry, digits = 1)
         X12 + X13 + X14 + X15 + X16 + X17 + X18 + X19 + X20
     Observations: 100
     Projection method: traditional
-    CV method: K-fold CV with K = 2 and search included (i.e., fold-wise searches)
-    Search method: L1
-    Maximum submodel size for the search: 9
-    Number of projected draws in the search: 1 (from clustered projection)
-    Number of projected draws in the performance evaluation: 20 (from clustered projection)
+    CV method: PSIS-LOO CV with search included (i.e., fold-wise searches)
+    Search method: forward
+    Maximum submodel size for the search: 12
+    Number of projected draws in the search: 20 (from clustered projection)
+    Number of projected draws in the performance evaluation: 400
     Argument `refit_prj`: TRUE
 
     Submodel performance evaluation summary with `deltas = TRUE` and `cumulate = FALSE`:
      size ranking_fulldata cv_proportions_diag   mlpd mlpd.lower mlpd.upper
-        0      (Intercept)                  NA -0.967      -1.04     -0.895
-        1               X1                 1.0 -0.778      -0.86     -0.697
-        2              X14                 1.0 -0.548      -0.61     -0.483
-        3               X5                 0.5 -0.548      -0.63     -0.466
-        4              X20                 0.0 -0.513      -0.60     -0.425
-        5               X6                 0.0 -0.207      -0.26     -0.153
-        6               X3                 0.0 -0.196      -0.24     -0.155
-        7               X8                 0.5 -0.004      -0.02      0.015
-        8              X11                 0.0 -0.010      -0.03      0.009
-        9               X7                 0.0  0.001      -0.02      0.018
+        0      (Intercept)                  NA -1.049    -1.1285     -0.969
+        1               X1                0.93 -0.920    -1.0069     -0.833
+        2              X14                0.93 -0.626    -0.7020     -0.549
+        3              X20                0.98 -0.534    -0.6026     -0.466
+        4               X5                0.96 -0.399    -0.4684     -0.330
+        5               X3                0.97 -0.188    -0.2485     -0.128
+        6               X6                1.00 -0.054    -0.0977     -0.010
+        7               X8                1.00  0.029     0.0043      0.053
+        8              X11                1.00  0.047     0.0352      0.059
+        9              X10                0.35  0.031     0.0200      0.041
+       10              X15                0.30  0.021     0.0114      0.032
+       11               X7                0.25  0.016     0.0072      0.024
+       12               X4                0.18  0.014     0.0078      0.020
 
     Reference model performance evaluation summary with `deltas = TRUE`:
           mlpd mlpd.lower mlpd.upper 
@@ -588,16 +482,16 @@ str(perf)
 ```
 
     List of 2
-     $ submodels      :'data.frame':    10 obs. of  4 variables:
-      ..$ size      : num [1:10] 0 1 2 3 4 5 6 7 8 9
-      ..$ mlpd      : num [1:10] -0.967 -0.778 -0.548 -0.548 -0.513 ...
-      ..$ mlpd.lower: num [1:10] -1.039 -0.859 -0.614 -0.63 -0.601 ...
-      ..$ mlpd.upper: num [1:10] -0.895 -0.697 -0.483 -0.466 -0.425 ...
+     $ submodels      :'data.frame':    13 obs. of  4 variables:
+      ..$ size      : num [1:13] 0 1 2 3 4 5 6 7 8 9 ...
+      ..$ mlpd      : num [1:13] -1.049 -0.92 -0.626 -0.534 -0.399 ...
+      ..$ mlpd.lower: num [1:13] -1.129 -1.007 -0.702 -0.603 -0.468 ...
+      ..$ mlpd.upper: num [1:13] -0.969 -0.833 -0.549 -0.466 -0.33 ...
      $ reference_model: Named num [1:3] 0 0 0
       ..- attr(*, "names")= chr [1:3] "mlpd" "mlpd.lower" "mlpd.upper"
      - attr(*, "class")= chr "performances"
 
-#### Predictor ranking(s) from final `cv_varsel()` run and identification of the selected submodel
+#### Predictor ranking(s) from the `cv_varsel()` run and identification of the selected submodel
 
 As indicated by its column name, the predictor ranking from column
 `ranking_fulldata` of the
@@ -605,7 +499,7 @@ As indicated by its column name, the predictor ranking from column
 output is based on the full-data search. This full-data predictor
 ranking is also what is shown in the second line of the x-axis tick
 labels of the predictive performance plot from section [“Predictive
-performance plot from final `cv_varsel()` run”](#plotfinal).
+performance plot from the `cv_varsel()` run”](#plotfinal).
 
 In case of
 [`cv_varsel()`](https://mc-stan.org/projpred/dev/reference/cv_varsel.md)
@@ -613,11 +507,14 @@ with `validate_search = TRUE`, there is not only the full-data search,
 but also fold-wise searches, implying that there are also fold-wise
 predictor rankings. All of these predictor rankings (the full-data one
 and—if available—the fold-wise ones) can be retrieved via
-[`ranking()`](https://mc-stan.org/projpred/dev/reference/ranking.md):
+[`ranking()`](https://mc-stan.org/projpred/dev/reference/ranking.md). As
+in the plot above, we cut off the rankings at 12 predictor terms
+(argument `nterms_max` of
+[`ranking()`](https://mc-stan.org/projpred/dev/reference/ranking.md)):
 
 ``` r
 
-rk <- ranking(cvvs)
+rk <- ranking(cvvs, nterms_max = 12)
 ```
 
 In addition to inspecting the full-data predictor ranking, it often
@@ -638,16 +535,19 @@ we use
 ```
 
         predictor
-    size X1 X14  X5 X20  X6  X3  X8 X11 X7
-       1  1   0 0.0   0 0.0 0.0 0.0 0.0  0
-       2  0   1 0.0   0 0.0 0.0 0.0 0.0  0
-       3  0   0 0.5   0 0.5 0.0 0.0 0.0  0
-       4  0   0 0.5   0 0.0 0.5 0.0 0.0  0
-       5  0   0 0.0   1 0.0 0.0 0.0 0.0  0
-       6  0   0 0.0   0 0.5 0.0 0.5 0.0  0
-       7  0   0 0.0   0 0.0 0.5 0.5 0.0  0
-       8  0   0 0.0   0 0.0 0.0 0.0 0.0  0
-       9  0   0 0.0   0 0.0 0.0 0.0 0.5  0
+    size   X1  X14  X20   X5   X3 X6 X8 X11  X10  X15   X7   X4
+      1  0.93 0.07 0.00 0.00 0.00  0  0   0 0.00 0.00 0.00 0.00
+      2  0.07 0.93 0.00 0.00 0.00  0  0   0 0.00 0.00 0.00 0.00
+      3  0.00 0.00 0.98 0.01 0.01  0  0   0 0.00 0.00 0.00 0.00
+      4  0.00 0.00 0.02 0.96 0.02  0  0   0 0.00 0.00 0.00 0.00
+      5  0.00 0.00 0.00 0.03 0.97  0  0   0 0.00 0.00 0.00 0.00
+      6  0.00 0.00 0.00 0.00 0.00  1  0   0 0.00 0.00 0.00 0.00
+      7  0.00 0.00 0.00 0.00 0.00  0  1   0 0.00 0.00 0.00 0.00
+      8  0.00 0.00 0.00 0.00 0.00  0  0   1 0.00 0.00 0.00 0.00
+      9  0.00 0.00 0.00 0.00 0.00  0  0   0 0.35 0.08 0.34 0.07
+      10 0.00 0.00 0.00 0.00 0.00  0  0   0 0.26 0.30 0.20 0.05
+      11 0.00 0.00 0.00 0.00 0.00  0  0   0 0.23 0.18 0.25 0.07
+      12 0.00 0.00 0.00 0.00 0.00  0  0   0 0.11 0.19 0.14 0.18
     attr(,"class")
     [1] "cv_proportions"
 
@@ -656,16 +556,14 @@ The main diagonal of this matrix is contained in column
 [`summary.vsel()`](https://mc-stan.org/projpred/dev/reference/summary.vsel.md)
 output and is also shown in the third line of the x-axis tick labels of
 the predictive performance plot from section [“Predictive performance
-plot from final `cv_varsel()` run”](#plotfinal) (due to
+plot from the `cv_varsel()` run”](#plotfinal) (due to
 `show_cv_proportions = TRUE` set via its global option).
 
-Here, the ranking proportions are of little use as we have used `K = 2`
-(in the final
-[`cv_varsel()`](https://mc-stan.org/projpred/dev/reference/cv_varsel.md)
-call above) for the sake of speed. Nevertheless, we can see that the two
-CV folds agree on the most relevant predictor term (`X1`) and the second
-most relevant predictor term (`X14`). Since the column names of the
-matrix returned by
+Here, most LOO CV folds have `X1` at position 1 and `X14` at position 2.
+At positions 3 to 8, most folds also have the same predictor as the
+full-data predictor ranking. From position 9 on, the proportions are
+smaller, so the ranking of the remaining predictors varies between the
+folds. Since the column names of the matrix returned by
 [`cv_proportions()`](https://mc-stan.org/projpred/dev/reference/cv_proportions.md)
 follow the full-data predictor ranking, we can infer that `X1` and `X14`
 are also the most relevant predictor terms (in this order) in the
@@ -679,16 +577,16 @@ output:
 rk[["fulldata"]]
 ```
 
-    [1] "X1"  "X14" "X5"  "X20" "X6"  "X3"  "X8"  "X11" "X7" 
+     [1] "X1"  "X14" "X20" "X5"  "X3"  "X6"  "X8"  "X11" "X10" "X15" "X7"  "X4" 
 
 This is the same as column `ranking_fulldata` in the
 [`summary.vsel()`](https://mc-stan.org/projpred/dev/reference/summary.vsel.md)
 output above (apart from the intercept).
 
-Note that we have cut off the search at `nterms_max = 9` (which is
-smaller than the number of predictor terms in the full model, 20 here),
-so the ranking proportions in the `pr_rk` matrix do not need to sum to
-100 % (neither column-wise nor row-wise).
+We cut off the predictor rankings at 12 predictor terms, which is
+smaller than the number of predictor terms in the full model (20 here).
+Therefore, the ranking proportions in the `pr_rk` matrix do not need to
+sum to 100% (neither column-wise nor row-wise).
 
 The *transposed* matrix of ranking proportions can be visualized via
 [`plot.cv_proportions()`](https://mc-stan.org/projpred/dev/reference/plot.cv_proportions.md):
@@ -698,9 +596,13 @@ The *transposed* matrix of ranking proportions can be visualized via
 plot(pr_rk)
 ```
 
-![](projpred_files/figure-html/plot_cv_proportions-1.png) Apart from
-visualizing the variability in the ranking of the predictors (here, this
-is of little use because of `K = 2`), this plot will be helpful later.
+![Heat map of the ranking proportions. The y-axis shows the predictors
+in the order of the full-data predictor ranking and the x-axis the
+ranking positions 1 to 12. Each tile gives the proportion of CV folds
+that have the predictor at that
+position.](projpred_files/figure-html/plot_cv_proportions-1.png) Apart
+from visualizing the variability in the ranking of the predictors, this
+plot will be helpful later.
 
 To retrieve the predictor terms of the final submodel (except for the
 intercept which is always included in the submodels), we combine the
@@ -711,7 +613,7 @@ chosen submodel size of 7 with the full-data predictor ranking:
 ( predictors_final <- head(rk[["fulldata"]], size_decided) )
 ```
 
-    [1] "X1"  "X14" "X5"  "X20" "X6"  "X3"  "X8" 
+    [1] "X1"  "X14" "X20" "X5"  "X3"  "X6"  "X8" 
 
 At this place, it is again helpful to take the ranking proportions into
 account, but now in a cumulated fashion:
@@ -721,26 +623,24 @@ account, but now in a cumulated fashion:
 plot(cv_proportions(rk, cumulate = TRUE))
 ```
 
-![](projpred_files/figure-html/plot_cv_proportions_cumul-1.png) This
-plot shows that the two fold-wise searches (as well as the full-data
-search, whose predictor ranking determines the order of the predictors
-on the y-axis) agree on the *set* of the 7 most relevant predictors:
-When looking at `<=7` on the x-axis, all tiles above and including the
-7^(th) main diagonal element are at 100 %. (Similarly, the two CV folds
-also agree on the set of the most relevant predictor—which is a
-singleton—and the set of the two most relevant predictors, but we
-already observed this above.)
+![Heat map of the cumulated ranking proportions. For each predictor
+(y-axis) and each size j from 1 to 12 (x-axis), the tile gives the
+proportion of CV folds that have the predictor among their first j
+predictors. At sizes 7 and 8, all tiles of the first 7 or 8 predictors
+are at 100 %; at size 9, fewer folds include the 9th
+predictor.](projpred_files/figure-html/plot_cv_proportions_cumul-1.png)
+This plot shows that all fold-wise searches and the full-data search
+agree on the *set* of the 7 most relevant predictors. (The full-data
+predictor ranking determines the order of the predictors on the y-axis.)
+At `<=7` on the x-axis, all tiles above and including the 7^(th) main
+diagonal element are at 100%. The same holds for the set of the 8 most
+relevant predictors (`<=8`), but not for larger sets. For example, only
+some of the folds have `X10` among their first 9 predictors.
 
-Although not demonstrated here, the cumulated ranking proportions also
-could have guided the decision for a submodel size: From the plot of the
-cumulated ranking proportions, we can see that size 8 might have been an
-unfortunate choice because `X11` (which—by cutting off the full-data
-predictor ranking at size 8—would then have been selected as the 8^(th)
-predictor in the final submodel) is not included among the first 8 terms
-by any CV fold. However, since `K = 2` is too small for reliable
-statements regarding the variability of the predictor ranking, we did
-not take the cumulated ranking proportions into account when we made our
-decision for a submodel size above.
+The cumulated ranking proportions can also guide the decision for a
+submodel size. Here, they agree with our choice of size 7: all folds
+select the same 7 (and 8) predictors. A size of 9 would add `X10`, which
+only some of the folds have among their first 9 predictors.
 
 In a real-world application, we might also be able to incorporate the
 full-data predictor ranking into our decision for a submodel size
@@ -760,7 +660,7 @@ function returns an object of class `projection` which forms the basis
 for convenient post-selection inference. By the following
 [`project()`](https://mc-stan.org/projpred/dev/reference/project.md)
 call, we project the reference model onto the final submodel once
-again[^9]:
+again[^8]:
 
 ``` r
 
@@ -788,7 +688,7 @@ like any matrix of draws from MCMC procedures, except that it doesn’t
 reflect a typical posterior distribution, but rather a projected
 posterior distribution, i.e., the distribution arising from the
 deterministic projection of the reference model’s posterior distribution
-onto the parameter space of the final submodel[^10]. Beware that in case
+onto the parameter space of the final submodel[^9]. Beware that in case
 of clustered projection (i.e., a non-`NULL` argument `nclusters` in the
 [`project()`](https://mc-stan.org/projpred/dev/reference/project.md)
 call), the projected draws have different (i.e., nonconstant) weights,
@@ -799,7 +699,7 @@ more generally, post-projection) inference, see
 and
 [`proj_predict()`](https://mc-stan.org/projpred/dev/reference/pred-projection.md)
 offer similar functionality via arguments `return_draws_matrix` and
-`nresample_clusters`, respectively[^11]).
+`nresample_clusters`, respectively[^10]).
 
 ### Marginals of the projected posterior
 
@@ -830,10 +730,10 @@ print(prj_smmry, digits = 1)
     1 (Intercept)   0.08 0.10 -0.1   0.3
     2          X1   1.44 0.09  1.2   1.6
     3         X14  -1.11 0.09 -1.3  -0.9
-    4          X5  -0.90 0.10 -1.1  -0.7
-    5         X20  -1.09 0.10 -1.3  -0.9
-    6          X6   0.55 0.09  0.4   0.7
-    7          X3   0.76 0.10  0.6   1.0
+    4         X20  -1.09 0.10 -1.3  -0.9
+    5          X5  -0.90 0.10 -1.1  -0.7
+    6          X3   0.76 0.10  0.6   1.0
+    7          X6   0.55 0.09  0.4   0.7
     8          X8   0.39 0.10  0.2   0.6
     9       sigma   1.02 0.08  0.9   1.2
 
@@ -850,12 +750,15 @@ library(bayesplot)
 
 ``` r
 
-bayesplot_theme_set(ggplot2::theme_bw())
 mcmc_intervals(prj_mat) +
   ggplot2::coord_cartesian(xlim = c(-1.5, 1.6))
 ```
 
-![](projpred_files/figure-html/bayesplot_prj-1.png)
+![Interval plot of the projected posterior, with one row for the
+intercept, each of the 7 selected predictors and sigma, and the
+parameter value on the x-axis. Each row has a point for the median, a
+thick line for the 50 % interval and a thin line for the 90 %
+interval.](projpred_files/figure-html/bayesplot_prj-1.png)
 
 Note that we only visualize the *1-dimensional* marginals of the
 projected posterior here. To gain a more complete picture, we would have
@@ -872,7 +775,9 @@ mcmc_intervals(refm_mat, pars = colnames(prj_mat)) +
   ggplot2::coord_cartesian(xlim = c(-1.5, 1.6))
 ```
 
-![](projpred_files/figure-html/bayesplot_ref-1.png)
+![The same interval plot for the posterior of the same parameters in the
+reference model. The intervals differ only slightly from those of the
+projected posterior.](projpred_files/figure-html/bayesplot_ref-1.png)
 
 Here, the reference model’s marginal posteriors differ only slightly
 from the marginals of the projected posterior. This does not necessarily
@@ -897,14 +802,14 @@ For example, suppose we have the following new observations:
 ) )
 ```
 
-      X1 X14 X5 X20 X6 X3 X8
-    1 -1  -1 -1  -1 -1 -1 -1
-    2  0   0  0   0  0  0  0
-    3  1   1  1   1  1  1  1
+      X1 X14 X20 X5 X3 X6 X8
+    1 -1  -1  -1 -1 -1 -1 -1
+    2  0   0   0  0  0  0  0
+    3  1   1   1  1  1  1  1
 
 Then
 [`proj_linpred()`](https://mc-stan.org/projpred/dev/reference/pred-projection.md)
-can calculate the linear predictors[^12] for all new observations from
+can calculate the linear predictors[^11] for all new observations from
 `dat_gauss_new`. Depending on argument `integrated`, these linear
 predictors can be averaged across the projected draws (within each new
 observation). For instance, the following computes the expected values
@@ -920,10 +825,10 @@ prj_linpred <- proj_linpred(prj, newdata = dat_gauss_new, integrated = TRUE)
 cbind(dat_gauss_new, linpred = as.vector(prj_linpred[["pred"]]))
 ```
 
-      X1 X14 X5 X20 X6 X3 X8    linpred
-    1 -1  -1 -1  -1 -1 -1 -1 0.05693269
-    2  0   0  0   0  0  0  0 0.07767737
-    3  1   1  1   1  1  1  1 0.09842204
+      X1 X14 X20 X5 X3 X6 X8    linpred
+    1 -1  -1  -1 -1 -1 -1 -1 0.05693269
+    2  0   0   0  0  0  0  0 0.07767737
+    3  1   1   1  1  1  1  1 0.09842204
 
 If `dat_gauss_new` also contained response values (i.e., `y` values in
 this example), then
@@ -939,7 +844,7 @@ we can obtain draws from predictive distributions based on the final
 submodel. In contrast to `proj_linpred(<...>, integrated = FALSE)`, this
 encompasses not only the uncertainty arising from parameter estimation,
 but also the uncertainty arising from the observation (or “sampling”)
-model for the response[^13]. This is useful for what is usually termed a
+model for the response[^12]. This is useful for what is usually termed a
 posterior predictive check (PPC), but would have to be termed something
 like a posterior-projection predictive check (PPPC) here:
 
@@ -950,7 +855,11 @@ prj_predict <- proj_predict(prj)
 ppc_dens_overlay(y = dat_gauss$y, yrep = prj_predict)
 ```
 
-![](projpred_files/figure-html/proj_predict-1.png)
+![Density overlay plot with the response value on the x-axis: the
+density of the observed response as a dark line, and the densities of
+predictive draws from the submodel as many light lines. The light lines
+are close to the dark
+line.](projpred_files/figure-html/proj_predict-1.png)
 
 This PPPC shows that our final projection is able to generate
 predictions similar to the observed response values, which indicates
@@ -974,16 +883,16 @@ In the following and throughout **projpred**’s documentation, the term
 Apart from the [`gaussian()`](https://rdrr.io/r/stats/family.html)
 response family used in this vignette, **projpred**’s traditional
 projection also supports the
-[`binomial()`](https://rdrr.io/r/stats/family.html)[^14] and the
+[`binomial()`](https://rdrr.io/r/stats/family.html)[^13] and the
 [`poisson()`](https://rdrr.io/r/stats/family.html) family.
 
 The families currently supported by **projpred**’s augmented-data
 projection ([Weber et al. 2025](#ref-weber_projection_2025)) are
-[`binomial()`](https://rdrr.io/r/stats/family.html)[^15] [^16],
+[`binomial()`](https://rdrr.io/r/stats/family.html)[^14] [^15],
 [`brms::cumulative()`](https://paulbuerkner.com/brms/reference/brmsfamily.html),
 [`rstanarm::stan_polr()`](https://mc-stan.org/rstanarm/reference/stan_polr.html)
 fits, and
-[`brms::categorical()`](https://paulbuerkner.com/brms/reference/brmsfamily.html)[^17].
+[`brms::categorical()`](https://paulbuerkner.com/brms/reference/brmsfamily.html)[^16].
 See
 [`?extend_family`](https://mc-stan.org/projpred/dev/reference/extend_family.md)
 (which is called by
@@ -1023,12 +932,12 @@ families. The latent projection is applied when setting argument
 to `TRUE`. The families for which full latent-projection functionality
 (in particular, `resp_oscale = TRUE`, i.e., post-processing on the
 original response scale) is currently available are
-[`binomial()`](https://rdrr.io/r/stats/family.html)[^18] [^19],
+[`binomial()`](https://rdrr.io/r/stats/family.html)[^17] [^18],
 [`poisson()`](https://rdrr.io/r/stats/family.html),
 [`brms::cumulative()`](https://paulbuerkner.com/brms/reference/brmsfamily.html),
 and
 [`rstanarm::stan_polr()`](https://mc-stan.org/rstanarm/reference/stan_polr.html)
-fits[^20]. For all other families, it is worth trying the latent
+fits[^19]. For all other families, it is worth trying the latent
 projection (by setting `latent = TRUE`); **projpred** will state if any
 features are not available and how to make them available. More details
 concerning the latent projection are given in the corresponding
@@ -1051,7 +960,7 @@ feature is currently not supported for the latent projection.
 
 On the side of the predictors, **projpred** not only supports linear
 main effects as shown in this vignette, but also interactions,
-multilevel[^21], and—as an experimental feature—additive[^22] terms.
+multilevel[^20], and—as an experimental feature—additive[^21] terms.
 
 Transferring this vignette to such more complex problems is
 straightforward (also because this vignette employs a “typical”
@@ -1117,10 +1026,10 @@ refm_fit <- stan_gamm4(
 )
 ```
 
-In case of multilevel models (currently only non-additive ones),
-**projpred** has two global options that may be relevant for users:
-`projpred.mlvl_pred_new` and `projpred.mlvl_proj_ref_new`. These are
-explained in detail in the general package documentation (available
+In case of multilevel models, **projpred** has two global options that
+may be relevant for users: `projpred.mlvl_pred_new` and
+`projpred.mlvl_proj_ref_new`. These are explained in detail in the
+general package documentation (available
 [online](https://mc-stan.org/projpred/reference/projpred-package.html)
 or by typing
 [`` ?`projpred-package` ``](https://mc-stan.org/projpred/dev/reference/projpred-package.md)).
@@ -1156,59 +1065,64 @@ behavior (the following list might not be exhaustive, though):
 If [`varsel()`](https://mc-stan.org/projpred/dev/reference/varsel.md) is
 used, the lack of a CV in
 [`varsel()`](https://mc-stan.org/projpred/dev/reference/varsel.md) may
-lead to overconfident and overfitted results. In this case, we recommend
+lead to overconfident and overfitted results. We recommend
 [`cv_varsel()`](https://mc-stan.org/projpred/dev/reference/cv_varsel.md)
 instead of
-[`varsel()`](https://mc-stan.org/projpred/dev/reference/varsel.md)
-([`cv_varsel()`](https://mc-stan.org/projpred/dev/reference/cv_varsel.md)
-should be used for final results anyway).
-
-Similarly,
+[`varsel()`](https://mc-stan.org/projpred/dev/reference/varsel.md) and
+[`cv_varsel()`](https://mc-stan.org/projpred/dev/reference/cv_varsel.md)
+should be used for final results anyway. Similarly,
 [`cv_varsel()`](https://mc-stan.org/projpred/dev/reference/cv_varsel.md)
 with `validate_search = FALSE` is more prone to overfitting than
 [`cv_varsel()`](https://mc-stan.org/projpred/dev/reference/cv_varsel.md)
 with `validate_search = TRUE`.
 
-### Issues with the traditional projection
+### Issues with multilevel models
 
-For multilevel binomial models, the traditional projection may not work
-properly and give suboptimal results, see
-[\#353](https://github.com/stan-dev/projpred/pull/353) on GitHub (the
-underlying issue is described in **lme4** issue
-[\#682](https://github.com/lme4/lme4/issues/682)). By suboptimal
-results, we mean that the relevance of the group-level terms can be
-underestimated. According to the simulation-based case study from
-[\#353](https://github.com/stan-dev/projpred/pull/353), the latent
-projection might help in that case.
-
-For multilevel Poisson models, the traditional projection may take very
-long, see [\#353](https://github.com/stan-dev/projpred/pull/353).
-According to the simulation-based case study from
-[\#353](https://github.com/stan-dev/projpred/pull/353), the latent
-projection might help in that case.
-
-Finally, as illustrated in the [Poisson example of the latent-projection
-vignette](https://mc-stan.org/projpred/articles/latent.html#example-poisson-distribution),
-the latent projection can be beneficial for non-multilevel models with a
-(non-Gaussian) family that is also supported by the traditional
-projection, at least in case of the Poisson family and L1 search.
-
-### Issues with the augmented-data projection
-
-For multilevel models, the augmented-data projection seems to suffer
-from the same issue as the traditional projection for the binomial
-family (see above), i.e., it may not work properly and give suboptimal
-results, see [\#353](https://github.com/stan-dev/projpred/pull/353) (the
-underlying issue is probably similar to the one described in **lme4**
-issue [\#682](https://github.com/lme4/lme4/issues/682)). By suboptimal
-results, we mean that the relevance of the group-level terms can be
-underestimated. According to the simulation-based case study from
-[\#353](https://github.com/stan-dev/projpred/pull/353), the latent
-projection might help in such cases.
+In multilevel models, the projected group-level standard deviations can
+be near zero for the [`binomial()`](https://rdrr.io/r/stats/family.html)
+and
+[`brms::bernoulli()`](https://paulbuerkner.com/brms/reference/brmsfamily.html)
+families (traditional and augmented-data projection). The same applies
+to the augmented-data projection of the
+[`brms::cumulative()`](https://paulbuerkner.com/brms/reference/brmsfamily.html)
+and
+[`brms::categorical()`](https://paulbuerkner.com/brms/reference/brmsfamily.html)
+families and of
+[`rstanarm::stan_polr()`](https://mc-stan.org/rstanarm/reference/stan_polr.html)
+fits. In that case, the search can underestimate the relevance of the
+group-level terms, see
+[\#353](https://github.com/stan-dev/projpred/pull/353). **projpred**
+estimates these standard deviations by (approximate) maximum marginal
+likelihood, which assumes binomial or multinomial noise around the
+fitted values. The projection fits the submodels to the reference
+model’s predictions, which have no noise, so the data have less noise
+than the model assumes. The group-level standard deviations are likely
+to be near zero if the groups have few observations or the observations
+have few trials. The augmented-data projection has one trial per
+observation. The latent projection might help because its Gaussian
+submodels estimate the residual standard deviation (see the
+[latent-projection
+vignette](https://mc-stan.org/projpred/articles/latent.html)). The
+latent projection is not available for the
+[`brms::categorical()`](https://paulbuerkner.com/brms/reference/brmsfamily.html)
+family.
 
 ### Speed
 
-There are many ways to speed up **projpred**, but in general, such
+For Gaussian models with the identity link and without multilevel or
+additive terms, and for the latent projection without such terms,
+**projpred** computes the forward search and the LOO CV with validated
+search from cross-products of the model matrix. The defaults of
+[`cv_varsel()`](https://mc-stan.org/projpred/dev/reference/cv_varsel.md)
+are usually fast for these models. For other models, each projection is
+an iterative fit, and
+[`cv_varsel()`](https://mc-stan.org/projpred/dev/reference/cv_varsel.md)
+with the defaults can take much longer. For binomial and Poisson models,
+the latent projection is an alternative that uses the same fast
+computations (see the [latent-projection
+vignette](https://mc-stan.org/projpred/articles/latent.html)).
+
+There are many other ways to speed up **projpred**, but in general, such
 speed-ups lead to results that are less accurate and hence should only
 be considered as giving *preliminary* results. Some speed-up
 possibilities are:
@@ -1216,7 +1130,7 @@ possibilities are:
 1.  Using
     [`cv_varsel()`](https://mc-stan.org/projpred/dev/reference/cv_varsel.md)
     with `validate_search = FALSE` instead of `validate_search = TRUE`.
-    In case of `cv_method = "LOO"`[^23],
+    In case of `cv_method = "LOO"`[^22],
     [`cv_varsel()`](https://mc-stan.org/projpred/dev/reference/cv_varsel.md)
     with `validate_search = FALSE` has comparable runtime to
     [`varsel()`](https://mc-stan.org/projpred/dev/reference/varsel.md),
@@ -1229,7 +1143,8 @@ possibilities are:
     [`cv_varsel()`](https://mc-stan.org/projpred/dev/reference/cv_varsel.md)
     with `validate_search = FALSE` is more prone to overfitting than
     [`cv_varsel()`](https://mc-stan.org/projpred/dev/reference/cv_varsel.md)
-    with `validate_search = TRUE`.
+    with `validate_search = TRUE`. For the models with the fast
+    computations above, `validate_search = TRUE` is usually fast enough.
 
 2.  Using
     [`cv_varsel()`](https://mc-stan.org/projpred/dev/reference/cv_varsel.md)
@@ -1301,10 +1216,7 @@ possibilities are:
     section “Details” in
     [`?varsel`](https://mc-stan.org/projpred/dev/reference/varsel.md) or
     [`?cv_varsel`](https://mc-stan.org/projpred/dev/reference/cv_varsel.md)
-    for a more detailed comparison of the two). The issue demonstrated
-    in the [Poisson example of the latent-projection
-    vignette](https://mc-stan.org/projpred/articles/latent.html#example-poisson-distribution)
-    is related to this.
+    for a more detailed comparison of the two).
 
 9.  Setting argument `refit_prj` (of
     [`varsel()`](https://mc-stan.org/projpred/dev/reference/varsel.md)
@@ -1318,11 +1230,16 @@ possibilities are:
     ([Piironen et al. 2020, sec. 4](#ref-piironen_projective_2020)). In
     case of forward search, this issue does not exist.
 
-10. Parallelizing costly parts of the CV implied by
+10. Parallelizing the CV folds of
     [`cv_varsel()`](https://mc-stan.org/projpred/dev/reference/cv_varsel.md)
-    (this was demonstrated in the example above; see argument `parallel`
-    of
+    with the **future** package (see the example above and argument
+    `parallel` of
     [`cv_varsel()`](https://mc-stan.org/projpred/dev/reference/cv_varsel.md)).
+    The parallel workers are set up with
+    [`future::plan()`](https://future.futureverse.org/reference/plan.html),
+    for example
+    `future::plan(future.mirai::mirai_multisession, workers = 4)`
+    (recommended) or `future::plan(future::multisession, workers = 4)`.
     When using
     [`project()`](https://mc-stan.org/projpred/dev/reference/project.md),
     parallelizing the projection might also help (see the general
@@ -1342,24 +1259,19 @@ possibilities are:
     [`varsel()`](https://mc-stan.org/projpred/dev/reference/varsel.md)
     or
     [`cv_varsel()`](https://mc-stan.org/projpred/dev/reference/cv_varsel.md)
-    are changed). In the example above, this was illustrated when
+    are changed). For example, `cv_varsel(cvvs, ndraws_pred = 200)`
+    would re-use the searches of the `cvvs` object from above and run
+    only a new performance evaluation. Similarly, a
     [`cv_varsel()`](https://mc-stan.org/projpred/dev/reference/cv_varsel.md)
-    was applied to `cvvs_fast` instead of `refm_obj` to yield
-    `cvvs_fast_refit`. In that example, search and performance
-    evaluation were effectively run *separately* by the
-    [`cv_varsel()`](https://mc-stan.org/projpred/dev/reference/cv_varsel.md)
-    calls yielding `cvvs_fast` and `cvvs_fast_refit`, respectively. This
-    is because
-    [`cv_varsel()`](https://mc-stan.org/projpred/dev/reference/cv_varsel.md)
-    with `refit_prj = FALSE` (used for `cvvs_fast`) has almost only the
-    computational cost of the search (the performance evaluation with
-    `refit_prj = FALSE` has almost no computational cost) and
+    call with `refit_prj = FALSE` has almost only the computational cost
+    of the search, and subsequent
     [`cv_varsel.vsel()`](https://mc-stan.org/projpred/dev/reference/cv_varsel.md)
-    (used for `cvvs_fast_refit`) has almost only the computational cost
-    of the performance evaluation (the search in
-    [`cv_varsel.vsel()`](https://mc-stan.org/projpred/dev/reference/cv_varsel.md)
-    has no computational cost at all because the previous search results
-    from the `vsel` object are re-used).
+    calls have only the computational cost of the performance
+    evaluation. Note that the fold-wise searches of a
+    [`cv_varsel()`](https://mc-stan.org/projpred/dev/reference/cv_varsel.md)
+    call with `refit_prj = FALSE` do not use the random observation
+    weights (see argument `loo_perturb_alpha` of
+    [`cv_varsel()`](https://mc-stan.org/projpred/dev/reference/cv_varsel.md)).
 
 12. Using
     [`run_cvfun()`](https://mc-stan.org/projpred/dev/reference/run_cvfun.md)
@@ -1473,12 +1385,7 @@ Variable Selection for Discrete Response Families with Finite Support.”
     induced by the size selection should be comparatively small
     ([Piironen and Vehtari 2017a](#ref-piironen_comparison_2017)).
 
-[^5]: Analogous functionality has been implemented for
-    [`varsel()`](https://mc-stan.org/projpred/dev/reference/varsel.md),
-    namely in
-    [`varsel.vsel()`](https://mc-stan.org/projpred/dev/reference/varsel.md).
-
-[^6]: For the geometric mean predictive density (GMPD; see argument
+[^5]: For the geometric mean predictive density (GMPD; see argument
     `stats` of
     [`summary.vsel()`](https://mc-stan.org/projpred/dev/reference/summary.vsel.md)
     and
@@ -1486,7 +1393,7 @@ Variable Selection for Discrete Response Families with Finite Support.”
     `deltas = TRUE` estimates the GMPD *ratio* (not difference) vs. the
     baseline model.
 
-[^7]: For the definition of the baseline model, see argument `baseline`
+[^6]: For the definition of the baseline model, see argument `baseline`
     of
     [`summary.vsel()`](https://mc-stan.org/projpred/dev/reference/summary.vsel.md)
     and
@@ -1494,7 +1401,7 @@ Variable Selection for Discrete Response Families with Finite Support.”
     in the most common cases, the default baseline model is the
     reference model.
 
-[^8]: In general, only
+[^7]: In general, only
     [`cv_varsel()`](https://mc-stan.org/projpred/dev/reference/cv_varsel.md)
     with `validate_search = TRUE` allows to judge whether the submodels
     perform better than the reference model or not. Such a judgment is
@@ -1504,7 +1411,7 @@ Variable Selection for Discrete Response Families with Finite Support.”
     [`cv_varsel()`](https://mc-stan.org/projpred/dev/reference/cv_varsel.md)
     with `validate_search = FALSE`.
 
-[^9]: During the search, the reference model is projected onto all
+[^8]: During the search, the reference model is projected onto all
     candidate models (this is where arguments `ndraws` and `nclusters`
     of
     [`varsel()`](https://mc-stan.org/projpred/dev/reference/varsel.md)
@@ -1545,72 +1452,72 @@ Variable Selection for Discrete Response Families with Finite Support.”
     However, this would increase the runtime, which we don’t want in
     this vignette.
 
-[^10]: In general, this implies that projected regression coefficients
-    do not reflect isolated effects of the predictors. For example,
+[^9]: In general, this implies that projected regression coefficients do
+    not reflect isolated effects of the predictors. For example,
     especially in case of highly correlated predictors, it is possible
     that projected regression coefficients “absorb” effects from
     predictors that have been excluded in the projection.
 
-[^11]: [`proj_predict()`](https://mc-stan.org/projpred/dev/reference/pred-projection.md)
+[^10]: [`proj_predict()`](https://mc-stan.org/projpred/dev/reference/pred-projection.md)
     also has an argument `return_draws_matrix`, but it simply converts
     the return value type. In
     [`proj_predict()`](https://mc-stan.org/projpred/dev/reference/pred-projection.md),
     different weights of the projected draws are taken into account via
     argument `nresample_clusters`.
 
-[^12]: [`proj_linpred()`](https://mc-stan.org/projpred/dev/reference/pred-projection.md)
+[^11]: [`proj_linpred()`](https://mc-stan.org/projpred/dev/reference/pred-projection.md)
     can also transform the linear predictor to response scale, but here,
     this is the same as the linear predictor scale (because of the
     identity link function).
 
-[^13]: In case of the Gaussian family we are using here, the uncertainty
+[^12]: In case of the Gaussian family we are using here, the uncertainty
     arising from the observation model is the uncertainty due to the
     residual standard deviation.
 
-[^14]: Via
+[^13]: Via
     [`brms::get_refmodel.brmsfit()`](https://paulbuerkner.com/brms/reference/get_refmodel.brmsfit.html),
     the
     [`brms::bernoulli()`](https://paulbuerkner.com/brms/reference/brmsfamily.html)
     family is supported as well.
 
-[^15]: Currently, the augmented-data support for the
+[^14]: Currently, the augmented-data support for the
     [`binomial()`](https://rdrr.io/r/stats/family.html) family does not
     include binomial distributions with more than one trial. In such a
     case, a workaround is to de-aggregate the Bernoulli trials which
     belong to the same (aggregated) observation, i.e., to use a “long”
     dataset.
 
-[^16]: Like the traditional projection, the augmented-data projection
+[^15]: Like the traditional projection, the augmented-data projection
     also supports the
     [`brms::bernoulli()`](https://paulbuerkner.com/brms/reference/brmsfamily.html)
     family via
     [`brms::get_refmodel.brmsfit()`](https://paulbuerkner.com/brms/reference/get_refmodel.brmsfit.html).
 
-[^17]: For the augmented-data projection based on a “typical” **brms**
+[^16]: For the augmented-data projection based on a “typical” **brms**
     reference model object, **brms** version 2.17.0 or later is needed.
 
-[^18]: Currently, the latent-projection support for the
+[^17]: Currently, the latent-projection support for the
     [`binomial()`](https://rdrr.io/r/stats/family.html) family does not
     include binomial distributions with more than one trial. In such a
     case, a workaround is to de-aggregate the Bernoulli trials which
     belong to the same (aggregated) observation, i.e., to use a “long”
     dataset.
 
-[^19]: Like the traditional projection, the latent projection also
+[^18]: Like the traditional projection, the latent projection also
     supports the
     [`brms::bernoulli()`](https://paulbuerkner.com/brms/reference/brmsfamily.html)
     family via
     [`brms::get_refmodel.brmsfit()`](https://paulbuerkner.com/brms/reference/get_refmodel.brmsfit.html).
 
-[^20]: For the latent projection based on a “typical” **brms** reference
+[^19]: For the latent projection based on a “typical” **brms** reference
     model object, **brms** version 2.19.0 or later is needed.
 
-[^21]: Multilevel models are also known as *hierarchical* models or
+[^20]: Multilevel models are also known as *hierarchical* models or
     models with *partially pooled*, *group-level*, or—in frequentist
     terms—*random* effects.
 
-[^22]: Additive terms are also known as *smooth* terms.
+[^21]: Additive terms are also known as *smooth* terms.
 
-[^23]: In case of `cv_method = "kfold"`, the runtime advantage of
+[^22]: In case of `cv_method = "kfold"`, the runtime advantage of
     `validate_search = FALSE` compared to `validate_search = TRUE` is by
     far not as large as in case of `cv_method = "LOO"`.

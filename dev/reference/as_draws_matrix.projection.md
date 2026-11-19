@@ -78,6 +78,12 @@ and brms do so for `s()` terms). Then these columns do not match the
 reference model parameters. For a submodel with smooth and group-level
 terms (GAMM), the projected draws cannot be extracted yet (error).
 
+For the latent projection, column `sigma` contains the projected latent
+dispersion. If `<refmodel>$dis` consists of only `NA`s (see argument
+`dis` of
+[`init_refmodel()`](https://mc-stan.org/projpred/dev/reference/refmodel-init-get.md)),
+there is no column `sigma`.
+
 ## Examples
 
 ``` r

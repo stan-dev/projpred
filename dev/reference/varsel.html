@@ -6,13 +6,13 @@ known as solution path), i.e., the best submodel for each submodel size
 (number of predictor terms). The evaluation part determines the predictive
 performance of the submodels along the predictor ranking. A special method is
 varsel.vsel() which re-uses the search results from an earlier
-varsel() (or cv_varsel()) run, as illustrated in the main vignette."><meta property="og:description" content="Run the search part and the evaluation part for a projection predictive
+varsel() (or cv_varsel()) run (see section &quot;Speed&quot; of the main vignette)."><meta property="og:description" content="Run the search part and the evaluation part for a projection predictive
 variable selection. The search part determines the predictor ranking (also
 known as solution path), i.e., the best submodel for each submodel size
 (number of predictor terms). The evaluation part determines the predictive
 performance of the submodels along the predictor ranking. A special method is
 varsel.vsel() which re-uses the search results from an earlier
-varsel() (or cv_varsel()) run, as illustrated in the main vignette."><meta property="og:image" content="https://mc-stan.org/projpred/logo.svg"><meta name="robots" content="noindex"></head><body>
+varsel() (or cv_varsel()) run (see section &quot;Speed&quot; of the main vignette)."><meta property="og:image" content="https://mc-stan.org/projpred/logo.svg"><meta name="robots" content="noindex"></head><body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
 
 
@@ -83,7 +83,7 @@ known as solution path), i.e., the best submodel for each submodel size
 (number of predictor terms). The evaluation part determines the predictive
 performance of the submodels along the predictor ranking. A special method is
 <code>varsel.vsel()</code> which re-uses the search results from an earlier
-<code>varsel()</code> (or <code><a href="cv_varsel.html">cv_varsel()</a></code>) run, as illustrated in the main vignette.</p>
+<code>varsel()</code> (or <code><a href="cv_varsel.html">cv_varsel()</a></code>) run (see section "Speed" of the main vignette).</p>
     </div>
 
     <div class="section level2">
@@ -275,24 +275,34 @@ leave these linear terms out of <code>search_terms</code>.</p></dd>
 
 <dt id="arg-search-screen">search_screen<a class="anchor" aria-label="anchor" href="#arg-search-screen"></a></dt>
 <dd><p>Only relevant for forward search. <code>NULL</code> (default) for
-the plain forward search, or a single positive integer m for a
-score-screened forward search: in each step, the score statistic of each
-candidate at the current submodel approximates the reduction of the KL
-divergence, and only the m best candidates get an exact projection. This
-reduces the number of projections from about p per step to at most m per
-step. The selected terms and their order can differ from those of the
-plain forward search. The screening applies only to the traditional
-projection with <code><a href="https://rdrr.io/r/stats/family.html" class="external-link">binomial()</a></code> (logit link) or <code><a href="https://rdrr.io/r/stats/family.html" class="external-link">poisson()</a></code> (log link)
-submodels without multilevel terms, additive terms and interactions with
-a factor, with the default divergence minimizer, and only if the
-model matrix of the search terms can be built (for example, no missing
-values and no zero-variance columns); in the other cases, <code>search_screen</code>
-is ignored and the plain forward search runs. For Gaussian submodels with
+the plain forward search, or a single positive integer m for a screened
+forward search: in each step, a cheap criterion ranks the candidates, and
+only the m best candidates get an exact projection. This reduces the
+number of projections from about p per step to at most m per step. The
+selected terms and their order can differ from those of the plain forward
+search. All screens need the default divergence minimizer. The criterion
+depends on the model:</p><ul><li><p>Traditional projection with <code><a href="https://rdrr.io/r/stats/family.html" class="external-link">binomial()</a></code> (logit link) or <code><a href="https://rdrr.io/r/stats/family.html" class="external-link">poisson()</a></code>
+(log link) submodels without multilevel terms, additive terms and
+interactions with a factor: the score statistic of each candidate at the
+current submodel, which approximates the reduction of the KL divergence.
+The model matrix of the search terms must be possible to build (for
+example, no missing values and no zero-variance columns). With offsets,
+the score statistic approximates the reduction of the objective that the
+submodels are fitted to, which has no offsets; the exact projections still
+choose the term. We recommend m = 3.</p></li>
+<li><p>Augmented-data projection with the <code><a href="https://paulbuerkner.com/brms/reference/brmsfamily.html" class="external-link">brms::cumulative()</a></code> family (logit
+or probit link), without offsets, multilevel terms and additive terms,
+and with one model-matrix column per search term (for example, no
+factors with more than two levels): the reduction of a weighted residual
+sum of squares of the latent predictor. We recommend m = 10.</p></li>
+<li><p>Latent projection with multilevel terms, without offsets and additive
+terms: the residual sum of squares of one <code><a href="https://rdrr.io/pkg/lme4/man/lmer.html" class="external-link">lme4::lmer()</a></code> fit per
+candidate to the mean latent predictor of the projected draws. We
+recommend m = 3.</p></li>
+</ul><p>In the other cases, <code>search_screen</code> is ignored and the plain forward
+search runs. For Gaussian submodels with
 the identity link, <code>search_screen</code> is ignored if projpred uses its
-cross-product forward search for them.
-With offsets, the score statistic approximates the reduction of the
-objective that the submodels are fitted to, which has no offsets; the
-exact projections still choose the term.</p></dd>
+cross-product forward search for them.</p></dd>
 
 
 <dt id="arg-search-out">search_out<a class="anchor" aria-label="anchor" href="#arg-search-out"></a></dt>

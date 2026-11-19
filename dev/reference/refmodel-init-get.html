@@ -197,7 +197,9 @@ family).</p></dd>
 <dt id="arg-latent">latent<a class="anchor" aria-label="anchor" href="#arg-latent"></a></dt>
 <dd><p>A single logical value indicating whether to use the latent
 projection (<code>TRUE</code>) or not (<code>FALSE</code>). Note that setting <code>latent = TRUE</code>
-causes all arguments starting with <code>augdat_</code> to be ignored.</p></dd>
+causes all arguments starting with <code>augdat_</code> to be ignored. The latent
+projection does not support the <code><a href="https://paulbuerkner.com/brms/reference/brmsfamily.html" class="external-link">brms::categorical()</a></code> family; use the
+augmented-data projection for it.</p></dd>
 
 
 <dt id="arg-dis">dis<a class="anchor" aria-label="anchor" href="#arg-dis"></a></dt>
