@@ -405,12 +405,14 @@ test_that(paste(
   "a binomial gamm4() submodel with non-integer responses gives no",
   "convergence warning"
 ), {
-  d <- dat_fitters()
+  # With fewer data, the fit is singular and has no gradient to check:
+  d <- dat_fitters(n_grp = 10, n_per = 20)
   mu <- plogis(cbind(d$eta, d$eta + 0.3 * d$z))
   expect_no_warning(
     fits <- with_r_printing(
       divmin_tst("s(z) + x + (1 | g)", d, extend_family(binomial()), mu,
-                 throw_warn = TRUE, check_conv = TRUE)
+                 weights = rep(20, nrow(d)), throw_warn = TRUE,
+                 check_conv = TRUE)
     ),
     message = "converge"
   )
