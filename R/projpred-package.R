@@ -94,14 +94,15 @@
 #'     so both optimization stages use BOBYQA. A `control` argument in `...`
 #'     replaces this default in the first fit. After some \pkg{lme4} errors,
 #'     \pkg{projpred} refits with its own settings and ignores this `control`.
-#'     For [lme4::glmer()] fits of the [binomial()] family (also the fit after
-#'     an own fit that does not converge), \pkg{lme4} versions before 2.1-1
-#'     round non-integer responses and weights in the objective of
-#'     [lme4::glmer()] with `nAGQ >= 1`. With these \pkg{lme4} versions,
-#'     \pkg{projpred} uses `nAGQ = 0` for such submodels unless `nAGQ` is set
-#'     via `...`. Then the fixed effects and the group-level effects do not
-#'     depend on the rounded objective; the group-level standard deviations
-#'     still do.
+#'     \pkg{lme4} versions before 2.1-1 evaluate the objective of
+#'     [lme4::glmer()] for the [binomial()] and the [poisson()] family with
+#'     rounding: they round non-integer binomial responses and weights, and
+#'     the objective is infinite for non-integer Poisson responses (then the
+#'     group-level standard deviations stay at their start values). With
+#'     these \pkg{lme4} versions, \pkg{projpred} passes a copy of these
+#'     families with another name (ending in `_projpred`) and an `aic`
+#'     function without rounding. The submodel fits then have this family
+#'     name, so for example [lme4::simulate.merMod()] does not work for them.
 #'     + For the augmented-data projection: [ordinal::clmm()] (the returned
 #'     object inherits from class `clmm`) for the [brms::cumulative()] family,
 #'     [mclogit::mblogit()] (the returned object inherits from class `mmblogit`)
@@ -130,9 +131,16 @@
 #'     \pkg{projpred} only supports `catCov = "free"` (see
 #'     [mclogit::mblogit()]).
 #' * Submodel without multilevel but additive terms: [mgcv::gam()] (the returned
-#' object inherits from class `gam`).
+#' object inherits from class `gam`). \pkg{projpred} uses the default `method`
+#' of [mgcv::gam()]. For the [poisson()] family, the responses of the
+#' traditional projection are not integers. Then [mgcv::gam()] with
+#' `method = "REML"` or `method = "ML"` stops with an error. Such a `method`
+#' can come from `...` or (\pkg{mgcv} >= 1.9-5) from global option
+#' `mgcv.gam.method`.
 #' * Submodel with multilevel and additive terms: [gamm4::gamm4()] (within
-#' \pkg{projpred}, the returned object inherits from class `gamm4`).
+#' \pkg{projpred}, the returned object inherits from class `gamm4`). For the
+#' [binomial()] and the [poisson()] family, \pkg{projpred} passes the same
+#' family as to [lme4::glmer()] (see above).
 #'
 #' # Verbosity, messages, warnings, errors
 #'

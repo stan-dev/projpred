@@ -686,3 +686,73 @@ test_that(paste(
     proj_linpred(prj_nt, newdata = dat_nt[1:5, c("x1", "x2", "y")])
   )
 })
+
+test_that(paste(
+  "init_refmodel() warns about multilevel models with a binomial response or",
+  "with the augmented-data projection, and not about Poisson or latent ones"
+), {
+  withr::local_options(projpred.warn_instable_projections = TRUE)
+  withr::local_seed(4410)
+  n <- 40L
+  ndraws <- 10L
+  dat <- data.frame(x1 = rnorm(n), g = gl(4, 10))
+  # Linear predictors (N x S):
+  eta <- 0.3 * dat$x1 + matrix(rnorm(n * ndraws, sd = 0.05), n, ndraws)
+  dat$y_binom <- rbinom(n, 1, plogis(eta[, 1]))
+  dat$y_pois <- rpois(n, exp(eta[, 1]))
+  dat$y_bfac <- factor(dat$y_binom, levels = c("0", "1"))
+  dat$y_cumul <- cut(eta[, 1] + rlogis(n), c(-Inf, -0.5, 0.5, Inf),
+                     labels = paste0("c", 1:3), ordered_result = TRUE)
+  # N x S (also for the binomial augmented-data projection); the cumulative
+  # augmented-data projection: S x N x (number of categories - 1).
+  ref_predfun <- function(fit, newdata = NULL) {
+    stopifnot(is.null(newdata))
+    fit$eta
+  }
+  eta_aug_cumul <- simplify2array(lapply(c(-0.5, 0.5), function(thr) {
+    thr - t(eta)
+  }))
+  warns_init <- function(fml, family, eta_fit, ...) {
+    warns <- character()
+    suppressMessages(withCallingHandlers(
+      init_refmodel(list(eta = eta_fit), data = dat, formula = fml,
+                    family = family, ref_predfun = ref_predfun, ...),
+      warning = function(w) {
+        warns <<- c(warns, conditionMessage(w))
+        invokeRestart("muffleWarning")
+      }
+    ))
+    return(any(grepl("group-level standard deviations can be near zero",
+                     warns)))
+  }
+  expect_true(warns_init(y_binom ~ x1 + (1 | g), binomial(), eta),
+              info = "binomial, traditional")
+  expect_false(warns_init(y_binom ~ x1, binomial(), eta),
+               info = "binomial, traditional, no group-level terms")
+  expect_false(warns_init(y_binom ~ x1 + (1 | g), binomial(), eta,
+                          called_from_cvrefbuilder = TRUE),
+               info = "binomial, traditional, cvrefbuilder")
+  expect_false(warns_init(y_binom ~ x1 + (1 | g), binomial(), eta,
+                          latent = TRUE, dis = rep(1, ndraws)),
+               info = "binomial, latent")
+  expect_false(warns_init(y_pois ~ x1 + (1 | g), poisson(), eta),
+               info = "Poisson, traditional")
+  expect_true(
+    warns_init(y_bfac ~ x1 + (1 | g), binomial(), eta,
+               augdat_y_unqs = c("0", "1"), augdat_link = augdat_link_binom,
+               augdat_ilink = augdat_ilink_binom),
+    info = "binomial, augmented-data"
+  )
+  expect_true(
+    warns_init(y_cumul ~ x1 + (1 | g),
+               structure(list(family = "cumulative_rstanarm", link = "logit"),
+                         class = "family"),
+               eta_aug_cumul,
+               augdat_y_unqs = paste0("c", 1:3),
+               augdat_link = augdat_link_cumul,
+               augdat_ilink = augdat_ilink_cumul,
+               augdat_args_link = list(link = "logit"),
+               augdat_args_ilink = list(link = "logit")),
+    info = "cumulative, augmented-data"
+  )
+})
