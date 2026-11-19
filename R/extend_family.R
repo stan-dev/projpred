@@ -354,7 +354,7 @@ extend_family <- function(family,
             return(ilpreds)
           }
         } else {
-          if (family$family_oscale != "poisson") {
+          if (!family$family_oscale %in% fams_linkinv_mean()) {
             message("Defining `latent_ilink` as a function which calls ",
                     "`family$linkinv`, but there is no guarantee that this ",
                     "will work for all families. If relying on ",
@@ -933,4 +933,13 @@ has_dispersion <- function(family) {
 # to extend_family()):
 has_family_extras <- function(family) {
   return(isTRUE(family$is_extended))
+}
+
+# Names of the original response families (rstanarm, brms and stats) whose
+# `linkinv` gives the mean of the response, so that the latent projection's
+# internal default for `latent_ilink` is correct for them without a message:
+fams_linkinv_mean <- function() {
+  return(c("poisson", "neg_binomial_2", "negbinomial", "negbinomial2",
+           "geometric", "Gamma", "gamma", "inverse.gaussian", "Beta",
+           "weibull", "exponential", "frechet", "skew_normal", "exgaussian"))
 }

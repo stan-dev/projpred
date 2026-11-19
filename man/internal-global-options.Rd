@@ -15,9 +15,6 @@ logical value indicating whether to throw certain messages or warnings
 meaning of these global options, see their occurrences in the codebase. With
 the exception of \code{projpred.warn_allrandom_dis}, these global options are
 currently used in the unit tests to deactivate these messages and warnings.
-Global option \code{projpred.warn_instable_projections} is also used (invisibly)
-in the latent vignette to suppress the corresponding warnings while
-illustrating the underlying issue (instable projections).
 \item \code{projpred.additional_checks}: A single logical value indicating whether to
 run some additional checks that are not necessary to be run when users call
 the corresponding \pkg{projpred} functions. Currently, these checks are

@@ -277,7 +277,7 @@ search part with the training data of each CV fold separately (an exception
 is explained in section "Note" below) and by running the evaluation part on
 the corresponding test set of each CV fold. A special method is
 \code{\link[=cv_varsel.vsel]{cv_varsel.vsel()}} because it re-uses the search results from an earlier
-\code{\link[=cv_varsel]{cv_varsel()}} (or \code{\link[=varsel]{varsel()}}) run, as illustrated in the main vignette.
+\code{\link[=cv_varsel]{cv_varsel()}} (or \code{\link[=varsel]{varsel()}}) run (see section "Speed" of the main vignette).
 }
 \details{
 Arguments \code{ndraws}, \code{nclusters}, \code{nclusters_pred}, and \code{ndraws_pred}

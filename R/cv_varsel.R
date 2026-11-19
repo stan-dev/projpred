@@ -12,7 +12,7 @@
 #' is explained in section "Note" below) and by running the evaluation part on
 #' the corresponding test set of each CV fold. A special method is
 #' [cv_varsel.vsel()] because it re-uses the search results from an earlier
-#' [cv_varsel()] (or [varsel()]) run, as illustrated in the main vignette.
+#' [cv_varsel()] (or [varsel()]) run (see section "Speed" of the main vignette).
 #'
 #' @inheritParams varsel
 #' @param cv_method The CV method, either `"LOO"` or `"kfold"`. In the `"LOO"`
