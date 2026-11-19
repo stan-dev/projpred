@@ -91,6 +91,25 @@
 #'   variables that are search terms without a smooth term; the smooth term then
 #'   adds the nonlinear part. To search a smooth term without its linear terms,
 #'   leave these linear terms out of `search_terms`.
+#' @param search_screen Only relevant for forward search. `NULL` (default) for
+#'   the plain forward search, or a single positive integer m for a
+#'   score-screened forward search: in each step, the score statistic of each
+#'   candidate at the current submodel approximates the reduction of the KL
+#'   divergence, and only the m best candidates get an exact projection. This
+#'   reduces the number of projections from about p per step to at most m per
+#'   step. The selected terms and their order can differ from those of the
+#'   plain forward search. The screening applies only to the traditional
+#'   projection with [binomial()] (logit link) or [poisson()] (log link)
+#'   submodels without multilevel terms, additive terms and interactions with
+#'   a factor, with the default divergence minimizer, and only if the
+#'   model matrix of the search terms can be built (for example, no missing
+#'   values and no zero-variance columns); in the other cases, `search_screen`
+#'   is ignored and the plain forward search runs. For Gaussian submodels with
+#'   the identity link, `search_screen` is ignored if projpred uses its
+#'   cross-product forward search for them.
+#'   With offsets, the score statistic approximates the reduction of the
+#'   objective that the submodels are fitted to, which has no offsets; the
+#'   exact projections still choose the term.
 #' @param search_out Intended for internal use.
 #' @param verbose A single integer value from the set \eqn{\{0, 1, 2, 3,
 #'   4\}}{{0, 1, 2, 3, 4}} (for [varsel()], \eqn{3} and \eqn{4} have the same
@@ -255,7 +274,8 @@ varsel.default <- function(object, ...) {
 #' @export
 varsel.vsel <- function(object, ...) {
   arg_nms_internal <- c("method", "ndraws", "nclusters", "nterms_max",
-                        "search_control", "penalty", "search_terms")
+                        "search_control", "penalty", "search_terms",
+                        "search_screen")
   arg_nms_internal_used <- intersect(arg_nms_internal, ...names())
   n_arg_nms_internal_used <- length(arg_nms_internal_used)
   if (n_arg_nms_internal_used > 0) {
@@ -273,6 +293,7 @@ varsel.vsel <- function(object, ...) {
     search_control = object[["args_search"]][["search_control"]],
     penalty = object[["args_search"]][["penalty"]],
     search_terms = object[["args_search"]][["search_terms"]],
+    search_screen = object[["args_search"]][["search_screen"]],
     search_out = list(search_path = object[["search_path"]]),
     ...
   ))
@@ -297,6 +318,7 @@ varsel.refmodel <- function(
     thresh = 1e-6,
     penalty = NULL,
     search_terms = NULL,
+    search_screen = NULL,
     search_out = NULL,
     seed = NA,
     ...
@@ -343,7 +365,7 @@ varsel.refmodel <- function(
   args <- parse_args_varsel(
     refmodel = refmodel, method = method, refit_prj = refit_prj,
     nterms_max = nterms_max, nclusters = nclusters, search_terms = search_terms,
-    verbose = verbose
+    verbose = verbose, search_screen = search_screen
   )
   method <- args$method
   refit_prj <- args$refit_prj
@@ -351,6 +373,7 @@ varsel.refmodel <- function(
   nclusters <- args$nclusters
   search_terms <- args$search_terms
   search_terms_was_null <- args$search_terms_was_null
+  search_screen <- args$search_screen
   nterms_all <- args$nterms_all
   verbose <- args$verbose
 
@@ -430,7 +453,8 @@ varsel.refmodel <- function(
       method = method, nterms_max = nterms_max, penalty = penalty,
       verbose = verbose, search_control = search_control,
       search_terms = search_terms,
-      search_terms_was_null = search_terms_was_null, ...
+      search_terms_was_null = search_terms_was_null,
+      search_screen = search_screen, ...
     )
   }
 
@@ -535,7 +559,9 @@ varsel.refmodel <- function(
                   method == "forward" && is.null(search_control)
                 ) list(...) else search_control,
                 penalty,
-                search_terms = if (search_terms_was_null) NULL else search_terms
+                search_terms =
+                  if (search_terms_was_null) NULL else search_terms,
+                search_screen
               ),
               clust_used_search = search_path$p_sel$clust_used,
               clust_used_eval = perf_eval_out[["clust_used"]],
@@ -567,7 +593,8 @@ varsel.refmodel <- function(
 .select <- function(refmodel, ndraws, nclusters, reweighting_args = NULL,
                     method, nterms_max, penalty, verbose,
                     verbose_line_length = 5, verbose_txt_add = "",
-                    search_control, return_outdmins = TRUE, ...) {
+                    search_control, return_outdmins = TRUE,
+                    search_screen = NULL, ...) {
   if (is.null(reweighting_args)) {
     if (!is.null(refmodel$draws_shift)) {
       # The shifted draws of perturb_refmodel(), which checked that they are
@@ -607,7 +634,7 @@ varsel.refmodel <- function(
     search_path <- search_forward(
       p_ref = p_sel, refmodel = refmodel, nterms_max = nterms_max,
       verbose = verbose, search_control = search_control,
-      return_outdmins = return_outdmins, ...
+      return_outdmins = return_outdmins, search_screen = search_screen, ...
     )
   }
   verb_out(rep("-", verbose_line_length), verbose = verbose)
@@ -623,7 +650,8 @@ varsel.refmodel <- function(
 # them in with the default values. The purpose of this function is to avoid
 # repeating the same code both in varsel() and cv_varsel().
 parse_args_varsel <- function(refmodel, method, refit_prj, nterms_max,
-                              nclusters, search_terms, verbose) {
+                              nclusters, search_terms, verbose,
+                              search_screen = NULL) {
   search_terms_was_null <- is.null(search_terms)
   if (search_terms_was_null) {
     search_terms <- split_formula(refmodel$formula,
@@ -653,6 +681,21 @@ parse_args_varsel <- function(refmodel, method, refit_prj, nterms_max,
   }
   if (!method %in% c("L1", "forward")) {
     stop("Unexpected value for argument `method`.")
+  }
+
+  if (!is.null(search_screen)) {
+    if (!is.numeric(search_screen) || length(search_screen) != 1 ||
+        !is.finite(search_screen) || search_screen < 1 ||
+        search_screen > .Machine$integer.max ||
+        search_screen != round(search_screen)) {
+      stop("Argument `search_screen` must be `NULL` or a single positive ",
+           "integer.")
+    }
+    search_screen <- as.integer(search_screen)
+    if (method != "forward") {
+      message("Argument `search_screen` only takes effect if ",
+              "`method = \"forward\"`.")
+    }
   }
 
   stopifnot(!is.null(refit_prj))
@@ -708,7 +751,8 @@ parse_args_varsel <- function(refmodel, method, refit_prj, nterms_max,
   verbose <- as.integer(verbose)
 
   return(nlist(method, refit_prj, nterms_max, nclusters, search_terms,
-               search_terms_was_null, nterms_all, verbose))
+               search_terms_was_null, nterms_all, verbose,
+               search_screen))
 }
 
 # The text of the warning about the projection onto the full Gaussian (or

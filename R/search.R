@@ -5,7 +5,7 @@
 search_forward <- function(p_ref, refmodel, nterms_max, verbose = TRUE,
                            search_terms, est_runtime = TRUE,
                            search_terms_was_null, return_outdmins = TRUE,
-                           ...) {
+                           search_screen = NULL, ...) {
   nterms_max_with_icpt <- nterms_max + 1L
   iq <- ceiling(quantile(seq_len(nterms_max_with_icpt), 1:10 / 10))
   if (is.null(search_terms)) {
@@ -23,6 +23,17 @@ search_forward <- function(p_ref, refmodel, nterms_max, verbose = TRUE,
     if (!is.null(out_gauss)) {
       return(out_gauss)
     }
+  }
+
+  # Score-screened search with fewer projections (see search_forward_fast());
+  # `NULL` if `search_screen` is `NULL` or a condition does not hold:
+  out_fast <- search_forward_fast(
+    p_ref = p_ref, refmodel = refmodel, nterms_max = nterms_max,
+    verbose = verbose, search_terms = search_terms,
+    search_screen = search_screen, ...
+  )
+  if (!is.null(out_fast)) {
+    return(out_fast)
   }
 
   chosen <- character()
