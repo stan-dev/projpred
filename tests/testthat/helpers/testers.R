@@ -2152,6 +2152,7 @@ vsel_tester <- function(
     K_expected = NULL,
     penalty_expected = NULL,
     search_terms_expected = NULL,
+    search_screen_expected = NULL,
     search_trms_empty_size = FALSE,
     search_control_expected = NULL,
     extra_tol = 1.1,
@@ -2529,7 +2530,8 @@ vsel_tester <- function(
         NULL
       } else {
         union("1", search_terms_expected)
-      }
+      },
+      search_screen = search_screen_expected
     ),
     info = info_str
   )

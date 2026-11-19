@@ -1421,6 +1421,7 @@ par_backend <- function(warn_once = FALSE) {
       "running sequentially. ",
       if (!has_future) "Install the future package. ",
       "Set up workers with, e.g., ",
+      "`future::plan(future.mirai::mirai_multisession, workers = 4)` or ",
       "`future::plan(future::multisession, workers = 4)` (see section ",
       "\"Parallelization\" in `?projpred`)."
     )
@@ -1825,10 +1826,12 @@ strip_contrasts <- function(data) {
   if (!is.data.frame(data)) {
     return(data)
   }
-  for (nm in names(data)) {
-    if (!is.null(attr(data[[nm]], "contrasts"))) {
-      attr(data[[nm]], "contrasts") <- NULL
-    }
+  # One pass over the columns as a list: `[[.data.frame` for each column is
+  # slow for data with many columns, and the projections call this often:
+  has_contr <- !vapply(lapply(data, attr, which = "contrasts"), is.null,
+                       logical(1), USE.NAMES = FALSE)
+  for (j in which(has_contr)) {
+    attr(data[[j]], "contrasts") <- NULL
   }
   return(data)
 }

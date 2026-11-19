@@ -169,13 +169,13 @@
 #' *projection* parallelization, see below).
 #'
 #' Both use the parallel workers of the current plan of the \pkg{future}
-#' package, e.g., `future::plan(future::multisession, workers = 4)`. Plans
-#' from other packages for \pkg{future} can be used as well, e.g.,
-#' `future::plan(future.mirai::mirai_multisession, workers = 4)` from the
-#' \pkg{future.mirai} package. In our experiments with 8 workers, the first
-#' parallel call with the workers of \pkg{future.mirai} was faster than with
-#' those of `future::multisession`, and the workers of \pkg{future.mirai}
-#' returned big results faster (see the projection parallelization below).
+#' package, e.g., `future::plan(future.mirai::mirai_multisession, workers = 4)`
+#' from the \pkg{future.mirai} package or
+#' `future::plan(future::multisession, workers = 4)`. In our experiments with
+#' 8 workers, the first parallel call with the workers of \pkg{future.mirai}
+#' was faster than with those of `future::multisession`, and the workers of
+#' \pkg{future.mirai} returned big results faster (see the projection
+#' parallelization below). So we recommend the workers of \pkg{future.mirai}.
 #' With the sequential plan of \pkg{future} (the default), a parallel run is
 #' not possible, so \pkg{projpred} then runs sequentially and
 #' throws a warning. The workers must be able to load the same
@@ -342,9 +342,6 @@
 #' meaning of these global options, see their occurrences in the codebase. With
 #' the exception of `projpred.warn_allrandom_dis`, these global options are
 #' currently used in the unit tests to deactivate these messages and warnings.
-#' Global option `projpred.warn_instable_projections` is also used (invisibly)
-#' in the latent vignette to suppress the corresponding warnings while
-#' illustrating the underlying issue (instable projections).
 #' * `projpred.additional_checks`: A single logical value indicating whether to
 #' run some additional checks that are not necessary to be run when users call
 #' the corresponding \pkg{projpred} functions. Currently, these checks are

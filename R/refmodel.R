@@ -1536,8 +1536,14 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
       # instead of building them again for every projection:
       pred_sub <- subprd_fitted(fits, nobs = nrow(data))
     }
-    # The submodel fits store their contrasts:
-    newdata <- strip_contrasts(fetch_data(data, obs = obs, newdata = newdata))
+    # The submodel fits store their contrasts. The stored `data` have no
+    # `contrasts` attributes (see strip_contrasts() below), so only new data
+    # need this step:
+    newdata_usr <- newdata
+    newdata <- fetch_data(data, obs = obs, newdata = newdata)
+    if (!is.null(newdata_usr)) {
+      newdata <- strip_contrasts(newdata)
+    }
     if (is.null(offset)) {
       offset <- rep(0, nrow(newdata))
     } else {
@@ -1787,15 +1793,6 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
         }
       } else {
         dis <- rep(NA, ndraws)
-      }
-      if (all(is.na(dis))) {
-        message(
-          "Since `<refmodel>$dis` will consist of only `NA`s, downstream ",
-          "analyses based on this reference model object won't be able to use ",
-          "log predictive density (LPD) values on latent scale. Furthermore, ",
-          "proj_predict() won't be able to draw from the latent Gaussian ",
-          "distribution."
-        )
       }
     } else if (!has_dispersion(family)) {
       dis <- rep(NA, ndraws)

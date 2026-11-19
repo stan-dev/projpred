@@ -24,9 +24,9 @@ dat_contr <- function(n = 60, seed = 4417, ctr_f = NULL, ctr_o = NULL) {
 # A Gaussian reference model with simulated draws of the coefficients (no model
 # fit is necessary) of the linear model `fml_ref`. Its predictions use the
 # default contrasts; they do not depend on the contrasts of `dat`. `fml` is the
-# full-model formula for the search.
+# full-model formula for the search. `...` goes to init_refmodel().
 refm_contr <- function(dat, fml = y ~ f + o + x, fml_ref = y ~ f + o + x,
-                       ndraws = 100, seed = 8273) {
+                       ndraws = 100, seed = 8273, ...) {
   # dat_contr() sets the seed, so evaluate `dat` before set.seed():
   dat_dflt <- strip_contrasts(dat)
   set.seed(seed)
@@ -42,12 +42,12 @@ refm_contr <- function(dat, fml = y ~ f + o + x, fml_ref = y ~ f + o + x,
   }
   suppressWarnings(init_refmodel(fit, data = dat, formula = fml,
                                  family = gaussian(), ref_predfun = ref_predfun,
-                                 dis = rep(1, ndraws)))
+                                 dis = rep(1, ndraws), ...))
 }
 
 # Evaluates `expr` and counts the calls of the internal function `fun_nm` that
-# returned a result other than `NULL` (a fast path that applied). Returns the
-# value of `expr` and the count.
+# returned a result other than `NULL` (for a fast path: the calls where it
+# applied). Returns the value of `expr` and the count.
 with_return_count <- function(fun_nm, expr) {
   calls <- new.env()
   calls$n <- 0L
@@ -428,4 +428,65 @@ test_that("the augmented-data submodels use the contrasts", {
     expect_equal(prd_sum, subprd_augdat(fits_dflt, newdata = nd),
                  tolerance = 1e-3, info = info_crr)
   }
+})
+
+test_that("strip_contrasts() removes only the `contrasts` attributes", {
+  dat <- dat_contr(ctr_f = contr.sum(3), ctr_o = ctr_o_cust)
+  contrasts(dat$g) <- "contr.sum"
+  attr(dat$x, "units") <- "cm"
+  dat$ch <- rep_len(c("u", "v"), nrow(dat))
+  dat$m <- matrix(seq_len(2 * nrow(dat)), ncol = 2)
+  dat_strip <- strip_contrasts(dat)
+  for (nm in names(dat)) {
+    expect_null(attr(dat_strip[[nm]], "contrasts"), info = nm)
+    col_expected <- dat[[nm]]
+    attr(col_expected, "contrasts") <- NULL
+    expect_identical(dat_strip[[nm]], col_expected, info = nm)
+  }
+  expect_identical(attributes(dat_strip), attributes(dat))
+  # Columns with the same name:
+  dat_dup <- data.frame(dat["f"], dat["f"], check.names = FALSE)
+  dat_dup_strip <- strip_contrasts(dat_dup)
+  expect_null(attr(dat_dup_strip[[1]], "contrasts"))
+  expect_null(attr(dat_dup_strip[[2]], "contrasts"))
+  # Without contrasts, without columns, and other objects than data frames:
+  dat_dflt <- dat_contr()
+  expect_identical(strip_contrasts(dat_dflt), dat_dflt)
+  expect_identical(strip_contrasts(dat[, 0]), dat[, 0])
+  expect_identical(strip_contrasts(dat$f), dat$f)
+})
+
+test_that("mu_fun() strips the `contrasts` attributes only of new data", {
+  dat_sum <- dat_contr(ctr_f = contr.sum(3), ctr_o = ctr_o_cust)
+  refm <- refm_contr(dat_sum)
+  prj <- project(refm, predictor_terms = c("f", "o", "x"), nclusters = 1,
+                 verbose = FALSE)
+  fits <- prj$outdmin
+  # Training data: the stored data have no `contrasts` attributes, so mu_fun()
+  # does not call strip_contrasts().  With `obs`, only subfit_newdata_x()
+  # strips the subset:
+  res_train <- with_return_count("strip_contrasts", refm$mu_fun(fits))
+  expect_identical(res_train$n, 0L)
+  res_obs <- with_return_count("strip_contrasts",
+                               refm$mu_fun(fits, obs = c(1, 2, 3, 8)))
+  expect_identical(res_obs$n, 1L)
+  expect_equal(unname(res_obs$value),
+               unname(res_train$value[c(1, 2, 3, 8), , drop = FALSE]),
+               tolerance = 1e-12)
+  # New data with `contrasts` attributes: a `proj_predfun` that does not strip
+  # them itself gets the new data without them:
+  proj_predfun_chk <- function(fits, newdata) {
+    for (nm in names(newdata)) {
+      if (!is.null(attr(newdata[[nm]], "contrasts"))) {
+        stop("`newdata` has a `contrasts` attribute in column ", nm, ".")
+      }
+    }
+    return(subprd(fits, newdata = newdata))
+  }
+  refm_chk <- refm_contr(dat_sum, proj_predfun = proj_predfun_chk)
+  nd_attr <- dat_sum[c(1, 2, 3, 8), ]
+  expect_no_warning(
+    pred_new <- refm_chk$mu_fun(fits, newdata = nd_attr)
+  )
+  expect_equal(unname(pred_new), unname(res_obs$value), tolerance = 1e-12)
 })
