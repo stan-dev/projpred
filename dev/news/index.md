@@ -574,6 +574,13 @@
   [`cv_varsel()`](https://mc-stan.org/projpred/dev/reference/cv_varsel.md)
   now stops with an informative error. (GitHub:
   [\#666](https://github.com/stan-dev/projpred/issues/666))
+- Fixed the error “missing value where TRUE/FALSE needed” in
+  [`cv_varsel()`](https://mc-stan.org/projpred/dev/reference/cv_varsel.md)
+  with LOO and the latent projection if
+  [`loo::E_loo()`](https://mc-stan.org/loo/reference/E_loo.html) gives
+  an `NA` Pareto k. The submodel Pareto k warning now counts with the
+  threshold that it prints. (GitHub:
+  [\#667](https://github.com/stan-dev/projpred/issues/667))
 
 ## projpred 2.11.0
 
