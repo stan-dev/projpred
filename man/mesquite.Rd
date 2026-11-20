@@ -23,7 +23,7 @@ group).}
 \url{https://sites.stat.columbia.edu/gelman/arm/examples/mesquite/mesquite.dat}
 }
 \usage{
-data(mesquite)
+mesquite
 }
 \description{
 The mesquite bushes yields dataset from Gelman and Hill (2006)
