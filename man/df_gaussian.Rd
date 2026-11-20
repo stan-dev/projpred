@@ -13,10 +13,10 @@ respectively.}
 }
 }
 \source{
-\url{https://web.stanford.edu/~hastie/glmnet/glmnetData/QSExample.RData}
+\url{https://hastie.su.domains/glmnet/glmnetData/QSExample.RData}
 }
 \usage{
-data(df_gaussian)
+df_gaussian
 }
 \description{
 Gaussian toy example

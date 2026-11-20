@@ -3,7 +3,7 @@
 If you read this from a place other than <https://mc-stan.org/projpred/news/index.html>, please consider switching to that website since it features better formatting and cross-linking.
 
 
-# projpred 2.11.0.9000
+# projpred 3.0.0
 
 ## Major changes
 
