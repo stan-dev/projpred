@@ -17,6 +17,7 @@ extend_family(
   latent_ilink = NULL,
   latent_ll_oscale = NULL,
   latent_ppd_oscale = NULL,
+  latent_epred = NULL,
   augdat_y_unqs = NULL,
   augdat_link = NULL,
   augdat_ilink = NULL,
@@ -36,7 +37,10 @@ extend_family(
 
   A single logical value indicating whether to use the latent projection
   (`TRUE`) or not (`FALSE`). Note that setting `latent = TRUE` causes
-  all arguments starting with `augdat_` to be ignored.
+  all arguments starting with `augdat_` to be ignored. The latent
+  projection does not support the
+  [`brms::categorical()`](https://paulbuerkner.com/brms/reference/brmsfamily.html)
+  family; use the augmented-data projection for it.
 
 - latent_y_unqs:
 
@@ -93,6 +97,17 @@ extend_family(
   [`proj_predict()`](https://mc-stan.org/projpred/reference/pred-projection.md),
   i.e., for sampling from what would better be termed
   posterior-projection predictive distribution (PPPD).
+
+- latent_epred:
+
+  Only relevant for the latent projection. Must be `NULL` if
+  `family$cats` is not `NULL` (after taking `latent_y_unqs` into
+  account). If not `NULL`, this needs to be the function computing the
+  response-scale expected values from the output of `latent_ilink`. It
+  is needed if the output of `latent_ilink` is not the expected value,
+  for example the `meanlog` parameter of a log-normal distribution. If
+  `NULL` (the default), the output of `latent_ilink` is used as the
+  expected value. See also section "Latent projection" below.
 
 - augdat_y_unqs:
 
@@ -334,7 +349,32 @@ The return value of `latent_ppd_oscale` needs to be a
 response-scale (not latent-scale) draws from the posterior(-projection)
 predictive distributions for the \\N\\ observations from its inputs.
 
-If the bodies of these three functions involve parameter draws from the
+The function supplied to argument `latent_epred` needs to have the
+prototype
+
+    latent_epred(ilpreds, dis, cl_ref, wdraws_ref = rep(1, length(cl_ref)))
+
+where the arguments accept the same input as the arguments of the same
+name of `latent_ll_oscale`. For a submodel, `dis` contains the projected
+draws of the dispersion parameter; for the reference model, it is
+`<refmodel>$dis` (see argument `dis` of
+[`init_refmodel()`](https://mc-stan.org/projpred/reference/refmodel-init-get.md)).
+If `<refmodel>$dis` consists of only `NA`s, a `latent_epred` function
+that uses `dis` gives `NA`s for the reference model and the submodels.
+The return value of `latent_epred` needs to be an \\S \times N\\ matrix
+containing the response-scale expected values. projpred uses them for
+the response-scale predictions of
+[`proj_linpred()`](https://mc-stan.org/projpred/reference/pred-projection.md)
+(with `transform = TRUE`),
+[`proj_epred()`](https://mc-stan.org/projpred/reference/pred-projection.md),
+and
+[`predict.refmodel()`](https://mc-stan.org/projpred/reference/predict.refmodel.md)
+(with `type = "response"`), and for the response-scale performance
+statistics `"mse"`, `"rmse"`, and `"R2"`. The functions
+`latent_ll_oscale` and `latent_ppd_oscale` still get the output of
+`latent_ilink`.
+
+If the bodies of these functions involve parameter draws from the
 reference model which have not been projected (e.g., for `latent_ilink`,
 the thresholds in an ordinal model),
 [`cl_agg()`](https://mc-stan.org/projpred/reference/cl_agg.md) is
@@ -353,6 +393,35 @@ observation. Note that although argument `wdraws_ref` has the suffix
 [`cv_varsel()`](https://mc-stan.org/projpred/reference/cv_varsel.md)
 with `cv_method = "kfold"`, these weights may refer to one of the \\K\\
 reference model refits (but in that case, they are constant anyway).
+
+In [`cv_varsel()`](https://mc-stan.org/projpred/reference/cv_varsel.md)
+with `cv_method = "kfold"`, the reference model objects of the \\K\\
+folds are created by the `cvrefbuilder` function (see
+[`init_refmodel()`](https://mc-stan.org/projpred/reference/refmodel-init-get.md)).
+The default `cvrefbuilder` functions of
+[`get_refmodel.stanreg()`](https://mc-stan.org/projpred/reference/refmodel-init-get.md)
+and
+[`brms::get_refmodel.brmsfit()`](https://paulbuerkner.com/brms/reference/get_refmodel.brmsfit.html)
+pass user-supplied functions `latent_ilink`, `latent_ll_oscale`,
+`latent_ppd_oscale`, and `latent_epred` (and a user-supplied argument
+`dis`, see
+[`init_refmodel()`](https://mc-stan.org/projpred/reference/refmodel-init-get.md))
+unchanged to the fold-wise reference model objects. If these functions
+take reference model draws from their enclosing environment (e.g., draws
+of a shape parameter), or if `dis` contains such draws, then the folds
+use the draws from the full-data fit. To use the draws from the
+fold-wise refits, define the functions (and compute `dis`) inside a
+function that takes the fitted model object as its argument and calls
+[`get_refmodel()`](https://mc-stan.org/projpred/reference/refmodel-init-get.md).
+Then define a function that calls this outer function with the fold-wise
+refit. For an rstanarm reference model, pass this function as argument
+`cvrefbuilder` of
+[`get_refmodel.stanreg()`](https://mc-stan.org/projpred/reference/refmodel-init-get.md).
+Method
+[`brms::get_refmodel.brmsfit()`](https://paulbuerkner.com/brms/reference/get_refmodel.brmsfit.html)
+does not accept a `cvrefbuilder` argument; for a brms reference model,
+set element `cvrefbuilder` of the reference model object to this
+function instead. The latent-projection vignette shows an example.
 
 If `family$cats` is not `NULL` (after taking `latent_y_unqs` into
 account), then the response vector resulting from `extract_model_data`

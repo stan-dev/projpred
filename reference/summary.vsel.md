@@ -57,14 +57,15 @@ summary(
 
 - stats:
 
-  One or more character strings determining which performance statistics
-  (i.e., utilities or losses) to estimate based on the observations in
-  the evaluation (or "test") set (in case of cross-validation, these are
-  all observations because they are partitioned into multiple test sets;
-  in case of
-  [`varsel()`](https://mc-stan.org/projpred/reference/varsel.md) with
-  `d_test = NULL`, these are again all observations because the test set
-  is the same as the training set). Available statistics are:
+  One or more character strings (or
+  [`custom_stat()`](https://mc-stan.org/projpred/reference/custom_stat.md)
+  objects, see below) determining which performance statistics (i.e.,
+  utilities or losses) to estimate based on the observations in the
+  evaluation (or "test") set (in case of cross-validation, these are all
+  observations because they are partitioned into multiple test sets; in
+  case of [`varsel()`](https://mc-stan.org/projpred/reference/varsel.md)
+  with `d_test = NULL`, these are again all observations because the
+  test set is the same as the training set). Available statistics are:
 
   - `"elpd"`: expected log (pointwise) predictive density (for a new
     dataset) (ELPD). Estimated by the sum of the observation-specific
@@ -113,8 +114,14 @@ summary(
     classified observations. For this, the response category ("class")
     with highest probability (the probabilities are model-based) is
     taken as the prediction ("classification") for an observation. For
-    the corresponding uncertainty interval, a normal approximation is
-    used.
+    the corresponding uncertainty interval, a logit-normal approximation
+    is used if `deltas` is `FALSE`. The standard error on the logit
+    scale comes from the delta method. A normal approximation is used if
+    `deltas` is `TRUE` (or `"mixed"`, in case of
+    [`plot.vsel()`](https://mc-stan.org/projpred/reference/plot.vsel.md)).
+    It is also used if `deltas` is `FALSE` and the estimate is not
+    strictly between 0 and 1 (an estimate outside of \[0, 1\] is
+    possible with subsampled LOO-CV).
 
   - `"auc"`: area under the ROC curve (only available in the situations
     mentioned in section "Details" below). For the corresponding
@@ -122,6 +129,15 @@ summary(
     bootstrapping is used. Not supported in case of subsampled LOO-CV
     (see argument `nloo` of
     [`cv_varsel()`](https://mc-stan.org/projpred/reference/cv_varsel.md)).
+
+  For a user-defined statistic, use
+  [`custom_stat()`](https://mc-stan.org/projpred/reference/custom_stat.md).
+  `stats` then takes one
+  [`custom_stat()`](https://mc-stan.org/projpred/reference/custom_stat.md)
+  object, or a `list` of single character strings (built-in statistics)
+  and
+  [`custom_stat()`](https://mc-stan.org/projpred/reference/custom_stat.md)
+  objects, for example `stats = list("elpd", custom_stat(...))`.
 
 - type:
 

@@ -48,7 +48,8 @@ by projpred's internal default `div_minimizer` functions, see
     The returned object inherits from class `subfit`. Possible tuning
     parameters for this internal C++ function are: `regul` (amount of
     ridge regularization; default: `1e-4`), `thresh_conv` (convergence
-    threshold; default: `1e-7`), `qa_updates_max` (maximum number of
+    threshold; default: `1e-7`, but not used in case of the Gaussian
+    family with identity link), `qa_updates_max` (maximum number of
     quadratic approximation updates; default: `100`, but fixed to `1` in
     case of the Gaussian family with identity link), `ls_iter_max`
     (maximum number of line search iterations; default: `30`, but fixed
@@ -84,7 +85,46 @@ by projpred's internal default `div_minimizer` functions, see
     [`gaussian()`](https://rdrr.io/r/stats/family.html) family,
     [`lme4::glmer()`](https://rdrr.io/pkg/lme4/man/glmer.html) (the
     returned object inherits from class `glmerMod`) for all other
-    families.
+    families. Exception: for the
+    [`binomial()`](https://rdrr.io/r/stats/family.html) family with the
+    logit link and the
+    [`poisson()`](https://rdrr.io/r/stats/family.html) family with the
+    log link, if all group-level terms are random intercepts
+    `(1 | <group>)`, projpred uses its own fit (the returned object
+    inherits from class `projpred_mlvl`). This fit minimizes the Laplace
+    approximation of
+    [`lme4::glmer()`](https://rdrr.io/pkg/lme4/man/glmer.html) (with
+    `nAGQ = 1`), without rounding non-integer responses. projpred uses
+    [`lme4::glmer()`](https://rdrr.io/pkg/lme4/man/glmer.html) instead
+    if the fit does not converge, if the submodel has an offset, a
+    rank-deficient model matrix or more than 500 group levels in total,
+    if `...` contains arguments of
+    [`lme4::glmer()`](https://rdrr.io/pkg/lme4/man/glmer.html) (for
+    example `control` or `nAGQ`), or if global option
+    `projpred.mlvl_laplace` is `FALSE`. After a fit that does not
+    converge, the
+    [`lme4::glmer()`](https://rdrr.io/pkg/lme4/man/glmer.html) fit is
+    returned as class `projpred_mlvl`, too.
+    [`as_glmerMod()`](https://mc-stan.org/projpred/reference/as_glmerMod.md)
+    converts an object of class `projpred_mlvl` to class `glmerMod`. For
+    [`lme4::glmer()`](https://rdrr.io/pkg/lme4/man/glmer.html), projpred
+    uses `control = lme4::glmerControl(optimizer = "bobyqa")`, so both
+    optimization stages use BOBYQA. A `control` argument in `...`
+    replaces this default in the first fit. After some lme4 errors,
+    projpred refits with its own settings and ignores this `control`.
+    lme4 versions before 2.1-1 evaluate the objective of
+    [`lme4::glmer()`](https://rdrr.io/pkg/lme4/man/glmer.html) for the
+    [`binomial()`](https://rdrr.io/r/stats/family.html) and the
+    [`poisson()`](https://rdrr.io/r/stats/family.html) family with
+    rounding: they round non-integer binomial responses and weights, and
+    the objective is infinite for non-integer Poisson responses (then
+    the group-level standard deviations stay at their start values).
+    With these lme4 versions, projpred passes a copy of these families
+    with another name (ending in `_projpred`) and an `aic` function
+    without rounding. The submodel fits then have this family name, so
+    for example
+    [`lme4::simulate.merMod()`](https://rdrr.io/pkg/lme4/man/simulate.merMod.html)
+    does not work for them.
 
   - For the augmented-data projection:
     [`ordinal::clmm()`](https://rdrr.io/pkg/ordinal/man/clmm.html) (the
@@ -94,15 +134,62 @@ by projpred's internal default `div_minimizer` functions, see
     [`mclogit::mblogit()`](https://melff.github.io/mclogit/reference/mblogit.html)
     (the returned object inherits from class `mmblogit`) for the
     [`brms::categorical()`](https://paulbuerkner.com/brms/reference/brmsfamily.html)
-    family.
+    family. Exception: for the
+    [`brms::cumulative()`](https://paulbuerkner.com/brms/reference/brmsfamily.html)
+    family, if the only group-level term is a random intercept
+    `(1 | <group>)`, projpred uses its own fit (the returned object
+    inherits from classes `projpred_mlvl_cumul` and `projpred_mlvl`).
+    This fit minimizes the Laplace approximation that
+    [`ordinal::clmm()`](https://rdrr.io/pkg/ordinal/man/clmm.html) uses,
+    for the links of
+    [`brms::cumulative()`](https://paulbuerkner.com/brms/reference/brmsfamily.html)
+    (`logit`, `probit`, `probit_approx`, `cloglog`, `cauchit`). projpred
+    uses [`ordinal::clmm()`](https://rdrr.io/pkg/ordinal/man/clmm.html)
+    instead if the fit does not converge, if the submodel has an offset
+    or a rank-deficient model matrix, if `...` contains arguments of
+    [`ordinal::clmm()`](https://rdrr.io/pkg/ordinal/man/clmm.html) or of
+    its optimizers (for example `method` or `control`), or if global
+    option `projpred.mlvl_laplace` is `FALSE`. After a fit that does not
+    converge, the
+    [`ordinal::clmm()`](https://rdrr.io/pkg/ordinal/man/clmm.html) fit
+    is returned as class `projpred_mlvl_cumul`, too. For
+    [`ordinal::clmm()`](https://rdrr.io/pkg/ordinal/man/clmm.html) with
+    a single group-level term `(1 | <group>)`, projpred uses
+    `method = "ucminf"` and `grad = "forward"` (see
+    [`ordinal::clmm.control()`](https://rdrr.io/pkg/ordinal/man/clmm.control.html)).
+    If this fit fails or does not converge, projpred refits with the
+    default settings of
+    [`ordinal::clmm()`](https://rdrr.io/pkg/ordinal/man/clmm.html). An
+    argument `method` or `control` in `...` replaces this default. For
+    the `cloglog` and `loglog` links, projpred always uses
+    `useMatrix = TRUE` (see
+    [`ordinal::clmm.control()`](https://rdrr.io/pkg/ordinal/man/clmm.control.html))
+    and does not use `ucminf()`. The code of
+    [`ordinal::clmm()`](https://rdrr.io/pkg/ordinal/man/clmm.html) for a
+    single group-level term uses the other of these two links. For the
+    [`brms::categorical()`](https://paulbuerkner.com/brms/reference/brmsfamily.html)
+    family, projpred only supports `catCov = "free"` (see
+    [`mclogit::mblogit()`](https://melff.github.io/mclogit/reference/mblogit.html)).
 
 - Submodel without multilevel but additive terms:
   [`mgcv::gam()`](https://rdrr.io/pkg/mgcv/man/gam.html) (the returned
-  object inherits from class `gam`).
+  object inherits from class `gam`). projpred uses the default `method`
+  of [`mgcv::gam()`](https://rdrr.io/pkg/mgcv/man/gam.html). For the
+  [`poisson()`](https://rdrr.io/r/stats/family.html) family, the
+  responses of the traditional projection are not integers. Then
+  [`mgcv::gam()`](https://rdrr.io/pkg/mgcv/man/gam.html) with
+  `method = "REML"` or `method = "ML"` stops with an error. Such a
+  `method` can come from `...` or (mgcv \>= 1.9-5) from global option
+  `mgcv.gam.method`.
 
 - Submodel with multilevel and additive terms:
   [`gamm4::gamm4()`](https://rdrr.io/pkg/gamm4/man/gamm4.html) (within
-  projpred, the returned object inherits from class `gamm4`).
+  projpred, the returned object inherits from class `gamm4`). For the
+  [`binomial()`](https://rdrr.io/r/stats/family.html) and the
+  [`poisson()`](https://rdrr.io/r/stats/family.html) family, projpred
+  passes the same family as to
+  [`lme4::glmer()`](https://rdrr.io/pkg/lme4/man/glmer.html) (see
+  above).
 
 ## Verbosity, messages, warnings, errors
 
@@ -127,55 +214,94 @@ deactivated by setting global option `projpred.check_convergence` to
 
 ## Parallelization
 
-The projection of the reference model onto a submodel can be run in
-parallel (across the projected draws). This is powered by the foreach
-package. Thus, any parallel (or sequential) backend compatible with
-foreach can be used, e.g., the backends from packages doParallel, doMPI,
-or doFuture. Using the global option `projpred.parallel_proj_trigger`,
-the number of projected draws below which no parallelization is applied
-(even if a parallel backend is registered) can be modified. Such a
-"trigger" threshold exists because of the computational overhead of a
-parallelization which makes the projection parallelization only useful
-for a sufficiently large number of projected draws. By default, the
+projpred can run two kinds of computations in parallel: the fold-wise
+computations of
+[`cv_varsel()`](https://mc-stan.org/projpred/reference/cv_varsel.md)
+(the *CV* parallelization, activated via argument `parallel` of
+[`cv_varsel()`](https://mc-stan.org/projpred/reference/cv_varsel.md),
+which in turn can be controlled via global option
+`projpred.parallel_cv`) and the projections of the single draws (or
+clusters) of the reference model onto a submodel (the *projection*
+parallelization, see below).
+
+Both use the parallel workers of the current plan of the future package,
+e.g., `future::plan(future.mirai::mirai_multisession, workers = 4)` from
+the future.mirai package or
+`future::plan(future::multisession, workers = 4)`. In our experiments
+with 8 workers, the first parallel call with the workers of future.mirai
+was faster than with those of
+[`future::multisession`](https://future.futureverse.org/reference/multisession.html),
+and the workers of future.mirai returned big results faster (see the
+projection parallelization below). So we recommend the workers of
+future.mirai. With the sequential plan of future (the default), a
+parallel run is not possible, so projpred then runs sequentially and
+throws a warning. The workers must be able to load the same projpred
+installation as the main R session; projpred checks this. (If the main R
+session uses projpred via
+[`pkgload::load_all()`](https://pkgload.r-lib.org/reference/load_all.html)
+or `devtools::load_all()`, the workers need to load the same source
+directory in the same way.) The parallelization is not tested on
+Windows.
+
+The projection parallelization is controlled by global option
+`projpred.parallel_proj_trigger`: the number of projected draws below
+which the projections of the draws are not run in parallel (even if
+parallel workers are set up). Such a "trigger" threshold exists because
+of the computational overhead of a parallelization. By default, the
 projection parallelization is turned off, which can also be achieved by
 supplying `Inf` (or `NULL`) to option `projpred.parallel_proj_trigger`.
-Note that we cannot recommend the projection parallelization on Windows
-because in our experience, the parallelization overhead is larger there,
-causing a parallel run to take longer than a sequential run. Also note
-that the projection parallelization works well for submodels which are
-GLMs (and hence also for the latent projection if the submodel has no
-multilevel or additive predictor terms), but for all other types of
-submodels, the fitted submodel objects are quite big, which—when running
-in parallel—may lead to excessive memory usage which in turn may crash
-the R session (on Unix systems, setting an appropriate memory limit via
-[`unix::rlimit_as()`](https://jeroen.r-universe.dev/unix/reference/rlimit.html)
-may avoid crashing the whole machine). Thus, we currently cannot
-recommend parallelizing projections onto submodels which are GLMs (in
-this context, the latent projection onto a submodel without multilevel
-and without additive terms may be regarded as a projection onto a
-submodel which is a GLM). However, for
-[`cv_varsel()`](https://mc-stan.org/projpred/reference/cv_varsel.md),
-there is also a *CV* parallelization (i.e., a parallelization of
-projpred's cross-validation) which can be activated via argument
-`parallel` (which in turn can be controlled via global option
-`projpred.parallel_cv`).
+The projection parallelization is mainly useful for submodels with
+multilevel or additive terms: for most other submodels, projpred fits
+all projected draws in a single call, which does not run in parallel. It
+is useful for
+[`varsel()`](https://mc-stan.org/projpred/reference/varsel.md),
+[`project()`](https://mc-stan.org/projpred/reference/project.md), and
+[`cv_varsel()`](https://mc-stan.org/projpred/reference/cv_varsel.md)
+without fold-wise computations; with the CV parallelization, the workers
+do not run the projections of their folds in parallel. Note that the
+fitted submodel objects of multilevel and additive submodels are quite
+big, which—when running in parallel—may lead to excessive memory usage
+which in turn may crash the R session (on Unix systems, setting an
+appropriate memory limit via
+[`unix::rlimit_as()`](https://rdrr.io/pkg/unix/man/rlimit.html) may
+avoid crashing the whole machine). The workers also need time to return
+these objects to the main R session: in our experiments with 16 workers
+of
+[`future::multisession`](https://future.futureverse.org/reference/multisession.html),
+this took longer than a sequential run, whereas 16 workers of
+future.mirai gave a clear speedup. So for the projection
+parallelization, we recommend the workers of future.mirai.
 
-For the CV parallelization, global option `projpred.export_to_workers`
-may be set to a character vector of names of objects to export from the
-global environment to the parallel workers.
+In the fold-wise computations of
+[`cv_varsel()`](https://mc-stan.org/projpred/reference/cv_varsel.md),
+each CV fold has its own random number stream (L'Ecuyer-CMRG), which
+projpred derives from the random number generator of the main R session,
+with and without the CV parallelization. So for a given seed, the
+results depend neither on argument `parallel`, nor on the number of
+workers, nor on the plan of the future package.
+
+A function goes to a parallel worker with its enclosing environments up
+to, but not including, the global environment. So if a function of a
+custom reference model is defined in a script and uses other objects of
+the global environment, the workers need these objects. If the globals
+package is installed, projpred finds them from the code of such
+functions and sends them to the workers. This cannot find objects whose
+names the code creates at run time (e.g., with
+[`get()`](https://rdrr.io/r/base/get.html)). Global option
+`projpred.export_to_workers` may be set to a character vector of names
+of such objects, to export them from the global environment to the
+parallel workers as well. Setting that option to `FALSE` turns off any
+export of objects of the global environment.
 
 During parallelization (either of the projection or the CV), progression
-updates can be received via the progressr package. This only works if
-the doFuture backend is used for parallelization, e.g., via
-[`doFuture::registerDoFuture()`](https://doFuture.futureverse.org/reference/registerDoFuture.html)
-and `future::plan(future::multisession, workers = 4)`. In that case, the
-progressr package can be used, e.g., by calling
+updates can be received via the progressr package, e.g., by calling
 `progressr::handlers(global = TRUE)` before running the projection or
 the CV in parallel. The projpred package also offers the global option
 `projpred.use_progressr` for controlling whether to use the progressr
 package (`TRUE` or `FALSE`), but since that global option defaults to
-`requireNamespace("progressr", quietly = TRUE) && interactive() && identical(foreach::getDoParName(), "doFuture")`,
-it usually does not need to be set by the user.
+`requireNamespace("progressr", quietly = TRUE) && interactive()`, it
+usually does not need to be set by the user. Messages and warnings from
+the workers are shown in the main R session.
 
 ## Multilevel models: "Integrating out" group-level effects
 
@@ -219,6 +345,20 @@ after each size that the forward search passes through) to free up some
 memory. These [`gc()`](https://rdrr.io/r/base/gc.html) calls are not
 always necessary to reduce the peak memory usage, but they add runtime
 (hence the default of `FALSE` for that global option).
+
+During a call of
+[`varsel()`](https://mc-stan.org/projpred/reference/varsel.md),
+[`cv_varsel()`](https://mc-stan.org/projpred/reference/cv_varsel.md) or
+[`project()`](https://mc-stan.org/projpred/reference/project.md),
+projpred caches the submodel formulas and model matrices per set of
+predictor terms (for submodels without multilevel or additive terms).
+Global option `projpred.proj_cache_mb` (default `512`) limits the size
+of this cache, in units of 2^20 bytes as estimated by
+[`utils::object.size()`](https://rdrr.io/r/utils/object.size.html). The
+cache holds at most about twice this limit. The limit applies to each R
+process, so forked parallel workers can each have a cache of this size.
+Setting global option `projpred.proj_cache` to `FALSE` switches the
+cache off. The cache changes only the runtime, not the results.
 
 ## Other notes
 

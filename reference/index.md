@@ -12,6 +12,11 @@
   Extract projected parameter draws and coerce to `draws_matrix` (see
   package posterior)
 
+- [`as_glmerMod()`](https://mc-stan.org/projpred/reference/as_glmerMod.md)
+  :
+
+  Convert a submodel fit of class `projpred_mlvl` to class `glmerMod`
+
 - [`augdat_ilink_binom()`](https://mc-stan.org/projpred/reference/augdat_ilink_binom.md)
   : Inverse-link function for augmented-data projection with binomial
   family
@@ -24,6 +29,9 @@
 
 - [`cl_agg()`](https://mc-stan.org/projpred/reference/cl_agg.md) :
   Weighted averaging within clusters of parameter draws
+
+- [`custom_stat()`](https://mc-stan.org/projpred/reference/custom_stat.md)
+  : Custom predictive performance statistic
 
 - [`cv_folds()`](https://mc-stan.org/projpred/reference/cv-indices.md)
   [`cvfolds()`](https://mc-stan.org/projpred/reference/cv-indices.md)

@@ -52,6 +52,15 @@ is applied internally.
 
 ## Details
 
+For a multilevel submodel, the group-level variance components follow
+the naming scheme and the parametrization of the corresponding package:
+With `nm_scheme = "rstanarm"`, the columns `Sigma[<group>:<a>,<a>]` and
+`Sigma[<group>:<b>,<a>]` contain the group-level variances and
+covariances (per group, the lower triangle of the covariance matrix in
+column-major order). With `nm_scheme = "brms"`, the columns
+`sd_<group>__<a>` and `cor_<group>__<a>__<b>` contain the group-level
+standard deviations and correlations.
+
 In case of the augmented-data projection for a multilevel submodel of a
 [`brms::categorical()`](https://paulbuerkner.com/brms/reference/brmsfamily.html)
 reference model, the multilevel parameters (and therefore also their
@@ -59,6 +68,21 @@ names) slightly differ from those in the brms reference model fit (see
 section "Augmented-data projection" in
 [`extend_family()`](https://mc-stan.org/projpred/reference/extend_family.md)'s
 documentation).
+
+For a submodel with smooth terms (fitted with
+[`mgcv::gam()`](https://rdrr.io/pkg/mgcv/man/gam.html)), the columns of
+the smooth terms are the coefficients in the basis of `gam()`. The
+reference model fit can use another basis
+([`rstanarm::stan_gamm4()`](https://mc-stan.org/rstanarm/reference/stan_gamm4.html)
+and brms do so for `s()` terms). Then these columns do not match the
+reference model parameters. For a submodel with smooth and group-level
+terms (GAMM), the projected draws cannot be extracted yet (error).
+
+For the latent projection, column `sigma` contains the projected latent
+dispersion. If `<refmodel>$dis` consists of only `NA`s (see argument
+`dis` of
+[`init_refmodel()`](https://mc-stan.org/projpred/reference/refmodel-init-get.md)),
+there is no column `sigma`.
 
 ## Examples
 

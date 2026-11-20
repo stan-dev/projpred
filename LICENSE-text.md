@@ -18,12 +18,19 @@
     * The mkNewReTrms_man() function is strongly based on (i.e., it was only
       slightly modified from) lme4::mkNewReTrms() from lme4 version 1.1-28
       (<https://CRAN.R-project.org/package=lme4>).
+    * The lmer_shared_fit() function transcribes the steps of lme4::lmer() after
+      the lme4::lFormula() call, from lme4 versions 2.0-1 to 2.1-0
+      (<https://CRAN.R-project.org/package=lme4>).
+    * The subprd_mer_direct() function follows the steps of
+      lme4:::predict.merMod() from lme4 versions 2.0-1 to 2.1-0
+      (<https://CRAN.R-project.org/package=lme4>) to build the fixed-effects model
+      matrix and the random-effects design for new data.
 
     ------------------------------------------------------------------------
-    R package `lme4`, version 1.1-28
+    R package `lme4`, versions 1.1-28 and 2.0-1 to 2.1-0
     ------------------------------------------------------------------------
 
-    `lme4` (version 1.1-28) is licensed under GPL (>=2).
+    `lme4` (versions 1.1-28 and 2.0-1 to 2.1-0) is licensed under GPL (>=2).
 
     ------------------------------------
     GPL-2

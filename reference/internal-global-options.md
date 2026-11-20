@@ -3,19 +3,16 @@
 The following global options are for internal use:
 
 - `projpred.mssg_ndraws`, `projpred.mssg_cut_search`,
-  `projpred.mssg_time`, `projpred.warn_wobs_ppd`,
-  `projpred.warn_additive_experimental`, `projpred.warn_allrandom_dis`,
-  `projpred.warn_instable_projections`,
+  `projpred.mssg_time`, `projpred.mssg_smooth_linear`,
+  `projpred.warn_wobs_ppd`, `projpred.warn_additive_experimental`,
+  `projpred.warn_allrandom_dis`, `projpred.warn_instable_projections`,
   `projpred.warn_cvrefbuilder_NULL`, `projpred.warn_kfold_refits`: A
   single logical value indicating whether to throw certain messages or
   warnings (depending on the midfix `mssg` or `warn`, respectively). For
   the exact meaning of these global options, see their occurrences in
   the codebase. With the exception of `projpred.warn_allrandom_dis`,
   these global options are currently used in the unit tests to
-  deactivate these messages and warnings. Global option
-  `projpred.warn_instable_projections` is also used (invisibly) in the
-  latent vignette to suppress the corresponding warnings while
-  illustrating the underlying issue (instable projections).
+  deactivate these messages and warnings.
 
 - `projpred.additional_checks`: A single logical value indicating
   whether to run some additional checks that are not necessary to be run
@@ -49,3 +46,21 @@ The following global options are for internal use:
   GitHub pull request
   [\#353](https://github.com/stan-dev/projpred/pull/353)). Currently,
   this is an experimental feature.
+
+- `projpred.search_gauss_crossprod`: A single logical value indicating
+  whether to compute the forward search and the evaluation in the LOO CV
+  with validated search for Gaussian submodels with the identity link
+  (including the latent projection) from cross-products of the model
+  matrix (default `TRUE`). With `FALSE`, projpred projects onto each
+  candidate submodel draw by draw. The cross-products are used only with
+  a positive `regul`.
+
+- `projpred.categ_mlvl_mblogit`: A single logical value indicating
+  whether to fit the multilevel submodels of the augmented-data
+  projection for the
+  [`brms::categorical()`](https://paulbuerkner.com/brms/reference/brmsfamily.html)
+  family with
+  [`mclogit::mblogit()`](https://melff.github.io/mclogit/reference/mblogit.html)
+  (`TRUE`) or with projpred's own implementation of the PQL algorithm of
+  [`mclogit::mblogit()`](https://melff.github.io/mclogit/reference/mblogit.html)
+  (`FALSE`, the default).

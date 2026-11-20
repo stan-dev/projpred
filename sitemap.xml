@@ -11,11 +11,13 @@
 <url><loc>https://mc-stan.org/projpred/news/index.html</loc></url>
 <url><loc>https://mc-stan.org/projpred/reference/as.matrix.projection.html</loc></url>
 <url><loc>https://mc-stan.org/projpred/reference/as_draws_matrix.projection.html</loc></url>
+<url><loc>https://mc-stan.org/projpred/reference/as_glmerMod.html</loc></url>
 <url><loc>https://mc-stan.org/projpred/reference/augdat-internals.html</loc></url>
 <url><loc>https://mc-stan.org/projpred/reference/augdat_ilink_binom.html</loc></url>
 <url><loc>https://mc-stan.org/projpred/reference/augdat_link_binom.html</loc></url>
 <url><loc>https://mc-stan.org/projpred/reference/break_up_matrix_term.html</loc></url>
 <url><loc>https://mc-stan.org/projpred/reference/cl_agg.html</loc></url>
+<url><loc>https://mc-stan.org/projpred/reference/custom_stat.html</loc></url>
 <url><loc>https://mc-stan.org/projpred/reference/cv-indices.html</loc></url>
 <url><loc>https://mc-stan.org/projpred/reference/cv_proportions.html</loc></url>
 <url><loc>https://mc-stan.org/projpred/reference/cv_varsel.html</loc></url>
