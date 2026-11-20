@@ -544,6 +544,14 @@
   and the unsupported **brms** families with several linear predictors
   (for example `multinomial()`). (GitHub:
   [\#658](https://github.com/stan-dev/projpred/issues/658))
+- Fixed the error “matrix multiplication: incompatible matrix
+  dimensions” in
+  [`cv_varsel()`](https://mc-stan.org/projpred/dev/reference/cv_varsel.md)
+  with validated PSIS-LOO search if the weights of all draws of a
+  cluster underflow to 0. If this occurs for all projected draws,
+  [`cv_varsel()`](https://mc-stan.org/projpred/dev/reference/cv_varsel.md)
+  now stops with an informative error. (GitHub:
+  [\#666](https://github.com/stan-dev/projpred/issues/666))
 
 ## projpred 2.11.0
 

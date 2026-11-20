@@ -291,7 +291,7 @@ print(time_lat)
 ```
 
        user  system elapsed 
-     11.256   0.004   3.072 
+     18.736   0.016   5.060 
 
 The warnings about high Pareto \\\hat{k}\\ values concern only a few of
 the 100 observations. With the short MCMC run of this vignette (1000
@@ -414,7 +414,7 @@ rbind(latent = time_lat, traditional = time_trad)[, "elapsed"]
 ```
 
          latent traditional 
-          3.072      40.752 
+          5.060      65.779 
 
 ``` r
 
@@ -770,9 +770,6 @@ cvvs_weib <- cv_varsel(
 ```
 
     Cutting off the search at size 19. Use argument `nterms_max` to customize this.
-
-    Warning: In the recalculation of the latent response values, some (1 / 500) expectation-specific Pareto k-values are > 0.7.
-    In general, we recommend K-fold CV in this case.
 
 As in the Poisson example, warnings about high Pareto \\\hat{k}\\ values
 can come from the short MCMC run of this vignette. In a real analysis,
