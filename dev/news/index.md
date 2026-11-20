@@ -231,6 +231,15 @@
   with `validate_search = TRUE` for a Bernoulli model with 500 predictor
   terms is about 1.3 times faster. (GitHub:
   [\#654](https://github.com/stan-dev/projpred/issues/654))
+- New argument `latent_epred` of
+  [`extend_family()`](https://mc-stan.org/projpred/dev/reference/extend_family.md)
+  for the response-scale expected values of the latent projection, e.g.,
+  `exp(meanlog + sdlog^2 / 2)` for a log-normal model. They are used in
+  [`proj_linpred()`](https://mc-stan.org/projpred/dev/reference/pred-projection.md),
+  [`proj_epred()`](https://mc-stan.org/projpred/dev/reference/pred-projection.md),
+  [`predict.refmodel()`](https://mc-stan.org/projpred/dev/reference/predict.refmodel.md)
+  and for `"mse"`, `"rmse"` and `"R2"`. (GitHub:
+  [\#662](https://github.com/stan-dev/projpred/issues/662))
 
 ### Minor changes
 
@@ -515,7 +524,8 @@
   with `cv_method = "LOO"` and `validate_search = TRUE` if a factor is
   only in a group-level term of a submodel (as with `search_terms`) and
   a level of it occurs only in the left-out observation. (GitHub:
-  [\#635](https://github.com/stan-dev/projpred/issues/635))
+  [\#635](https://github.com/stan-dev/projpred/issues/635),
+  [\#643](https://github.com/stan-dev/projpred/issues/643))
 - Fixed the error “length of ‘dimnames’ \[1\] not equal to array extent”
   in the predictions of multilevel
   [`brms::categorical()`](https://paulbuerkner.com/brms/reference/brmsfamily.html)

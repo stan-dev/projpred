@@ -83,6 +83,7 @@ init_refmodel(), so you will rarely need to call it yourself."><meta property="o
 <span>  latent_ilink <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  latent_ll_oscale <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  latent_ppd_oscale <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  latent_epred <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  augdat_y_unqs <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  augdat_link <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  augdat_ilink <span class="op">=</span> <span class="cn">NULL</span>,</span>
@@ -154,6 +155,17 @@ this function has the abbreviation "PPD" in its name (which stands for
 "posterior predictive distribution"), <span class="pkg">projpred</span> currently only uses it
 in <code><a href="pred-projection.html">proj_predict()</a></code>, i.e., for sampling from what would better be termed
 posterior-projection predictive distribution (PPPD).</p></dd>
+
+
+<dt id="arg-latent-epred">latent_epred<a class="anchor" aria-label="anchor" href="#arg-latent-epred"></a></dt>
+<dd><p>Only relevant for the latent projection. Must be <code>NULL</code>
+if <code>family$cats</code> is not <code>NULL</code> (after taking <code>latent_y_unqs</code> into
+account). If not <code>NULL</code>, this needs to be the function computing the
+response-scale expected values from the output of <code>latent_ilink</code>. It is
+needed if the output of <code>latent_ilink</code> is not the expected value, for
+example the <code>meanlog</code> parameter of a log-normal distribution. If <code>NULL</code>
+(the default), the output of <code>latent_ilink</code> is used as the expected value.
+See also section "Latent projection" below.</p></dd>
 
 
 <dt id="arg-augdat-y-unqs">augdat_y_unqs<a class="anchor" aria-label="anchor" href="#arg-augdat-y-unqs"></a></dt>
@@ -321,7 +333,23 @@ are values from the set \(\{1, ..., \texttt{dim(ilpreds)[1]}\}\) where <code>ilp
 matrix containing the response-scale (not latent-scale) draws from the
 posterior(-projection) predictive distributions for the \(N\) observations
 from its inputs.</p>
-<p>If the bodies of these three functions involve parameter draws from the
+<p>The function supplied to argument <code>latent_epred</code> needs to have the prototype</p>
+<p></p><div class="sourceCode r"><pre><code><span><span class="fu">latent_epred</span><span class="op">(</span><span class="va">ilpreds</span>, <span class="va">dis</span>, <span class="va">cl_ref</span>, wdraws_ref <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">cl_ref</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span></code></pre><p></p></div>
+<p>where the arguments accept the same input as the arguments of the same name
+of <code>latent_ll_oscale</code>. For a submodel, <code>dis</code> contains the projected draws of
+the dispersion parameter; for the reference model, it is <code>&lt;refmodel&gt;$dis</code>
+(see argument <code>dis</code> of <code><a href="refmodel-init-get.html">init_refmodel()</a></code>). If <code>&lt;refmodel&gt;$dis</code> consists of
+only <code>NA</code>s, a <code>latent_epred</code> function that uses <code>dis</code> gives <code>NA</code>s for the
+reference model and the submodels. The return value of <code>latent_epred</code> needs
+to be an
+\(S \times N\) matrix containing the response-scale expected
+values. <span class="pkg">projpred</span> uses them for the response-scale predictions of
+<code><a href="pred-projection.html">proj_linpred()</a></code> (with <code>transform = TRUE</code>), <code><a href="pred-projection.html">proj_epred()</a></code>, and
+<code><a href="predict.refmodel.html">predict.refmodel()</a></code> (with <code>type = "response"</code>), and for the
+response-scale performance statistics <code>"mse"</code>, <code>"rmse"</code>, and <code>"R2"</code>. The
+functions <code>latent_ll_oscale</code> and <code>latent_ppd_oscale</code> still get the output of
+<code>latent_ilink</code>.</p>
+<p>If the bodies of these functions involve parameter draws from the
 reference model which have not been projected (e.g., for <code>latent_ilink</code>, the
 thresholds in an ordinal model), <code><a href="cl_agg.html">cl_agg()</a></code> is provided as a helper function
 for aggregating these reference model draws in the same way as the draws have
@@ -338,9 +366,9 @@ refits (but in that case, they are constant anyway).</p>
 the \(K\) folds are created by the <code>cvrefbuilder</code> function (see
 <code><a href="refmodel-init-get.html">init_refmodel()</a></code>). The default <code>cvrefbuilder</code> functions of
 <code><a href="refmodel-init-get.html">get_refmodel.stanreg()</a></code> and <code><a href="https://paulbuerkner.com/brms/reference/get_refmodel.brmsfit.html" class="external-link">brms::get_refmodel.brmsfit()</a></code> pass
-user-supplied functions <code>latent_ilink</code>, <code>latent_ll_oscale</code>, and
-<code>latent_ppd_oscale</code> (and a user-supplied argument <code>dis</code>, see
-<code><a href="refmodel-init-get.html">init_refmodel()</a></code>) unchanged to the fold-wise reference model objects. If
+user-supplied functions <code>latent_ilink</code>, <code>latent_ll_oscale</code>,
+<code>latent_ppd_oscale</code>, and <code>latent_epred</code> (and a user-supplied argument <code>dis</code>,
+see <code><a href="refmodel-init-get.html">init_refmodel()</a></code>) unchanged to the fold-wise reference model objects. If
 these functions take reference model draws from their enclosing environment
 (e.g., draws of a shape parameter), or if <code>dis</code> contains such draws, then the
 folds use the draws from the full-data fit. To use the draws from the
