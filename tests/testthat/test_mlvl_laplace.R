@@ -317,18 +317,18 @@ test_that(paste(
   des <- mlvl_laplace_design(fml, d, rep(1, nrow(d)), "g", 0L)
   expect_equal(fit$deviance,
                mlvl_laplace_dev(des, 0L, fit$sd, unname(fit$coefficients)))
-  # Non-integer binomial data: the glmer() fallback uses the `nAGQ` of the
-  # glmer() code path (0 with lme4 < 2.1-1, which rounds such data):
+  # Non-integer binomial data: the glmer() fallback uses the family of the
+  # glmer() code path (see glmer_family()):
   d$y_frac <- plogis(d$eta + 0.3 * d$z)
   fml_frac <- y_frac ~ x + (1 | g)
   fit_frac <- suppressWarnings(suppressMessages(
     fit_mlvl_tst(fml_frac, d, binomial())
   ))
   expect_s3_class(fit_frac, "projpred_mlvl")
-  nAGQ_g <- if (utils::packageVersion("lme4") < "2.1.1") 0L else 1L
+  fam_g <- glmer_family(binomial())
   fit_g_frac <- suppressWarnings(suppressMessages(lme4::glmer(
-    fml_frac, data = d, family = binomial(), nAGQ = nAGQ_g,
-    control = lme4::glmerControl(optimizer = "bobyqa")
+    fml_frac, data = d, family = fam_g,
+    control = glmer_control(lme4::glmerControl(optimizer = "bobyqa"), fam_g)
   )))
   expect_equal(fit_frac$coefficients, lme4::fixef(fit_g_frac),
                tolerance = 1e-6)

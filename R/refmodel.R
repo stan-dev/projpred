@@ -1268,28 +1268,27 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
             "becomes `(x | g)`), so they can have correlations that the ",
             "reference model does not have.")
   }
-  if (length(grp_trms) > 0 &&
+  # The multilevel submodel fitters estimate the group-level SDs by
+  # (approximate) maximum marginal likelihood. They assume binomial (or
+  # multinomial) noise around the reference predictions, which have no noise.
+  # With little information per group, the estimates are then near zero.
+  # Gaussian submodels (also those of the latent projection) estimate the
+  # residual SD. Poisson submodels get more information per observation for
+  # large counts.
+  if (proper_model && length(grp_trms) > 0 &&
       getOption("projpred.warn_instable_projections", TRUE) &&
-      !called_from_cvrefbuilder) {
-    if (family$for_augdat) {
-      warning(
-        "For multilevel models, the augmented-data projection may not work ",
-        "properly. The latent projection may be a remedy. See section ",
-        "\"Troubleshooting\" of the main vignette for more information."
-      )
-    } else if (family$family == "binomial") {
-      warning(
-        "For multilevel binomial models, the traditional projection may not ",
-        "work properly. The latent projection may be a remedy. See section ",
-        "\"Troubleshooting\" of the main vignette for more information."
-      )
-    } else if (family$family == "poisson") {
-      warning(
-        "For multilevel Poisson models, the traditional projection may take ",
-        "very long. The latent projection may be a remedy. See section ",
-        "\"Troubleshooting\" of the main vignette for more information."
-      )
-    }
+      !called_from_cvrefbuilder &&
+      (family$for_augdat || family$family == "binomial")) {
+    warning(
+      "For multilevel models with a binomial response or with the ",
+      "augmented-data projection, the projected group-level standard ",
+      "deviations can be near zero. Then the search can rank group-level ",
+      "terms too low. Near-zero estimates are likely if the groups have few ",
+      "observations or the observations have few trials (one trial in the ",
+      "augmented-data projection). The latent projection may be a remedy (not ",
+      "for the brms::categorical() family). See section \"Troubleshooting\" ",
+      "of the main vignette for more information."
+    )
   }
   if (family$family == "categorical" &&
       length(fml_extractions$offset_terms) > 0) {
@@ -1542,8 +1541,14 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
       # instead of building them again for every projection:
       pred_sub <- subprd_fitted(fits, nobs = nrow(data))
     }
-    # The submodel fits store their contrasts:
-    newdata <- strip_contrasts(fetch_data(data, obs = obs, newdata = newdata))
+    # The submodel fits store their contrasts. The stored `data` have no
+    # `contrasts` attributes (see strip_contrasts() below), so only new data
+    # need this step:
+    newdata_usr <- newdata
+    newdata <- fetch_data(data, obs = obs, newdata = newdata)
+    if (!is.null(newdata_usr)) {
+      newdata <- strip_contrasts(newdata)
+    }
     if (is.null(offset)) {
       offset <- rep(0, nrow(newdata))
     } else {
@@ -1793,15 +1798,6 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
         }
       } else {
         dis <- rep(NA, ndraws)
-      }
-      if (all(is.na(dis))) {
-        message(
-          "Since `<refmodel>$dis` will consist of only `NA`s, downstream ",
-          "analyses based on this reference model object won't be able to use ",
-          "log predictive density (LPD) values on latent scale. Furthermore, ",
-          "proj_predict() won't be able to draw from the latent Gaussian ",
-          "distribution."
-        )
       }
     } else if (!has_dispersion(family)) {
       dis <- rep(NA, ndraws)

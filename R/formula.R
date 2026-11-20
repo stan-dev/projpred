@@ -665,9 +665,12 @@ formula_contains_additive_terms <- function(formula) {
 ##   needs to be the vector of unique response values (for an ordinal response,
 ##   these need to be ordered correctly, see [extend_family()]'s argument
 ##   `augdat_y_unqs`).
+## @param with_data If FALSE (only for `y_unqs = NULL`), only the formula is
+##   made and the returned data are `data` unchanged.
 ## @return a list including the updated formula and data
 subset_formula_and_data <- function(formula, terms_, data, y = NULL,
-                                    split_formula = FALSE, y_unqs = NULL) {
+                                    split_formula = FALSE, y_unqs = NULL,
+                                    with_data = TRUE) {
   formula <- make_formula(terms_, formula = formula)
   response_name <- extract_terms_response(formula)$response
 
@@ -693,8 +696,10 @@ subset_formula_and_data <- function(formula, terms_, data, y = NULL,
     }
 
     ## don't overwrite original y name
-    data <- data.frame(.z = y, data)
-    colnames(data)[seq_len(NCOL(y))] <- response_cols
+    if (with_data) {
+      data <- data.frame(.z = y, data)
+      colnames(data)[seq_len(NCOL(y))] <- response_cols
+    }
   } else {
     # Create the augmented dataset:
     stopifnot(is.data.frame(data))

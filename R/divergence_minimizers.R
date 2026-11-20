@@ -430,8 +430,8 @@ subprd_gamm4_direct <- function(fits, newdata) {
 # their model frames without their environments (lmer_frame_attrs()); the
 # shared fits keep the formula environment of the first draw. lmer_shared_ok()
 # checks this once per R session on a small fixed problem, and the test suite
-# checks it on CRAN. If the check fails (for example after a change in lme4) or
-# lme4 is older than 2.0-1, divmin() fits each draw with lmer().
+# checks it on CRAN. If the check fails (for example after a change in lme4),
+# divmin() fits each draw with lmer().
 
 # Replaces the name `old` by `new` in all language objects of `x`, including
 # its attributes and names (used for the response of a shared model frame).
@@ -568,14 +568,11 @@ lmer_shared_callback <- function(formulas, dot_args) {
 
 # Whether lmer_shared_fit() gives the fits of lme4::lmer() with the installed
 # lme4 (checked once per R session on a small fixed problem, without random
-# numbers). lme4 before 2.0-1 has another body of lmer() and other arguments
-# of lme4:::checkConv() and lme4:::optwrap().
+# numbers).
 lmer_shared_state <- new.env(parent = emptyenv())
-lmer_shared_lme4_min <- "2.0.1"
 lmer_shared_ok <- function() {
   if (is.null(lmer_shared_state$ok)) {
     lmer_shared_state$ok <-
-      utils::packageVersion("lme4") >= lmer_shared_lme4_min &&
       isTRUE(tryCatch(lmer_shared_check(), error = function(e) FALSE))
   }
   return(lmer_shared_state$ok)
@@ -884,6 +881,92 @@ shared_model_matrix <- function(formulas, data) {
               terms = xy$terms, contrasts = xy$contrasts))
 }
 
+# The model frame and the model matrix of all main-effect terms of `formula` for
+# the data `data` (with the contrasts of the reference model set, see
+# set_contrasts()), for shared_x_from_design(). Returns `NULL` if the column
+# blocks would not give the model matrix of shared_model_matrix(): rows with
+# missing values, column names that data.frame() changes (see
+# subset_formula_and_data()), variables of the model frame other than the term
+# labels (for example an offset), or an error of model.frame() or
+# model.matrix().
+design_main_effects <- function(formula, data) {
+  if (!is.data.frame(data) || nrow(data) == 0 ||
+      !identical(make.names(names(data), unique = TRUE), names(data)) ||
+      any(startsWith(names(data), "."))) {
+    return(NULL)
+  }
+  lbls <- extract_terms_response(formula)$individual_terms
+  if (length(lbls) == 0) {
+    return(NULL)
+  }
+  fml <- stats::reformulate(lbls, env = environment(formula))
+  fr <- tryCatch(model.frame(fml, data = data, drop.unused.levels = TRUE),
+                 error = function(e) NULL)
+  if (is.null(fr) || nrow(fr) != nrow(data)) {
+    return(NULL)
+  }
+  dcl <- attr(attr(fr, "terms"), "dataClasses")
+  pv <- as.list(attr(attr(fr, "terms"), "predvars"))[-1]
+  if (!identical(names(dcl), lbls) || length(pv) != length(lbls)) {
+    return(NULL)
+  }
+  # model.matrix() can fail for a term that no submodel uses (for example a
+  # factor with one level):
+  mm <- tryCatch(model.matrix(fml, data = fr), error = function(e) NULL)
+  if (is.null(mm)) {
+    return(NULL)
+  }
+  keep <- colnames(mm) != "(Intercept)"
+  asg <- attr(mm, "assign")[keep]
+  nms_chr_fac <- lbls[dcl %in% c("character", "factor")]
+  return(list(
+    labels = lbls,
+    x = mm[, keep, drop = FALSE],
+    cols = lapply(seq_along(lbls), function(j) which(asg == j)),
+    predvars = pv,
+    classes = dcl,
+    lvls = lapply(setNames(nm = nms_chr_fac), function(nm) {
+      levels(as.factor(fr[[nm]]))
+    }),
+    contrasts = attr(mm, "contrasts")
+  ))
+}
+
+# The output of shared_model_matrix() for the draw-wise formulas `formulas`
+# (see validate_response_formula()), from the column blocks of `design` (see
+# design_main_effects()), without a model frame and a model matrix for the
+# submodel. Without interactions, the columns of a term do not depend on the
+# other terms. `y_names` are the names of the response (as from
+# model.response()). Returns `NULL` for an interaction, a model without
+# intercept, an offset, or a term that `design` does not have.
+shared_x_from_design <- function(formulas, design, y_names) {
+  tt <- terms(formulas[[1]])
+  lbls <- attr(tt, "term.labels")
+  vars <- as.list(attr(tt, "variables"))[-1]
+  if (attr(tt, "intercept") != 1 || attr(tt, "response") != 1 ||
+      !is.null(attr(tt, "offset")) || any(attr(tt, "order") != 1) ||
+      length(vars) != length(lbls) + 1L || !is.name(vars[[1]])) {
+    return(NULL)
+  }
+  idx <- match(lbls, design$labels)
+  if (anyNA(idx)) {
+    return(NULL)
+  }
+  # The attributes that model.frame() adds to the terms (the response is a
+  # numeric column of the data):
+  attr(tt, "predvars") <- as.call(c(list(quote(list), vars[[1]]),
+                                    design$predvars[idx]))
+  dcl <- c(setNames("numeric", as.character(vars[[1]])), design$classes[idx])
+  attr(tt, "dataClasses") <- dcl
+  x <- design$x[, as.integer(unlist(design$cols[idx])), drop = FALSE]
+  nms_chr_fac <- names(dcl)[dcl %in% c("character", "factor")]
+  xlvls <- if (length(nms_chr_fac) > 0) design$lvls[nms_chr_fac]
+  nms_ctr <- intersect(names(dcl), names(design$contrasts))
+  ctrs <- if (length(nms_ctr) > 0) design$contrasts[nms_ctr]
+  return(list(x = x, xlvls = xlvls, y_names = y_names, terms = tt,
+              contrasts = ctrs))
+}
+
 # fit_glm_ridge_callback() with a fixed shared model matrix. The enclosing
 # environment holds only `shared_x` (relevant for the parallel case in divmin(),
 # where the function is exported).
@@ -1160,11 +1243,18 @@ fit_gamm_callback <- function(formula, projpred_formula_no_random,
       methods::formalArgs(lme4::lFormula),
       methods::formalArgs(lme4::glFormula))
   )]
+  # As in fit_glmer_callback(). The error handler below reads `family` and
+  # `control`, so the changed family and control are copies. `data` is changed
+  # in place; glmer_data() does not change it again in a refit:
+  family_gamm <- glmer_family(family)
+  control_gamm <- glmer_control(control, family = family_gamm)
+  data <- glmer_data(data, formula = projpred_formula_no_random,
+                     family = family_gamm)
   # Call the submodel fitter:
   fit <- tryCatch({
     do.call(gamm4::gamm4, c(
       list(formula = projpred_formula_no_random, random = projpred_random,
-           data = data, family = family, control = control),
+           data = data, family = family_gamm, control = control_gamm),
       dot_args
     ))
   }, error = function(e) {
@@ -1368,19 +1458,16 @@ fit_glmer_callback <- function(formula, projpred_formula_no_random,
         names(dot_args),
         methods::formalArgs(lme4::glmer)
       )]
-      # lme4 < 2.1-1 rounds non-integer binomial data in the objective of
-      # `nAGQ >= 1`. With `nAGQ = 0`, the fixed effects and the group-level
-      # effects do not depend on this objective (the group-level standard
-      # deviations still do):
-      if (is.null(dot_args$nAGQ) &&
-          glmer_rounds_binomial(formula, family = family,
-                                data = dot_args$data,
-                                weights = dot_args$weights)) {
-        dot_args$nAGQ <- 0L
-      }
+      # For the binomial and the Poisson family, glmer_family() gives a family
+      # that lme4 evaluates without rounding:
+      family_glmer <- glmer_family(family)
+      control_glmer <- glmer_control(control, family = family_glmer)
+      dot_args$data <- glmer_data(dot_args$data, formula = formula,
+                                  family = family_glmer)
       # Call the submodel fitter:
-      return(do.call(lme4::glmer, c(list(formula = formula, family = family,
-                                         control = control),
+      return(do.call(lme4::glmer, c(list(formula = formula,
+                                         family = family_glmer,
+                                         control = control_glmer),
                                     dot_args)))
     }
   }, error = function(e) {
@@ -1421,8 +1508,6 @@ fit_glmer_callback <- function(formula, projpred_formula_no_random,
         )
       }, e_first = e, pkg = "lme4"))
     } else if (grepl("PIRLS", as.character(e))) {
-      # `nAGQ` from `...` (not the `nAGQ = 0` that the code above sets for
-      # non-integer binomial data):
       dot_args_retry <- list(...)
       # lme4 accepts `nAGQ > 1` only for a single scalar group-level term:
       if (!glmer_scalar_re(formula, data = dot_args_retry$data)) {
@@ -1550,30 +1635,84 @@ fit_glmer_callback <- function(formula, projpred_formula_no_random,
   })
 }
 
-# Whether lme4::glmer() would fit a binomial submodel to rounded data: lme4 <
-# 2.1-1 computes the objective of `nAGQ >= 1` with binomial()$aic(), which
-# rounds non-integer numbers of successes and trials. The traditional
-# projection has non-integer responses, and the augmented-data projection has
-# non-integer weights. `TRUE` also if the data cannot be checked (then
-# `nAGQ = 0` is used for data that may be integer).
-glmer_rounds_binomial <- function(formula, family, data, weights) {
-  if (!identical(family$family, "binomial") ||
-      utils::packageVersion("lme4") >= "2.1.1") {
-    return(FALSE)
+# Whether glmer_family() renames the binomial and the Poisson family. lme4 <
+# 2.1-1 evaluates the log density of these two family names in C++: it rounds
+# non-integer binomial responses and weights, and its Poisson objective is
+# infinite for non-integer responses (then the group-level parameters stay at
+# their start values). lme4 2.0-x estimates a dispersion parameter (sigma())
+# for a family with another name. The fit does not use it, and VarCorr() of a
+# GLMM does not use it either. gamm4::gamm4() uses it as the scale of `sp`,
+# `sig2` and `Vp` of the `gam` part (not of the coefficients); projpred does
+# not use these. (lme4 < 2.0-1 scales VarCorr() by sigma(); projpred requires
+# lme4 >= 2.0-1.)
+lme4_needs_glmer_family <- function() {
+  return(utils::packageVersion("lme4") < "2.1.1")
+}
+
+# The family that fit_glmer_callback() and fit_gamm_callback() pass to lme4. For
+# another family name, lme4 calls the R function `aic` of the family. So for
+# the lme4 versions of lme4_needs_glmer_family(), this function renames the
+# binomial and the Poisson family and gives them an `aic` with the continuous
+# extension of the log density (lgamma() instead of the factorial), as lme4 >=
+# 2.1-1 uses. For integer data, `aic` does not change. For lme4 >= 2.1-0,
+# `dispersion = 1` marks the dispersion as fixed.
+glmer_family <- function(family) {
+  if (!isTRUE(family$family %in% c("binomial", "poisson")) ||
+      !lme4_needs_glmer_family()) {
+    return(family)
   }
-  is_whole <- function(x) {
-    all(abs(x - round(x)) < 1e-8)
-  }
-  out <- tryCatch({
-    y <- eval(formula[[2]], data, environment(formula))
-    w <- weights %||% 1
-    if (is.matrix(y)) {
-      !is_whole(w) || !is_whole(y)
-    } else {
-      !is_whole(w) || !is_whole(as.numeric(y) * w)
+  # The terms with a zero count are 0, also for `mu` at the bounds:
+  if (family$family == "binomial") {
+    family$aic <- function(y, n, mu, wt, dev) {
+      m <- if (any(n > 1)) n else wt
+      k <- m * y
+      ll <- lgamma(m + 1) - lgamma(k + 1) - lgamma(m - k + 1) +
+        ifelse(k == 0, 0, k * log(mu)) +
+        ifelse(m - k == 0, 0, (m - k) * log1p(-mu))
+      -2 * sum(ifelse(m > 0, wt / m, 0) * ll)
     }
-  }, error = function(e) TRUE)
-  return(!isFALSE(out))
+  } else {
+    family$aic <- function(y, n, mu, wt, dev) {
+      -2 * sum(wt * (ifelse(y == 0, 0, y * log(mu)) - mu - lgamma(y + 1)))
+    }
+  }
+  environment(family$aic) <- baseenv()
+  family$family <- paste0(family$family, "_projpred")
+  family$dispersion <- 1
+  return(family)
+}
+
+# The control of lme4::glmer() and gamm4::gamm4() for the family from
+# glmer_family(). lme4 >= 2.1-0 computes a correction for the estimation of the
+# dispersion of a family with another name than "binomial" and "poisson". It is
+# not used for a fixed dispersion, but its computation (a QR decomposition) can
+# take long or fail. lme4::glmer() passes a plain list to lme4::glmerControl(),
+# so the element is added only if glmerControl() has this argument.
+glmer_control <- function(control, family) {
+  if (family$family %in% c("binomial_projpred", "poisson_projpred") &&
+      is.list(control) &&
+      "disp_dof_correction" %in% names(formals(lme4::glmerControl))) {
+    control$disp_dof_correction <- FALSE
+  }
+  return(control)
+}
+
+# The data for the family from glmer_family(). lme4 accepts a factor response
+# (augmented-data projection) only for the family name "binomial". As in
+# binomial()$initialize, the first factor level is a failure and all other
+# levels are successes. Only a response that is a variable name is converted
+# (the response of projpred's submodel formulas is always a name).
+glmer_data <- function(data, formula, family) {
+  if (!identical(family$family, "binomial_projpred") || is.null(data) ||
+      length(formula) != 3 || !is.name(formula[[2]])) {
+    return(data)
+  }
+  y_nm <- as.character(formula[[2]])
+  if (is.factor(data[[y_nm]])) {
+    y <- data[[y_nm]]
+    data[[y_nm]] <- as.numeric(y != levels(y)[1])
+  }
+  return(data)
 }
 
 # Whether the multilevel `formula` has a single scalar group-level term (one

@@ -16,7 +16,9 @@
 #' @param family An object of class `family`.
 #' @param latent A single logical value indicating whether to use the latent
 #'   projection (`TRUE`) or not (`FALSE`). Note that setting `latent = TRUE`
-#'   causes all arguments starting with `augdat_` to be ignored.
+#'   causes all arguments starting with `augdat_` to be ignored. The latent
+#'   projection does not support the [brms::categorical()] family; use the
+#'   augmented-data projection for it.
 #' @param latent_y_unqs Only relevant for a latent projection where the original
 #'   response space has finite support (i.e., the original response values may
 #'   be regarded as categories), in which case this needs to be the character
@@ -319,13 +321,27 @@ extend_family <- function(family,
     # If the family was already extended using this function, then return as-is:
     return(family)
   }
-  # brms families with `trials()` other than binomial(). projpred cannot use
-  # more than one trial per observation for them, and with one trial they
-  # reduce to the Bernoulli family:
+  # Unsupported brms families:
+  # * families with `trials()` other than binomial(). projpred cannot use more
+  #   than one trial per observation for them, and with one trial they reduce
+  #   to the Bernoulli family;
+  # * families with one linear predictor per non-reference response category,
+  #   other than categorical().
+  # Check them before `latent = TRUE` replaces the family with gaussian():
   if (isTRUE(family$family %in% c("beta_binomial", "zero_inflated_binomial",
-                                  "zero_inflated_beta_binomial"))) {
+                                  "zero_inflated_beta_binomial",
+                                  "multinomial", "dirichlet", "dirichlet2",
+                                  "dirichlet_multinomial", "logistic_normal"))) {
     stop("Currently, projpred does not support the brms family `",
          family$family, "()`.", call. = FALSE)
+  }
+  # The latent projection needs one linear predictor per observation, but
+  # brms::categorical() has one per non-reference response category:
+  if (latent && isTRUE(family$family == "categorical")) {
+    stop("Currently, projpred does not support the latent projection for the ",
+         "brms family `categorical()`, which has one linear predictor per ",
+         "non-reference response category. Use `latent = FALSE` (the ",
+         "augmented-data projection) instead.", call. = FALSE)
   }
   if (latent) {
     family_oscale_tmp <- family$family
@@ -366,7 +382,7 @@ extend_family <- function(family,
             return(ilpreds)
           }
         } else {
-          if (family$family_oscale != "poisson") {
+          if (!family$family_oscale %in% fams_linkinv_mean()) {
             message("Defining `latent_ilink` as a function which calls ",
                     "`family$linkinv`, but there is no guarantee that this ",
                     "will work for all families. If relying on ",
@@ -964,4 +980,13 @@ has_dispersion <- function(family) {
 # to extend_family()):
 has_family_extras <- function(family) {
   return(isTRUE(family$is_extended))
+}
+
+# Names of the original response families (rstanarm, brms and stats) whose
+# `linkinv` gives the mean of the response, so that the latent projection's
+# internal default for `latent_ilink` is correct for them without a message:
+fams_linkinv_mean <- function() {
+  return(c("poisson", "neg_binomial_2", "negbinomial", "negbinomial2",
+           "geometric", "Gamma", "gamma", "inverse.gaussian", "Beta",
+           "weibull", "exponential", "frechet", "skew_normal", "exgaussian"))
 }
