@@ -65,7 +65,7 @@ test_that(paste(
       do.call(MASS::glmmPQL, list(fixed = yb ~ x1, random = ~ 1 | g,
                                   family = binomial(), data = dat_scd,
                                   verbose = FALSE))
-    }, pred = function(f) predict(f, newdata = newdat_scd, level = 0)),
+    }, pred = function(f) predict(f, newdata = newdat_scd, level = 0:1)),
     polr = list(fit = function() {
       do.call(MASS::polr, list(formula = yo ~ x1 + x2, data = dat_scd))
     }, pred = function(f) predict(f, newdata = newdat_scd, type = "probs")),
@@ -227,5 +227,35 @@ test_that("divmin_augdat() gives clmm() fits without the data in their calls", {
   for (fit in fits) {
     expect_s3_class(fit, "clmm")
     expect_false(has_df_with(fit, "col_unused"))
+  }
+})
+
+test_that(paste(
+  "divmin() gives MASS::glmmPQL() fits without the data in their calls and",
+  "formula environments"
+), {
+  withr::local_options(projpred.PQL = TRUE)
+  d <- dat_scd[, c("x1", "x2", "g", "col_unused")]
+  d$.p.1 <- plogis(eta_scd)
+  d$.p.2 <- plogis(eta_scd + 0.3 * sin(1.7 * idx_scd))
+  # One group-level term (MASS::glmmPQL() does not find the grouping variables
+  # of the nlme::pdBlocked() structure that projpred uses for two terms).
+  # A formula environment without the data (see the gamm4 test above):
+  fml <- as.formula("cbind(.p.1, .p.2) ~ x1 + (1 | g)",
+                    env = new.env(parent = globalenv()))
+  fits <- suppressWarnings(divmin(
+    formula = fml, data = d, family = extend_family(binomial()),
+    weights = rep(1, n_scd), projpred_var = matrix(NA, n_scd, 2),
+    projpred_ws_aug = matrix(NA, n_scd, 2), verbose_divmin = FALSE
+  ))
+  expect_length(fits, 2)
+  for (fit in fits) {
+    expect_s3_class(fit, "glmmPQL")
+    expect_identical(environment(attr(fit$modelStruct$varStruct, "formula")),
+                     environment(fml))
+    # `fit$data` holds only the columns that the fit uses, so the name of the
+    # unused column occurs only in a copy of the whole data:
+    expect_length(grepRaw("col_unused", serialize(fit, NULL), fixed = TRUE),
+                  0L)
   }
 })

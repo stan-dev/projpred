@@ -637,7 +637,8 @@ lmer_frame_attrs <- function(fit) {
 # not use the call. The new element is a symbol that does not exist, so code
 # that evaluates the call (update(), lme4::getData()) stops instead of finding
 # other data. Fits that keep the data in another element (stats::glm(),
-# mclogit::mblogit()) keep it.
+# mclogit::mblogit()) keep it. For a MASS::glmmPQL() fit, the formula of
+# `varStruct` gets the environment of the fixed-effects formula.
 strip_call_data <- function(fit) {
   if (isS4(fit)) {
     if (methods::.hasSlot(fit, "call") && is.call(fit@call) &&
@@ -653,6 +654,18 @@ strip_call_data <- function(fit) {
   if (is.call(cl) && is.data.frame(cl[["data"]])) {
     cl[["data"]] <- quote(.projpred_data_removed)
     fit[["call"]] <- cl
+  }
+  # MASS::glmmPQL() keeps its frame (`data`, `Call`, the start fit `fit0`,
+  # `mf`) as the environment of the formula of `varStruct`.
+  if (inherits(fit, "glmmPQL")) {
+    fml <- attr(fit$modelStruct$varStruct, "formula")
+    env <- if (inherits(fit$call$fixed, "formula")) {
+      environment(fit$call$fixed)
+    }
+    if (inherits(fml, "formula") && is.environment(env)) {
+      attr(fml, ".Environment") <- env
+      attr(fit$modelStruct$varStruct, "formula") <- fml
+    }
   }
   return(fit)
 }
@@ -1359,8 +1372,12 @@ fit_glmer_callback <- function(formula, projpred_formula_no_random,
       }
       # Strip parentheses from group-level terms:
       random_trms <- labels(terms(projpred_random))
+      # The formulas below get the environment of the fixed-effects formula.
+      # MASS::glmmPQL() keeps them in its call. A formula made here without
+      # `env` keeps the frame of this function, which holds the data:
+      fml_env <- environment(projpred_formula_no_random)
       random_fmls <- lapply(random_trms, function(random_trm) {
-        as.formula(paste("~", random_trm))
+        as.formula(paste("~", random_trm), env = fml_env)
       })
       if (length(random_fmls) == 1) {
         random_fmls <- random_fmls[[1]]
@@ -1385,7 +1402,8 @@ fit_glmer_callback <- function(formula, projpred_formula_no_random,
         ###
         list_pdIdent <- lapply(random_trms, function(random_trm) {
           return(nlme::pdIdent(as.formula(
-            paste("~", sub("^.*\\|[[:blank:]]*", "", random_trm), "- 1")
+            paste("~", sub("^.*\\|[[:blank:]]*", "", random_trm), "- 1"),
+            env = fml_env
           )))
         })
         idxs_multi_trms <- which(lengths(random_trms_nogrp) > 0)
@@ -1399,7 +1417,7 @@ fit_glmer_callback <- function(formula, projpred_formula_no_random,
             random_IAs <- paste0(random_trms_nogrp[[idx_multi_trms]], ":",
                                  random_grp)
             return(lapply(random_IAs, function(random_IA) {
-              nlme::pdIdent(as.formula(paste("~", random_IA)))
+              nlme::pdIdent(as.formula(paste("~", random_IA), env = fml_env))
             }))
           })
           list_pdIdent_add <- unlist(list_pdIdent_add, recursive = FALSE)
