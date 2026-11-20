@@ -589,13 +589,13 @@ get_p_clust <- function(family, eta, mu, mu_offs, dis, nclusters = 10,
   # `draws_shift` (from perturb_refmodel()): the draws of `eta`, `mu` and
   # `mu_offs` are the given ones plus `draws_shift` (one value per
   # observation). If each cluster has at least one draw and a finite nonzero
-  # weight sum, at least one cluster has several draws, and
-  # `family$predvar_mix` is used, then the cluster means move by the shift, and
-  # the within-cluster variances do not change. In the other cases, the shifted
-  # draws are computed here.
+  # weight sum (of `wdraws_in`, see below), at least one cluster has several
+  # draws, and `family$predvar_mix` is used, then the cluster means move by the
+  # shift, and the within-cluster variances do not change. In the other cases,
+  # the shifted draws are computed here.
   #
   # With `as_moments = TRUE`, the function returns `NULL` or, for a given `cl`
-  # with one draw per cluster, finite nonzero weights and a
+  # with one draw per cluster, finite weights (`wdraws_in` nonzero) and a
   # `family$predvar_mix`, a list without the observations x clusters matrices
   # `mu`, `mu_offs` and `var`. Instead, the list has `draws_offs` (the input
   # `mu_offs`), the draw `idx` and the factor `ws` of each cluster (cluster
@@ -653,10 +653,22 @@ get_p_clust <- function(family, eta, mu, mu_offs, dis, nclusters = 10,
   if (as_moments && !all(lengths(ind_by_cl) == 1L)) {
     return(NULL)
   }
+  # A cluster whose draws all have weight 0 (for example PSIS-LOO weights that
+  # underflow to 0) gets projection weight 0. Its center, dispersion and
+  # predictive variance use equal weights of its draws (`wdraws_in`), so that
+  # its projection gets finite data:
+  wdraws_in <- wdraws
+  if (any(wdraws == 0, na.rm = TRUE)) {
+    for (ind in ind_by_cl) {
+      if (length(ind) > 0L && isTRUE(all(wdraws[ind] == 0))) {
+        wdraws_in[ind] <- 1
+      }
+    }
+  }
   wsum_cl <- NULL
   if (!is.null(draws_shift)) {
     ndraws_cl <- lengths(ind_by_cl)
-    wsum_cl <- vapply(ind_by_cl, function(ind) sum(wdraws[ind]), numeric(1),
+    wsum_cl <- vapply(ind_by_cl, function(ind) sum(wdraws_in[ind]), numeric(1),
                       USE.NAMES = FALSE)
     if (!(use_mix && any(ndraws_cl > 1L) && all(ndraws_cl > 0L) &&
           all(is.finite(wsum_cl) & wsum_cl != 0))) {
@@ -679,7 +691,9 @@ get_p_clust <- function(family, eta, mu, mu_offs, dis, nclusters = 10,
     # at once.
     idx <- unlist(ind_by_cl, use.names = FALSE)
     wcluster <- unname(as.numeric(wdraws[idx]))
-    ws <- wcluster / wcluster * (1 - eps)
+    stop_if_all_wdraws_zero(wcluster)
+    wcluster_in <- unname(as.numeric(wdraws_in[idx]))
+    ws <- wcluster_in / wcluster_in * (1 - eps)
     # Usually, all draws are used in their order, and `w / w` is exactly 1
     # (for a finite nonzero weight), so that `ws` is `1 - eps`. Then one
     # product with a scalar gives the centers, without copies of the draws:
@@ -731,10 +745,13 @@ get_p_clust <- function(family, eta, mu, mu_offs, dis, nclusters = 10,
   } else {
     # Several draws in a cluster: weighted moments of the draws in compiled
     # code. The results differ from the cluster loop only by rounding.
-    wcluster <- wsum_cl %||%
-      vapply(ind_by_cl, function(ind) sum(wdraws[ind]), numeric(1),
+    wcluster_in <- wsum_cl %||%
+      vapply(ind_by_cl, function(ind) sum(wdraws_in[ind]), numeric(1),
              USE.NAMES = FALSE)
-    wn <- as.numeric(wdraws) / wcluster[cl_ind]
+    wcluster <- vapply(ind_by_cl, function(ind) sum(wdraws[ind]), numeric(1),
+                       USE.NAMES = FALSE)
+    stop_if_all_wdraws_zero(wcluster)
+    wn <- as.numeric(wdraws_in) / wcluster_in[cl_ind]
     wn[is.na(cl_ind)] <- 0
     mom <- clust_moments_c(
       mu, mu_offs, as.numeric(dis)[seq_along(cl)], wn,
@@ -754,9 +771,10 @@ get_p_clust <- function(family, eta, mu, mu_offs, dis, nclusters = 10,
     }
   }
   # The cluster loop: for the predictive variances without
-  # `family$predvar_mix`, and for the clusters with a weight sum of 0, Inf or
-  # NaN, or without draws (so that NA and NaN propagate as in the loop):
-  ind_loop <- which(!is.finite(wcluster) | wcluster == 0)
+  # `family$predvar_mix`, and for the clusters with a weight sum (of
+  # `wdraws_in`) of Inf or NaN, or without draws (so that NA and NaN propagate
+  # as in the loop):
+  ind_loop <- which(!is.finite(wcluster_in) | wcluster_in == 0)
   if (!use_mix) {
     predvar <- matrix(nrow = nobs, ncol = nclusters)
     ind_loop <- seq_len(nclusters)
@@ -765,11 +783,11 @@ get_p_clust <- function(family, eta, mu, mu_offs, dis, nclusters = 10,
     ind <- ind_by_cl[[j]]
     # Compute normalized weights within the j-th cluster; `1 - eps` is for
     # numerical stability:
-    ws_j <- wdraws[ind] / sum(wdraws[ind]) * (1 - eps)
+    ws_j <- wdraws_in[ind] / sum(wdraws_in[ind]) * (1 - eps)
     # Predictive variance for the j-th cluster:
     predvar[, j] <- family$predvar(mu_offs[, ind, drop = FALSE], dis[ind],
                                    ws_j)
-    if (is.finite(wcluster[j]) && wcluster[j] != 0) {
+    if (is.finite(wcluster_in[j]) && wcluster_in[j] != 0) {
       next
     }
     # Center of the j-th cluster:
@@ -801,6 +819,23 @@ get_p_clust <- function(family, eta, mu, mu_offs, dis, nclusters = 10,
     wdraws_orig = wdraws,
     clust_used = clust_used_forced %||% TRUE
   ))
+}
+
+# Stops if all projected draws (or clusters) have weight 0. In PSIS-LOO CV,
+# this happens if the PSIS weights of all thinned draws underflow to 0 for the
+# left-out observation, for example for a reference model whose chains have not
+# converged. With clustering, all draws are in a cluster, so at least one
+# cluster has a nonzero weight.
+stop_if_all_wdraws_zero <- function(wcluster) {
+  if (isTRUE(sum(wcluster) == 0)) {
+    stop("All projected draws have weight 0. In PSIS-LOO CV, this occurs if ",
+         "the PSIS weights of all projected draws underflow to 0 for the ",
+         "left-out observation. Please check the convergence of the ",
+         "reference model. Use clustering (`nclusters`, `nclusters_pred`) ",
+         "instead of thinning (`ndraws`, `ndraws_pred`), or use ",
+         "`cv_method = \"kfold\"`.")
+  }
+  return(invisible(TRUE))
 }
 
 draws_subsample <- function(S, ndraws) {
