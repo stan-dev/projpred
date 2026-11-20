@@ -1293,11 +1293,11 @@ fit_gamm_callback <- function(formula, projpred_formula_no_random,
                      family = family_gamm)
   # Call the submodel fitter:
   fit <- tryCatch({
-    do.call(gamm4::gamm4, c(
+    gamm_check_conv(do.call(gamm4::gamm4, c(
       list(formula = projpred_formula_no_random, random = projpred_random,
            data = data, family = family_gamm, control = control_gamm),
       dot_args
-    ))
+    )), control = control_gamm)
   }, error = function(e) {
     if (grepl("not positive definite", as.character(e))) {
       if ("optimx" %in% control$optimizer &&
@@ -1816,6 +1816,72 @@ glmer_scalar_re <- function(formula, data = NULL) {
     error = function(e) NA_integer_
   )
   return(is.na(n_col) || n_col == 1L)
+}
+
+# lme4::checkConv() for the lme4 part `fit$mer` of a gamm4::gamm4() fit
+# (gamm4::gamm4() does not call it). If the check finds a problem, the result
+# goes to `fit$mer@optinfo$conv$lme4` for check_conv_s(). The lower bounds of
+# the fixed effects are `-Inf`, and the upper bounds of all parameters are
+# `Inf`. As in lme4::lmer() and lme4::glmer() with the default `calc.derivs`,
+# there is no check if the number of observations is at least
+# `check.conv.nobsmax` or the number of parameters is at least
+# `check.conv.nparmax`. The differences from lme4::checkConv() are:
+# * The Hessian is not checked. The smoothing parameters are variance
+#   parameters of `fit$mer`, and the finite-difference Hessian of large
+#   variance parameters is too inexact.
+# * If the scaled gradient cannot be evaluated (Hessian not positive definite,
+#   or `NA`), the unscaled gradient is used (lme4::checkConv() gives "unable to
+#   evaluate scaled gradient").
+# * A fit at a boundary (singular fit) gets no message and no result.
+# * `check.conv.grad$relTol` is not used.
+# * The action "message" of `check.conv.grad` gives a warning
+#   (lme4::checkConv() gives an error).
+# * The message gives the index of the largest gradient component
+#   (lme4::checkConv() always gives component 1) and no help text.
+gamm_check_conv <- function(fit, control) {
+  mer <- fit$mer
+  ctrl <- control$checkConv
+  derivs <- if (inherits(mer, "merMod")) mer@optinfo$derivs
+  if (is.null(derivs) || is.null(ctrl) || !is.null(mer@optinfo$conv$lme4)) {
+    return(fit)
+  }
+  coefs <- mer@optinfo$val
+  lbound <- c(mer@lower, rep(-Inf, length(coefs) - length(mer@lower)))
+  if (min(coefs - lbound) < (ctrl$check.conv.singular$tol %||% 1e-4) ||
+      nrow(mer@frame) >= (ctrl$check.conv.nobsmax %||% Inf) ||
+      length(coefs) >= (ctrl$check.conv.nparmax %||% Inf)) {
+    return(fit)
+  }
+  grad <- derivs$gradient
+  ctrl_grad <- ctrl$check.conv.grad
+  if (anyNA(grad)) {
+    # As in lme4::checkConv(), without a warning:
+    cc <- list(code = -5L, messages = "Gradient contains NAs")
+  } else {
+    if (is.null(ctrl_grad$tol) || identical(ctrl_grad$action, "ignore")) {
+      return(fit)
+    }
+    scgrad <- tryCatch(solve(chol(derivs$Hessian), grad),
+                       error = function(e) NULL)
+    mingrad <- abs(grad)
+    if (!is.null(scgrad) && !anyNA(scgrad)) {
+      mingrad <- pmin(abs(scgrad), mingrad)
+    }
+    if (max(mingrad) <= ctrl_grad$tol) {
+      return(fit)
+    }
+    cc <- list(code = -1L, messages = sprintf(
+      "Model failed to converge with max|grad| = %g (tol = %g, component %d)",
+      max(mingrad), ctrl_grad$tol, which.max(mingrad)
+    ))
+    if (identical(ctrl_grad$action, "stop")) {
+      stop(cc$messages, call. = FALSE)
+    }
+    warning(cc$messages, call. = FALSE)
+  }
+  mer@optinfo$conv$lme4 <- cc
+  fit$mer <- mer
+  return(fit)
 }
 
 # Helper function for fit_glmer_callback() and fit_gamm_callback() to get the
@@ -2701,10 +2767,9 @@ check_conv_s <- function(fit_s) {
              isTRUE(fit_s$mgcv.conv$fully.converged %||% TRUE) &&
              gam_outer_conv(fit_s$outer.info))
   } else if (inherits(fit_s, "gamm4")) {
-    # TODO (GAMMs): I couldn't find any convergence-related information in
-    # element `fit_s$gam`, so the GAM part is currently not checked for
-    # convergence. For now, all we can check is the GLMM part from element
-    # `fit_s$mer`:
+    # Element `fit_s$gam` has no convergence information. The smoothing
+    # parameters are variance parameters of `fit_s$mer`, which also has the
+    # result of gamm_check_conv():
     return(check_conv_s(fit_s$mer))
   } else if (inherits(fit_s, "glmmPQL")) {
     # MASS::glmmPQL() stores no convergence information: nlme::lme() throws an

@@ -391,6 +391,35 @@ test_that(paste(
       message = "converge"
     )
     expect_length(fits, 2)
+    if (startsWith(rhs, "s(")) {
+      # The gamm4() fits are not singular, so gamm_check_conv() checks the
+      # gradient:
+      for (fit in fits) {
+        expect_false(is.null(fit$mer@optinfo$derivs))
+      }
+    }
+  }
+})
+
+test_that(paste(
+  "a binomial gamm4() submodel with non-integer responses gives no",
+  "convergence warning"
+), {
+  # With fewer data, the fit is singular and has no gradient to check:
+  d <- dat_fitters(n_grp = 10, n_per = 20)
+  mu <- plogis(cbind(d$eta, d$eta + 0.3 * d$z))
+  expect_no_warning(
+    fits <- with_r_printing(
+      divmin_tst("s(z) + x + (1 | g)", d, extend_family(binomial()), mu,
+                 weights = rep(20, nrow(d)), throw_warn = TRUE,
+                 check_conv = TRUE)
+    ),
+    message = "converge"
+  )
+  expect_length(fits, 2)
+  # The fits are not singular, so gamm_check_conv() checks the gradient:
+  for (fit in fits) {
+    expect_false(is.null(fit$mer@optinfo$derivs))
   }
 })
 
@@ -955,4 +984,157 @@ test_that(paste(
       expect_equal(res_shared$fits, res_drawwise$fits, info = info)
     }
   }
+})
+
+# A gradient tolerance that no fit meets:
+cc_grad_tight <- function() {
+  lme4::.makeCC("warning", tol = 1e-12, relTol = NULL)
+}
+
+test_that(paste(
+  "gamm_check_conv() flags the gradient of a gamm4() fit with only",
+  "group-level terms as lme4::checkConv() in glmer() and lmer() does"
+), {
+  d <- dat_fitters(n_grp = 10, n_per = 20)
+  withr::local_seed(2)
+  d$yb <- rbinom(nrow(d), 1, plogis(d$eta))
+  d$yg <- d$eta + rnorm(nrow(d), sd = 0.5)
+  for (fam_nm in c("binomial", "gaussian")) {
+    if (fam_nm == "binomial") {
+      ctrl <- lme4::glmerControl(optimizer = "bobyqa",
+                                 check.conv.grad = cc_grad_tight())
+      fit_ref <- suppressWarnings(lme4::glmer(
+        yb ~ x + (1 | g), data = d, family = binomial(), control = ctrl
+      ))
+      fit_gamm <- gamm4::gamm4(yb ~ x, random = ~ (1 | g), data = d,
+                               family = binomial(), control = ctrl)
+    } else {
+      ctrl <- lme4::lmerControl(check.conv.grad = cc_grad_tight())
+      fit_ref <- suppressWarnings(lme4::lmer(yg ~ x + (1 | g), data = d,
+                                             control = ctrl))
+      fit_gamm <- gamm4::gamm4(yg ~ x, random = ~ (1 | g), data = d,
+                               control = ctrl)
+    }
+    class(fit_gamm) <- "gamm4"
+    expect_true(check_conv_s(fit_gamm), info = fam_nm)
+    expect_warning(fit_gamm <- gamm_check_conv(fit_gamm, control = ctrl),
+                   "failed to converge", info = fam_nm)
+    cc <- fit_gamm$mer@optinfo$conv$lme4
+    cc_ref <- fit_ref@optinfo$conv$lme4
+    expect_identical(cc$code, -1L, info = fam_nm)
+    expect_identical(cc_ref$code, -1L, info = fam_nm)
+    # The component index of lme4 is always 1, so only the gradient value is
+    # compared:
+    grad_of <- function(msg) {
+      as.numeric(sub(".*max\\|grad\\| = ([^ ]+) .*", "\\1", msg[1]))
+    }
+    expect_equal(grad_of(cc$messages), grad_of(cc_ref$messages),
+                 tolerance = 1e-5, info = fam_nm)
+    expect_false(check_conv_s(fit_gamm), info = fam_nm)
+  }
+})
+
+test_that(paste(
+  "gamm_check_conv() uses the unscaled gradient for a Hessian that is not",
+  "positive definite, and does not check fits at a boundary"
+), {
+  d <- dat_fitters(n_grp = 10, n_per = 20)
+  withr::local_seed(5)
+  d$yb <- rbinom(nrow(d), 1, plogis(d$eta))
+  ctrl <- lme4::glmerControl(optimizer = "bobyqa")
+  fit0 <- gamm4::gamm4(yb ~ x, random = ~ (1 | g), data = d,
+                       family = binomial(), control = ctrl)
+  class(fit0) <- "gamm4"
+  # Parameters: theta, then 2 fixed effects (one of them negative, which needs
+  # the lower bound `-Inf`):
+  set_derivs <- function(grad, val = c(0.5, -1, 1)) {
+    fit <- fit0
+    fit$mer@optinfo$val <- val
+    fit$mer@optinfo$derivs <- list(gradient = grad, Hessian = -diag(3))
+    fit
+  }
+  tol <- ctrl$checkConv$check.conv.grad$tol
+  expect_no_warning(fit <- gamm_check_conv(set_derivs(rep(tol / 2, 3)), ctrl))
+  expect_true(check_conv_s(fit))
+  expect_warning(fit <- gamm_check_conv(set_derivs(c(0, 2 * tol, 0)), ctrl),
+                 "max|grad| = 0.004 (tol = 0.002, component 2)", fixed = TRUE)
+  expect_identical(fit$mer@optinfo$conv$lme4$code, -1L)
+  expect_false(check_conv_s(fit))
+  # As in lme4::checkConv(), no warning for an NA gradient:
+  expect_no_warning(fit <- gamm_check_conv(set_derivs(c(NA, 0, 0)), ctrl))
+  expect_identical(fit$mer@optinfo$conv$lme4$code, -5L)
+  expect_false(check_conv_s(fit))
+  # A variance parameter at its lower bound:
+  expect_no_warning(fit <- gamm_check_conv(
+    set_derivs(rep(1, 3), val = c(0, -1, 1)), ctrl
+  ))
+  expect_true(check_conv_s(fit))
+  # The action of `check.conv.grad`:
+  ctrl_act <- ctrl
+  ctrl_act$checkConv$check.conv.grad$action <- "ignore"
+  expect_no_warning(gamm_check_conv(set_derivs(rep(1, 3)), ctrl_act))
+  ctrl_act$checkConv$check.conv.grad$action <- "stop"
+  expect_error(gamm_check_conv(set_derivs(rep(1, 3)), ctrl_act),
+               "failed to converge")
+  # An existing result of lme4::checkConv() is kept:
+  fit <- set_derivs(rep(1, 3))
+  fit$mer@optinfo$conv$lme4 <- list()
+  expect_no_warning(fit <- gamm_check_conv(fit, ctrl))
+  expect_identical(fit$mer@optinfo$conv$lme4, list())
+})
+
+test_that(paste(
+  "divmin() warns about a gamm4() submodel fit that does not meet the",
+  "gradient tolerance"
+), {
+  d <- dat_fitters(n_grp = 10, n_per = 20)
+  withr::local_seed(3)
+  mu <- d$eta + rnorm(nrow(d), sd = 0.3)
+  fam <- extend_family(gaussian())
+  expect_warning(
+    divmin_tst("s(z) + x + (1 | g)", d, fam, mu, check_conv = TRUE,
+               control = lme4::lmerControl(check.conv.grad = cc_grad_tight())),
+    "might not have converged"
+  )
+  expect_no_warning(
+    divmin_tst("s(z) + x + (1 | g)", d, fam, mu, check_conv = TRUE)
+  )
+})
+
+test_that(paste(
+  "divmin() does not warn about Gaussian gamm4() submodel fits with a",
+  "response without noise"
+), {
+  # For these data sets, the finite-difference Hessian of lme4::checkConv() is
+  # not positive definite (with R 4.5.3, lme4 2.0.6, gamm4 0.3-0), although the
+  # fits converged.
+  for (seed in c(2, 6, 17)) {
+    withr::local_seed(seed)
+    n_grp <- 20
+    n_per <- 10
+    n <- n_grp * n_per
+    d <- data.frame(g = factor(rep(seq_len(n_grp), each = n_per)),
+                    x = rnorm(n), z = rnorm(n), v = rnorm(n))
+    mu <- -0.2 + 0.5 * d$x + sin(2 * d$z) + rnorm(n_grp, sd = 0.7)[d$g]
+    expect_no_warning(divmin_tst(
+      "s(z) + x + (1 | g)", d, extend_family(gaussian()), mu,
+      check_conv = TRUE
+    ))
+  }
+})
+
+test_that(paste(
+  "fit_gamm_callback() does not report the smooth term of a linear function",
+  "as a singular fit"
+), {
+  d <- dat_fitters(n_grp = 10, n_per = 20)
+  withr::local_seed(4)
+  d$y <- d$eta - sin(2 * d$z) + 0.5 * d$z + rnorm(nrow(d), sd = 0.3)
+  expect_no_message(fit <- fit_gamm_callback(
+    formula = y ~ s(z) + x + (1 | g), projpred_formula_no_random = y ~ s(z) + x,
+    projpred_random = ~ (1 | g), data = d, family = extend_family(gaussian())
+  ))
+  # The variance of the smooth term is zero (the fit is singular):
+  expect_true(any(lme4::getME(fit$mer, "theta") == 0))
+  expect_true(check_conv_s(fit))
 })
