@@ -100,6 +100,7 @@ If you read this from a place other than <https://mc-stan.org/projpred/news/inde
 * With `latent = TRUE`, `get_refmodel()` and `init_refmodel()` give an informative error for `brms::categorical()` and the unsupported **brms** families with several linear predictors (for example `multinomial()`). (GitHub: #658)
 * The convergence check of additive multilevel submodels (`gamm4::gamm4()`) now also checks the gradient at the optimum, with the gradient rule and tolerance of `lme4::checkConv()`. The projection warns if the gradient is too large. (GitHub: #479, #665)
 * Fixed the error "matrix multiplication: incompatible matrix dimensions" in `cv_varsel()` with validated PSIS-LOO search if the weights of all draws of a cluster underflow to 0. If this occurs for all projected draws, `cv_varsel()` now stops with an informative error. (GitHub: #666)
+* Fixed the error "missing value where TRUE/FALSE needed" in `cv_varsel()` with LOO and the latent projection if `loo::E_loo()` gives an `NA` Pareto k. The submodel Pareto k warning now counts with the threshold that it prints. (GitHub: #667)
 
 
 # projpred 2.11.0
