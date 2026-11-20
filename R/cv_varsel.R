@@ -822,9 +822,13 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
     )
     # The k-values are h-specific (expectation-specific) here (see Vehtari et
     # al., 2024, <https://jmlr.org/papers/v25/19-556.html>, beginning of
-    # section 3, section 3.2.8, appendix D, and appendix E).
+    # section 3, section 3.2.8, appendix D, and appendix E). Use at least the
+    # k-value of the ratios from loo::psis() (`pareto_k`): loo::E_loo() of loo
+    # 2.10.1 can give `NA` where loo::psis() gives `Inf`, for example if most
+    # of the ratios underflow to 0.
     warn_pareto(
-      y_lat_E$pareto_k, S = dim(psisloo)[1], n = n,
+      pmax(y_lat_E$pareto_k, pareto_k, na.rm = TRUE), S = dim(psisloo)[1],
+      n = n,
       warn_txt = paste0(
         "In the recalculation of the latent response values, some (%d / %d) ",
         "expectation-specific Pareto k-values are > %s.\n",
@@ -1445,19 +1449,11 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
 warn_pareto <- function(pareto_k, S, n, warn_txt) {
   if (!getOption("projpred.warn_psis", TRUE)) return()
   khat_threshold <- .ps_khat_threshold(S)
-  n_high <- n_high_pareto_k(pareto_k, khat_threshold)
+  n_high <- sum(pareto_k > khat_threshold)
   if (n_high == 0) return()
   warning(sprintf(warn_txt, n_high, n, as.character(round(khat_threshold, 2))),
           call. = FALSE)
   return()
-}
-
-# The number of Pareto k values above `threshold`. As in loo::psis(), a k value
-# that could not be estimated (`NA` or `NaN`, for example because the tail of
-# the ratios underflows to 0) counts as `Inf`. `-Inf` also counts as `Inf`.
-n_high_pareto_k <- function(pareto_k, threshold) {
-  pareto_k[is.na(pareto_k) | pareto_k == -Inf] <- Inf
-  return(sum(pareto_k > threshold))
 }
 
 #' Pareto-smoothing k-hat threshold
