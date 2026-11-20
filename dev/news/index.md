@@ -558,6 +558,14 @@
   and the unsupported **brms** families with several linear predictors
   (for example `multinomial()`). (GitHub:
   [\#658](https://github.com/stan-dev/projpred/issues/658))
+- The convergence check of additive multilevel submodels
+  ([`gamm4::gamm4()`](https://rdrr.io/pkg/gamm4/man/gamm4.html)) now
+  also checks the gradient at the optimum, with the gradient rule and
+  tolerance of
+  [`lme4::checkConv()`](https://rdrr.io/pkg/lme4/man/checkConv.html).
+  The projection warns if the gradient is too large. (GitHub:
+  [\#479](https://github.com/stan-dev/projpred/issues/479),
+  [\#665](https://github.com/stan-dev/projpred/issues/665))
 - Fixed the error “matrix multiplication: incompatible matrix
   dimensions” in
   [`cv_varsel()`](https://mc-stan.org/projpred/dev/reference/cv_varsel.md)
