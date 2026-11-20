@@ -1134,7 +1134,9 @@ test_that(paste(
     formula = y ~ s(z) + x + (1 | g), projpred_formula_no_random = y ~ s(z) + x,
     projpred_random = ~ (1 | g), data = d, family = extend_family(gaussian())
   ))
-  # The variance of the smooth term is zero (the fit is singular):
-  expect_true(any(lme4::getME(fit$mer, "theta") == 0))
+  # The variance of the smooth term is at the boundary (the fit is singular).
+  # Depending on the machine, the optimizer stops at zero or above zero, but
+  # below the singular tolerance 1e-4 of gamm_check_conv():
+  expect_lt(lme4::getME(fit$mer, "theta")[["Xr.s(z)"]], 1e-4)
   expect_true(check_conv_s(fit))
 })
