@@ -461,3 +461,214 @@ test_that(paste(
                      verbose = 0)
   expect_true("sigma" %in% colnames(as.matrix(prj_dis)))
 })
+
+## Expected values (`latent_epred`) ----------------------------------------
+
+# A log-normal latent reference model with fixed draws. The output of
+# `latent_ilink` is `meanlog`, and `latent_epred` (if used) gives the mean.
+cre_ref_lnorm <- function(use_epred = TRUE, epred = NULL) {
+  withr::local_seed(5302)
+  n <- 40
+  S <- 30
+  dat <- data.frame(x1 = rnorm(n), x2 = rnorm(n))
+  dat$y <- rlnorm(n, meanlog = 0.5 * dat$x1, sdlog = 0.5)
+  fit <- list(beta = rbind(rnorm(S, 0, 0.05), rnorm(S, 0.5, 0.05),
+                           rnorm(S, 0, 0.05)),
+              data = dat)
+  sigma <- rgamma(S, shape = 50, rate = 100)
+  ref_predfun <- function(fit, newdata = NULL) {
+    nd <- if (is.null(newdata)) fit$data else newdata
+    model.matrix(~ x1 + x2, nd) %*% fit$beta
+  }
+  ilink <- function(lpreds, cl_ref, wdraws_ref = rep(1, length(cl_ref))) {
+    lpreds
+  }
+  ll <- function(ilpreds, dis, y_oscale, wobs = rep(1, ncol(ilpreds)), cens,
+                 cl_ref, wdraws_ref = rep(1, length(cl_ref))) {
+    y_mat <- matrix(y_oscale, nrow(ilpreds), ncol(ilpreds), byrow = TRUE)
+    dlnorm(y_mat, meanlog = ilpreds, sdlog = dis, log = TRUE)
+  }
+  ppd <- function(ilpreds_resamp, dis_resamp,
+                  wobs = rep(1, ncol(ilpreds_resamp)), cl_ref,
+                  wdraws_ref = rep(1, length(cl_ref)), idxs_prjdraws) {
+    matrix(rlnorm(length(ilpreds_resamp), ilpreds_resamp, dis_resamp),
+           nrow(ilpreds_resamp))
+  }
+  if (is.null(epred)) {
+    epred <- function(ilpreds, dis, cl_ref,
+                      wdraws_ref = rep(1, length(cl_ref))) {
+      exp(ilpreds + dis^2 / 2)
+    }
+  }
+  withr::local_options(projpred.warn_cvrefbuilder_NULL = FALSE)
+  ref <- init_refmodel(
+    fit, data = dat, formula = y ~ x1 + x2, family = gaussian(),
+    ref_predfun = ref_predfun, dis = sigma, latent = TRUE,
+    latent_ilink = ilink, latent_ll_oscale = ll, latent_ppd_oscale = ppd,
+    latent_epred = if (use_epred) epred
+  )
+  list(ref = ref, dat = dat, sigma = sigma, fit = fit,
+       ref_predfun = ref_predfun, eta = ref_predfun(fit))
+}
+
+# Muffles the Pareto k warnings of the small LOO CV runs below.
+muffle_pareto <- function(expr) {
+  withCallingHandlers(expr, warning = function(w) {
+    if (grepl("Pareto", conditionMessage(w), ignore.case = TRUE)) {
+      invokeRestart("muffleWarning")
+    }
+  })
+}
+
+test_that(paste(
+  "`latent_epred` gives the response-scale predictions of predict.refmodel(),",
+  "proj_linpred() and proj_epred(), and does not change the log-likelihood"
+), {
+  r_e <- cre_ref_lnorm()
+  r_p <- cre_ref_lnorm(use_epred = FALSE)
+  # predict.refmodel():
+  epred_ref <- exp(t(r_e$eta) + r_e$sigma^2 / 2)
+  expect_equal(unname(predict(r_e$ref, type = "response")),
+               unname(colMeans(epred_ref)))
+  expect_equal(unname(predict(r_p$ref, type = "response")),
+               unname(colMeans(t(r_p$eta))))
+  expect_equal(predict(r_e$ref, ynew = r_e$dat$y),
+               predict(r_p$ref, ynew = r_p$dat$y))
+  # proj_linpred() and proj_epred(), with all draws:
+  prj_e <- project(r_e$ref, predictor_terms = "x1", ndraws = 30,
+                   verbose = FALSE)
+  prj_p <- project(r_p$ref, predictor_terms = "x1", ndraws = 30,
+                   verbose = FALSE)
+  pl_lat <- proj_linpred(prj_e, transform = FALSE)$pred
+  pl_e <- proj_linpred(prj_e, transform = TRUE)
+  pl_p <- proj_linpred(prj_p, transform = TRUE)
+  expect_equal(pl_e$pred, exp(pl_lat + prj_e$dis^2 / 2))
+  expect_equal(pl_p$pred, pl_lat)
+  expect_equal(pl_e$lpd, pl_p$lpd)
+  expect_equal(proj_epred(prj_e), pl_e$pred)
+  pl_e_int <- proj_linpred(prj_e, transform = TRUE, integrated = TRUE)$pred
+  expect_equal(unname(c(pl_e_int)), unname(colMeans(pl_e$pred)))
+  # With clusters, `latent_epred` gets the projected `dis` of the clusters:
+  prj_c <- project(r_e$ref, predictor_terms = "x1", nclusters = 10, seed = 1,
+                   verbose = FALSE)
+  pl_lat_c <- proj_linpred(prj_c, transform = FALSE,
+                           allow_nonconst_wdraws_prj = TRUE)$pred
+  pl_e_c <- proj_linpred(prj_c, transform = TRUE,
+                         allow_nonconst_wdraws_prj = TRUE)$pred
+  expect_length(prj_c$dis, 10)
+  expect_equal(unclass(pl_e_c), unclass(exp(pl_lat_c + prj_c$dis^2 / 2)))
+})
+
+test_that(paste(
+  "`latent_epred` gives the expected values for `\"mse\"`, `\"rmse\"` and",
+  "`\"R2\"` in varsel() and cv_varsel(), and does not change the lppd"
+), {
+  skip_on_cran()
+  r_e <- cre_ref_lnorm()
+  r_p <- cre_ref_lnorm(use_epred = FALSE)
+  # With all draws (`ndraws_pred = 30`), the submodel projections are the
+  # same as those of project():
+  vs_e <- varsel(r_e$ref, nterms_max = 2, ndraws_pred = 30, seed = 1,
+                 verbose = FALSE)
+  vs_p <- varsel(r_p$ref, nterms_max = 2, ndraws_pred = 30, seed = 1,
+                 verbose = FALSE)
+  expect_equal(unname(vs_e$summaries$ref$oscale$mu),
+               unname(colMeans(exp(t(r_e$eta) + r_e$sigma^2 / 2))))
+  expect_equal(unname(vs_p$summaries$ref$oscale$mu),
+               unname(colMeans(t(r_p$eta))))
+  for (k in seq_along(vs_e$summaries$sub)) {
+    info_k <- paste("size:", k - 1)
+    sub_e <- vs_e$summaries$sub[[k]]$oscale
+    sub_p <- vs_p$summaries$sub[[k]]$oscale
+    expect_equal(sub_e$lppd, sub_p$lppd, info = info_k)
+    prj_k <- project(vs_e, nterms = k - 1, ndraws = 30, verbose = FALSE)
+    pl_lat_k <- proj_linpred(prj_k, transform = FALSE)$pred
+    expect_equal(unname(sub_e$mu),
+                 unname(colMeans(exp(pl_lat_k + prj_k$dis^2 / 2))),
+                 info = info_k)
+  }
+  smmry_e <- summary(vs_e, stats = c("elpd", "mse"))$perf_sub
+  smmry_p <- summary(vs_p, stats = c("elpd", "mse"))$perf_sub
+  expect_equal(smmry_e$elpd, smmry_p$elpd)
+  expect_false(isTRUE(all.equal(smmry_e$mse, smmry_p$mse)))
+  # Test data (`d_test`):
+  withr::local_seed(5303)
+  dat_new <- data.frame(x1 = rnorm(20), x2 = rnorm(20))
+  dat_new$y <- rlnorm(20, meanlog = 0.5 * dat_new$x1, sdlog = 0.5)
+  eta_new <- r_e$ref_predfun(r_e$fit, newdata = dat_new)
+  d_test <- list(data = dat_new, offset = rep(0, 20), weights = rep(1, 20),
+                 y = rowMeans(eta_new), y_oscale = dat_new$y)
+  vs_t <- varsel(r_e$ref, d_test = d_test, nterms_max = 1, ndraws_pred = 30,
+                 seed = 1, verbose = FALSE)
+  expect_equal(unname(vs_t$summaries$ref$oscale$mu),
+               unname(colMeans(exp(t(eta_new) + r_e$sigma^2 / 2))))
+  # LOO CV:
+  for (vsel in c(FALSE, TRUE)) {
+    cvvs_e <- muffle_pareto(cv_varsel(
+      r_e$ref, cv_method = "LOO", validate_search = vsel, nterms_max = 2,
+      nclusters_pred = 10, seed = 1, verbose = FALSE
+    ))
+    cvvs_p <- muffle_pareto(cv_varsel(
+      r_p$ref, cv_method = "LOO", validate_search = vsel, nterms_max = 2,
+      nclusters_pred = 10, seed = 1, verbose = FALSE
+    ))
+    info_vsel <- paste("validate_search:", vsel)
+    expect_equal(cvvs_e$summaries$ref$oscale$lppd,
+                 cvvs_p$summaries$ref$oscale$lppd, info = info_vsel)
+    expect_true(all(cvvs_e$summaries$ref$oscale$mu >
+                      cvvs_p$summaries$ref$oscale$mu), info = info_vsel)
+    for (k in seq_along(cvvs_e$summaries$sub)) {
+      sub_e <- cvvs_e$summaries$sub[[k]]$oscale
+      sub_p <- cvvs_p$summaries$sub[[k]]$oscale
+      info_k <- paste(info_vsel, "size:", k - 1)
+      expect_equal(sub_e$lppd, sub_p$lppd, info = info_k)
+      expect_true(all(sub_e$mu > sub_p$mu), info = info_k)
+    }
+  }
+})
+
+test_that("extend_family() and the predictions check `latent_epred`", {
+  expect_error(
+    extend_family(binomial(), latent = TRUE, latent_y_unqs = c("0", "1"),
+                  latent_epred = function(ilpreds, dis, cl_ref, wdraws_ref) {
+                    ilpreds
+                  }),
+    "Argument `latent_epred` cannot be used if `family$cats` is not `NULL`.",
+    fixed = TRUE
+  )
+  expect_error(
+    extend_family(poisson(), latent = TRUE, latent_epred = TRUE),
+    "Argument `latent_epred` needs to be a function or `NULL`.", fixed = TRUE
+  )
+  expect_error(
+    extend_family(poisson(), latent = TRUE,
+                  latent_epred = function(ilpreds, cl_ref) ilpreds),
+    "Please add argument(s) `dis`, `wdraws_ref` to the `latent_epred`",
+    fixed = TRUE
+  )
+  expect_s3_class(
+    extend_family(poisson(), latent = TRUE,
+                  latent_epred = function(ilpreds, ...) ilpreds),
+    "family"
+  )
+  r_bad <- cre_ref_lnorm(epred = function(ilpreds, dis, cl_ref, wdraws_ref) {
+    ilpreds[, -1, drop = FALSE]
+  })
+  expect_error(predict(r_bad$ref, type = "response"),
+               "Unexpected structure for the output of `latent_epred`.",
+               fixed = TRUE)
+  # Only `NA`s from `latent_epred` (with a finite `latent_ilink` output) give
+  # the message of proj_linpred():
+  r_na <- cre_ref_lnorm(epred = function(ilpreds, dis, cl_ref, wdraws_ref) {
+    ilpreds * NA
+  })
+  prj_na <- suppressMessages(
+    project(r_na$ref, predictor_terms = "x1", ndraws = 30, verbose = FALSE)
+  )
+  expect_message(
+    pl_na <- proj_linpred(prj_na, transform = TRUE),
+    "`latent_ilink` (or `latent_epred`) returned only `NA`s", fixed = TRUE
+  )
+  expect_true(all(is.na(pl_na$pred)))
+  expect_false(anyNA(pl_na$lpd))
+})

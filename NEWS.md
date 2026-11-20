@@ -37,6 +37,7 @@ If you read this from a place other than <https://mc-stan.org/projpred/news/inde
 * Faster multilevel submodels of the `brms::cumulative()` family with a single group-level intercept term: projpred's own Laplace fit (class `projpred_mlvl_cumul`) instead of `ordinal::clmm()`. `cv_varsel()` with `validate_search = TRUE` is about 6 times faster. (GitHub: #645)
 * Argument `search_screen` now also screens the candidates for cumulative models with the augmented-data projection (without multilevel terms) and for the latent projection with multilevel terms. (GitHub: #647)
 * Faster submodel model matrices on projection cache misses: projpred builds the model matrix of all main-effect terms once and takes the columns of each submodel from it. For example, `cv_varsel()` with `validate_search = TRUE` for a Bernoulli model with 500 predictor terms is about 1.3 times faster. (GitHub: #654)
+* New argument `latent_epred` of `extend_family()` for the response-scale expected values of the latent projection, e.g., `exp(meanlog + sdlog^2 / 2)` for a log-normal model. They are used in `proj_linpred()`, `proj_epred()`, `predict.refmodel()` and for `"mse"`, `"rmse"` and `"R2"`. (GitHub: #662)
 
 ## Minor changes
 
@@ -92,7 +93,7 @@ If you read this from a place other than <https://mc-stan.org/projpred/news/inde
 * If the optimx refit after a `not positive definite` error of lme4 fails, too, projpred now stops with an error that contains both error messages. (GitHub: #323, #633)
 * The submodels now use the contrasts of the reference model for factor predictors instead of `options("contrasts")`. This changes the projected coefficients and can change the L1 search and LOO predictions for a level of one observation. (GitHub: #283, #619)
 * `get_refmodel()` now stops with an error that names the missing variables and gives a workaround. This applies to `rstanarm::stan_gamm4()` fits with argument `random` and an expression in the formula, such as `cbind(y, n - y)`. (GitHub: #148, #634)
-* Fixed errors in `cv_varsel()` with `cv_method = "LOO"` and `validate_search = TRUE` if a factor is only in a group-level term of a submodel (as with `search_terms`) and a level of it occurs only in the left-out observation. (GitHub: #635)
+* Fixed errors in `cv_varsel()` with `cv_method = "LOO"` and `validate_search = TRUE` if a factor is only in a group-level term of a submodel (as with `search_terms`) and a level of it occurs only in the left-out observation. (GitHub: #635, #643)
 * Fixed the error "length of 'dimnames' [1] not equal to array extent" in the predictions of multilevel `brms::categorical()` submodels with a factor in a group-level term, such as `(1 + f | g)`. `catCov` values other than `"free"` now give an error. (GitHub: #635, #640)
 * With lme4 versions before 2.1-1, binomial and Poisson submodels with group-level terms are now fitted correctly to non-integer data. Before, the group-level standard deviations of Poisson submodels stayed at 1. These Poisson fits are also faster, so `init_refmodel()` no longer warns about their run time. (GitHub: #616, #655)
 * The warning of `init_refmodel()` for multilevel models with a binomial response or with the augmented-data projection now gives the cause. The projected group-level standard deviations can be near zero, and then the search can rank group-level terms too low. (GitHub: #353, #655)

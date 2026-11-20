@@ -69,6 +69,8 @@ weighted_summary_means <- function(y_wobs_test, data_aux_test, family, wdraws,
     if (!is.matrix(loglik_oscale)) {
       stop("Unexpected structure for the output of `latent_ll_oscale`.")
     }
+    mu_oscale <- latent_epred_apply(family, mu_oscale, dis = dis,
+                                    cl_ref = cl_ref, wdraws_ref = wdraws_ref)
     if (length(dim(mu_oscale)) == 3) {
       # In this case, `mu_oscale` is a 3-dimensional array (S x N x C), so
       # coerce it to an augmented-rows matrix:
@@ -162,8 +164,9 @@ weighted_summary_means <- function(y_wobs_test, data_aux_test, family, wdraws,
         )
       } else if (ref_mu_NA || sub_mu_NA || fast_sub_mu_NA) {
         message(
-          "`latent_ilink` returned only `NA`s, so all performance statistics ",
-          "will also be `NA` as long as `resp_oscale = TRUE`."
+          "`latent_ilink` (or `latent_epred`) returned only `NA`s, so all ",
+          "performance statistics will also be `NA` as long as ",
+          "`resp_oscale = TRUE`."
         )
       } else if (any(stats %in% c("elpd", "mlpd", "gmpd")) &&
                  (ref_lppd_NA || sub_lppd_NA || fast_sub_lppd_NA)) {
