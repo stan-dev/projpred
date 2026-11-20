@@ -36,6 +36,8 @@ If you read this from a place other than <https://mc-stan.org/projpred/news/inde
 * New argument `search_screen` of `varsel()` and `cv_varsel()`: a faster forward search for binomial (logit) and Poisson (log) submodels, which projects only the `search_screen` best candidates per step, ranked by a score statistic. (GitHub: #646)
 * Faster multilevel submodels of the `brms::cumulative()` family with a single group-level intercept term: projpred's own Laplace fit (class `projpred_mlvl_cumul`) instead of `ordinal::clmm()`. `cv_varsel()` with `validate_search = TRUE` is about 6 times faster. (GitHub: #645)
 * Argument `search_screen` now also screens the candidates for cumulative models with the augmented-data projection (without multilevel terms) and for the latent projection with multilevel terms. (GitHub: #647)
+* Faster submodel model matrices on projection cache misses: projpred builds the model matrix of all main-effect terms once and takes the columns of each submodel from it. For example, `cv_varsel()` with `validate_search = TRUE` for a Bernoulli model with 500 predictor terms is about 1.3 times faster. (GitHub: #654)
+* New argument `latent_epred` of `extend_family()` for the response-scale expected values of the latent projection, e.g., `exp(meanlog + sdlog^2 / 2)` for a log-normal model. They are used in `proj_linpred()`, `proj_epred()`, `predict.refmodel()` and for `"mse"`, `"rmse"` and `"R2"`. (GitHub: #662)
 
 ## Minor changes
 
@@ -50,6 +52,7 @@ If you read this from a place other than <https://mc-stan.org/projpred/news/inde
 * The parallel `cv_varsel()` sends less data to the workers. (GitHub: #611, #663)
 * The uncertainty interval of `stats = "acc"` with `deltas = FALSE` now uses a logit-normal approximation instead of a normal approximation. (GitHub: #503, #631)
 * Faster parallel projections (global option `projpred.parallel_proj_trigger`): the workers get only the objects that the projection of a draw uses. (GitHub: #629)
+* Smaller saved projection objects and faster parallel projections for multilevel, additive and augmented-data submodels: the submodel fits no longer keep copies of the data. (GitHub: #664)
 * The parallel LOO and K-fold CV of `cv_varsel()` send the reference models without their fits to the workers, so the workers do not load **brms** or **rstanarm** and need less memory. (GitHub: #629)
 * The parallel workers now get the objects of the global environment that functions of a custom reference model use (found from the code, with the **globals** package). Global option `projpred.export_to_workers` can name more objects; `FALSE` turns this off. (GitHub: #629)
 * Improved error message for a binomial model with more than one trial per observation. Latent projection now stops for the brms families `beta_binomial()`, `zero_inflated_binomial()` and `zero_inflated_beta_binomial()`. (GitHub: #530, #624)
@@ -90,12 +93,13 @@ If you read this from a place other than <https://mc-stan.org/projpred/news/inde
 * If the optimx refit after a `not positive definite` error of lme4 fails, too, projpred now stops with an error that contains both error messages. (GitHub: #323, #633)
 * The submodels now use the contrasts of the reference model for factor predictors instead of `options("contrasts")`. This changes the projected coefficients and can change the L1 search and LOO predictions for a level of one observation. (GitHub: #283, #619)
 * `get_refmodel()` now stops with an error that names the missing variables and gives a workaround. This applies to `rstanarm::stan_gamm4()` fits with argument `random` and an expression in the formula, such as `cbind(y, n - y)`. (GitHub: #148, #634)
-* Fixed errors in `cv_varsel()` with `cv_method = "LOO"` and `validate_search = TRUE` if a factor is only in a group-level term of a submodel (as with `search_terms`) and a level of it occurs only in the left-out observation. (GitHub: #635)
+* Fixed errors in `cv_varsel()` with `cv_method = "LOO"` and `validate_search = TRUE` if a factor is only in a group-level term of a submodel (as with `search_terms`) and a level of it occurs only in the left-out observation. (GitHub: #635, #643)
 * Fixed the error "length of 'dimnames' [1] not equal to array extent" in the predictions of multilevel `brms::categorical()` submodels with a factor in a group-level term, such as `(1 + f | g)`. `catCov` values other than `"free"` now give an error. (GitHub: #635, #640)
 * With lme4 versions before 2.1-1, binomial and Poisson submodels with group-level terms are now fitted correctly to non-integer data. Before, the group-level standard deviations of Poisson submodels stayed at 1. These Poisson fits are also faster, so `init_refmodel()` no longer warns about their run time. (GitHub: #616, #655)
 * The warning of `init_refmodel()` for multilevel models with a binomial response or with the augmented-data projection now gives the cause. The projected group-level standard deviations can be near zero, and then the search can rank group-level terms too low. (GitHub: #353, #655)
 * With `latent = TRUE`, `get_refmodel()` and `init_refmodel()` give an informative error for `brms::categorical()` and the unsupported **brms** families with several linear predictors (for example `multinomial()`). (GitHub: #658)
 * The convergence check of additive multilevel submodels (`gamm4::gamm4()`) now also checks the gradient at the optimum, with the gradient rule and tolerance of `lme4::checkConv()`. The projection warns if the gradient is too large. (GitHub: #479, #665)
+* Fixed the error "matrix multiplication: incompatible matrix dimensions" in `cv_varsel()` with validated PSIS-LOO search if the weights of all draws of a cluster underflow to 0. If this occurs for all projected draws, `cv_varsel()` now stops with an informative error. (GitHub: #666)
 
 
 # projpred 2.11.0
