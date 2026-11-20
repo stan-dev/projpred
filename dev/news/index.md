@@ -286,6 +286,10 @@
   `projpred.parallel_proj_trigger`): the workers get only the objects
   that the projection of a draw uses. (GitHub:
   [\#629](https://github.com/stan-dev/projpred/issues/629))
+- Smaller saved projection objects and faster parallel projections for
+  multilevel, additive and augmented-data submodels: the submodel fits
+  no longer keep copies of the data. (GitHub:
+  [\#664](https://github.com/stan-dev/projpred/issues/664))
 - The parallel LOO and K-fold CV of
   [`cv_varsel()`](https://mc-stan.org/projpred/dev/reference/cv_varsel.md)
   send the reference models without their fits to the workers, so the
