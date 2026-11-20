@@ -291,7 +291,7 @@ print(time_lat)
 ```
 
        user  system elapsed 
-     14.030   0.011   3.839 
+     11.256   0.004   3.072 
 
 The warnings about high Pareto \\\hat{k}\\ values concern only a few of
 the 100 observations. With the short MCMC run of this vignette (1000
@@ -414,7 +414,7 @@ rbind(latent = time_lat, traditional = time_trad)[, "elapsed"]
 ```
 
          latent traditional 
-          3.839      58.714 
+          3.072      40.752 
 
 ``` r
 
@@ -680,14 +680,6 @@ refm_fit_weib <- brms::brm(
 )
 ```
 
-    Warning: Bulk Effective Samples Size (ESS) is too low, indicating posterior means and medians may be unreliable.
-    Running the chains for more iterations may help. See
-    https://mc-stan.org/misc/warnings.html#bulk-ess
-
-    Warning: Tail Effective Samples Size (ESS) is too low, indicating posterior variances and tail quantiles may be unreliable.
-    Running the chains for more iterations may help. See
-    https://mc-stan.org/misc/warnings.html#tail-ess
-
 The following code prepares the
 [`cv_varsel()`](https://mc-stan.org/projpred/dev/reference/cv_varsel.md)
 run and the downstream **projpred** steps:
@@ -779,7 +771,7 @@ cvvs_weib <- cv_varsel(
 
     Cutting off the search at size 19. Use argument `nterms_max` to customize this.
 
-    Warning: In the recalculation of the latent response values, some (4 / 500) expectation-specific Pareto k-values are > 0.7.
+    Warning: In the recalculation of the latent response values, some (1 / 500) expectation-specific Pareto k-values are > 0.7.
     In general, we recommend K-fold CV in this case.
 
 As in the Poisson example, warnings about high Pareto \\\hat{k}\\ values
@@ -824,7 +816,7 @@ decision here):
 suggest_size(cvvs_weib, stat = "mlpd")
 ```
 
-    [1] 8
+    [1] 9
 
 Project onto the submodel of this size and perform a
 “posterior-projection predictive check” (PPPC):
@@ -983,10 +975,10 @@ cvvs_lnorm <- cv_varsel(
 
     Warning: Some Pareto k diagnostic values are too high. See help('pareto-k-diagnostic') for details.
 
-    Warning: Some (7 / 500) Pareto k's for the reference model's PSIS-LOO weights
+    Warning: Some (4 / 500) Pareto k's for the reference model's PSIS-LOO weights
     are > 0.7.
 
-    Warning: In the recalculation of the latent response values, some (14 / 500) expectation-specific Pareto k-values are > 0.7.
+    Warning: In the recalculation of the latent response values, some (9 / 500) expectation-specific Pareto k-values are > 0.7.
     In general, we recommend K-fold CV in this case.
 
 As in the Poisson example, warnings about high Pareto \\\hat{k}\\ values

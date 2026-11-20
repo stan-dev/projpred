@@ -224,6 +224,13 @@
   cumulative models with the augmented-data projection (without
   multilevel terms) and for the latent projection with multilevel terms.
   (GitHub: [\#647](https://github.com/stan-dev/projpred/issues/647))
+- Faster submodel model matrices on projection cache misses: projpred
+  builds the model matrix of all main-effect terms once and takes the
+  columns of each submodel from it. For example,
+  [`cv_varsel()`](https://mc-stan.org/projpred/dev/reference/cv_varsel.md)
+  with `validate_search = TRUE` for a Bernoulli model with 500 predictor
+  terms is about 1.3 times faster. (GitHub:
+  [\#654](https://github.com/stan-dev/projpred/issues/654))
 
 ### Minor changes
 
