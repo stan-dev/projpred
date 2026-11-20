@@ -657,4 +657,18 @@ test_that("extend_family() and the predictions check `latent_epred`", {
   expect_error(predict(r_bad$ref, type = "response"),
                "Unexpected structure for the output of `latent_epred`.",
                fixed = TRUE)
+  # Only `NA`s from `latent_epred` (with a finite `latent_ilink` output) give
+  # the message of proj_linpred():
+  r_na <- cre_ref_lnorm(epred = function(ilpreds, dis, cl_ref, wdraws_ref) {
+    ilpreds * NA
+  })
+  prj_na <- suppressMessages(
+    project(r_na$ref, predictor_terms = "x1", ndraws = 30, verbose = FALSE)
+  )
+  expect_message(
+    pl_na <- proj_linpred(prj_na, transform = TRUE),
+    "`latent_ilink` (or `latent_epred`) returned only `NA`s", fixed = TRUE
+  )
+  expect_true(all(is.na(pl_na$pred)))
+  expect_false(anyNA(pl_na$lpd))
 })
