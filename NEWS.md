@@ -54,6 +54,7 @@ If you read this from a place other than <https://mc-stan.org/projpred/news/inde
 * The parallel workers now get the objects of the global environment that functions of a custom reference model use (found from the code, with the **globals** package). Global option `projpred.export_to_workers` can name more objects; `FALSE` turns this off. (GitHub: #629)
 * Improved error message for a binomial model with more than one trial per observation. Latent projection now stops for the brms families `beta_binomial()`, `zero_inflated_binomial()` and `zero_inflated_beta_binomial()`. (GitHub: #530, #624)
 * With `latent = TRUE`, no message about an `NA` dispersion, and no `latent_ilink` message for families whose inverse link gives the mean (e.g., negative binomial, Weibull). Without a dispersion, `as.matrix()` of a projection has no `sigma` column. (GitHub: #656)
+* Support for monotonic terms `mo()` (as in **brms**). By default, the projected effect of each `mo()` term is monotonic (global option `projpred.mo_monotone`). New function `mo_effects()` gives these effects in the **brms** parametrization. (GitHub: #557, #591)
 
 ## Bug fixes and maintenance
 
