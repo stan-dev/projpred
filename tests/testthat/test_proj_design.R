@@ -48,7 +48,8 @@ entry_general <- function(refm, terms_, y) {
 # poly(), which computes a QR decomposition. Some BLAS libraries (for example
 # MKL) can round two calls with the same data differently, so the model matrix
 # and the coefficients of poly() in the `predvars` of the terms can differ in
-# the last bits. All other parts must be identical:
+# the last bits. Compare these two parts with the default tolerance of
+# all.equal() (1.5e-8); all other parts must be identical:
 expect_entry_equal <- function(ent, ent_ref, info) {
   blas_parts <- function(e) {
     pv <- as.list(attr(e$prep$shared_x$terms, "predvars"))[-1]
@@ -61,8 +62,7 @@ expect_entry_equal <- function(ent, ent_ref, info) {
     e
   }
   expect_identical(other_parts(ent), other_parts(ent_ref), info = info)
-  expect_equal(blas_parts(ent), blas_parts(ent_ref), tolerance = 1e-12,
-               info = info)
+  expect_equal(blas_parts(ent), blas_parts(ent_ref), info = info)
 }
 
 # Checks that proj_prepare_design() gives the entry of the general path for

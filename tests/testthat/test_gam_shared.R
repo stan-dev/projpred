@@ -46,13 +46,17 @@ noenv <- function(x) {
 # Compares two gam() fits. Some BLAS libraries (for example MKL) can round two
 # calls with the same data differently. `rV` is one of many matrices F with
 # F F' = Vp / scale, so a small rounding difference can change it much; compare
-# F F' instead:
+# F F' instead. `outer.info$grad` is the gradient at the optimum. It is near 0,
+# so its relative difference from rounding is larger than the tolerance; leave
+# it out:
 expect_gam_equal <- function(fit, fit_ref, info) {
-  rv_prod <- function(x) {
+  comparable_parts <- function(x) {
     if (!is.null(x$rV)) x$rV <- tcrossprod(x$rV)
+    x$outer.info$grad <- NULL
     x
   }
-  expect_equal(rv_prod(fit), rv_prod(fit_ref), tolerance = 1e-8, info = info)
+  expect_equal(comparable_parts(fit), comparable_parts(fit_ref),
+               tolerance = 1e-8, info = info)
 }
 
 test_that("divmin() gives the same gam() fits with and without sharing", {
