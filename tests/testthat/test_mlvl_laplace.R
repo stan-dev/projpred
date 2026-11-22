@@ -309,7 +309,16 @@ test_that(paste(
   expect_s3_class(fit, "projpred_mlvl")
   expect_identical(fit$optinfo$message,
                    "lme4::glmer() fit (Laplace fit: mocked)")
-  fit_g <- glmer_tst(fml, d, binomial())
+  # The reference uses the family, the control and the weights of the glmer()
+  # fallback. With lme4 < 2.1-1, glmer_family() gives a family that lme4 does
+  # not know, so lme4 computes the deviance with other code than for
+  # binomial(), and the optimum can differ by more than the tolerance:
+  fam_g <- glmer_family(binomial())
+  d$.w_tst <- rep(1, nrow(d))
+  fit_g <- suppressWarnings(suppressMessages(lme4::glmer(
+    fml, data = d, family = fam_g, weights = .w_tst,
+    control = glmer_control(lme4::glmerControl(optimizer = "bobyqa"), fam_g)
+  )))
   expect_equal(fit$coefficients, lme4::fixef(fit_g), tolerance = 1e-8)
   expect_equal(get_subparams(fit, nm_scheme = "rstanarm"),
                get_subparams(fit_g, nm_scheme = "rstanarm"), tolerance = 1e-8)
@@ -325,7 +334,6 @@ test_that(paste(
     fit_mlvl_tst(fml_frac, d, binomial())
   ))
   expect_s3_class(fit_frac, "projpred_mlvl")
-  fam_g <- glmer_family(binomial())
   fit_g_frac <- suppressWarnings(suppressMessages(lme4::glmer(
     fml_frac, data = d, family = fam_g,
     control = glmer_control(lme4::glmerControl(optimizer = "bobyqa"), fam_g)

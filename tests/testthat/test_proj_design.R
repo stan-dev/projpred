@@ -44,6 +44,27 @@ entry_general <- function(refm, terms_, y) {
   return(proj_prepare_general(refm, terms_, y)[c("fml_divmin", "prep")])
 }
 
+# Checks that the cache entry `ent` equals the entry `ent_ref`. Both paths call
+# poly(), which computes a QR decomposition. Some BLAS libraries (for example
+# MKL) can round two calls with the same data differently, so the model matrix
+# and the coefficients of poly() in the `predvars` of the terms can differ in
+# the last bits. All other parts must be identical:
+expect_entry_equal <- function(ent, ent_ref, info) {
+  blas_parts <- function(e) {
+    pv <- as.list(attr(e$prep$shared_x$terms, "predvars"))[-1]
+    pv <- lapply(pv, function(el) if (is.call(el)) as.list(el) else el)
+    list(x = e$prep$shared_x$x, predvars = pv)
+  }
+  other_parts <- function(e) {
+    e$prep$shared_x$x <- NULL
+    attr(e$prep$shared_x$terms, "predvars") <- NULL
+    e
+  }
+  expect_identical(other_parts(ent), other_parts(ent_ref), info = info)
+  expect_equal(blas_parts(ent), blas_parts(ent_ref), tolerance = 1e-12,
+               info = info)
+}
+
 # Checks that proj_prepare_design() gives the entry of the general path for
 # each element of `sets` that it covers, and returns the number of these sets.
 expect_design_entries <- function(refm, sets, y, store = new_store()) {
@@ -54,8 +75,8 @@ expect_design_entries <- function(refm, sets, y, store = new_store()) {
       next
     }
     n_design <- n_design + 1L
-    expect_identical(ent, entry_general(refm, s, y),
-                     info = paste(c(s, ncol(y)), collapse = " "))
+    expect_entry_equal(ent, entry_general(refm, s, y),
+                       info = paste(c(s, ncol(y)), collapse = " "))
   }
   return(n_design)
 }

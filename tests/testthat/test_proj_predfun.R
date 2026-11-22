@@ -1006,15 +1006,23 @@ test_that(paste(
     g = factor(paste0("g", rep(1:8, length.out = n))),
     h = factor(paste0("h", rep(1:5, each = 24)))
   )
+  # Group-level effects. Without them, most fits are singular, and for a
+  # singular fit, gamm4() can stop with "D[i,i] is negative" (in
+  # mgcv::mchol()) on some platforms:
+  dat$re_g <- rnorm(8, sd = 0.8)[dat$g]
+  dat$re_gz <- rnorm(8, sd = 0.5)[dat$g] * dat$z
+  dat$re_h <- rnorm(5, sd = 0.5)[dat$h]
   fit_draws <- function(d, fml = y ~ s(x) + z, rnd = ~ (1 + z | g),
                         family = gaussian(), n_draws = 3L) {
     lapply(seq_len(n_draws), function(s) {
-      d$y <- sin(2 * pi * d$x) + 0.3 * d$z + rnorm(nrow(d), sd = 0.4)
-      d$y_pois <- rpois(nrow(d), exp(0.3 + sin(2 * pi * d$x)))
+      d$y <- sin(2 * pi * d$x) + 0.3 * d$z + d$re_g + d$re_gz + d$re_h +
+        rnorm(nrow(d), sd = 0.4)
+      d$y_pois <- rpois(nrow(d), exp(0.3 + sin(2 * pi * d$x) +
+                                       0.5 * d$re_g))
       # Some fits of these small data give a CHOLMOD warning 'not positive
       # definite' or a warning about the gradient at the optimum. This test
       # checks only the predictions, so muffle them:
-      withCallingHandlers(
+      fit <- withCallingHandlers(
         fit_gamm_callback(formula = fml, projpred_formula_no_random = fml,
                           projpred_random = rnd, data = d, family = family),
         warning = function(w) {
@@ -1026,6 +1034,9 @@ test_that(paste(
           }
         }
       )
+      expect_false(lme4::isSingular(fit$mer),
+                   label = paste("singular:", deparse(rnd), family$family, s))
+      fit
     })
   }
   # Count the calls of predict.gamm4() (the draw-by-draw path of subprd()):

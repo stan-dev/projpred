@@ -415,10 +415,15 @@ test_that(paste(
     prd_c <- subprd_augdat(list(fit_c), nd)
     expect_identical(dimnames(prd), dimnames(prd_c), info = info_str)
     expect_true(all(is.finite(prd)), info = info_str)
-    # The clmm() path gives `Inf` for a cumulative probability that is 1 in
-    # double precision:
-    is_fin <- is.finite(prd_c)
-    expect_equal(prd[is_fin], prd_c[is_fin], tolerance = 1e-3,
+    # The clmm() path applies the link function to sums of the category
+    # probabilities without the group-level effects, and then adds these
+    # effects. For such a cumulative probability near 1, the rounding of the
+    # sums changes the result by more than the tolerance (or gives `Inf`), so
+    # compare only the other predictions:
+    p_fix <- cdf_cumul_tst(prd - repair_re(fit_c, nd), link)
+    is_cmp <- is.finite(prd_c) & p_fix > 1e-8 & p_fix < 1 - 1e-8
+    expect_gte(sum(is_cmp), 5, label = paste("compared:", info_str))
+    expect_equal(prd[is_cmp], prd_c[is_cmp], tolerance = 1e-3,
                  info = info_str)
   }
 })
