@@ -339,6 +339,116 @@ Again, we will skip post-selection inference here (see the main vignette for a d
 
 This example demonstrated how the latent projection can be used for those families which are neither supported by **projpred**'s traditional nor by **projpred**'s augmented-data projection, which reflects the flexibility of the latent approach.
 
+## Example: Student-t distribution {#studentex}
+
+In this example, we use the latent projection for a reference model with the Student-$t$ distribution (`brms::student()`).
+**projpred**'s traditional projection does not support this family (the `Student_t()` family is deprecated).
+For the identity link, the latent predictor is the location of the Student-$t$ distribution.
+The latent projection projects the location with a Gaussian submodel.
+It projects the scale $\sigma$ with the Gaussian dispersion projection: the squared projected scale is the squared scale of the reference model plus the mean squared difference between the locations of the reference model and the submodel.
+The submodels keep the degrees of freedom $\nu$ of the reference model.
+GitHub issue [#3](https://github.com/stan-dev/projpred/issues/3) compares the latent projection with the projection that minimizes the KL divergence between the Student-$t$ distributions.
+In that simulation study (identity link, 20 predictors, $n = 100$ and $n = 1000$, 100 datasets per setting), the two projections gave nearly the same search results and predictive performance.
+
+### Data
+
+We re-use the predictors of the Poisson example and simulate a new response with Student-$t$ noise:
+```{r dat_student}
+set.seed(457211)
+dat_student <- dat_poiss
+coefs_con_student <- seq(from = 0.2, to = 0.8, length.out = 4)
+coefs_cat_student <- seq(from = 0.2, to = 0.8, length.out = 4)
+linpred_student <- as.vector(
+  as.matrix(dat_student[, paste0("x.", 1:4)]) %*% coefs_con_student
+) + coefs_cat_student[dat_student$xcat]
+dat_student$y <- linpred_student + 0.5 * rt(N, df = 3)
+```
+
+### Reference model
+
+We fit the reference model in [**brms**](https://paulbuerkner.com/brms/):
+```{r ref_fit_student}
+refm_fit_student <- brms::brm(
+  formula = refm_fml,
+  family = brms::student(),
+  data = dat_student,
+  prior = brms::prior(R2D2(mean_R2 = 1/3, prec_R2 = 3)),
+  ### Only for the sake of speed (not recommended in general):
+  chains = 2,
+  ###
+  silent = 2,
+  refresh = 0
+)
+```
+
+### Variable selection using the latent projection
+
+We pass the draws of $\sigma$ as argument `dis`, so that the latent projection gives the projected draws of $\sigma$.
+The functions `latent_ll_oscale` and `latent_ppd_oscale` use the projected locations (`ilpreds`) and the projected scales (`dis` and `dis_resamp`) together with the draws of $\nu$ from the reference model.
+Function `cl_agg()` aggregates the draws of $\nu$ in the same way as the projected draws (it gives the weighted mean of $\nu$ in a cluster):
+```{r cvvs_student}
+refm_sigma <- as.matrix(refm_fit_student)[, "sigma"]
+refm_nu <- as.matrix(refm_fit_student)[, "nu", drop = FALSE]
+latent_ll_oscale_student <- function(ilpreds,
+                                     dis,
+                                     y_oscale,
+                                     wobs = rep(1, ncol(ilpreds)),
+                                     cens,
+                                     cl_ref,
+                                     wdraws_ref = rep(1, length(cl_ref))) {
+  refm_nu_agg <- as.vector(cl_agg(refm_nu, cl = cl_ref, wdraws = wdraws_ref))
+  y_oscale_mat <- matrix(y_oscale, nrow = nrow(ilpreds), ncol = ncol(ilpreds),
+                         byrow = TRUE)
+  wobs_mat <- matrix(wobs, nrow = nrow(ilpreds), ncol = ncol(ilpreds),
+                     byrow = TRUE)
+  ll_unw <- dt((y_oscale_mat - ilpreds) / dis, df = refm_nu_agg, log = TRUE) -
+    log(dis)
+  return(wobs_mat * ll_unw)
+}
+latent_ppd_oscale_student <- function(ilpreds_resamp,
+                                      dis_resamp,
+                                      wobs = rep(1, ncol(ilpreds_resamp)),
+                                      cl_ref,
+                                      wdraws_ref = rep(1, length(cl_ref)),
+                                      idxs_prjdraws) {
+  refm_nu_agg <- as.vector(cl_agg(refm_nu, cl = cl_ref, wdraws = wdraws_ref))
+  refm_nu_agg_resamp <- refm_nu_agg[idxs_prjdraws]
+  ppd <- ilpreds_resamp + dis_resamp * matrix(
+    rt(prod(dim(ilpreds_resamp)), df = refm_nu_agg_resamp),
+    nrow = nrow(ilpreds_resamp), ncol = ncol(ilpreds_resamp)
+  )
+  return(ppd)
+}
+refm_student <- get_refmodel(refm_fit_student, latent = TRUE,
+                             dis = refm_sigma,
+                             latent_ll_oscale = latent_ll_oscale_student,
+                             latent_ppd_oscale = latent_ppd_oscale_student)
+cvvs_student <- cv_varsel(
+  refm_student,
+  ### In interactive use, we recommend not to deactivate the verbose mode:
+  verbose = 0
+  ###
+)
+```
+The functions above use the draws of $\sigma$ and $\nu$ from the full-data fit.
+This is correct for `varsel()` and for the LOO CV that we use here.
+For K-fold CV, see section ["K-fold CV with custom response-scale functions"](#kfold-custom).
+
+The `plot()` results:
+```{r plot_vsel_student, fig.alt="The same kind of plot for the latent projection of the Student-t model, with the expected log predictive density on the vertical axis."}
+plot(cvvs_student, stats = "elpd", deltas = TRUE)
+```
+
+The size that `suggest_size()` suggests and the corresponding predictor terms:
+```{r size_sgg_student}
+( size_sgg_student <- suggest_size(cvvs_student, stat = "elpd") )
+head(ranking(cvvs_student)[["fulldata"]], size_sgg_student)
+```
+
+### Conclusion
+
+This example showed how to use the latent projection for a Student-$t$ reference model: pass the draws of $\sigma$ as `dis`, and supply response-scale functions that use the draws of $\nu$.
+
 ## Censored observations (survival analysis) {#cens}
 
 Response-scale analyses for models with censored responses (e.g., for time-to-event models as occurring in survival analysis) are possible when using the latent projection in combination with a custom `latent_ll_oscale` function (see `?extend_family`) that has an attribute called `cens_var` and makes use of its argument `cens`^[Briefly, the variable mentioned in the `cens_var` right-hand side formula needs to contain the censoring indicators (e.g., `0` = uncensored, `1` = censored) which can then be used within the custom `latent_ll_oscale` function via its argument `cens`.].
