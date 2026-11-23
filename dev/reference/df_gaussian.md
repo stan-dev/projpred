@@ -5,7 +5,7 @@ Gaussian toy example
 ## Usage
 
 ``` r
-data(df_gaussian)
+df_gaussian
 ```
 
 ## Format
@@ -23,4 +23,4 @@ A simulated regression dataset containing 100 observations.
 
 ## Source
 
-<https://web.stanford.edu/~hastie/glmnet/glmnetData/QSExample.RData>
+<https://hastie.su.domains/glmnet/glmnetData/QSExample.RData>

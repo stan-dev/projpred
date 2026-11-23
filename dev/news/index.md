@@ -1,6 +1,16 @@
 # Changelog
 
-## projpred 2.11.0.9000
+## projpred 3.0.0.9000
+
+### Major changes
+
+### Minor changes
+
+### Bug fixes
+
+## projpred 3.0.0
+
+CRAN release: 2026-11-20
 
 ### Major changes
 
