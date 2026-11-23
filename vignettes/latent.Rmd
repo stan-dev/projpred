@@ -347,7 +347,7 @@ For the identity link, the latent predictor is the location of the Student-$t$ d
 The latent projection projects the location with a Gaussian submodel.
 It projects the scale $\sigma$ with the Gaussian dispersion projection: the squared projected scale is the squared scale of the reference model plus the mean squared difference between the locations of the reference model and the submodel.
 The submodels keep the degrees of freedom $\nu$ of the reference model.
-GitHub issue [#3](https://github.com/stan-dev/projpred/issues/3) compares the latent projection with the projection that minimizes the KL divergence between the Student-$t$ distributions.
+A [comment](https://github.com/stan-dev/projpred/issues/3#issuecomment-7109995137) on GitHub issue #3 compares the latent projection with the projection that minimizes the KL divergence between the Student-$t$ distributions.
 In that simulation study (identity link, 20 predictors, $n = 100$ and $n = 1000$, 100 datasets per setting), the two projections gave nearly the same search results and predictive performance.
 
 ### Data
