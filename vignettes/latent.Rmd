@@ -242,7 +242,7 @@ Both projections selected the truly relevant predictor terms first, but the late
 ## Example: Negative binomial distribution {#negbinex}
 
 In this example, we will illustrate the latent projection in case of the negative binomial family (more precisely, we will use the `rstanarm::neg_binomial_2()` family here).
-**projpred**'s traditional projection also supports this family, but only for reference models without offsets and for submodels without group-level and additive terms^[The negative binomial distribution belongs to the class of *discrete exponential dispersion* families [@jorgensen_exponential_1987] (here abbreviated by "DED families"). DED families are closely related to ED families [@jorgensen_exponential_1987], but strictly speaking, the class of DED families is not a subset of the class of ED families. GitHub issue [#361](https://github.com/stan-dev/projpred/issues/361) discusses the "traditional" projection onto a DED-family submodel.].
+**projpred**'s traditional projection also supports this family, but only for submodels without group-level or additive terms^[The negative binomial distribution belongs to the class of *discrete exponential dispersion* families [@jorgensen_exponential_1987] (here abbreviated by "DED families"). DED families are closely related to ED families [@jorgensen_exponential_1987], but strictly speaking, the class of DED families is not a subset of the class of ED families. GitHub issue [#361](https://github.com/stan-dev/projpred/issues/361) discusses the "traditional" projection onto a DED-family submodel, including the cases that **projpred** does not support yet.].
 The latent projection does not have these restrictions.
 
 ### Data
@@ -339,7 +339,8 @@ Again, we will skip post-selection inference here (see the main vignette for a d
 
 ### Conclusion
 
-This example demonstrated how the latent projection can be used for a family which **projpred**'s traditional projection supports only with restrictions and which **projpred**'s augmented-data projection does not support, which reflects the flexibility of the latent approach.
+This example demonstrated the latent projection for a family that **projpred**'s traditional projection supports only with restrictions and that **projpred**'s augmented-data projection does not support.
+This reflects the flexibility of the latent approach.
 
 ## Censored observations (survival analysis) {#cens}
 

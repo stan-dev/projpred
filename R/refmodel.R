@@ -1730,9 +1730,18 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
     # values which inevitably "include" the offsets):
     stop("For a `datafit`, offsets are not allowed.")
   }
-  if (identical(family$family, "negbinomial") && !all(offset == 0)) {
-    stop("Currently, projpred does not support offsets for the negative ",
-         "binomial family.", call. = FALSE)
+  # With the sqrt or the identity link, an offset can give means <= 0 at the
+  # start of the negative binomial fit:
+  if (identical(family$family, "negbinomial") && !all(offset == 0) &&
+      !identical(family$link, "log")) {
+    stop("Currently, projpred supports offsets for the negative binomial ",
+         "family only with the log link.", call. = FALSE)
+  }
+  # An offset of -Inf (zero exposure) would give an infinite start of the
+  # intercept of the negative binomial fit:
+  if (identical(family$family, "negbinomial") && !all(is.finite(offset))) {
+    stop("Currently, projpred supports offsets for the negative binomial ",
+         "family only if all offsets are finite.", call. = FALSE)
   }
 
   # The contrasts of the factor predictors (`contrasts` attributes of the

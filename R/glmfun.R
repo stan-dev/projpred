@@ -258,8 +258,10 @@ glm_ridge <- function(x, y, family = gaussian(), lambda = 0, thresh = 1e-7,
     if (isTRUE(family$nb_fixed) && intercept) {
       # For the negative binomial family with the sqrt or the identity link,
       # the start 0 gives the mean 0 and IRLS weights 0. The predictors are
-      # centered below, so the intercept starts at the link of the mean:
-      beta0_init <- family$linkfun(sum(weights * y) / sum(weights))
+      # centered below, so the intercept starts at the link of the mean (minus
+      # the mean offset):
+      beta0_init <- family$linkfun(sum(weights * y) / sum(weights)) -
+        sum(weights * offset) / sum(weights)
     }
   }
   if (is.null(beta_init)) {

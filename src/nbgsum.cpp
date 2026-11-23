@@ -421,6 +421,8 @@ Rcpp::List nb_gsum_c(const Rcpp::NumericMatrix& mu,
   for (int s = 0; s < n_draws; ++s) {
     for (int i = 0; i < n; ++i) {
       const double wt = w[i] * v[s];
+      // A pair with weight 0 (for example the left-out observation of a LOO
+      // fold) does not enter, and its mean and shape are not checked:
       if (!(wt > 0)) {
         continue;
       }

@@ -38,7 +38,7 @@ nb_phi_max <- function() 1e8
 # weights `v` (summing to 1): `p0` (P(y) for y = 0, ..., y0 - 1) and the bins
 # for y >= y0 (columns `m` (mass), `mean`, `var`). `mu` and `shape` are
 # observations x draws matrices (a vector is one draw; `shape` is recycled).
-# The bins have the edges a_1 = y0, a_{j+1} = a_j + max(1, floor(c_bin *
+# The bins have the edges a_0 = y0, a_{j+1} = a_j + max(1, floor(c_bin *
 # a_j^(3/4))); nb_gsum_c() computes their mass, mean and variance. The
 # mass beyond the upper nb_tail_prob() quantile of each observation and draw
 # is ignored. Only observations with a positive weight enter.

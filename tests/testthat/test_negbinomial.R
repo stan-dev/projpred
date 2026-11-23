@@ -267,3 +267,37 @@ test_that("glm_ridge() with a fixed NB shape agrees with glm()", {
   # The aic of the fixed family is finite for a non-integer response:
   expect_true(is.finite(fam$aic(mu_r, 1, mu_r, w, 0)))
 })
+
+test_that("nb_gsum_c() checks its arguments", {
+  # The quadrature needs y0 >= 100; the exact method does not:
+  expect_error(nb_gsum(5, 2, 1, y0 = 50L, method = "quadrature"),
+               "invalid `y0`")
+  expect_no_error(nb_gsum(5, 2, 1, y0 = 50L, method = "exact"))
+  m1 <- matrix(1, 1, 1)
+  expect_error(nb_gsum_c(matrix(1, 2, 1), m1, c(1, 1), 1, 100L, 0.25, 1e-17,
+                         1L),
+               "dimensions")
+  expect_error(nb_gsum_c(m1, m1, 1, 1, 100L, 0.25, 1e-17, 2L),
+               "unknown method")
+  expect_error(nb_gsum_c(m1, m1, 1, 1, 0L, 0.25, 1e-17, 0L), "invalid `y0`")
+  expect_error(nb_gsum_c(m1, m1, 1, 1, 100L, 0, 1e-17, 1L), "invalid `y0`")
+  expect_error(nb_gsum_c(-m1, m1, 1, 1, 100L, 0.25, 1e-17, 1L),
+               "invalid mean or shape")
+})
+
+test_that("nb_gsum() gives accurate probabilities for large shapes", {
+  # The log pmf from sums that do not cancel. (dnbinom() has a relative error
+  # of about 2e-9 at r = 1e8 and mu = 3.)
+  y <- 0:20
+  for (r in c(99, 1e5, 1e8)) {
+    lp <- vapply(y, function(k) {
+      sum(log1p((seq_len(k) - 1) / r)) - lgamma(k + 1) + k * log(3) -
+        (r + k) * log1p(3 / r)
+    }, numeric(1))
+    for (method in c("exact", "quadrature")) {
+      gs <- nb_gsum(3, r, 1, method = method)
+      expect_lt(max(abs(log(gs$p0[y + 1]) - lp)), 1e-11,
+                label = paste("r:", r, method))
+    }
+  }
+})

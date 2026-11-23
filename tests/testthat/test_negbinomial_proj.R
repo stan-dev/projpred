@@ -18,11 +18,19 @@ refm_nb <- function(ndraws = 4, n = 60, seed = 3611, link = "log",
     # more than one local optimum of the projection):
     beta <- beta + c(3, rep(0, 3))
   }
-  dat$y <- rnbinom(n, size = 3, mu = linv(drop(xmat %*% rowMeans(beta))))
+  off <- offset %||% rep(0, n)
+  dat$y <- rnbinom(n, size = 3,
+                   mu = linv(drop(xmat %*% rowMeans(beta)) + off))
+  if (!is.null(offset) || !is.null(wobs)) {
+    dat$off <- off
+    dat$wobs <- wobs %||% 1
+  }
   fit <- list(beta = beta, data = dat)
+  # The linear predictor with the offsets (init_refmodel() subtracts them):
   ref_predfun <- function(fit, newdata = NULL) {
     nd <- if (is.null(newdata)) fit$data else newdata
-    cbind(1, as.matrix(nd[c("x1", "x2", "x3")])) %*% fit$beta
+    cbind(1, as.matrix(nd[c("x1", "x2", "x3")])) %*% fit$beta +
+      (nd$off %||% 0)
   }
   # K-fold CV: the "refits" keep all draws (the draws do not depend on the
   # data):
@@ -32,9 +40,6 @@ refm_nb <- function(ndraws = 4, n = 60, seed = 3611, link = "log",
                  MASS::negative.binomial(theta = 3, link = link),
                ref_predfun = ref_predfun, dis = shape, cvfun = cvfun)
   if (!is.null(offset) || !is.null(wobs)) {
-    dat$off <- offset %||% 0
-    dat$wobs <- wobs %||% 1
-    args$data <- dat
     args$extract_model_data <- function(object, newdata = NULL,
                                         wrhs = NULL, orhs = NULL,
                                         extract_y = TRUE) {
@@ -49,7 +54,8 @@ refm_nb <- function(ndraws = 4, n = 60, seed = 3611, link = "log",
     )))
   }
   refm <- suppressWarnings(do.call(init_refmodel, args))
-  list(refm = refm, xmat = xmat, mu = linv(xmat %*% beta), shape = shape)
+  list(refm = refm, xmat = xmat, mu = linv(xmat %*% beta),
+       mu_offs = linv(xmat %*% beta + off), shape = shape, off = off)
 }
 
 nb_proj_ref_link <- function(x, mu, shape, link) {
@@ -58,9 +64,12 @@ nb_proj_ref_link <- function(x, mu, shape, link) {
 
 # The projection by an independent method: glm.fit() with the shape fixed and
 # optimize() on the expected log density (long sums over the support of the
-# mixture of the draws with weights `v`).
-nb_proj_ref <- function(x, mu_draws, shape_draws, v, link = "log", w = 1) {
+# mixture of the draws with weights `v`). With offsets, `mu_draws` are the
+# reference means with the offsets, and glm.fit() gets the offsets.
+nb_proj_ref <- function(x, mu_draws, shape_draws, v, link = "log", w = 1,
+                        offset = 0) {
   w <- rep_len(w, nrow(mu_draws))
+  offset <- rep_len(offset, nrow(mu_draws))
   n <- nrow(mu_draws)
   pm <- lapply(seq_len(n), function(i) {
     k <- max(qnbinom(1e-15, size = shape_draws, mu = mu_draws[i, ],
@@ -78,11 +87,11 @@ nb_proj_ref <- function(x, mu_draws, shape_draws, v, link = "log", w = 1) {
     if (is.null(start) && link != "log") {
       # The start 0 gives the mean 0 for these links:
       linkfun <- MASS::negative.binomial(theta = 1, link = link)$linkfun
-      start <- c(linkfun(mean(mu_bar)), rep(0, ncol(x) - 1))
+      start <- c(linkfun(mean(mu_bar)) - mean(offset), rep(0, ncol(x) - 1))
     }
     fit <- suppressWarnings(glm.fit(
       x, mu_bar, family = MASS::negative.binomial(theta = phi, link = link),
-      weights = w, start = start,
+      weights = w, start = start, offset = offset,
       control = glm.control(epsilon = 1e-14, maxit = 100)
     ))
     beta <- fit$coefficients
@@ -245,8 +254,10 @@ test_that("the NB projection works with the identity link", {
 })
 
 test_that("unsupported NB cases stop with a message", {
-  expect_error(refm_nb(ndraws = 4, offset = rep(c(0, 0.5), 30)),
-               "does not support offsets")
+  expect_error(refm_nb(ndraws = 2, link = "sqrt", offset = rep(c(0, 0.5), 30)),
+               "only with the log link")
+  expect_error(refm_nb(ndraws = 2, offset = c(-Inf, rep(0.5, 59))),
+               "only if all offsets are finite")
   dat <- data.frame(y = rnbinom(20, size = 2, mu = 3), x1 = rnorm(20))
   expect_error(
     suppressWarnings(init_refmodel(NULL, data = dat, formula = y ~ x1,
@@ -383,4 +394,146 @@ test_that("a brms reference model with the shape draws as `dis` works", {
   expect_equal(refm$dis, shape)
   prj <- project(refm, predictor_terms = "x1", nclusters = 2)
   expect_true(all(is.finite(prj$dis) & prj$dis > 0))
+})
+
+test_that("the NB projection with offsets is the KL projection", {
+  set.seed(361)
+  off <- log(runif(60, 0.2, 5))
+  ref <- refm_nb(ndraws = 3, offset = off)
+  x <- ref$xmat[, 1:3]
+  prj <- suppressMessages(project(ref$refm, predictor_terms = c("x1", "x2"),
+                                  ndraws = 3, regul = 0,
+                                  thresh_conv = 1e-15))
+  for (s in 1:3) {
+    exp_s <- nb_proj_ref(x, ref$mu_offs[, s, drop = FALSE], ref$shape[s], 1,
+                         offset = off)
+    expect_equal(c(prj$outdmin[[s]]$alpha, prj$outdmin[[s]]$beta),
+                 exp_s$beta, tolerance = 1e-6, info = paste("draw", s))
+    expect_equal(prj$dis[s], exp_s$phi, tolerance = 1e-5,
+                 info = paste("draw", s))
+  }
+  # The fit to the means without the offsets (as for the other families) gives
+  # other coefficients:
+  exp_no <- nb_proj_ref(x, ref$mu[, 1, drop = FALSE], ref$shape[1], 1)
+  expect_gt(max(abs(c(prj$outdmin[[1]]$alpha, prj$outdmin[[1]]$beta) -
+                      exp_no$beta)), 1e-3)
+  # The predictions include the offsets:
+  pl <- proj_linpred(prj, transform = TRUE)
+  b_2 <- c(prj$outdmin[[2]]$alpha, prj$outdmin[[2]]$beta)
+  expect_equal(unname(pl$pred[2, ]), exp(drop(x %*% b_2) + off),
+               tolerance = 1e-12)
+  # A cluster (the mixture of the draws):
+  prj_c <- suppressMessages(project(ref$refm, predictor_terms = c("x1", "x2"),
+                                    nclusters = 1, regul = 0,
+                                    thresh_conv = 1e-15))
+  exp_c <- nb_proj_ref(x, ref$mu_offs, ref$shape, rep(1 / 3, 3),
+                       offset = off)
+  expect_equal(c(prj_c$outdmin[[1]]$alpha, prj_c$outdmin[[1]]$beta),
+               exp_c$beta, tolerance = 1e-6)
+  expect_equal(prj_c$dis, exp_c$phi, tolerance = 1e-5)
+  # stats::glm() as the fitter would add the offsets a second time:
+  opts_old <- options(projpred.glm_fitter = "fit_glm_callback")
+  on.exit(options(opts_old), add = TRUE)
+  expect_error(project(ref$refm, predictor_terms = "x1", ndraws = 1),
+               "must be \"fit_glm_ridge_callback\"")
+})
+
+test_that("the L1 search for NB uses the offsets", {
+  set.seed(362)
+  off <- log(runif(60, 0.2, 5))
+  ref <- refm_nb(ndraws = 20, offset = off)
+  p_ref <- get_refdist(ref$refm, nclusters = 1)
+  sp <- search_L1(p_ref, ref$refm, nterms_max = 3, penalty = rep(1, 3),
+                  search_control = list())
+  # The intercept of the empty submodel is the NB fit (fixed shape) to the
+  # means with offsets, with the offsets:
+  fam <- MASS::negative.binomial(theta = min(p_ref$dis, nb_phi_max()))
+  ctrl <- glm.control(epsilon = 1e-14, maxit = 100)
+  fit0 <- suppressWarnings(glm.fit(matrix(1, 60), as.numeric(p_ref$mu_offs),
+                                   family = fam, offset = off,
+                                   control = ctrl))
+  fit0_no <- suppressWarnings(glm.fit(matrix(1, 60), as.numeric(p_ref$mu),
+                                      family = fam, control = ctrl))
+  alpha0 <- sp$outdmins[[1]][[1]]$alpha
+  expect_equal(alpha0, unname(coef(fit0)), tolerance = 1e-5)
+  expect_gt(abs(alpha0 - unname(coef(fit0_no))), 1e-2)
+  # The least penalized step with all three terms is close to the NB fit with
+  # the offsets:
+  sub3 <- sp$outdmins[[4]][[1]]
+  b3 <- c(sub3$alpha, sub3$beta[c("x1", "x2", "x3"), 1])
+  fit3 <- suppressWarnings(glm.fit(ref$xmat, as.numeric(p_ref$mu_offs),
+                                   family = fam, offset = off,
+                                   control = ctrl))
+  expect_equal(unname(b3), unname(coef(fit3)), tolerance = 1e-3)
+  vs <- suppressWarnings(suppressMessages(varsel(
+    ref$refm, method = "L1", refit_prj = FALSE, verbose = 0
+  )))
+  expect_setequal(vs$predictor_ranking, c("x1", "x2", "x3"))
+  expect_true(all(is.finite(vs$ce)))
+})
+
+test_that("the NB fits in cv_varsel() get the offsets", {
+  set.seed(363)
+  off <- log(runif(60, 0.2, 5))
+  ref <- refm_nb(ndraws = 20, offset = off)
+  # Records, for each glm_ridge() fit with a fixed NB shape, whether it gets
+  # the offsets (the K-fold "refits" of refm_nb() use all observations):
+  glm_ridge_orig <- glm_ridge
+  rec <- new.env()
+  rec$ok <- logical()
+  glm_ridge_rec <- function(x, y, family = gaussian(), ..., offset = NULL) {
+    if (isTRUE(family$nb_fixed)) {
+      rec$ok <- c(rec$ok, isTRUE(all.equal(as.numeric(offset), off)))
+    }
+    glm_ridge_orig(x, y, family = family, ..., offset = offset)
+  }
+  cv_rec <- function(...) {
+    rec$ok <- logical()
+    out <- with_mocked_bindings(
+      suppressWarnings(suppressMessages(cv_varsel(
+        ref$refm, nclusters = 2, nclusters_pred = 3, nterms_max = 2,
+        verbose = 0, ...
+      ))),
+      glm_ridge = glm_ridge_rec
+    )
+    expect_gt(length(rec$ok), 0)
+    expect_true(all(rec$ok))
+    expect_true(all(is.finite(summary(out, stats = "elpd")$perf_sub$elpd)))
+  }
+  cv_rec(method = "forward", cv_method = "LOO", nloo = 4,
+         validate_search = TRUE)
+  cv_rec(method = "forward", cv_method = "LOO", validate_search = FALSE)
+  cv_rec(method = "L1", cv_method = "kfold", K = 2)
+})
+
+test_that("the parallel path of divmin() gives the NB projection with offsets", {
+  set.seed(365)
+  ref <- refm_nb(ndraws = 3, offset = log(runif(60, 0.2, 5)))
+  prj_seq <- suppressMessages(project(ref$refm, predictor_terms = c("x1", "x2"),
+                                      ndraws = 3, regul = 0,
+                                      thresh_conv = 1e-15))
+  opts_old <- options(projpred.parallel_proj_trigger = 1)
+  on.exit(options(opts_old), add = TRUE)
+  n_par <- 0
+  prj_par <- with_mocked_bindings(
+    suppressMessages(project(ref$refm, predictor_terms = c("x1", "x2"),
+                             ndraws = 3, regul = 0, thresh_conv = 1e-15)),
+    par_backend = function(...) "future",
+    par_lapply = function(.X, .FUN, ..., .backend, .rng = FALSE,
+                          .progress = FALSE) {
+      n_par <<- n_par + 1
+      par_chunk(list(xs = .X, seeds = NULL),
+                list(fun = .FUN, args = list(...), opts = list(),
+                     globs = list()))
+    }
+  )
+  expect_gt(n_par, 0)
+  expect_equal(prj_par$dis, prj_seq$dis, tolerance = 1e-12)
+  x <- ref$xmat[, 1:3]
+  for (s in 1:3) {
+    exp_s <- nb_proj_ref(x, ref$mu_offs[, s, drop = FALSE], ref$shape[s], 1,
+                         offset = ref$off)
+    expect_equal(c(prj_par$outdmin[[s]]$alpha, prj_par$outdmin[[s]]$beta),
+                 exp_s$beta, tolerance = 1e-6, info = paste("draw", s))
+  }
 })
