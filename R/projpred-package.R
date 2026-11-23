@@ -50,8 +50,10 @@
 #'     + For the traditional (or latent) projection (or the augmented-data
 #'     projection in case of the [binomial()] or [brms::bernoulli()] family): An
 #'     internal C++ function which basically serves the same purpose as [lm()]
-#'     for the [gaussian()] family and [glm()] for all other families. The
-#'     returned object inherits from class `subfit`. Possible tuning parameters
+#'     for the [gaussian()] family and [glm()] for all other families. For the
+#'     negative binomial family, \pkg{projpred} alternates this fit (with the
+#'     shape fixed) with a Newton search for the shape. The returned object
+#'     inherits from class `subfit`. Possible tuning parameters
 #'     for this internal C++ function are: `regul` (amount of ridge
 #'     regularization; default: `1e-4`), `thresh_conv` (convergence threshold;
 #'     default: `1e-7`, but not used in case of the Gaussian family with
@@ -63,7 +65,8 @@
 #'     indicating whether to scale the predictors internally with the returned
 #'     regression coefficient estimates being back-adjusted appropriately;
 #'     default: `TRUE`), `beta0_init` (single numeric value giving the starting
-#'     value for the intercept at centered predictors; default: `0`), and
+#'     value for the intercept at centered predictors; default: `0`, for the
+#'     negative binomial family the link of the weighted mean response), and
 #'     `beta_init` (numeric vector giving the starting values for the regression
 #'     coefficients; default: vector of `0`s).
 #'     + For the augmented-data projection: [MASS::polr()] (the returned object
@@ -375,6 +378,9 @@
 #' [brms::categorical()] family with [mclogit::mblogit()] (`TRUE`) or with
 #' \pkg{projpred}'s own implementation of the PQL algorithm of
 #' [mclogit::mblogit()] (`FALSE`, the default).
+#' * `projpred.nb_gsum`: A character string selecting how to compute the
+#' reference model's predictive distribution for the projection of the shape of
+#' the negative binomial family: `"quadrature"` (the default) or `"exact"`.
 #'
 #' @name internal-global-options
 #' @keywords internal

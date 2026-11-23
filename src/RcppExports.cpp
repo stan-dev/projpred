@@ -202,6 +202,24 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// nb_gsum_c
+Rcpp::List nb_gsum_c(const Rcpp::NumericMatrix& mu, const Rcpp::NumericMatrix& shape, const Rcpp::NumericVector& w, const Rcpp::NumericVector& v, int y0, double c_bin, double tail, int method);
+RcppExport SEXP _projpred_nb_gsum_c(SEXP muSEXP, SEXP shapeSEXP, SEXP wSEXP, SEXP vSEXP, SEXP y0SEXP, SEXP c_binSEXP, SEXP tailSEXP, SEXP methodSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const Rcpp::NumericMatrix& >::type mu(muSEXP);
+    Rcpp::traits::input_parameter< const Rcpp::NumericMatrix& >::type shape(shapeSEXP);
+    Rcpp::traits::input_parameter< const Rcpp::NumericVector& >::type w(wSEXP);
+    Rcpp::traits::input_parameter< const Rcpp::NumericVector& >::type v(vSEXP);
+    Rcpp::traits::input_parameter< int >::type y0(y0SEXP);
+    Rcpp::traits::input_parameter< double >::type c_bin(c_binSEXP);
+    Rcpp::traits::input_parameter< double >::type tail(tailSEXP);
+    Rcpp::traits::input_parameter< int >::type method(methodSEXP);
+    rcpp_result_gen = Rcpp::wrap(nb_gsum_c(mu, shape, w, v, y0, c_bin, tail, method));
+    return rcpp_result_gen;
+END_RCPP
+}
 // wcol_moments_c
 List wcol_moments_c(const arma::mat& mu, const IntegerVector& idx, const arma::vec& scale, const arma::vec& wobs, double sum_w);
 RcppExport SEXP _projpred_wcol_moments_c(SEXP muSEXP, SEXP idxSEXP, SEXP scaleSEXP, SEXP wobsSEXP, SEXP sum_wSEXP) {
@@ -228,6 +246,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_projpred_glm_ridge_native_multi_c", (DL_FUNC) &_projpred_glm_ridge_native_multi_c, 15},
     {"_projpred_mlvl_cumul_c", (DL_FUNC) &_projpred_mlvl_cumul_c, 13},
     {"_projpred_mlvl_laplace_c", (DL_FUNC) &_projpred_mlvl_laplace_c, 13},
+    {"_projpred_nb_gsum_c", (DL_FUNC) &_projpred_nb_gsum_c, 8},
     {"_projpred_wcol_moments_c", (DL_FUNC) &_projpred_wcol_moments_c, 5},
     {NULL, NULL, 0}
 };

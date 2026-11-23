@@ -644,8 +644,16 @@ search_L1 <- function(p_ref, refmodel, nterms_max, penalty, search_control) {
   ## in which lasso will estimate the parameters
   tt <- terms(refmodel$formula)
   terms_ <- attr(tt, "term.labels")
+  fam_L1 <- refmodel$family
+  if (identical(fam_L1$family, "negbinomial")) {
+    # The L1 path of the negative binomial family uses the shape of the
+    # reference model (aggregated over the draws of the single cluster) as a
+    # fixed shape. The projections after the search (`refit_prj = TRUE`)
+    # project the shape.
+    fam_L1 <- fam_L1$fixed_dis_family(min(p_ref$dis, nb_phi_max()))
+  }
   search_path <- search_L1_surrogate(
-    p_ref, nlist(x, weights = refmodel$wobs), refmodel$family,
+    p_ref, nlist(x, weights = refmodel$wobs), fam_L1,
     intercept = TRUE, ncol(x), penalty, search_control
   )
 

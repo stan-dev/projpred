@@ -48,6 +48,9 @@ fit the multilevel submodels of the augmented-data projection for the
 \code{\link[brms:categorical]{brms::categorical()}} family with \code{\link[mclogit:mblogit]{mclogit::mblogit()}} (\code{TRUE}) or with
 \pkg{projpred}'s own implementation of the PQL algorithm of
 \code{\link[mclogit:mblogit]{mclogit::mblogit()}} (\code{FALSE}, the default).
+\item \code{projpred.nb_gsum}: A character string selecting how to compute the
+reference model's predictive distribution for the projection of the shape of
+the negative binomial family: \code{"quadrature"} (the default) or \code{"exact"}.
 }
 }
 \keyword{internal}

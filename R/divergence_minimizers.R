@@ -34,6 +34,14 @@ divmin <- function(
   trms_all <- extract_terms_response(formula)
   has_grp <- length(trms_all$group_terms) > 0
   has_add <- length(trms_all$additive_terms) > 0
+  # Negative binomial: the shape of each draw for the fit of the coefficients
+  # (see proj_to_submodl()). Each draw gets the family with its shape fixed.
+  nb_phi <- list(...)$projpred_nb_phi
+  if (!is.null(nb_phi) && (has_grp || has_add)) {
+    stop("Currently, projpred supports the negative binomial family only for ",
+         "submodels without group-level and without additive terms.",
+         call. = FALSE)
+  }
   projpred_formulas_no_random <- NA
   projpred_random <- NA
   # Define sdivmin(), the divergence minimizer for each draw s = 1, ..., S (and
@@ -102,18 +110,26 @@ divmin <- function(
   if (identical(sdivmin, fit_glm_ridge_callback) && length(formulas) >= 1) {
     shared_x <- shared_model_matrix(formulas, data = list(...)$data)
     if (!is.null(shared_x)) {
-      outdmin <- divmin_multi(formulas, shared_x = shared_x,
-                              dot_args = list(...),
-                              throw_warn_sdivmin = throw_warn_sdivmin,
-                              do_check_conv = do_check_conv)
-      if (!is.null(outdmin)) {
-        return(outdmin)
+      # The multi-draw fitters do not use the families of the draws:
+      if (is.null(nb_phi)) {
+        outdmin <- divmin_multi(formulas, shared_x = shared_x,
+                                dot_args = list(...),
+                                throw_warn_sdivmin = throw_warn_sdivmin,
+                                do_check_conv = do_check_conv)
+        if (!is.null(outdmin)) {
+          return(outdmin)
+        }
       }
       sdivmin <- glm_ridge_callback_shared(shared_x)
     }
   }
 
   dot_args <- list(...)
+  dot_args$projpred_nb_phi <- NULL
+  # The family of draw s (`NULL`: the family in `dot_args`):
+  family_draw <- function(s) {
+    if (is.null(nb_phi)) NULL else dot_args$family$fixed_dis_family(nb_phi[s])
+  }
   # The option of the Laplace fit (see mlvl_laplace()) is read here, because the
   # draw-wise calls may run in parallel workers:
   if (identical(sdivmin, fit_glmer_callback)) {
@@ -173,7 +189,7 @@ divmin <- function(
                projpred_var = projpred_var[, s, drop = FALSE],
                projpred_formula_no_random = projpred_formulas_no_random[[s]],
                projpred_random = projpred_random),
-          dot_args
+          dot_args_family(dot_args, family_draw(s))
         ))
       )
       return(nlist(soutdmin = strip_call_data(soutdmin), mssgs_warns_capt))
@@ -183,7 +199,8 @@ divmin <- function(
     # the objects that it uses (see fun_with_objs()) and the projpred
     # namespace as parent:
     one_draw <- fun_with_objs(function(formula_s, projpred_var_s,
-                                       projpred_formula_no_random_s) {
+                                       projpred_formula_no_random_s,
+                                       family_s = NULL) {
       mssgs_warns_capt <- capt_fun(
         soutdmin <- do.call(
           sdivmin,
@@ -191,7 +208,7 @@ divmin <- function(
                  projpred_var = projpred_var_s,
                  projpred_formula_no_random = projpred_formula_no_random_s,
                  projpred_random = projpred_random),
-            dot_args)
+            dot_args_family(dot_args, family_s))
         )
       )
       return(nlist(soutdmin = strip_call_data(soutdmin), mssgs_warns_capt))
@@ -199,7 +216,8 @@ divmin <- function(
     args_draws <- lapply(seq_along(formulas), function(s) {
       list(formula_s = formulas[[s]],
            projpred_var_s = projpred_var[, s, drop = FALSE],
-           projpred_formula_no_random_s = projpred_formulas_no_random[[s]])
+           projpred_formula_no_random_s = projpred_formulas_no_random[[s]],
+           family_s = family_draw(s))
     })
     outdmin <- par_lapply(args_draws, call_with_args, .fun = one_draw,
                           .backend = backend, .progress = verbose_divmin)
@@ -211,6 +229,14 @@ divmin <- function(
   check_conv(outdmin, lengths(mssgs_warns_capts), do_check = do_check_conv)
   attr(outdmin, "projpred_lost_lvls") <- lost_lvls
   return(outdmin)
+}
+
+# `dot_args` with element `family` replaced by `family` (if not `NULL`):
+dot_args_family <- function(dot_args, family) {
+  if (!is.null(family)) {
+    dot_args$family <- family
+  }
+  dot_args
 }
 
 # Draw-wise divergence minimizer for divmin() that builds the shared setup

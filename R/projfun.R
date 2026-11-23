@@ -21,7 +21,11 @@ proj_to_submodl <- function(predictor_terms, p_ref, refmodel,
   # submodel formula, the draw-wise formulas and the shared model matrix depend
   # only on the reference model and the predictor terms, so proj_cache_store()
   # caches them. The submodel fits are the same as from divmin().
-  use_fast <- is.null(y_unqs_aug) &&
+  # The negative binomial projection alternates with the projection of the
+  # shapes (see nb_alternate()):
+  nb_alt <- identical(refmodel$family$family, "negbinomial") &&
+    identical(refmodel$div_minimizer, divmin)
+  use_fast <- is.null(y_unqs_aug) && !nb_alt &&
     identical(refmodel$div_minimizer, divmin) &&
     proj_fast_ok(dot_args_divmin) &&
     !anyNA(p_ref$mu)
@@ -105,7 +109,11 @@ proj_to_submodl <- function(predictor_terms, p_ref, refmodel,
                           projpred_ws_aug = projpred_ws_aug,
                           verbose_divmin = verbose >= 3L),
                      dot_args_divmin)
-    outdmin <- do.call(refmodel$div_minimizer, args_divmin)
+    if (nb_alt) {
+      outdmin <- nb_alternate(args_divmin, p_ref = p_ref, refmodel = refmodel)
+    } else {
+      outdmin <- do.call(refmodel$div_minimizer, args_divmin)
+    }
   }
 
   return(init_submodl(
@@ -394,6 +402,48 @@ perf_eval <- function(search_path,
     out <- c(out, list(dis_sub = lapply(out_by_size, "[[", "dis_sub")))
   }
   return(out)
+}
+
+# The projection onto a negative binomial submodel: the coefficients depend on
+# the shape, so the fit of the coefficients with the shapes fixed (divmin()
+# with `projpred_nb_phi`, one shape per projected draw) and the projection of
+# the shapes (`family$dis_fun()`, as in init_submodl()) alternate. The start is
+# the shape of the reference model (`p_ref$dis`). The loop stops when the
+# largest change of log(shape) is below `tol`; attribute `nb_iter` of the
+# result is the number of iterations. Offsets are not supported: the fit of the
+# coefficients uses the means without offsets (as for the other families), and
+# the shape step uses the means with offsets.
+nb_alternate <- function(args_divmin, p_ref, refmodel, tol = 1e-5,
+                         maxit = 50L) {
+  if (any(refmodel$offset != 0)) {
+    stop("Currently, projpred does not support offsets for the negative ",
+         "binomial family.", call. = FALSE)
+  }
+  p_ref_offs <- p_ref
+  p_ref_offs$mu <- p_ref$mu_offs
+  phi <- as.numeric(p_ref$dis)
+  phi[phi == Inf] <- nb_phi_max()
+  phi[!is.finite(phi) | phi <= 0] <- 1
+  phi <- pmin(phi, nb_phi_max())
+  for (it in seq_len(maxit)) {
+    outdmin <- do.call(divmin, c(args_divmin, list(projpred_nb_phi = phi)))
+    mu <- refmodel$mu_fun(outdmin, offset = refmodel$offset)
+    if (anyNA(mu) || any(mu <= 0)) {
+      stop("The negative binomial projection gave submodel means <= 0. Use ",
+           "the log link.", call. = FALSE)
+    }
+    phi_new <- refmodel$family$dis_fun(p_ref_offs, nlist(mu, dis = phi),
+                                       refmodel$wobs)
+    change <- max(abs(log(phi_new) - log(phi)))
+    phi <- phi_new
+    if (change < tol) {
+      return(structure(outdmin, nb_iter = it))
+    }
+  }
+  warning("The projection of the negative binomial shape did not converge ",
+          "in ", maxit, " iterations (largest change of log(shape) in the ",
+          "last iteration: ", signif(change, 3), ").", call. = FALSE)
+  outdmin
 }
 
 # Process the output of the `div_minimizer` function (see init_refmodel()) to

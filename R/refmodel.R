@@ -138,7 +138,8 @@
 #'   have no dispersion parameter or if the submodels do have a dispersion
 #'   parameter, but `object` is `NULL` (in which case `0` is used for `dis`).
 #'   Note that for the [gaussian()] `family`, `dis` is the standard deviation,
-#'   not the variance.
+#'   not the variance. For the negative binomial family, `dis` holds the draws
+#'   of the shape parameter.
 #' @param ... For [get_refmodel.default()] and [get_refmodel.stanreg()]:
 #'   arguments passed to [init_refmodel()]. For the [get_refmodel()] generic:
 #'   arguments passed to the appropriate method. For [init_refmodel()]:
@@ -1100,6 +1101,11 @@ get_refmodel.stanreg <- function(object, latent = FALSE, dis = NULL,
 
   if (is.null(dis) && !latent && has_dispersion(family)) {
     dis <- data.frame(object)[, "sigma"]
+  } else if (is.null(dis) && !latent &&
+             isTRUE(family$family == "neg_binomial_2")) {
+    # rstanarm calls the shape of the negative binomial family
+    # `reciprocal_dispersion`:
+    dis <- as.matrix(object)[, "reciprocal_dispersion"]
   }
 
   # Augmented-data projection -----------------------------------------------
@@ -1724,6 +1730,10 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
     # values which inevitably "include" the offsets):
     stop("For a `datafit`, offsets are not allowed.")
   }
+  if (identical(family$family, "negbinomial") && !all(offset == 0)) {
+    stop("Currently, projpred does not support offsets for the negative ",
+         "binomial family.", call. = FALSE)
+  }
 
   # The contrasts of the factor predictors (`contrasts` attributes of the
   # columns of `data`). The stored data have no such attributes, which avoids
@@ -1782,6 +1792,12 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
 
   # Miscellaneous -----------------------------------------------------------
 
+  # A `datafit` has the observed response as its predictive distribution. For
+  # the negative binomial family, this is not a distribution with a shape:
+  if (!proper_model && identical(family$family, "negbinomial")) {
+    stop("Currently, projpred does not support a `datafit` with the negative ",
+         "binomial family.", call. = FALSE)
+  }
   ndraws <- ncol(mu)
   warn_allrandom_dis <- getOption("projpred.warn_allrandom_dis", TRUE)
   if (is.null(dis)) {
@@ -1803,6 +1819,11 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
       dis <- rep(NA, ndraws)
     } else {
       if (proper_model) {
+        if (identical(family$family, "negbinomial")) {
+          stop("Please supply argument `dis`. For the negative binomial ",
+               "family, `dis` holds the draws of the shape parameter (for ",
+               "example, `as.data.frame(<brmsfit>)$shape`).", call. = FALSE)
+        }
         stop("Please supply argument `dis`.")
       } else {
         dis <- 0
