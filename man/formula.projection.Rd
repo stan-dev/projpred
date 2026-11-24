@@ -48,7 +48,11 @@ the response and the numbers of trials as weights, or use the trials
 syntax of that package (for example \code{successes | trials(n)} in
 \pkg{brms}, with \code{n = successes + failures}).
 \item For a \pkg{brms} reference model, the left-hand side has no addition
-terms (for example \code{trials()} or \code{weights()}).
+terms. \pkg{projpred} uses the values of \code{trials()} or \code{weights()} as
+observation weights, so binomial models with \code{trials()} are supported
+(the response is the number of successes). To fit the submodel in
+\pkg{brms}, add the addition terms of the reference model again (for
+example \code{successes | trials(n)}).
 \item For the latent projection, the left-hand side is the latent response.
 }
 
