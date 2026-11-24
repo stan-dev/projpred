@@ -8,7 +8,7 @@ If you read this from a place other than <https://mc-stan.org/projpred/news/inde
 
 ## Minor changes
 
-* For projections onto submodels with smooth terms, `as.matrix()` and `as_draws_matrix()` give the smooth terms in the basis and with the parameter names of a **brms** or `rstanarm::stan_gamm4()` reference model fit, with the SDs of the penalized parts of the smooth terms. (GitHub: #151, #152)
+* For projections onto submodels with smooth terms, `as.matrix()` and `as_draws_matrix()` give the smooth terms in the basis and with the parameter names of a **brms** or `rstanarm::stan_gamm4()` reference model fit, with the SDs of the penalized parts of the smooth terms. (GitHub: #151, #152, #676)
 
 ## Bug fixes
 
