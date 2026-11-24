@@ -519,14 +519,14 @@ test_that(paste(
         expect_identical(dim(predref_resp),
                          c(nobsv, length(refmods[[tstsetup]]$family$cats)),
                          info = tstsetup)
-        expect_true(all(predref_resp >= 0 & predref_resp <= 1),
-                    info = tstsetup)
+        expect_all_true_tst(predref_resp >= 0 & predref_resp <= 1,
+                            info = tstsetup)
       } else {
         expect_true(is.vector(predref_resp, "double"), info = tstsetup)
         expect_length(predref_resp, nobsv)
         if (fam_crr %in% c("brnll", "binom")) {
-          expect_true(all(predref_resp >= 0 & predref_resp <= 1),
-                      info = tstsetup)
+          expect_all_true_tst(predref_resp >= 0 & predref_resp <= 1,
+                              info = tstsetup)
         }
       }
       if (prj_crr == "augdat") {
@@ -541,8 +541,8 @@ test_that(paste(
       expect_true(is.vector(predref_resp, "double"), info = tstsetup)
       expect_length(predref_resp, nobsv)
       if (fam_crr %in% c("brnll", "binom")) {
-        expect_true(all(predref_resp >= 0 & predref_resp <= 1),
-                    info = tstsetup)
+        expect_all_true_tst(predref_resp >= 0 & predref_resp <= 1,
+                            info = tstsetup)
       }
       expect_true(is.vector(predref_link, "double"), info = tstsetup)
       expect_length(predref_link, nobsv)

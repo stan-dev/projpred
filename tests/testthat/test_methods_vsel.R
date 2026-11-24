@@ -699,9 +699,10 @@ test_that("ranking proportions are computed correctly", {
   # With `cumulate = FALSE`:
   cv_proportions_tester(pr_cF, nterms_max_expected = ntrms,
                         cnms_expected = rk_fdata, info_str = "cumulate = FALSE")
-  expect_true(all(abs(pr_cF - 1 / ntrms) < tol_abs), info = "cumulate = FALSE")
-  expect_true(all(abs(rowSums(pr_cF) - 1) < tol_abs), info = "cumulate = FALSE")
-  expect_true(all(abs(colSums(pr_cF) - 1) < tol_abs), info = "cumulate = FALSE")
+  expect_equal(as.vector(pr_cF), rep(1 / ntrms, ntrms^2),
+               info = "cumulate = FALSE")
+  expect_equal(unname(rowSums(pr_cF)), rep(1, ntrms), info = "cumulate = FALSE")
+  expect_equal(unname(colSums(pr_cF)), rep(1, ntrms), info = "cumulate = FALSE")
 
   # With `cumulate = TRUE`:
   cv_proportions_tester(pr_cT, cumulate_expected = TRUE,
@@ -711,10 +712,10 @@ test_that("ranking proportions are computed correctly", {
   class(pr_cT_expected) <- c("cv_proportions_cumul", "cv_proportions")
   expect_equal(pr_cT, pr_cT_expected, ignore_attr = TRUE,
                tolerance = .Machine$double.eps, info = "cumulate = TRUE")
-  has_1_colwise <- all(apply(pr_cT, 2, function(x_col) {
+  # Each column has an element equal to 1:
+  expect_all_true_tst(apply(pr_cT, 2, function(x_col) {
     any(abs(x_col - 1) < tol_abs)
-  }))
-  expect_true(has_1_colwise, info = "cumulate = TRUE")
+  }), info = "cumulate = TRUE")
 })
 
 # plot.cv_proportions() ---------------------------------------------------
@@ -833,7 +834,7 @@ test_that("\"acc\" has a logit-normal interval without a baseline", {
   # `NA` predictions (as for a `datafit`):
   res <- get_stat(list(mu = rep(NA, n), lppd = rep(NA, n)),
                   y_wobs_test = y_wobs_test, stat = "acc", alpha = alpha)
-  expect_true(all(is.na(c(res$value, res$lq, res$uq))))
+  expect_all_true_tst(is.na(c(res$value, res$lq, res$uq)))
 
   # Subsampled LOO-CV with an estimate above 1 uses the normal approximation:
   loo_inds <- seq(1, 19, by = 2)

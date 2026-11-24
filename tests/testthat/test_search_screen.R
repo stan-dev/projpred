@@ -150,7 +150,7 @@ test_that(paste(
     vs <- expect_screen_equal_forward(cases[[nm]], 20, info = nm)
     expect_identical(vs$args_search$search_screen, 20L, info = nm)
   }
-  expect_true(all(cases$binomial_trials$wobs == 4))
+  expect_all_true_tst(cases$binomial_trials$wobs == 4)
   expect_null(vs_screen(cases$poisson, NULL)$args_search$search_screen)
 })
 
@@ -450,7 +450,7 @@ test_that(paste(
   }, numeric(1))
   expect_equal(gains[1:2], gains_solve, tolerance = 1e-10)
   expect_identical(gains[3], 0)
-  expect_true(all(gains[1:2] > 0))
+  expect_all_true_tst(gains[1:2] > 0)
 })
 
 test_that(paste(

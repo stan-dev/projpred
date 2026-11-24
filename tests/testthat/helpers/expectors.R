@@ -53,6 +53,47 @@ expect_warning_all <- function(object, regexp = NULL, ..., info = NULL) {
   return(invisible(val))
 }
 
+# Expects that all elements of the logical `object` are `TRUE`, as
+# expect_true(all(object)) does (an empty `object` passes, `NA` fails). A
+# failure message gives the number and the positions of the elements that are
+# not `TRUE`: names if available, `[i, j, ...]` for a matrix or an array,
+# otherwise indices. testthat::expect_all_true() has no `info`, stops for an
+# empty `object` and fails for a matrix.
+expect_all_true_tst <- function(object, info = NULL, label = NULL) {
+  # rlang::enquo() evaluates `!!` at capture time, as in the testthat
+  # expectations:
+  act <- quasi_label(rlang::enquo(object), label)
+  if (!is.logical(act$val)) {
+    stop("`object` must be logical, not of class ", class(act$val)[1], ".")
+  }
+  val <- as.vector(act$val)
+  not_true <- which(!(val %in% TRUE))
+  if (length(not_true)) {
+    nms <- names(act$val)
+    dims <- dim(act$val)
+    if (length(dims) > 1) {
+      pos <- apply(arrayInd(not_true, dims), 1, function(idx) {
+        paste0("[", paste(idx, collapse = ", "), "]")
+      })
+    } else if (!is.null(nms)) {
+      pos <- ifelse(is.na(nms[not_true]) | nms[not_true] == "",
+                    as.character(not_true), nms[not_true])
+    } else {
+      pos <- not_true
+    }
+    msg <- sprintf(
+      "Expected all elements of %s to be TRUE. %d of %d are not TRUE, at %s%s.",
+      act$lab, length(not_true), length(val),
+      paste(head(pos, 10), collapse = ", "),
+      if (length(not_true) > 10) ", ..." else ""
+    )
+  } else {
+    msg <- ""
+  }
+  expect(length(not_true) == 0, msg, info = info, trace_env = parent.frame())
+  return(invisible(act$val))
+}
+
 # Student_t() is deprecated. This checks the deprecation warning and returns
 # the family object.
 student_t_tst <- function(...) {

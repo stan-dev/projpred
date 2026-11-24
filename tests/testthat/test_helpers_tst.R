@@ -29,6 +29,32 @@ test_that("expect_warning_all() catches all matching warnings", {
   )
 })
 
+test_that("expect_all_true_tst() works as expect_true(all())", {
+  expect_success(expect_all_true_tst(c(TRUE, TRUE)))
+  expect_success(expect_all_true_tst(logical(0)))
+  expect_success(expect_all_true_tst(matrix(TRUE, 2, 2)))
+  expect_failure(expect_all_true_tst(c(TRUE, NA)),
+                 "1 of 2 are not TRUE, at 2\\.")
+  expect_failure(expect_all_true_tst(c(a = TRUE, b = FALSE, c = FALSE)),
+                 "2 of 3 are not TRUE, at b, c\\.")
+  expect_failure(expect_all_true_tst(c(a = FALSE, FALSE)), "at a, 2\\.")
+  expect_failure(expect_all_true_tst(rep(FALSE, 12)),
+                 "12 of 12 are not TRUE, at 1, 2, .*, 10, \\.\\.\\.")
+  expect_failure(
+    expect_all_true_tst(matrix(c(TRUE, TRUE, FALSE, TRUE), 2, 2)),
+    "at \\[1, 2\\]\\."
+  )
+  expect_failure(expect_all_true_tst(FALSE, info = "xyz"), "xyz")
+  expect_failure(expect_all_true_tst(FALSE, label = "lbl"), "lbl")
+  expect_error(expect_all_true_tst(c(1, 1)), "must be logical")
+  expect_error(expect_all_true_tst("TRUE"), "must be logical")
+  x <- list(c(TRUE, TRUE), c(FALSE, TRUE))
+  j <- 2
+  # `!!` is evaluated before the expression, as in the testthat expectations
+  # (without that, `x[[!!j]]` would be `x[[TRUE]]`, the first element):
+  expect_failure(expect_all_true_tst(x[[!!j]]), "at 1\\.")
+})
+
 test_that("drop_mer_ptrs() keeps the differences between lme4 fits", {
   fml <- Reaction ~ Days + (1 | Subject)
   fit1 <- lme4::lmer(fml, data = lme4::sleepstudy)

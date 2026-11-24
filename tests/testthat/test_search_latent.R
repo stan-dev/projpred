@@ -604,7 +604,7 @@ test_that("the multilevel screen uses the contrasts of the reference model", {
   # weight 0 of observation 1 (as in a fold of the LOO CV) checks the path with
   # removed rows; the other observations have all levels of `f`:
   refm <- refm_latml(fml = y ~ x1 + x2 + x6 + x7 + f + (1 | g))
-  expect_true(all(table(refm$fetch_data()$f[-1]) > 0))
+  expect_all_true_tst(table(refm$fetch_data()$f[-1]) > 0)
   ctr <- contr.sum(levels(refm$fetch_data()$f))[, 1, drop = FALSE]
   refm$contrasts <- list(f = ctr)
   refm$wobs[1] <- 0

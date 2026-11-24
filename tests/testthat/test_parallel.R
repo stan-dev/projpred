@@ -365,8 +365,8 @@ test_that(paste(
   refm$div_minimizer <- divmin_tst
   expect_true(any(vapply(projpred:::global_closures(list(refm)), identical,
                          logical(1), divmin_tst)))
-  expect_true(all(c("projpred_tst_flag", "projpred_tst_check") %in%
-                    names(projpred:::par_globals(list(refm)))))
+  expect_all_true_tst(c("projpred_tst_flag", "projpred_tst_check") %in%
+                        names(projpred:::par_globals(list(refm))))
   cvvs_custom <- function(parallel) {
     suppressWarnings(cv_varsel(
       refm, cv_method = "LOO", validate_search = TRUE,
@@ -875,8 +875,7 @@ test_that(paste(
         exists(nm, envir = parent.env(ns), inherits = FALSE) ||
         exists(nm, envir = baseenv(), inherits = FALSE)
     }, logical(1))
-    expect_true(all(in_ns), info = paste(outer_nm, ":",
-                                         paste(others[!in_ns], collapse = ", ")))
+    expect_all_true_tst(in_ns, info = outer_nm)
   }
 })
 

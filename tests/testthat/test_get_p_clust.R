@@ -141,8 +141,8 @@ test_that(paste(
       out <- get_p_clust(family = fam, eta = inp$eta, mu = inp$mu,
                          mu_offs = inp$mu_offs, dis = inp$dis, wdraws = w,
                          cl = cl)
-      expect_true(all(is.finite(out$mu)), info = info)
-      expect_true(all(is.finite(out$mu_offs)), info = info)
+      expect_all_true_tst(is.finite(out$mu), info = info)
+      expect_all_true_tst(is.finite(out$mu_offs), info = info)
       # The predictive variances are NA for some families, also for clusters
       # with nonzero weights:
       expect_identical(is.na(unclass(out$var)[, 2]),
@@ -251,9 +251,9 @@ test_that(paste(
   for (el in c("mu", "mu_offs", "dis")) {
     expect_identical(without_var[[el]], with_var[[el]], info = el)
   }
-  expect_true(all(is.na(without_var$var_offs)))
+  expect_all_true_tst(is.na(without_var$var_offs))
   expect_identical(dim(without_var$var_offs), dim(with_var$var_offs))
-  expect_true(all(is.na(without_var$dis2)))
+  expect_all_true_tst(is.na(without_var$dis2))
   expect_length(without_var$dis2, 2L)
   expect_false(anyNA(with_var$var_offs))
   expect_false(anyNA(with_var$dis2))

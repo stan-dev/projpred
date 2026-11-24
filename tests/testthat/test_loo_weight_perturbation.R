@@ -36,7 +36,7 @@ test_that("perturb_weights() sums to n and does not change the RNG state", {
   w <- perturb_weights(50, 10, 123L)
   expect_identical(.Random.seed, rng_before)
   expect_equal(sum(w), 50)
-  expect_true(all(w > 0))
+  expect_all_true_tst(w > 0)
   # The same weights for another RNG kind (as in the parallel workers):
   RNGkind("L'Ecuyer-CMRG")
   set.seed(2)
@@ -110,8 +110,8 @@ test_that(paste(
   refm_v <- refm
   refm_v$eta[3, s] <- Inf
   eta_shift <- refm_v$eta + drop(refm_v$eta %*% cd)
-  expect_true(all(eta_shift[3, ] == Inf))
-  expect_true(all(is.finite(refm_v$family$linkinv(eta_shift))))
+  expect_all_true_tst(eta_shift[3, ] == Inf)
+  expect_all_true_tst(is.finite(refm_v$family$linkinv(eta_shift)))
   expect_null(perturb_refmodel(refm_v, i = i, ll = pp$ll, lw_i = pp$lw_i,
                                alpha = 10, seed = 99L))
   # Log link with an offset: `mu` is finite, but `mu_offs` is not.

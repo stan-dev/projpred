@@ -446,7 +446,7 @@ test_that(paste(
     refm <- get_refmodel(fit, latent = TRUE),
     message = "will consist of only `NA`s"
   )
-  expect_true(all(is.na(refm$dis)))
+  expect_all_true_tst(is.na(refm$dis))
   # Without a latent dispersion, as.matrix() has no `sigma` column:
   prj <- project(refm, predictor_terms = "x1", ndraws = 20, verbose = 0)
   expect_false("sigma" %in% colnames(as.matrix(prj)))
@@ -615,14 +615,14 @@ test_that(paste(
     info_vsel <- paste("validate_search:", vsel)
     expect_equal(cvvs_e$summaries$ref$oscale$lppd,
                  cvvs_p$summaries$ref$oscale$lppd, info = info_vsel)
-    expect_true(all(cvvs_e$summaries$ref$oscale$mu >
-                      cvvs_p$summaries$ref$oscale$mu), info = info_vsel)
+    expect_all_true_tst(cvvs_e$summaries$ref$oscale$mu >
+                          cvvs_p$summaries$ref$oscale$mu, info = info_vsel)
     for (k in seq_along(cvvs_e$summaries$sub)) {
       sub_e <- cvvs_e$summaries$sub[[k]]$oscale
       sub_p <- cvvs_p$summaries$sub[[k]]$oscale
       info_k <- paste(info_vsel, "size:", k - 1)
       expect_equal(sub_e$lppd, sub_p$lppd, info = info_k)
-      expect_true(all(sub_e$mu > sub_p$mu), info = info_k)
+      expect_all_true_tst(sub_e$mu > sub_p$mu, info = info_k)
     }
   }
 })
@@ -669,6 +669,6 @@ test_that("extend_family() and the predictions check `latent_epred`", {
     pl_na <- proj_linpred(prj_na, transform = TRUE),
     "`latent_ilink` (or `latent_epred`) returned only `NA`s", fixed = TRUE
   )
-  expect_true(all(is.na(pl_na$pred)))
+  expect_all_true_tst(is.na(pl_na$pred))
   expect_false(anyNA(pl_na$lpd))
 })

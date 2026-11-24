@@ -40,7 +40,7 @@ expect_acc_interval <- function(value, se, lower, upper, alpha, info) {
   upper_exp[idx] <- plogis(qnorm(1 - alpha / 2, qlogis(v), sd_logit))
   expect_equal(lower, lower_exp, tolerance = 1e-10, info = info)
   expect_equal(upper, upper_exp, tolerance = 1e-10, info = info)
-  expect_true(all(lower[idx] >= 0 & upper[idx] <= 1), info = info)
+  expect_all_true_tst(lower[idx] >= 0 & upper[idx] <= 1, info = info)
 }
 
 # All `vsel` objects from the setup:
@@ -251,7 +251,7 @@ test_that("custom statistics get `y` as proportions for binomial `wobs > 1`", {
     # The pointwise version gives the same mean:
     expect_equal(perf$submodels$c_mse, val_expected, tolerance = 1e-12,
                  info = tstsetup)
-    expect_true(all(perf$submodels$c_wmse.se > 0), info = tstsetup)
+    expect_all_true_tst(perf$submodels$c_wmse.se > 0, info = tstsetup)
   }
 })
 
@@ -293,7 +293,7 @@ test_that("custom statistic works with an all-`NA` reference model", {
   for (cstat in list(cstat_close, cstat_close_agg)) {
     perf <- performances(vs, stats = cstat, type = c("mean", "se"), B = 20,
                          seed = 1)
-    expect_true(all(is.na(perf$reference_model)), info = cstat$name)
+    expect_all_true_tst(is.na(perf$reference_model), info = cstat$name)
     expect_false(anyNA(perf$submodels[[cstat$name]]), info = cstat$name)
   }
 })

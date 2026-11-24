@@ -813,7 +813,7 @@ test_that(paste(
     }
     # For the intercept-only model, the linear predictor consists only
     # of the intercept, so we expect no variation in `mu_jm_regul`:
-    expect_true(all(ssq_regul_prd[, 1] <= 1e-5), info = tstsetup)
+    expect_all_true_tst(ssq_regul_prd[, 1] <= 1e-5, info = tstsetup)
     # All other (i.e., not intercept-only) models:
     for (j in seq_len(dim(ssq_regul_prd)[1])[-1]) {
       for (m in seq_len(dim(ssq_regul_prd)[2])[-1]) {
@@ -920,7 +920,7 @@ test_that(paste(
     for (nn in seq_len(dim(ssq_regul_sel_alpha)[3])) {
       expect_length(unique(ssq_regul_sel_alpha[, 1, !!nn]), 1)
     }
-    expect_true(all(is.na(ssq_regul_sel_beta[, 1, ])), info = tstsetup)
+    expect_all_true_tst(is.na(ssq_regul_sel_beta[, 1, ]), info = tstsetup)
     # All other (i.e., not intercept-only) models (note: as discussed at issue
     # #169, the intercept is not tested here to stay the same):
     ssq_regul_sel_beta_cond <- array(
@@ -934,11 +934,11 @@ test_that(paste(
         }
       }
     }
-    expect_true(all(ssq_regul_sel_beta_cond), info = tstsetup)
+    expect_all_true_tst(ssq_regul_sel_beta_cond, info = tstsetup)
     # Prediction:
     # For the intercept-only model, the linear predictor consists only
     # of the intercept, so we expect no variation in `mu_jm_regul`:
-    expect_true(all(ssq_regul_prd[, 1] <= 1e-12), info = tstsetup)
+    expect_all_true_tst(ssq_regul_prd[, 1] <= 1e-12, info = tstsetup)
     # All other (i.e., not intercept-only) models:
     for (j in seq_len(dim(ssq_regul_prd)[1])[-1]) {
       for (m in seq_len(dim(ssq_regul_prd)[2])[-1]) {

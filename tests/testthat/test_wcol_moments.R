@@ -116,7 +116,7 @@ test_that(paste(
   args_inf <- args
   args_inf$mu_offs[2, 3] <- Inf
   mom <- do.call(get_p_clust, c(args_inf, list(cl = thin)))
-  expect_true(all(ss_finite(mom, wobs)))
+  expect_all_true_tst(ss_finite(mom, wobs))
   # A user-defined `family$predvar` (no `predvar_mix` for it):
   fam_user <- extend_family(gaussian())
   fam_user$predvar <- function(mu, dis, wdraws = 1) {

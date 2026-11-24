@@ -226,7 +226,7 @@ test_that(paste(
   y_c <- x_c[, 1] - 0.5 * x_c[, 3] + sin(7 * (1:n_c))
   fit0 <- glm_elnet(x_c, y_c, weights = w_c, nlambda = 20)
   fit <- glm_elnet(x_c[, -2], y_c, weights = w_c, nlambda = 20)
-  expect_true(all(fit0$beta[2, ] == 0))
+  expect_all_true_tst(fit0$beta[2, ] == 0)
   expect_equal(fit0$lambda, fit$lambda, tolerance = 1e-12)
   expect_equal(fit0$beta[-2, ], fit$beta, tolerance = 1e-10)
   expect_equal(fit0$beta0, fit$beta0, tolerance = 1e-10)

@@ -834,7 +834,7 @@ test_that("`regul` works", {
       return(sum(pl$pred^2))
     })
     for (j in head(seq_along(regul_tst), -1)) {
-      expect_true(all(norms[!!j] >= norms[!!(j + 1)]), info = tstsetup)
+      expect_all_true_tst(norms[!!j] >= norms[!!(j + 1)], info = tstsetup)
     }
   }
 })
