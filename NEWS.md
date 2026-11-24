@@ -12,7 +12,7 @@ If you read this from a place other than <https://mc-stan.org/projpred/news/inde
 
 ## Bug fixes
 
-* With subsampled LOO (`nloo` below the number of observations) and unequal observation weights, the SEs of `"mse"`, `"rmse"`, `"R2"` and pointwise custom statistics were too small. All SEs with subsampled LOO are now also numerically stable for values with a large common offset.
+* With subsampled LOO (`nloo` below the number of observations) and unequal observation weights, the SEs of `"mse"`, `"rmse"`, `"R2"` and pointwise custom statistics were too small. All SEs with subsampled LOO are now also numerically stable for values with a large common offset. (GitHub: #679)
 
 
 
