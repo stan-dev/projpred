@@ -2946,6 +2946,62 @@ predictor_terms.projection <- function(object, ...) {
   return(object[["predictor_terms"]])
 }
 
+#' Formula of the submodel of a [project()] run
+#'
+#' For a `projection` object (returned by [project()], possibly as elements of a
+#' `list`), this method gives the formula of the submodel onto which the
+#' projection was performed, in the form that \pkg{projpred} uses for the
+#' submodel fits. Use it, for example, to set up the submodel in another
+#' package.
+#'
+#' @param x An object of class `projection` (returned by [project()], possibly
+#'   as elements of a `list`).
+#' @param ... Currently ignored.
+#'
+#' @details The right-hand side has an intercept and the predictor terms of `x`
+#'   (see [predictor_terms()]), with two changes that \pkg{projpred} also
+#'   applies to the submodel fits:
+#'   * The group-level terms of one grouping factor are merged into one term.
+#'   For example, `(1 | g) + (x1 | g)` becomes `(x1 | g)`.
+#'   * A linear term is dropped if the submodel also has a smooth term of the
+#'   same variable. For example, `x1 + s(x1)` becomes `s(x1)`.
+#'
+#'   The left-hand side is the response of the formula of the reference model
+#'   object (element `formula` of the output of [get_refmodel()]). It can
+#'   differ from the response of the reference model fit; for example, the
+#'   latent projection uses the latent response. Offsets are not part of the
+#'   formula. The environment of the formula is that of the reference model
+#'   formula.
+#'
+#' @return A [`formula`].
+#'
+#' @examplesIf requireNamespace("rstanarm", quietly = TRUE)
+#' # Data:
+#' dat_gauss <- data.frame(y = df_gaussian$y, df_gaussian$x)
+#'
+#' # The `stanreg` fit which will be used as the reference model (with small
+#' # values for `chains` and `iter`, but only for technical reasons in this
+#' # example; this is not recommended in general):
+#' fit <- rstanarm::stan_glm(
+#'   y ~ X1 + X2 + X3 + X4 + X5, family = gaussian(), data = dat_gauss,
+#'   QR = TRUE, chains = 2, iter = 500, refresh = 0, seed = 9876
+#' )
+#'
+#' # Projection onto an arbitrary combination of predictor terms (with a small
+#' # value for `nclusters`, but only for the sake of speed in this example;
+#' # this is not recommended in general):
+#' prj <- project(fit, predictor_terms = c("X1", "X3", "X5"), nclusters = 10,
+#'                seed = 9182)
+#' print(formula(prj)) # gives `y ~ X1 + X3 + X5`
+#'
+#' @export
+formula.projection <- function(x, ...) {
+  return(flatten_formula(
+    make_formula(predictor_terms(x), formula = x[["refmodel"]][["formula"]]),
+    duplicates = FALSE
+  ))
+}
+
 #' Predictor ranking(s)
 #'
 #' Extracts the *predictor ranking(s)* from an object of class `vsel` (returned

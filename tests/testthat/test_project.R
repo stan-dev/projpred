@@ -574,3 +574,40 @@ test_that("for GLMs, `regul` has an expected effect", {
     }
   }
 })
+
+# formula() ---------------------------------------------------------------
+
+test_that("formula() of a `projection` merges and drops terms as projpred", {
+  fml_ref <- y ~ x1 + x2 + s(x1) + (x1 | g) + x1:x2
+  formula_prj <- function(prd_trms) {
+    formula(structure(
+      list(predictor_terms = prd_trms, refmodel = list(formula = fml_ref)),
+      class = "projection"
+    ))
+  }
+  expect_equal(formula_prj(character()), y ~ 1)
+  expect_equal(formula_prj("x1"), y ~ x1)
+  expect_equal(formula_prj(c("x1", "(1 | g)", "(x1 | g)")), y ~ x1 + (x1 | g))
+  expect_equal(formula_prj(c("(1 | g)", "x1")), y ~ x1 + (1 | g))
+  expect_equal(formula_prj(c("x1", "s(x1)")), y ~ s(x1))
+  expect_equal(formula_prj(c("x2", "x1:x2", "x1")), y ~ x2 + x1 + x2:x1)
+  expect_identical(environment(formula_prj("x1")), environment(fml_ref))
+})
+
+test_that("formula() of a `projection` gives the formula of the submodel fits", {
+  skip_if_not(run_prj)
+  for (tstsetup in names(prjs)) {
+    prj <- prjs[[tstsetup]]
+    fml <- formula(prj)
+    expect_s3_class(fml, "formula")
+    fml_ref <- prj$refmodel$formula
+    expect_identical(fml[[2]], fml_ref[[2]], info = tstsetup)
+    expect_identical(environment(fml), environment(fml_ref), info = tstsetup)
+    # the right-hand side of the formula that proj_prepare_general() gives to
+    # the divergence minimizer
+    sub <- subset_formula_and_data(fml_ref, terms_ = predictor_terms(prj),
+                                   data = NULL, with_data = FALSE)
+    fml_divmin <- flatten_formula(sub$formula, duplicates = FALSE)
+    expect_identical(fml[[3]], fml_divmin[[3]], info = tstsetup)
+  }
+})
