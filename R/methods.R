@@ -2979,12 +2979,11 @@ predictor_terms.projection <- function(object, ...) {
 #'   the response and the numbers of trials as weights, or use the trials
 #'   syntax of that package (for example `successes | trials(n)` in
 #'   \pkg{brms}, with `n = successes + failures`).
-#'   * For a \pkg{brms} reference model, the left-hand side has no addition
-#'   terms. \pkg{projpred} uses the values of `trials()` or `weights()` as
-#'   observation weights, so binomial models with `trials()` are supported
-#'   (the response is the number of successes). To fit the submodel in
-#'   \pkg{brms}, add the addition terms of the reference model again (for
-#'   example `successes | trials(n)`).
+#'   * For a \pkg{brms} reference model, the left-hand side is only the
+#'   response variable, without addition terms such as `trials()` or
+#'   `weights()`. The projection still uses them: \pkg{projpred} keeps the
+#'   numbers of trials (or the weights) in the reference model object (element
+#'   `wobs`), not in the formula.
 #'   * For the latent projection, the left-hand side is the latent response.
 #'
 #'   Observation weights and offsets are not part of the formula.
