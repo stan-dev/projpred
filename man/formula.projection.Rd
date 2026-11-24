@@ -42,11 +42,9 @@ the response variable, so it can differ from the left-hand side of the
 reference model fit:
 \itemize{
 \item For a two-column binomial response (\code{cbind(successes, failures)}), the
-left-hand side is the first column. The numbers of trials are observation
-weights. To fit the submodel in another package, use the proportions as
-the response and the numbers of trials as weights, or use the trials
-syntax of that package (for example \code{successes | trials(n)} in
-\pkg{brms}, with \code{n = successes + failures}).
+left-hand side is only the first column. The projection still uses the
+numbers of trials (\code{successes + failures}): \pkg{projpred} keeps them in
+the reference model object (element \code{wobs}), not in the formula.
 \item For a \pkg{brms} reference model, the left-hand side is only the
 response variable, without addition terms such as \code{trials()} or
 \code{weights()}. The projection still uses them: \pkg{projpred} keeps the
