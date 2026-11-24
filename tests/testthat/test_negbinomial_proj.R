@@ -412,8 +412,7 @@ test_that("the NB projection with offsets is the KL projection", {
     expect_equal(prj$dis[s], exp_s$phi, tolerance = 1e-5,
                  info = paste("draw", s))
   }
-  # The fit to the means without the offsets (as for the other families) gives
-  # other coefficients:
+  # The fit to the means without the offsets gives other coefficients:
   exp_no <- nb_proj_ref(x, ref$mu[, 1, drop = FALSE], ref$shape[1], 1)
   expect_gt(max(abs(c(prj$outdmin[[1]]$alpha, prj$outdmin[[1]]$beta) -
                       exp_no$beta)), 1e-3)

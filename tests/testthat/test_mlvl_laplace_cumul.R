@@ -75,11 +75,11 @@ test_that("mlvl_cumul_c() gives the gradient of its objective for each link", {
   for (link in links_cumul_tst) {
     code <- mlvl_cumul_link(link)$code
     obj <- function(par) {
-      mlvl_cumul_c(par[1:3], par[4:5], par[6], x, grp, 6L, y, w, rep(0, 6),
-                   code, FALSE)$L
+      mlvl_cumul_c(par[1:3], par[4:5], par[6], x, grp, 6L, y, w,
+                   numeric(nrow(x)), rep(0, 6), code, FALSE)$L
     }
     ev <- mlvl_cumul_c(par[1:3], par[4:5], par[6], x, grp, 6L, y, w,
-                       rep(0, 6), code, TRUE)
+                       numeric(nrow(x)), rep(0, 6), code, TRUE)
     grad_fd <- vapply(seq_along(par), function(j) {
       h <- 1e-5
       e <- replace(numeric(length(par)), j, h)
@@ -91,14 +91,15 @@ test_that("mlvl_cumul_c() gives the gradient of its objective for each link", {
     keep <- w > 0
     expect_equal(
       mlvl_cumul_c(par[1:3], par[4:5], par[6], x[keep, ], grp[keep], 6L,
-                   y[keep], w[keep], rep(0, 6), code, FALSE)$L,
+                   y[keep], w[keep], numeric(sum(keep)), rep(0, 6), code,
+                   FALSE)$L,
       ev$L, info = link
     )
   }
   # Thresholds that do not increase:
   expect_identical(
     mlvl_cumul_c(c(0.5, 0.1, 1.2), par[4:5], par[6], x, grp, 6L, y, w,
-                 rep(0, 6), 1L, FALSE)$L,
+                 numeric(nrow(x)), rep(0, 6), 1L, FALSE)$L,
     Inf
   )
 })
@@ -125,10 +126,10 @@ test_that(paste(
     code <- mlvl_cumul_link(link)$code
     obj <- function(par) {
       mlvl_cumul_c(par[1:3], par[4:5], par[6], x, grp, 6L, y, dat$w,
-                   rep(0, 6), code, FALSE)$L
+                   numeric(nrow(x)), rep(0, 6), code, FALSE)$L
     }
     ev <- mlvl_cumul_c(par[1:3], par[4:5], par[6], x, grp, 6L, y, dat$w,
-                       rep(0, 6), code, TRUE)
+                       numeric(nrow(x)), rep(0, 6), code, TRUE)
     expect_true(is.finite(ev$L), info = link)
     grad_fd <- vapply(seq_along(par), function(j) {
       h <- 1e-5
@@ -144,7 +145,7 @@ test_that(paste(
     for (alpha in alphas) {
       for (tau in c(0, 0.5, 30)) {
         ev <- mlvl_cumul_c(alpha, c(0.1, 20), tau, x, grp, 6L, y, dat$w,
-                           rep(0, 6), code, TRUE)
+                           numeric(nrow(x)), rep(0, 6), code, TRUE)
         info_str <- paste(link, paste(alpha, collapse = " "), tau)
         expect_false(is.nan(ev$L), info = info_str)
         if (is.finite(ev$L)) {
@@ -167,7 +168,8 @@ test_that(paste(
   des <- mlvl_cumul_design(y ~ x + z + (1 | g), dat$d_aug, dat$w)
   ev <- function(maxit) {
     mlvl_cumul_c(c(-1, 0, 1), c(0.5, -0.5), 2, des$x, des$grp, des$nlev,
-                 des$y, des$w, rep(0, des$nlev), 1L, FALSE, maxit = maxit)
+                 des$y, des$w, numeric(nrow(des$x)), rep(0, des$nlev),
+                 1L, FALSE, maxit = maxit)
   }
   expect_lt(ev(50)$gmax, 1e-8)
   expect_gt(ev(1)$gmax, 1e-6)
@@ -526,8 +528,9 @@ test_that(paste(
   mlvl_laplace_cumul_orig <- mlvl_laplace_cumul
   rec <- list()
   local_mocked_bindings(mlvl_laplace_cumul = function(formula, data, family,
-                                                      weights = NULL) {
-    fit <- mlvl_laplace_cumul_orig(formula, data, family, weights)
+                                                      weights = NULL,
+                                                      offset = NULL) {
+    fit <- mlvl_laplace_cumul_orig(formula, data, family, weights, offset)
     rec[[length(rec) + 1L]] <<- list(w = weights, fit = fit)
     fit
   })

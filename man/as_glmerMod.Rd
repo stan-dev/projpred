@@ -4,7 +4,7 @@
 \alias{as_glmerMod}
 \title{Convert a submodel fit of class \code{projpred_mlvl} to class \code{glmerMod}}
 \usage{
-as_glmerMod(object, data, weights = NULL)
+as_glmerMod(object, data, weights = NULL, offset = NULL)
 }
 \arguments{
 \item{object}{An object of class \code{projpred_mlvl}, for example an element of
@@ -22,6 +22,12 @@ response category), and the predicted probabilities are in the weights.}
 \item{weights}{A numeric vector of the observation weights that \code{object} was
 fitted with, or \code{NULL} for weights of 1. Rows of \code{data} with weight 0 are
 removed, as \pkg{projpred} does before it fits a multilevel submodel.}
+
+\item{offset}{A numeric vector of the offsets that \code{object} was fitted with
+(element \code{offset} of the reference model object, see \link{refmodel-init-get}),
+or \code{NULL} for offsets of 0. For a reference model with offsets,
+\pkg{projpred} fits the submodels with the offsets, and the response is
+the vector of the reference model's predicted means with offsets.}
 }
 \value{
 An object of class \code{glmerMod} (see \code{\link[lme4:glmer]{lme4::glmer()}}) with the

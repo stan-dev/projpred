@@ -87,8 +87,9 @@
 #'     inherits from class `projpred_mlvl`). This fit minimizes the Laplace
 #'     approximation of [lme4::glmer()] (with `nAGQ = 1`), without rounding
 #'     non-integer responses. \pkg{projpred} uses [lme4::glmer()] instead if
-#'     the fit does not converge, if the submodel has an offset, a
-#'     rank-deficient model matrix or more than 500 group levels in total, if
+#'     the fit does not converge, if the submodel formula has an offset term,
+#'     if the submodel has a rank-deficient model matrix or more than 500
+#'     group levels in total, if
 #'     `...` contains arguments of
 #'     [lme4::glmer()] (for example `control` or `nAGQ`), or if global option
 #'     `projpred.mlvl_laplace` is `FALSE`. After a fit that does not converge,
@@ -119,7 +120,8 @@
 #'     uses, for the links of [brms::cumulative()] (`logit`, `probit`,
 #'     `probit_approx`, `cloglog`, `cauchit`). \pkg{projpred} uses
 #'     [ordinal::clmm()] instead if the fit does not converge, if the submodel
-#'     has an offset or a rank-deficient model matrix, if `...` contains
+#'     formula has an offset term, if the submodel has a rank-deficient model
+#'     matrix, if `...` contains
 #'     arguments of [ordinal::clmm()] or of its optimizers (for example
 #'     `method` or `control`), or if global option `projpred.mlvl_laplace` is
 #'     `FALSE`. After a fit that does not converge, the [ordinal::clmm()] fit
@@ -146,6 +148,13 @@
 #' \pkg{projpred}, the returned object inherits from class `gamm4`). For the
 #' [binomial()] and the [poisson()] family, \pkg{projpred} passes the same
 #' family as to [lme4::glmer()] (see above).
+#' * Offsets: the submodels are fitted with the offsets of the reference model
+#' to its predicted means with offsets (for the augmented-data projection, to
+#' its predicted probabilities with offsets). This minimizes the
+#' Kullback-Leibler divergence from the reference model. For the
+#' [gaussian()] family with the identity link and for the latent projection,
+#' the fit without offsets gives the same coefficients, so \pkg{projpred} omits
+#' the offsets there. All offsets must be finite.
 #'
 #' # Verbosity, messages, warnings, errors
 #'
@@ -354,9 +363,10 @@
 #' * `projpred.glm_fitter`: A character string naming the function to be used as
 #' the submodel fitter for non-multilevel, non-additive projections. Currently,
 #' this is an experimental feature and allowed values are
-#' `"fit_glm_ridge_callback"` (the default) and `"fit_glm_callback"`. For the
-#' negative binomial family with offsets, \pkg{projpred} accepts only
-#' `"fit_glm_ridge_callback"`.
+#' `"fit_glm_ridge_callback"` (the default) and `"fit_glm_callback"`. For a
+#' reference model with offsets, \pkg{projpred} accepts only
+#' `"fit_glm_ridge_callback"` (except for the Gaussian family with the identity
+#' link and the latent projection).
 #' * `projpred.gaussian_not_as_generalized`: A single logical value indicating
 #' whether to treat the [gaussian()] family not as a family for a *generalized
 #' linear* model (i.e., for which [glm()] would typically be used as a model

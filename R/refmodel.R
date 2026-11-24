@@ -1510,11 +1510,21 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
     }
   }
 
+  # The default divergence minimizer has attribute "projpred_default" with its
+  # name (see uses_divmin()):
   if (is.null(div_minimizer)) {
     if (!family$for_augdat) {
-      div_minimizer <- divmin
+      div_minimizer <- structure(divmin, projpred_default = "divmin")
     } else {
-      div_minimizer <- divmin_augdat
+      div_minimizer <- structure(divmin_augdat,
+                                 projpred_default = "divmin_augdat")
+    }
+  } else if (is.null(attr(div_minimizer, "projpred_default"))) {
+    if (identical(div_minimizer, divmin)) {
+      div_minimizer <- structure(divmin, projpred_default = "divmin")
+    } else if (identical(div_minimizer, divmin_augdat)) {
+      div_minimizer <- structure(divmin_augdat,
+                                 projpred_default = "divmin_augdat")
     }
   }
 
@@ -1724,6 +1734,15 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
   # the latent projection reject above, so this is only a guard:
   check_wobs_aug_lat(family, weights)
 
+  # The reference model predictions exclude the offsets (see ref_predfun()
+  # above): for an offset of -Inf or Inf (for example zero exposure), they are
+  # `NaN`, and so are `mu` and `mu_offs`:
+  if (!all(is.finite(offset))) {
+    stop("Currently, projpred supports offsets only if all offsets are ",
+         "finite. Non-finite offsets (for example -Inf for zero exposure) ",
+         "give undefined reference model predictions without offsets. ",
+         "Remove these observations from the data.", call. = FALSE)
+  }
   if (!proper_model && !all(offset == 0)) {
     # Disallow offsets for `datafit`s because the submodel fitting does not take
     # offsets into account (but `<refmodel>$mu` contains the observed response
@@ -1736,12 +1755,6 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
       !identical(family$link, "log")) {
     stop("Currently, projpred supports offsets for the negative binomial ",
          "family only with the log link.", call. = FALSE)
-  }
-  # An offset of -Inf (zero exposure) would give an infinite start of the
-  # intercept of the negative binomial fit:
-  if (identical(family$family, "negbinomial") && !all(is.finite(offset))) {
-    stop("Currently, projpred supports offsets for the negative binomial ",
-         "family only if all offsets are finite.", call. = FALSE)
   }
 
   # The contrasts of the factor predictors (`contrasts` attributes of the

@@ -484,8 +484,20 @@ test_that(paste(
   # Cases that use the draw-wise fitter:
   dot_args <- list(data = dat_d, family = extend_family(Gamma()))
   expect_null(glm_ridge_native_multi(fmls, shared_x, dot_args))
-  dot_args <- list(data = dat_d, family = extend_family(binomial()),
-                   offset = rep(0, n))
+  # Offsets: the same fits as the draw-wise fitter (the responses of the last
+  # family above are positive):
+  dot_args <- list(data = dat_d, family = extend_family(poisson()),
+                   weights = weights, offset = rnorm(n, sd = 0.3))
+  out_multi <- glm_ridge_native_multi(fmls, shared_x, dot_args)
+  expect_false(is.null(out_multi))
+  attr(out_multi, "mssgs_warns_capts") <- NULL
+  sdivmin_shared <- glm_ridge_callback_shared(shared_x)
+  out_drawwise <- lapply(fmls, function(fml) {
+    suppressWarnings(do.call(sdivmin_shared, c(list(formula = fml), dot_args)))
+  })
+  expect_equal(out_multi, out_drawwise, tolerance = 1e-12)
+  # Offsets of another length go to the draw-wise fitter:
+  dot_args$offset <- rep(0, n - 1)
   expect_null(glm_ridge_native_multi(fmls, shared_x, dot_args))
 })
 

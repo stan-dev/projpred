@@ -24,26 +24,29 @@ proj_to_submodl <- function(predictor_terms, p_ref, refmodel,
   # The negative binomial projection alternates with the projection of the
   # shapes (see nb_alternate()):
   nb_alt <- identical(refmodel$family$family, "negbinomial") &&
-    identical(refmodel$div_minimizer, divmin)
-  # The response of the submodel fits: the reference means without offsets,
-  # for NB the means with offsets (the fit then uses the offsets, see
-  # nb_alternate()):
-  y_fit <- if (nb_alt) p_ref$mu_offs else p_ref$mu
+    uses_divmin(refmodel)
+  # With offsets (see proj_offs_fit()), the submodel fits use the offsets, and
+  # their response is the reference means with offsets (for the augmented-data
+  # projection, the weights). Otherwise, the response is the reference means
+  # without offsets:
+  offs_fit <- proj_offs_fit(refmodel)
+  mu_fit <- if (offs_fit) p_ref$mu_offs else p_ref$mu
+  y_fit <- if (is.null(y_unqs_aug)) mu_fit else p_ref$mu
   use_fast <- is.null(y_unqs_aug) && !nb_alt &&
-    identical(refmodel$div_minimizer, divmin) &&
+    uses_divmin(refmodel) &&
     proj_fast_ok(dot_args_divmin) &&
-    !anyNA(p_ref$mu)
+    !anyNA(y_fit)
   store <- if (use_fast) proj_cache_store(refmodel) else NULL
   ent <- NULL
   if (!is.null(store)) {
-    cache_key <- paste(c(terms_, NCOL(p_ref$mu)), collapse = "\r")
+    cache_key <- paste(c(terms_, NCOL(y_fit)), collapse = "\r")
     ent <- proj_cache_get(store, cache_key)
   }
   subset <- NULL
   if (is.null(ent)) {
     prep <- NULL
     if (!is.null(store)) {
-      ent_design <- proj_prepare_design(store, refmodel, terms_, p_ref$mu)
+      ent_design <- proj_prepare_design(store, refmodel, terms_, y_fit)
       if (!is.null(ent_design)) {
         fml_divmin <- ent_design$fml_divmin
         prep <- ent_design$prep
@@ -77,13 +80,18 @@ proj_to_submodl <- function(predictor_terms, p_ref, refmodel,
 
   outdmin <- NULL
   if (use_fast && !is.null(prep)) {
+    dot_args_multi <- c(list(family = refmodel$family,
+                             weights = refmodel$wobs),
+                        dot_args_divmin)
+    if (offs_fit) {
+      dot_args_multi$offset <- refmodel$offset
+    }
     outdmin <- divmin_multi(
       prep$formulas, shared_x = prep$shared_x,
-      dot_args = c(list(family = refmodel$family, weights = refmodel$wobs),
-                   dot_args_divmin),
+      dot_args = dot_args_multi,
       throw_warn_sdivmin = getOption("projpred.warn_proj_drawwise", TRUE),
       do_check_conv = getOption("projpred.check_convergence", TRUE),
-      y = unclass(p_ref$mu)
+      y = unclass(y_fit)
     )
   }
   if (is.null(outdmin)) {
@@ -94,7 +102,7 @@ proj_to_submodl <- function(predictor_terms, p_ref, refmodel,
       )
       subset$data <- set_contrasts(subset$data, refmodel$contrasts)
     }
-    projpred_ws_aug <- p_ref$mu
+    projpred_ws_aug <- mu_fit
     if (refmodel$family$for_augdat && any(refmodel$wobs != 1)) {
       # The augmented-data submodel fitters use the probabilities of the
       # response categories as weights and ignore `weights`, so apply the
@@ -113,6 +121,9 @@ proj_to_submodl <- function(predictor_terms, p_ref, refmodel,
                           projpred_ws_aug = projpred_ws_aug,
                           verbose_divmin = verbose >= 3L),
                      dot_args_divmin)
+    if (offs_fit) {
+      args_divmin$offset <- refmodel$offset
+    }
     if (nb_alt) {
       outdmin <- nb_alternate(args_divmin, p_ref = p_ref, refmodel = refmodel)
     } else {
@@ -243,6 +254,41 @@ proj_fast_ok <- function(dot_args) {
                                      "formula", "data", "family", "weights",
                                      "projpred_var", "projpred_ws_aug",
                                      "verbose_divmin")))
+}
+
+# Whether the projection onto the submodels of `family` uses the offsets: the
+# fits get the offsets, and their response is the reference means with
+# offsets. This is the KL projection. Not for the Gaussian family with the
+# identity link and not for the latent projection: there, the fits without
+# offsets to the reference means without offsets give the same coefficients.
+offs_fit_family <- function(family) {
+  return(!isTRUE(family$for_latent) &&
+           !(identical(family$family, "gaussian") &&
+               identical(family$link, "identity")))
+}
+
+# Whether proj_to_submodl() and the searches use the offsets of `refmodel` in
+# the submodel fits (see offs_fit_family()). Only for projpred's own divergence
+# minimizers; a custom `div_minimizer` gets the arguments as before.
+proj_offs_fit <- function(refmodel) {
+  return(isTRUE(any(refmodel$offset != 0)) &&
+           offs_fit_family(refmodel$family) &&
+           uses_divmin(refmodel, c("divmin", "divmin_augdat")))
+}
+
+# Whether the divergence minimizer of `refmodel` is one of projpred's
+# divmin() and divmin_augdat() named in `which`. init_refmodel() gives its
+# default minimizer attribute "projpred_default" with the name: in parallel
+# workers that load projpred with pkgload::load_all(), identical() of the
+# minimizer and divmin() was `FALSE`. A replaced minimizer has no such
+# attribute; then identical() decides.
+uses_divmin <- function(refmodel, which = "divmin") {
+  dflt <- attr(refmodel$div_minimizer, "projpred_default")
+  if (is.character(dflt) && length(dflt) == 1) {
+    return(dflt %in% which)
+  }
+  funs <- list(divmin = divmin, divmin_augdat = divmin_augdat)[which]
+  return(any(vapply(funs, identical, logical(1), refmodel$div_minimizer)))
 }
 
 # Function to prepare the performance evaluation. For each submodel size along
@@ -414,23 +460,11 @@ perf_eval <- function(search_path,
 # the shapes (`family$dis_fun()`, as in init_submodl()) alternate. The start is
 # the shape of the reference model (`p_ref$dis`). The loop stops when the
 # largest change of log(shape) is below `tol`; attribute `nb_iter` of the
-# result is the number of iterations. This is the KL projection also with
-# offsets: the response in `args_divmin$data` is the reference means with
-# offsets (see proj_to_submodl()), the fit of the coefficients gets the
-# offsets, and the shape step uses the means with offsets.
+# result is the number of iterations. With offsets, the fit of the coefficients
+# gets the offsets in `args_divmin` (see proj_to_submodl()), and the shape step
+# uses the means with offsets.
 nb_alternate <- function(args_divmin, p_ref, refmodel, tol = 1e-5,
                          maxit = 50L) {
-  if (any(refmodel$offset != 0)) {
-    # The predictions of a stats::glm() fit with argument `offset` would add
-    # the offsets a second time:
-    if (!identical(getOption("projpred.glm_fitter", "fit_glm_ridge_callback"),
-                   "fit_glm_ridge_callback")) {
-      stop("For the negative binomial family with offsets, global option ",
-           "`projpred.glm_fitter` must be \"fit_glm_ridge_callback\".",
-           call. = FALSE)
-    }
-    args_divmin$offset <- refmodel$offset
-  }
   p_ref_offs <- p_ref
   p_ref_offs$mu <- p_ref$mu_offs
   phi <- as.numeric(p_ref$dis)

@@ -41,19 +41,22 @@ search_forward_fast <- function(p_ref, refmodel, nterms_max, verbose,
 # averaged over the draws with `wdraws_prj` and divided by sum(w) (the scale of
 # the cross-entropy `ce`; only the order of the gains matters). The ridge
 # penalty of the projection is ignored. The gains only select the candidates
-# to project; the exact projections choose the term. The submodels are fitted
-# to the reference means without the offsets, so `mu_ref` and `mu_A` are the
-# means without the offsets, too.
+# to project; the exact projections choose the term. With offsets (see
+# proj_offs_fit()), the submodels are fitted with the offsets to the reference
+# means with the offsets, so `mu_ref` and `mu_A` are the means with the offsets;
+# otherwise, both are the means without the offsets.
 search_forward_screen <- function(p_ref, refmodel, nterms_max, verbose,
                                   search_terms, screen_m, ...) {
   fam <- refmodel$family
   canon <- c(binomial = "logit", poisson = "log")
   if (!fam$family %in% names(canon) || fam$link != canon[[fam$family]] ||
       isTRUE(fam$for_augdat) || isTRUE(fam$for_latent) ||
-      !identical(refmodel$div_minimizer, divmin) || anyNA(p_ref$mu) ||
+      !uses_divmin(refmodel) || anyNA(p_ref$mu) ||
       !isTRUE(screen_m >= 1L)) {
     return(NULL)
   }
+  offs_fit <- proj_offs_fit(refmodel)
+  offs_sub <- if (offs_fit) refmodel$offset
   # The model matrix of all search terms (centered columns; the centering does
   # not change the score statistic of a submodel with an intercept). `regul`
   # only sets the unused `lambda_x`:
@@ -63,14 +66,17 @@ search_forward_screen <- function(p_ref, refmodel, nterms_max, verbose,
   }
   x_c <- des$x_c
   wobs <- des$wobs
-  mu_ref <- unclass(p_ref$mu)
+  mu_ref <- unclass(if (offs_fit) p_ref$mu_offs else p_ref$mu)
+  if (anyNA(mu_ref)) {
+    return(NULL)
+  }
   wdraws <- p_ref$wdraws_prj
   step_cands <- fast_step_cands(search_terms, des$cols_by_term)
 
   # The approximate gains of the candidates with the new columns `cols_cands`
   # at the submodel fit `outdmin` with the columns `cols_chosen`:
   score_gains <- function(outdmin, cols_cands, cols_chosen) {
-    mu_a <- refmodel$mu_fun(outdmin)
+    mu_a <- refmodel$mu_fun(outdmin, offset = offs_sub)
     if (!identical(dim(mu_a), dim(mu_ref)) || anyNA(mu_a)) {
       return(NULL)
     }

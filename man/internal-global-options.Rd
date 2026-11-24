@@ -22,9 +22,10 @@ activated during the unit tests.
 \item \code{projpred.glm_fitter}: A character string naming the function to be used as
 the submodel fitter for non-multilevel, non-additive projections. Currently,
 this is an experimental feature and allowed values are
-\code{"fit_glm_ridge_callback"} (the default) and \code{"fit_glm_callback"}. For the
-negative binomial family with offsets, \pkg{projpred} accepts only
-\code{"fit_glm_ridge_callback"}.
+\code{"fit_glm_ridge_callback"} (the default) and \code{"fit_glm_callback"}. For a
+reference model with offsets, \pkg{projpred} accepts only
+\code{"fit_glm_ridge_callback"} (except for the Gaussian family with the identity
+link and the latent projection).
 \item \code{projpred.gaussian_not_as_generalized}: A single logical value indicating
 whether to treat the \code{\link[=gaussian]{gaussian()}} family not as a family for a \emph{generalized
 linear} model (i.e., for which \code{\link[=glm]{glm()}} would typically be used as a model

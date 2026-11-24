@@ -651,13 +651,14 @@ search_L1 <- function(p_ref, refmodel, nterms_max, penalty, search_control) {
     # The L1 path of the negative binomial family uses the shape of the
     # reference model (aggregated over the draws of the single cluster) as a
     # fixed shape. The projections after the search (`refit_prj = TRUE`)
-    # project the shape. With offsets, the path uses the means with offsets as
-    # the response and passes the offsets to the fitter (as nb_alternate()):
+    # project the shape:
     fam_L1 <- fam_L1$fixed_dis_family(min(p_ref$dis, nb_phi_max()))
-    if (any(refmodel$offset != 0)) {
-      p_ref$mu <- p_ref$mu_offs
-      d_train$offset <- refmodel$offset
-    }
+  }
+  # With offsets, the path uses the means with offsets as the response and
+  # passes the offsets to the fitter (as proj_to_submodl()):
+  if (proj_offs_fit(refmodel)) {
+    p_ref$mu <- p_ref$mu_offs
+    d_train$offset <- refmodel$offset
   }
   search_path <- search_L1_surrogate(
     p_ref, d_train, fam_L1,

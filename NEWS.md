@@ -7,6 +7,7 @@ If you read this from a place other than <https://mc-stan.org/projpred/news/inde
 ## Major changes
 
 * The traditional projection supports the negative binomial family (`rstanarm::neg_binomial_2()`, `brms::negbinomial()`, `MASS::negative.binomial()`) for submodels without group-level and additive terms. The shape parameter is projected, too. (GitHub: #361, #675)
+* With offsets, the submodels are fitted with the offsets to the reference model's means with offsets (the KL projection). This changes the results except for the Gaussian family with the identity link and the latent projection. Non-finite offsets, and offsets with `gamm4` submodels or the `brms::categorical()` family, now give an error. See `?projpred-package`. (GitHub: #???)
 
 ## Minor changes
 

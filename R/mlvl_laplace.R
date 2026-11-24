@@ -43,13 +43,15 @@ mlvl_laplace_grps <- function(formula) {
 mlvl_laplace_max_levels <- 500L
 
 # Design of mlvl_laplace(): the fixed-effects model matrix, the response, the
-# weights and the level codes of the grouping variables, in the term order of
-# lme4 (reformulas::mkReTrms() sorts the terms by decreasing number of levels if
-# they are not in this order).  Returns `NULL` for cases that the fit does not
-# handle (missing values, offsets, a rank-deficient model matrix, a response
-# outside the range of the family, more than `mlvl_laplace_max_levels` group
-# levels).
-mlvl_laplace_design <- function(formula, data, weights, grps, fam) {
+# weights, the offsets (argument `offset`, `NULL` for zeros) and the level codes
+# of the grouping variables, in the term order of lme4 (reformulas::mkReTrms()
+# sorts the terms by decreasing number of levels if they are not in this
+# order).  Returns `NULL` for cases that the fit does not handle (missing
+# values, offset terms in the formula, non-finite offsets, a rank-deficient
+# model matrix, a response outside the range of the family, more than
+# `mlvl_laplace_max_levels` group levels).
+mlvl_laplace_design <- function(formula, data, weights, grps, fam,
+                                offset = NULL) {
   if (!is.data.frame(data) || !all(grps %in% names(data))) return(NULL)
   n <- nrow(data)
   fixed <- reformulas::nobars(formula)
@@ -75,6 +77,8 @@ mlvl_laplace_design <- function(formula, data, weights, grps, fam) {
   if (any(y < 0) || (fam == 0L && any(y > 1))) return(NULL)
   if (is.null(weights)) weights <- rep(1, n)
   if (length(weights) != n || anyNA(weights) || any(weights < 0)) return(NULL)
+  if (is.null(offset)) offset <- rep(0, n)
+  if (length(offset) != n || !all(is.finite(offset))) return(NULL)
   facs <- lapply(setNames(nm = grps), function(g) {
     droplevels(as.factor(data[[g]]))
   })
@@ -86,6 +90,7 @@ mlvl_laplace_design <- function(formula, data, weights, grps, fam) {
   facs <- facs[ord]
   return(list(
     x = x, y = as.vector(y), w = as.vector(weights),
+    offset = as.numeric(offset),
     grp = matrix(vapply(facs, as.integer, integer(n)) - 1L, nrow = n),
     nlev = nlev[ord], lvls = lapply(facs, levels),
     terms = delete.response(trms), xlevels = .getXlevels(trms, mf),
@@ -97,8 +102,8 @@ mlvl_laplace_design <- function(formula, data, weights, grps, fam) {
 # found from u = 0:
 mlvl_laplace_dev <- function(des, fam, theta, beta) {
   return(mlvl_laplace_c(theta, beta, des$x, des$grp, des$nlev, des$y, des$w,
-                        rep(0, nrow(des$x)), rep(0, sum(des$nlev)), fam,
-                        FALSE)$D)
+                        des$offset %||% rep(0, nrow(des$x)),
+                        rep(0, sum(des$nlev)), fam, FALSE)$D)
 }
 
 # Minimize the Laplace deviance over (theta, beta) with nlminb().  Start: theta
@@ -110,13 +115,12 @@ mlvl_laplace_optim <- function(des, fam, rel_tol = 1e-10, small_theta = 1e-3,
                                restart_theta = 0.3) {
   k <- length(des$nlev)
   p <- ncol(des$x)
-  n <- nrow(des$x)
-  offs <- rep(0, n)
+  offs <- des$offset %||% rep(0, nrow(des$x))
   # Start values from glm.fit(), without its aic(): for non-integer responses,
   # dpois() warns once per observation, which takes most of the time of a fit:
   fam_start <- if (fam == 1L) poisson() else binomial()
   fam_start$aic <- function(...) 0
-  g0 <- suppressWarnings(glm.fit(des$x, des$y, weights = des$w,
+  g0 <- suppressWarnings(glm.fit(des$x, des$y, weights = des$w, offset = offs,
                                  family = fam_start))
   beta0 <- coef(g0)
   if (anyNA(beta0) || !all(is.finite(beta0))) beta0 <- rep(0, p)
@@ -182,7 +186,7 @@ new_projpred_mlvl <- function(formula, family, link, terms, xlevels,
 # `projpred.mlvl_laplace`, read by divmin() in the main R process) is `TRUE`,
 # global option `projpred.PQL` is not set, the family and the group-level
 # terms are supported, and `dot_args` has no lme4::glmer() arguments other
-# than `data` and `weights`.
+# than `data`, `weights` and `offset`.
 mlvl_laplace_use <- function(formula, family, dot_args, use = TRUE) {
   if (!isTRUE(use) || getOption("projpred.PQL", FALSE) ||
       is.null(mlvl_laplace_fam(family)) ||
@@ -190,18 +194,21 @@ mlvl_laplace_use <- function(formula, family, dot_args, use = TRUE) {
     return(FALSE)
   }
   glmer_args <- intersect(names(dot_args), methods::formalArgs(lme4::glmer))
-  return(all(glmer_args %in% c("data", "weights")))
+  return(all(glmer_args %in% c("data", "weights", "offset")))
 }
 
 # The Laplace fit.  Returns `NULL` if the design does not apply (see
 # mlvl_laplace_design()), and an object with `convergence != 0` if nlminb()
 # failed or did not converge (then `optinfo$message` says why).  The design is
-# in attribute "des" of an object with `convergence != 0`.
-mlvl_laplace <- function(formula, data, family, weights = NULL) {
+# in attribute "des" of an object with `convergence != 0`.  The fit uses the
+# offsets `offset` (`NULL` for zeros); its predictions do not.
+mlvl_laplace <- function(formula, data, family, weights = NULL,
+                         offset = NULL) {
   fam <- mlvl_laplace_fam(family)
   grps <- mlvl_laplace_grps(formula)
   if (is.null(fam) || is.null(grps)) return(NULL)
-  des <- mlvl_laplace_design(formula, data, weights, grps, fam)
+  des <- mlvl_laplace_design(formula, data, weights, grps, fam,
+                             offset = offset)
   if (is.null(des)) return(NULL)
   opt <- tryCatch(mlvl_laplace_optim(des, fam), error = function(e) e)
   if (inherits(opt, "error")) {
@@ -355,6 +362,11 @@ subprd_mlvl <- function(fits, newdata) {
 #' @param weights A numeric vector of the observation weights that `object` was
 #'   fitted with, or `NULL` for weights of 1. Rows of `data` with weight 0 are
 #'   removed, as \pkg{projpred} does before it fits a multilevel submodel.
+#' @param offset A numeric vector of the offsets that `object` was fitted with
+#'   (element `offset` of the reference model object, see [refmodel-init-get]),
+#'   or `NULL` for offsets of 0. For a reference model with offsets,
+#'   \pkg{projpred} fits the submodels with the offsets, and the response is
+#'   the vector of the reference model's predicted means with offsets.
 #'
 #' @details The group-level intercepts of the returned object are computed by
 #'   \pkg{lme4} from `data` and `weights`. If they or the value of the
@@ -405,7 +417,7 @@ subprd_mlvl <- function(fits, newdata) {
 #' lme4::ranef(fit_lme4)
 #'
 #' @export
-as_glmerMod <- function(object, data, weights = NULL) {
+as_glmerMod <- function(object, data, weights = NULL, offset = NULL) {
   if (!inherits(object, "projpred_mlvl")) {
     stop("`object` must be of class `projpred_mlvl`.")
   }
@@ -424,8 +436,15 @@ as_glmerMod <- function(object, data, weights = NULL) {
     stop("`weights` must be a numeric vector of non-negative values with one ",
          "element per row of `data`.")
   }
-  if (".projpred_wobs" %in% names(data)) {
-    stop("`data` must not have a column named `.projpred_wobs`.")
+  if (!is.null(offset) &&
+      (!is.numeric(offset) || length(offset) != nrow(data) ||
+         !all(is.finite(offset)))) {
+    stop("`offset` must be a numeric vector of finite values with one ",
+         "element per row of `data`.")
+  }
+  if (any(c(".projpred_wobs", ".projpred_offs") %in% names(data))) {
+    stop("`data` must not have a column named `.projpred_wobs` or ",
+         "`.projpred_offs`.")
   }
   fam <- switch(object$family,
                 binomial = binomial(link = object$link),
@@ -436,10 +455,12 @@ as_glmerMod <- function(object, data, weights = NULL) {
   mc <- as.call(c(
     list(quote(lme4::glmer), formula = object$formula, data = mc_in$data,
          family = call(object$family, link = object$link)),
-    if (!is.null(mc_in$weights)) list(weights = mc_in$weights)
+    if (!is.null(mc_in$weights)) list(weights = mc_in$weights),
+    if (!is.null(mc_in$offset)) list(offset = mc_in$offset)
   ))
   # As divmin() does before the fit:
   if (any(weights == 0)) {
+    if (!is.null(offset)) offset <- offset[weights != 0]
     data <- data[weights != 0, , drop = FALSE]
     weights <- weights[weights != 0]
   }
@@ -447,7 +468,7 @@ as_glmerMod <- function(object, data, weights = NULL) {
   # `object`:
   des <- mlvl_laplace_design(object$formula, data, weights,
                              mlvl_laplace_grps(object$formula),
-                             mlvl_laplace_fam(fam))
+                             mlvl_laplace_fam(fam), offset = offset)
   dev <- if (is.null(des)) {
     NA_real_
   } else {
@@ -459,12 +480,16 @@ as_glmerMod <- function(object, data, weights = NULL) {
     )
   }
   data$.projpred_wobs <- weights
+  if (!is.null(offset)) {
+    data$.projpred_offs <- offset
+  }
   # The responses of a projection are not integers, so the warnings of the
   # family functions about non-integer responses are expected:
   out <- withCallingHandlers({
-    glmod <- do.call(lme4::glFormula, list(
-      formula = object$formula, data = data, family = fam,
-      weights = quote(.projpred_wobs)
+    glmod <- do.call(lme4::glFormula, c(
+      list(formula = object$formula, data = data, family = fam,
+           weights = quote(.projpred_wobs)),
+      if (!is.null(offset)) list(offset = quote(.projpred_offs))
     ))
     nms_x <- colnames(glmod$X)
     nms_g <- names(glmod$reTrms$cnms)

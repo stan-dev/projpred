@@ -29,8 +29,8 @@ glm_ridge_native_multi_c <- function(x, y, weights, offset, family_code, link_co
     .Call('_projpred_glm_ridge_native_multi_c', PACKAGE = 'projpred', x, y, weights, offset, family_code, link_code, lambda, intercept, penalty, beta_init, w_init, thresh, qa_updates_max, ls_iter_max, debug)
 }
 
-mlvl_cumul_c <- function(alpha, beta, tau, x, grp, nlev, y, w, u, link, want_grad, tol = 1e-10, maxit = 50L) {
-    .Call('_projpred_mlvl_cumul_c', PACKAGE = 'projpred', alpha, beta, tau, x, grp, nlev, y, w, u, link, want_grad, tol, maxit)
+mlvl_cumul_c <- function(alpha, beta, tau, x, grp, nlev, y, w, offset, u, link, want_grad, tol = 1e-10, maxit = 50L) {
+    .Call('_projpred_mlvl_cumul_c', PACKAGE = 'projpred', alpha, beta, tau, x, grp, nlev, y, w, offset, u, link, want_grad, tol, maxit)
 }
 
 mlvl_laplace_c <- function(theta, beta, x, grp, nlev, y, w, offset, u, fam, want_grad, tol = 1e-10, maxit = 50L) {
