@@ -836,6 +836,40 @@ gamm4_vars_miss <- function(object) {
   return(setdiff(vars_expr, names(data)))
 }
 
+# For t2() terms, mgcv uses one identifiability constraint for the fit and
+# another one for the prediction. The coefficients of an rstanarm::stan_gamm4()
+# fit are in the basis of `fit$x`, which is
+# `predict(fit$jam, type = "lpmatrix") %*% fit$jam$P`, but rstanarm predicts
+# without `P`. This function computes `linpred` (draws x observations, from
+# posterior_linpred() with offsets `offset`) again with the correct
+# population-level part.
+gamm4_linpred_fix <- function(fit, linpred, newdata = NULL, offset) {
+  if (!inherits(fit, "gamm4") || is.null(fit$jam$P)) {
+    return(linpred)
+  }
+  if (is.null(newdata)) {
+    x_jam <- predict(fit$jam, type = "lpmatrix")
+  } else {
+    x_jam <- predict(fit$jam, newdata = newdata, type = "lpmatrix")
+  }
+  beta <- as.matrix(fit, pars = colnames(x_jam))
+  if (!identical(dim(fit$jam$P), rep(ncol(x_jam), 2L)) ||
+      !identical(dim(linpred), c(nrow(beta), nrow(x_jam))) ||
+      length(offset) != nrow(x_jam)) {
+    stop("Unexpected structure of the rstanarm::stan_gamm4() fit. Please ",
+         "notify the package maintainer.")
+  }
+  linpred_fix <- tcrossprod(beta, x_jam %*% fit$jam$P) +
+    rep(offset, each = nrow(beta))
+  if (!is.null(fit$glmod)) {
+    # Add the group-level part:
+    linpred_fix <- linpred_fix + linpred -
+      posterior_linpred(fit, newdata = newdata, re.form = NA, offset = offset)
+  }
+  linpred[] <- as.matrix(linpred_fix)
+  return(linpred)
+}
+
 #' @rdname refmodel-init-get
 #' @export
 get_refmodel.stanreg <- function(object, latent = FALSE, dis = NULL,
@@ -1052,6 +1086,8 @@ get_refmodel.stanreg <- function(object, latent = FALSE, dis = NULL,
     }
     linpred_out <- posterior_linpred(fit, newdata = newdata, offset = offs)
     stopifnot(length(dim(linpred_out)) == 2)
+    linpred_out <- gamm4_linpred_fix(fit, linpred_out, newdata = newdata,
+                                     offset = offs)
     aug_data <- fit$stan_function == "stan_polr" && !latent
     if (aug_data) {
       # Since rstanarm::posterior_linpred.stanreg() doesn't offer an argument
