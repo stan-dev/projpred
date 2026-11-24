@@ -123,22 +123,22 @@ test_that("glm_ridge: gaussian, id-link, intercept, lambda = 0.5", {
   y <- rnorm(n, x %*% b, dis)
   lambda <- 0.5
 
+  # Without the standardization of `x`, so that the analytic solution below
+  # applies:
   ridgefit <- glm_ridge(x_tr, y,
                         family = fam, lambda = lambda,
-                        weights = weights, offset = offset, intercept = TRUE
+                        weights = weights, offset = offset, intercept = TRUE,
+                        normalize = FALSE
   )
-  # analytic solution, no penalty on the intercept term
-  penalty <- 0.5 * diag(c(0, rep(lambda, nterms_fit)))
+  # analytic solution of the loss 0.5 * sum(w * r^2) + 0.5 * lambda * |beta|^2,
+  # no penalty on the intercept term
+  penalty <- diag(c(0, rep(lambda, nterms_fit)))
   exp_beta <- c(solve(
     crossprod(cbind(1, x_tr) * sqrt(weights)) + penalty,
     crossprod(cbind(1, x_tr) * weights, y - offset)
   ))
 
-  # The analytic solution above does not use the penalty of glm_ridge() (which
-  # standardizes `x` and uses `lambda`, not `0.5 * lambda`). The mean relative
-  # difference is about 3.5e-3, so check the absolute difference of each
-  # coefficient:
-  expect_lt(max(abs(exp_beta - c(ridgefit$beta0, ridgefit$beta))), tol)
+  expect_equal(exp_beta, c(ridgefit$beta0, ridgefit$beta), tolerance = 1e-10)
 })
 
 test_that("glm_ridge: gaussian, log-link, intercept, lambda = 0", {
