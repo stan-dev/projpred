@@ -342,13 +342,13 @@ This example demonstrated how the latent projection can be used for those famili
 ## Example: Student-t distribution {#studentex}
 
 In this example, we use the latent projection for a reference model with the Student-$t$ distribution (`brms::student()`).
-**projpred**'s traditional projection does not support this family (the `Student_t()` family is deprecated).
+**projpred**'s traditional projection does not support this family.
 For the identity link, the latent predictor is the location of the Student-$t$ distribution.
-The latent projection projects the location with a Gaussian submodel.
-It projects the scale $\sigma$ with the Gaussian dispersion projection: the squared projected scale is the squared scale of the reference model plus the mean squared difference between the locations of the reference model and the submodel.
+The latent projection fits the location with a Gaussian submodel.
+It projects the scale $\sigma$ with the Gaussian dispersion projection.
+The squared projected scale equals the squared scale of the reference model plus the mean squared difference between the locations of the reference model and the submodel.
 The submodels keep the degrees of freedom $\nu$ of the reference model.
-A [comment](https://github.com/stan-dev/projpred/issues/3#issuecomment-7109995137) on GitHub issue #3 compares the latent projection with the projection that minimizes the KL divergence between the Student-$t$ distributions.
-In that simulation study (identity link, 20 predictors, $n = 100$ and $n = 1000$, 100 datasets per setting), the two projections gave nearly the same search results and predictive performance.
+For the identity link, a simulation study found nearly the same results as with the exact KL projection.
 
 ### Data
 
@@ -434,12 +434,12 @@ The functions above use the draws of $\sigma$ and $\nu$ from the full-data fit.
 This is correct for `varsel()` and for the LOO CV that we use here.
 For K-fold CV, see section ["K-fold CV with custom response-scale functions"](#kfold-custom).
 
-The `plot()` results:
+We plot the results:
 ```{r plot_vsel_student, fig.alt="The same kind of plot for the latent projection of the Student-t model, with the expected log predictive density on the vertical axis."}
 plot(cvvs_student, stats = "elpd", deltas = TRUE)
 ```
 
-The size that `suggest_size()` suggests and the corresponding predictor terms:
+`suggest_size()` gives the size and the corresponding predictor terms:
 ```{r size_sgg_student}
 ( size_sgg_student <- suggest_size(cvvs_student, stat = "elpd") )
 head(ranking(cvvs_student)[["fulldata"]], size_sgg_student)
@@ -447,7 +447,7 @@ head(ranking(cvvs_student)[["fulldata"]], size_sgg_student)
 
 ### Conclusion
 
-This example showed how to use the latent projection for a Student-$t$ reference model: pass the draws of $\sigma$ as `dis`, and supply response-scale functions that use the draws of $\nu$.
+To use the latent projection for a Student-$t$ reference model, pass the draws of $\sigma$ as `dis` and supply response-scale functions that use the draws of $\nu$.
 
 ## Censored observations (survival analysis) {#cens}
 
