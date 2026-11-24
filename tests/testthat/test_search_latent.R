@@ -1,5 +1,3 @@
-context("latent-screened forward search (argument `search_screen`)")
-
 # Reference models with simulated draws of the parameters (no model fit is
 # necessary; the draws are the simulation values plus noise, so they are not a
 # posterior). Predictors: 8 numeric columns (x6 to x8 have an effect), a factor

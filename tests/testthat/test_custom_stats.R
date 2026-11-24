@@ -1,5 +1,3 @@
-context("custom_stat()")
-
 # Custom reimplementations of built-in statistics:
 cstat_mse <- custom_stat(function(y, mu, wobs) (mu - y)^2, name = "c_mse",
                          higher_better = FALSE, label = "Custom MSE")

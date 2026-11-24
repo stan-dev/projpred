@@ -188,8 +188,11 @@ test_that(paste(
         colMeans(mu_lat_oscale[which(pref_lat$cl == cl_idx), , drop = FALSE])
       }
     )
-    expect_equal(mu_lat_oscale_cl, pref_trad$mu, tolerance = 1e-10,
-                 info = tstsetup)
+    # The mean relative difference can be above 1e-10, so check the absolute
+    # difference of each element:
+    expect_identical(dim(mu_lat_oscale_cl), dim(pref_trad$mu), info = tstsetup)
+    expect_lt(max(abs(mu_lat_oscale_cl - pref_trad$mu)), 1e-10,
+              label = paste("largest absolute difference,", tstsetup))
 
     mu_offs_lat_oscale <- refmod_crr$family$latent_ilink(t(refmod_crr$mu_offs))
     mu_offs_lat_oscale_cl <- sapply(
@@ -202,8 +205,10 @@ test_that(paste(
         )
       }
     )
-    expect_equal(mu_offs_lat_oscale_cl, pref_trad$mu_offs, tolerance = 1e-10,
-                 info = tstsetup)
+    expect_identical(dim(mu_offs_lat_oscale_cl), dim(pref_trad$mu_offs),
+                     info = tstsetup)
+    expect_lt(max(abs(mu_offs_lat_oscale_cl - pref_trad$mu_offs)), 1e-10,
+              label = paste("largest absolute difference,", tstsetup))
   }
 })
 

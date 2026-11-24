@@ -472,7 +472,7 @@ test_that(paste(
     }
 
     # Without `ynew`:
-    expect_warning(
+    expect_warning_all(
       withCallingHandlers(
         predref_resp <- predict(refmods[[tstsetup]], dat, weightsnew = wobs_crr,
                                 offsetnew = offs_crr, type = "response"),
@@ -487,7 +487,7 @@ test_that(paste(
       info = tstsetup
     )
 
-    expect_warning(
+    expect_warning_all(
       predref_link <- predict(refmods[[tstsetup]], dat, weightsnew = wobs_crr,
                               offsetnew = offs_crr, type = "link"),
       get_warn_wrhs_orhs(tstsetup, weightsnew = wobs_crr,
@@ -496,7 +496,7 @@ test_that(paste(
     )
 
     # With `ynew`:
-    expect_warning(
+    expect_warning_all(
       predref_ynew_resp <- predict(refmods[[tstsetup]], dat,
                                    weightsnew = wobs_crr, offsetnew = offs_crr,
                                    ynew = y_crr, type = "response"),
@@ -504,7 +504,7 @@ test_that(paste(
                          offsetnew = offs_crr),
       info = tstsetup
     )
-    expect_warning(
+    expect_warning_all(
       predref_ynew_link <- predict(refmods[[tstsetup]], dat,
                                    weightsnew = wobs_crr, offsetnew = offs_crr,
                                    ynew = y_crr_link, type = "link"),
@@ -567,7 +567,6 @@ test_that(paste(
 
     # Snapshots:
     if (run_snaps) {
-      if (testthat_ed_max2) local_edition(3)
       withr::with_options(list(width = 145), {
         expect_snapshot({
           print(tstsetup)
@@ -577,7 +576,6 @@ test_that(paste(
           print(rlang::hash(predref_ynew_link))
         })
       })
-      if (testthat_ed_max2) local_edition(2)
     }
   }
 })

@@ -125,17 +125,17 @@ extfam_tester <- function(extfam,
   }
   if (!from_brms) {
     expect_identical(fam_orig_ch, fam_orig,
-                     ignore.environment = extfam$for_latent, info = info_str)
+                     ignore_function_env = extfam$for_latent, info = info_str)
   } else if (extfam$family %in% bfam_nms) {
     expect_identical(
       fam_orig_ch,
       structure(fam_orig[setdiff(names(fam_orig), c("dpars", "multi_dpars"))],
                 class = class(fam_orig)),
-      ignore.environment = TRUE,
+      ignore_function_env = TRUE,
       info = info_str
     )
   } else {
-    expect_identical(fam_orig_ch, fam_orig, ignore.environment = TRUE,
+    expect_identical(fam_orig_ch, fam_orig, ignore_function_env = TRUE,
                      info = info_str)
   }
 
@@ -628,7 +628,9 @@ refmodel_tester <- function(
                              stdized_lhs$y_nm)
         }
         refdat_ch <- data_expected[, refdat_colnms, drop = FALSE]
-        expect_equal(refmod$fetch_data(), refdat_ch, check.attributes = FALSE,
+        # `ignore_attr = TRUE` also ignores the class:
+        expect_s3_class(refmod$fetch_data(), "data.frame")
+        expect_equal(refmod$fetch_data(), refdat_ch, ignore_attr = TRUE,
                      info = info_str)
       } else {
         # TODO: The check in this case is not optimal yet because it subsets
@@ -640,8 +642,9 @@ refmodel_tester <- function(
           refdat_ch <- cbind(refdat_ch, wobs_col = data_expected$wobs_col)
         }
         names(refdat_ch) <- sub("^offset\\((.*)\\)$", "\\1", names(refdat_ch))
+        expect_s3_class(refmod$fetch_data(), "data.frame")
         expect_equal(refmod$fetch_data()[, names(refdat_ch), drop = FALSE],
-                     refdat_ch, check.attributes = FALSE, info = info_str)
+                     refdat_ch, ignore_attr = TRUE, info = info_str)
       }
     } else if (is_datafit && pkg_nm != "brms" && fam_nm == "binom") {
       refdat_ch <- data_expected
@@ -852,7 +855,7 @@ outdmin_tester_trad <- function(
         expect_s3_class(outdmin_totest[[!!j]]$formula, "formula")
         if (!grepl(":", as.character(outdmin_totest[[j]]$formula)[3])) {
           expect_equal(outdmin_totest[[!!j]]$formula, sub_formul[[!!j]],
-                       info = info_str)
+                       ignore_formula_env = TRUE, info = info_str)
         } else {
           # The order of terms as well as the order of individual terms within
           # ":" interaction terms might be changed in the reference model:
@@ -953,7 +956,8 @@ outdmin_tester_trad <- function(
       grps_expected <- mlvl_laplace_grps(sub_formul[[1]])
       for (j in seq_extensive_tests) {
         expect_equal(formula(outdmin_totest[[!!j]]),
-                     flatten_formula(sub_formul[[j]]), info = info_str)
+                     flatten_formula(sub_formul[[j]]),
+                     ignore_formula_env = TRUE, info = info_str)
         expect_identical(names(outdmin_totest[[!!j]]$coefficients),
                          colnames(mm_expected), info = info_str)
         expect_true(all(is.finite(outdmin_totest[[!!j]]$coefficients)),
@@ -1001,7 +1005,7 @@ outdmin_tester_trad <- function(
       }
       expect_equal(outdmin_totest[[!!j]]@call[["formula"]],
                    sub_formul_expected,
-                   info = info_str)
+                   ignore_formula_env = TRUE, info = info_str)
 
       # resp
       if (!with_offs) {
@@ -1448,10 +1452,11 @@ outdmin_tester_aug <- function(
           expect_equal(
             random_crr[[1]]$formula,
             as.formula(paste("~", paste(coef_nms_no_icpt, collapse = "+"))),
-            info = info_str
+            ignore_formula_env = TRUE, info = info_str
           )
         } else {
-          expect_equal(random_crr[[1]]$formula, ~ 1, info = info_str)
+          expect_equal(random_crr[[1]]$formula, ~ 1, ignore_formula_env = TRUE,
+                       info = info_str)
         }
         expect_identical(random_crr[[1]]$groups, "z.1", info = info_str)
 

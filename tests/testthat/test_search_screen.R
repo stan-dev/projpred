@@ -1,5 +1,3 @@
-context("score-screened forward search (argument `search_screen`)")
-
 # A binomial or Poisson reference model with simulated draws of the
 # coefficients (no model fit is necessary): the draws are the maximum
 # likelihood estimate plus N(0, 0.1^2) noise, so they are not a posterior.

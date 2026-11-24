@@ -1,5 +1,3 @@
-context("weighted column moments in compiled code")
-
 test_that(paste(
   "wcol_moments_c() gives the weighted means and sums of squares of scaled",
   "columns"
@@ -54,8 +52,7 @@ test_that(paste(
   thin <- rep(NA, S)
   thin[c(2, 9, 17, 30)] <- 1:4
   for (fam in list(extend_family(gaussian()),
-                   extend_family(expect_warning(Student_t(nu = 5),
-                                                "deprecated")))) {
+                   extend_family(student_t_tst(nu = 5)))) {
     for (cl in list(seq_len(S), sample(S), thin)) {
       args <- list(family = fam, eta = mu, mu = mu, mu_offs = mu + 1,
                    dis = dis, wdraws = wdraws, cl = cl)

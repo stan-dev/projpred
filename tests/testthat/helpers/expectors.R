@@ -25,3 +25,71 @@ expect_doppelganger_cust <- function(title,
   }
   return(invisible(TRUE))
 }
+
+# In edition 3, expect_warning() catches only one warning. This expectation
+# catches all warnings whose message matches `regexp` (all warnings for
+# `regexp = NULL`) and requires at least one of them. Other warnings are not
+# caught. `regexp = NA` requires that there is no warning. Returns the value of
+# `object` invisibly.
+expect_warning_all <- function(object, regexp = NULL, ..., info = NULL) {
+  if (identical(regexp, NA)) {
+    expect_warning(val <- object, NA, info = info)
+    return(invisible(val))
+  }
+  n_warn <- 0L
+  val <- withCallingHandlers(object, warning = function(w) {
+    if (is.null(regexp) || grepl(regexp, conditionMessage(w), ...)) {
+      n_warn <<- n_warn + 1L
+      invokeRestart("muffleWarning")
+    }
+  })
+  expect(n_warn > 0L,
+         if (is.null(regexp)) {
+           "Expected a warning."
+         } else {
+           sprintf("Expected a warning that matches \"%s\".", regexp)
+         },
+         info = info, trace_env = parent.frame())
+  return(invisible(val))
+}
+
+# Student_t() is deprecated. This checks the deprecation warning and returns
+# the family object.
+student_t_tst <- function(...) {
+  expect_warning(fam <- Student_t(...), "deprecated")
+  return(fam)
+}
+
+# The reference class objects in the slots `resp` and `pp` of an lme4 fit hold
+# an external pointer, which differs between two fits with equal content.
+# expect_equal() (edition 3) compares the pointers, so this replaces each lme4
+# fit by a list of its slots, with the fields of the reference class objects
+# except the pointer. `x` is a fit or a list that contains fits at any depth.
+# The function does not look into other S4 objects, environments, closures or
+# attributes.
+drop_mer_ptrs <- function(x) {
+  if (isS4(x)) {
+    if (!methods::is(x, "merMod")) {
+      return(x)
+    }
+    slot_nms <- methods::slotNames(x)
+    out <- lapply(setNames(nm = slot_nms), function(slot_nm) {
+      methods::slot(x, slot_nm)
+    })
+    for (slot_nm in intersect(c("resp", "pp"), slot_nms)) {
+      obj <- out[[slot_nm]]
+      fld_nms <- setdiff(names(obj$getRefClass()$fields()), "Ptr")
+      out[[slot_nm]] <- lapply(setNames(nm = fld_nms), function(fld_nm) {
+        obj$field(fld_nm)
+      })
+    }
+    out$class_orig <- as.character(class(x))
+    return(structure(out, class = "mer_noptr"))
+  }
+  if (is.list(x) && !is.data.frame(x)) {
+    attrs <- attributes(x)
+    x <- lapply(unclass(x), drop_mer_ptrs)
+    attributes(x) <- attrs
+  }
+  return(x)
+}

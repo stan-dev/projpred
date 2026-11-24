@@ -243,7 +243,7 @@ test_that("mlvl_laplace_cumul() gives the clmm() fit for each link", {
   # Link `probit_approx` of brms is fitted as `probit`:
   dat <- dat_cumul_tst("probit")
   expect_equal(fit_cumul_tst(dat, "probit_approx"),
-               fit_cumul_tst(dat, "probit"))
+               fit_cumul_tst(dat, "probit"), ignore_formula_env = TRUE)
 })
 
 test_that(paste(
@@ -462,7 +462,7 @@ test_that(paste(
 test_that("the methods for `projpred_mlvl_cumul` objects work", {
   dat <- dat_cumul_tst(n = 120, n_grp = 6)
   fit <- fit_cumul_tst(dat)
-  expect_equal(formula(fit), y ~ x + z + (1 | g))
+  expect_equal(formula(fit), y ~ x + z + (1 | g), ignore_formula_env = TRUE)
   prd <- predict(fit, dat$d[1:4, ])
   expect_identical(dimnames(prd), list(as.character(1:4), c("1|2", "2|3",
                                                             "3|4")))

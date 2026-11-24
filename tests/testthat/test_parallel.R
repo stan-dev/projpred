@@ -469,7 +469,8 @@ test_that("project() in parallel gives the same results as sequentially", {
           expect_equal(p_repr[nms_other], prjs[[tstsetup]][nms_other],
                        info = info_i)
         } else {
-          expect_equal(p_repr, prjs[[tstsetup]], info = info_i)
+          expect_equal(drop_mer_ptrs(p_repr), drop_mer_ptrs(prjs[[tstsetup]]),
+                       ignore_formula_env = TRUE, info = info_i)
         }
       }
     })
@@ -493,7 +494,9 @@ test_that("varsel() in parallel gives the same results as sequentially", {
           list(object = refmods[[args_vs_i$tstsetup_ref]]),
           excl_nonargs(args_vs_i)
         ))
-        expect_equal(vs_repr, vss[[tstsetup]], info = paste(backend, tstsetup))
+        expect_equal(drop_mer_ptrs(vs_repr), drop_mer_ptrs(vss[[tstsetup]]),
+                     ignore_formula_env = TRUE,
+                     info = paste(backend, tstsetup))
       }
     })
   }
@@ -524,7 +527,8 @@ test_that("cv_varsel() in parallel gives the same results as sequentially", {
                }),
           excl_nonargs(args_cvvs_i)
         )))
-        expect_equal(cvvs_repr, cvvss[[tstsetup]],
+        expect_equal(drop_mer_ptrs(cvvs_repr), drop_mer_ptrs(cvvss[[tstsetup]]),
+                     ignore_formula_env = TRUE,
                      info = paste(backend, tstsetup))
       }
     })
@@ -796,7 +800,8 @@ test_that(paste(
       list(object = refmods[[args_prj_i$tstsetup_ref]]),
       excl_nonargs(args_prj_i)
     )))
-    expect_equal(prj_i, prjs[[tstsetup]], info = tstsetup)
+    expect_equal(drop_mer_ptrs(prj_i), drop_mer_ptrs(prjs[[tstsetup]]),
+                 info = tstsetup)
     expect_gt(length(rec$calls), 0)
     for (cl in rec$calls) {
       expect_setequal(cl$env_nms, nms_expected[[fun_nm]])

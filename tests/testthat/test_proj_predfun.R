@@ -389,7 +389,7 @@ test_that(paste(
 ), {
   ### Fit with mclogit::mblogit() -------------------------------------------
 
-  expect_warning(
+  expect_warning_all(
     out_capt <- capture.output(
       mfit <- mclogit::mblogit(
         formula = cell ~ treat + age + Karn + prior,
@@ -623,7 +623,7 @@ test_that(paste(
   skip_if_not(packageVersion("mclogit") >= "0.9")
 
   ### Fit with mclogit::mblogit() -------------------------------------------
-  expect_warning(
+  expect_warning_all(
     out_capt <- capture.output(
       mfit <- mclogit::mblogit(
         formula = cell ~ treat + age + Karn + prior,

@@ -200,21 +200,21 @@ test_that(".srs_diff_est_w() works as expected", {
     se_y_hat[i] <- sqrt(res$v_y_hat)
     sigma_hat[i] <- sqrt(res$hat_v_y)
   }
-  expect_equal(mean(y_hat), sum(y_true), tol = 0.1)
+  expect_equal(mean(y_hat), sum(y_true), tolerance = 0.1)
 
   in_ki <- y_hat + 2 * se_y_hat > sum(y_true) & y_hat - 2*se_y_hat < sum(y_true)
-  expect_equal(mean(in_ki), 0.95, tol = 0.01)
+  expect_equal(mean(in_ki), 0.95, tolerance = 0.01)
 
   # Should be  unbiased
-  expect_equal(mean(sigma_hat), sigma_hat_true, tol = 0.1)
+  expect_equal(mean(sigma_hat), sigma_hat_true, tolerance = 0.1)
 
   m <- N
   y_idx <- sample(1:N, size = m)
   y <- y_true[y_idx]
   res <- .srs_diff_est_w(y_approx, y, y_idx)
-  expect_equal(res$y_hat, 500500, tol = 0.0001)
-  expect_equal(res$v_y_hat, 0, tol = 0.0001)
-  expect_equal(sqrt(res$hat_v_y), sigma_hat_true, tol = 0.1)
+  expect_equal(res$y_hat, 500500, tolerance = 0.0001)
+  expect_equal(res$v_y_hat, 0, tolerance = 0.0001)
+  expect_equal(sqrt(res$hat_v_y), sigma_hat_true, tolerance = 0.1)
 })
 
 # Adapted from the test above:
@@ -241,16 +241,16 @@ test_that(".srs_diff_est_w() works as expected with `wobs` not full of ones", {
     sigma_hat[i] <- sqrt(res$hat_v_y)
   }
   sum_y_true <- N * weighted.mean(y_true, w = wobs)
-  expect_equal(mean(y_hat), sum_y_true, tol = 1e-1)
+  expect_equal(mean(y_hat), sum_y_true, tolerance = 1e-1)
 
   alpha_ci <- 0.05
   q_ci <- qnorm(1 - alpha_ci / 2)
   in_ci <- y_hat - q_ci * se_y_hat < sum_y_true &
     sum_y_true < y_hat + q_ci * se_y_hat
-  expect_equal(mean(in_ci), 1 - alpha_ci, tol = 1e-1)
+  expect_equal(mean(in_ci), 1 - alpha_ci, tolerance = 1e-1)
 
   # Should be unbiased:
-  expect_equal(mean(sigma_hat), sigma_hat_true, tol = 1e-1)
+  expect_equal(mean(sigma_hat), sigma_hat_true, tolerance = 1e-1)
 
   m <- N
   y_idx <- sample.int(N, size = m)
@@ -259,9 +259,9 @@ test_that(".srs_diff_est_w() works as expected with `wobs` not full of ones", {
                          y = y,
                          y_idx = y_idx,
                          wobs = wobs)
-  expect_equal(res$y_hat, 500845, tol = 1e-4)
-  expect_equal(res$v_y_hat, 0, tol = 1e-4)
-  expect_equal(sqrt(res$hat_v_y), sigma_hat_true, tol = 1e-1)
+  expect_equal(res$y_hat, 500845, tolerance = 1e-4)
+  expect_equal(res$v_y_hat, 0, tolerance = 1e-4)
+  expect_equal(sqrt(res$hat_v_y), sigma_hat_true, tolerance = 1e-1)
 })
 
 test_that(".srs_diff_est_w() propagates input `NA`s to its output", {

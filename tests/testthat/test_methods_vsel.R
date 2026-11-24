@@ -189,14 +189,12 @@ test_that("`x` of class `vselsummary` (based on varsel()) works", {
     )
     expect_identical(print_obj, smmrys_vs[[tstsetup]], info = tstsetup)
     if (run_snaps) {
-      if (testthat_ed_max2) local_edition(3)
       withr::with_options(list(width = 145), {
         expect_snapshot({
           print(tstsetup)
           print(smmrys_vs[[tstsetup]], digits = 6)
         })
       })
-      if (testthat_ed_max2) local_edition(2)
     }
   }
 })
@@ -212,14 +210,12 @@ test_that("`x` of class `vselsummary` (based on cv_varsel())  works", {
     )
     expect_identical(print_obj, smmrys_cvvs[[tstsetup]], info = tstsetup)
     if (run_snaps) {
-      if (testthat_ed_max2) local_edition(3)
       withr::with_options(list(width = 145), {
         expect_snapshot({
           print(tstsetup)
           print(smmrys_cvvs[[tstsetup]], digits = 6)
         })
       })
-      if (testthat_ed_max2) local_edition(2)
     }
   }
 })
@@ -713,7 +709,7 @@ test_that("ranking proportions are computed correctly", {
                         info_str = "cumulate = TRUE")
   pr_cT_expected <- matrix(1:ntrms / ntrms, nrow = ntrms, ncol = ntrms)
   class(pr_cT_expected) <- c("cv_proportions_cumul", "cv_proportions")
-  expect_equal(pr_cT, pr_cT_expected, check.attributes = FALSE,
+  expect_equal(pr_cT, pr_cT_expected, ignore_attr = TRUE,
                tolerance = .Machine$double.eps, info = "cumulate = TRUE")
   has_1_colwise <- all(apply(pr_cT, 2, function(x_col) {
     any(abs(x_col - 1) < tol_abs)

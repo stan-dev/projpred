@@ -1,6 +1,4 @@
 test_that("Student_t() is deprecated and its projection stops", {
-  # In edition 3, expect_warning() does not hide other warnings:
-  local_edition(3)
   withr::local_options(projpred.warn_cvrefbuilder_NULL = FALSE)
   expect_warning(fam <- Student_t(nu = 4), "Student_t\\(\\) is deprecated")
   expect_identical(fam$family, "Student_t")
