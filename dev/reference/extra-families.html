@@ -91,8 +91,12 @@ objects, this has to be a character string here.</p></dd>
     <p>A family object analogous to those described in <code><a href="https://rdrr.io/r/stats/family.html" class="external-link">family</a></code>.</p>
     </div>
     <div class="section level2">
-    <h2 id="note">Note<a class="anchor" aria-label="anchor" href="#note"></a></h2>
-    <p>Support for the <code>Student_t()</code> family is still experimental.</p>
+    <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
+    <p><code>Student_t()</code> is deprecated and will be removed in a future
+release. <code><a href="project.html">project()</a></code>, <code><a href="varsel.html">varsel()</a></code>, and <code><a href="cv_varsel.html">cv_varsel()</a></code> do not support it.
+For a Student-\(t\) reference model, use the latent projection (see
+<code><a href="extend_family.html">extend_family()</a></code> and section <a href="https://mc-stan.org/projpred/articles/latent.html#studentex">"Example: Student-t distribution"</a>
+of the latent-projection vignette).</p>
     </div>
 
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>

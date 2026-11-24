@@ -946,7 +946,9 @@ vignette](https://mc-stan.org/projpred/articles/latent.html). For
 example, section [“Example: Negative binomial
 distribution”](https://mc-stan.org/projpred/articles/latent.html#negbinex)
 of that vignette illustrates the use of the latent projection for a
-negative binomial model, section [“Example: Weibull distribution with
+negative binomial model, section [“Example: Student-t
+distribution”](https://mc-stan.org/projpred/articles/latent.html#studentex)
+for a Student-\\t\\ model, section [“Example: Weibull distribution with
 right-censored
 observations”](https://mc-stan.org/projpred/articles/latent.html#weibullcensex)
 for a Weibull model with right-censored observations, and section

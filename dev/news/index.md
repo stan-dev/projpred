@@ -6,6 +6,12 @@
 
 ### Minor changes
 
+- [`Student_t()`](https://mc-stan.org/projpred/dev/reference/extra-families.md)
+  is deprecated. Its projection has stopped with an error since projpred
+  2.1.0. For a Student-t reference model, use the latent projection; the
+  latent-projection vignette has a new example. (GitHub:
+  [\#3](https://github.com/stan-dev/projpred/issues/3))
+
 ### Bug fixes
 
 ## projpred 3.0.0

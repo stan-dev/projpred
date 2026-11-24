@@ -291,7 +291,7 @@ print(time_lat)
 ```
 
        user  system elapsed 
-     10.529   0.006   2.870 
+     11.422   0.008   3.155 
 
 The warnings about high Pareto \\\hat{k}\\ values concern only a few of
 the 100 observations. With the short MCMC run of this vignette (1000
@@ -414,7 +414,7 @@ rbind(latent = time_lat, traditional = time_trad)[, "elapsed"]
 ```
 
          latent traditional 
-          2.870      41.645 
+          3.155      42.106 
 
 ``` r
 
@@ -610,6 +610,161 @@ those families which are neither supported by **projpred**’s traditional
 nor by **projpred**’s augmented-data projection, which reflects the
 flexibility of the latent approach.
 
+## Example: Student-t distribution
+
+In this example, we use the latent projection for a reference model with
+the Student-\\t\\ distribution
+([`brms::student()`](https://paulbuerkner.com/brms/reference/brmsfamily.html)).
+**projpred**’s traditional projection does not support this family. For
+the identity link, the latent predictor is the location of the
+Student-\\t\\ distribution. The latent projection fits the location with
+a Gaussian submodel. It projects the scale \\\sigma\\ with the Gaussian
+dispersion projection. The squared projected scale equals the squared
+scale of the reference model plus the mean squared difference between
+the locations of the reference model and the submodel. The submodels
+keep the degrees of freedom \\\nu\\ of the reference model. For the
+identity link, a simulation study found nearly the same results as with
+the exact KL projection.
+
+### Data
+
+We re-use the predictors of the Poisson example and simulate a new
+response with Student-\\t\\ noise:
+
+``` r
+
+set.seed(457211)
+dat_student <- dat_poiss
+coefs_con_student <- seq(from = 0.2, to = 0.8, length.out = 4)
+coefs_cat_student <- seq(from = 0.2, to = 0.8, length.out = 4)
+linpred_student <- as.vector(
+  as.matrix(dat_student[, paste0("x.", 1:4)]) %*% coefs_con_student
+) + coefs_cat_student[dat_student$xcat]
+dat_student$y <- linpred_student + 0.5 * rt(N, df = 3)
+```
+
+### Reference model
+
+We fit the reference model in
+[**brms**](https://paulbuerkner.com/brms/):
+
+``` r
+
+refm_fit_student <- brms::brm(
+  formula = refm_fml,
+  family = brms::student(),
+  data = dat_student,
+  prior = brms::prior(R2D2(mean_R2 = 1/3, prec_R2 = 3)),
+  ### Only for the sake of speed (not recommended in general):
+  chains = 2,
+  ###
+  silent = 2,
+  refresh = 0
+)
+```
+
+### Variable selection using the latent projection
+
+We pass the draws of \\\sigma\\ as argument `dis`, so that the latent
+projection gives the projected draws of \\\sigma\\. The functions
+`latent_ll_oscale` and `latent_ppd_oscale` use the projected locations
+(`ilpreds`) and the projected scales (`dis` and `dis_resamp`) together
+with the draws of \\\nu\\ from the reference model. Function
+[`cl_agg()`](https://mc-stan.org/projpred/dev/reference/cl_agg.md)
+aggregates the draws of \\\nu\\ in the same way as the projected draws
+(it gives the weighted mean of \\\nu\\ in a cluster):
+
+``` r
+
+refm_sigma <- as.matrix(refm_fit_student)[, "sigma"]
+refm_nu <- as.matrix(refm_fit_student)[, "nu", drop = FALSE]
+latent_ll_oscale_student <- function(ilpreds,
+                                     dis,
+                                     y_oscale,
+                                     wobs = rep(1, ncol(ilpreds)),
+                                     cens,
+                                     cl_ref,
+                                     wdraws_ref = rep(1, length(cl_ref))) {
+  refm_nu_agg <- as.vector(cl_agg(refm_nu, cl = cl_ref, wdraws = wdraws_ref))
+  y_oscale_mat <- matrix(y_oscale, nrow = nrow(ilpreds), ncol = ncol(ilpreds),
+                         byrow = TRUE)
+  wobs_mat <- matrix(wobs, nrow = nrow(ilpreds), ncol = ncol(ilpreds),
+                     byrow = TRUE)
+  ll_unw <- dt((y_oscale_mat - ilpreds) / dis, df = refm_nu_agg, log = TRUE) -
+    log(dis)
+  return(wobs_mat * ll_unw)
+}
+latent_ppd_oscale_student <- function(ilpreds_resamp,
+                                      dis_resamp,
+                                      wobs = rep(1, ncol(ilpreds_resamp)),
+                                      cl_ref,
+                                      wdraws_ref = rep(1, length(cl_ref)),
+                                      idxs_prjdraws) {
+  refm_nu_agg <- as.vector(cl_agg(refm_nu, cl = cl_ref, wdraws = wdraws_ref))
+  refm_nu_agg_resamp <- refm_nu_agg[idxs_prjdraws]
+  ppd <- ilpreds_resamp + dis_resamp * matrix(
+    rt(prod(dim(ilpreds_resamp)), df = refm_nu_agg_resamp),
+    nrow = nrow(ilpreds_resamp), ncol = ncol(ilpreds_resamp)
+  )
+  return(ppd)
+}
+refm_student <- get_refmodel(refm_fit_student, latent = TRUE,
+                             dis = refm_sigma,
+                             latent_ll_oscale = latent_ll_oscale_student,
+                             latent_ppd_oscale = latent_ppd_oscale_student)
+cvvs_student <- cv_varsel(
+  refm_student,
+  ### In interactive use, we recommend not to deactivate the verbose mode:
+  verbose = 0
+  ###
+)
+```
+
+    Cutting off the search at size 19. Use argument `nterms_max` to customize this.
+
+    Warning: In the recalculation of the latent response values, some (3 / 100) expectation-specific Pareto k-values are > 0.7.
+    In general, we recommend K-fold CV in this case.
+
+The functions above use the draws of \\\sigma\\ and \\\nu\\ from the
+full-data fit. This is correct for
+[`varsel()`](https://mc-stan.org/projpred/dev/reference/varsel.md) and
+for the LOO CV that we use here. For K-fold CV, see section [“K-fold CV
+with custom response-scale functions”](#kfold-custom).
+
+We plot the results:
+
+``` r
+
+plot(cvvs_student, stats = "elpd", deltas = TRUE)
+```
+
+![The same kind of plot for the latent projection of the Student-t
+model, with the expected log predictive density on the vertical
+axis.](latent_files/figure-html/plot_vsel_student-1.png)
+
+[`suggest_size()`](https://mc-stan.org/projpred/dev/reference/suggest_size.md)
+gives the size and the corresponding predictor terms:
+
+``` r
+
+( size_sgg_student <- suggest_size(cvvs_student, stat = "elpd") )
+```
+
+    [1] 2
+
+``` r
+
+head(ranking(cvvs_student)[["fulldata"]], size_sgg_student)
+```
+
+    [1] "x.4" "x.3"
+
+### Conclusion
+
+To use the latent projection for a Student-\\t\\ reference model, pass
+the draws of \\\sigma\\ as `dis` and supply response-scale functions
+that use the draws of \\\nu\\.
+
 ## Censored observations (survival analysis)
 
 Response-scale analyses for models with censored responses (e.g., for
@@ -770,6 +925,9 @@ cvvs_weib <- cv_varsel(
 ```
 
     Cutting off the search at size 19. Use argument `nterms_max` to customize this.
+
+    Warning: In the recalculation of the latent response values, some (4 / 500) expectation-specific Pareto k-values are > 0.7.
+    In general, we recommend K-fold CV in this case.
 
 As in the Poisson example, warnings about high Pareto \\\hat{k}\\ values
 can come from the short MCMC run of this vignette. In a real analysis,
@@ -972,7 +1130,7 @@ cvvs_lnorm <- cv_varsel(
 
     Warning: Some Pareto k diagnostic values are too high. See help('pareto-k-diagnostic') for details.
 
-    Warning: Some (3 / 500) Pareto k's for the reference model's PSIS-LOO weights
+    Warning: Some (2 / 500) Pareto k's for the reference model's PSIS-LOO weights
     are > 0.7.
 
     Warning: In the recalculation of the latent response values, some (8 / 500) expectation-specific Pareto k-values are > 0.7.

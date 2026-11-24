@@ -26,6 +26,15 @@ Student_t(link = "identity", nu = 3)
 A family object analogous to those described in
 [`family`](https://rdrr.io/r/stats/family.html).
 
-## Note
+## Details
 
-Support for the `Student_t()` family is still experimental.
+`Student_t()` is deprecated and will be removed in a future release.
+[`project()`](https://mc-stan.org/projpred/dev/reference/project.md),
+[`varsel()`](https://mc-stan.org/projpred/dev/reference/varsel.md), and
+[`cv_varsel()`](https://mc-stan.org/projpred/dev/reference/cv_varsel.md)
+do not support it. For a Student-\\t\\ reference model, use the latent
+projection (see
+[`extend_family()`](https://mc-stan.org/projpred/dev/reference/extend_family.md)
+and section ["Example: Student-t
+distribution"](https://mc-stan.org/projpred/articles/latent.html#studentex)
+of the latent-projection vignette).
