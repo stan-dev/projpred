@@ -8,7 +8,7 @@ If you read this from a place other than <https://mc-stan.org/projpred/news/inde
 
 ## Minor changes
 
-* New `formula()` method for `projection` objects. It gives the formula of the submodel in the form that **projpred** fits, for example to set up the submodel in another package. (GitHub: #PR)
+* New `formula()` method for `projection` objects. It gives the formula of the submodel in the form that projpred fits, for example to set up the submodel in another package. (GitHub: #PR)
 
 ## Bug fixes
 

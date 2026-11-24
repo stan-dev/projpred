@@ -601,7 +601,7 @@ test_that("formula() of a `projection` gives the formula of the submodel fits", 
     fml <- formula(prj)
     expect_s3_class(fml, "formula")
     # the formula that proj_prepare_general() gives to the divergence minimizer
-    # (its response is the column of the draw-wise responses)
+    # (the response `y` does not change its right-hand side)
     fml_divmin <- proj_prepare_general(
       prj$refmodel, terms_ = predictor_terms(prj), y = prj$refmodel$y,
       use_fast = FALSE

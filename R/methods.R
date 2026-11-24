@@ -2975,7 +2975,9 @@ predictor_terms.projection <- function(object, ...) {
 #'   reference model fit:
 #'   * For a two-column binomial response (`cbind(successes, failures)`), the
 #'   left-hand side is the first column. The numbers of trials are observation
-#'   weights.
+#'   weights. For a refit in another package, use the proportions as the
+#'   response or a syntax for the trials (for example `successes | trials(n)`
+#'   in \pkg{brms}).
 #'   * For a \pkg{brms} reference model, the left-hand side has no addition
 #'   terms (for example `trials()` or `weights()`).
 #'   * For the latent projection, the left-hand side is the latent response.
@@ -2989,7 +2991,8 @@ predictor_terms.projection <- function(object, ...) {
 #'
 #'   With `refit_prj = FALSE` in [project()], the submodel fits come from the
 #'   search. After an L1 search, these fits are the L1-penalized fits of the
-#'   search path.
+#'   search path. The formula is the same, but a refit in another package does
+#'   not give these coefficients.
 #'
 #' @return A [`formula`].
 #'
