@@ -6,7 +6,7 @@ If you read this from a place other than <https://mc-stan.org/projpred/news/inde
 
 ## Major changes
 
-* The traditional projection supports the negative binomial family (`rstanarm::neg_binomial_2()`, `brms::negbinomial()`, `MASS::negative.binomial()`) for submodels without group-level and additive terms. The shape parameter is projected, too. (GitHub: #361)
+* The traditional projection supports the negative binomial family (`rstanarm::neg_binomial_2()`, `brms::negbinomial()`, `MASS::negative.binomial()`) for submodels without group-level and additive terms. The shape parameter is projected, too. (GitHub: #361, #675)
 
 ## Minor changes
 
