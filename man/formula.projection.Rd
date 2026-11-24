@@ -43,9 +43,10 @@ reference model fit:
 \itemize{
 \item For a two-column binomial response (\code{cbind(successes, failures)}), the
 left-hand side is the first column. The numbers of trials are observation
-weights. For a refit in another package, use the proportions as the
-response or a syntax for the trials (for example \code{successes | trials(n)}
-in \pkg{brms}).
+weights. To fit the submodel in another package, use the proportions as
+the response and the numbers of trials as weights, or use the trials
+syntax of that package (for example \code{successes | trials(n)} in
+\pkg{brms}, with \code{n = successes + failures}).
 \item For a \pkg{brms} reference model, the left-hand side has no addition
 terms (for example \code{trials()} or \code{weights()}).
 \item For the latent projection, the left-hand side is the latent response.
@@ -60,8 +61,8 @@ The environment of the formula is that of the reference model formula.
 
 With \code{refit_prj = FALSE} in \code{\link[=project]{project()}}, the submodel fits come from the
 search. After an L1 search, these fits are the L1-penalized fits of the
-search path. The formula is the same, but a refit in another package does
-not give these coefficients.
+search path. A fit of this formula in another package gives other
+coefficients.
 }
 \examples{
 \dontshow{if (requireNamespace("rstanarm", quietly = TRUE)) withAutoprint(\{ # examplesIf}
