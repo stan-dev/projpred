@@ -16,15 +16,15 @@ A \code{\link{formula}}.
 }
 \description{
 For a \code{projection} object (returned by \code{\link[=project]{project()}}), this method gives the
-formula of the submodel onto which the projection was performed, in the form
-that \pkg{projpred} uses for the submodel fits. Use it, for example, to set
-up the submodel in another package. For a \code{list} of \code{projection} objects,
-use \code{\link[=lapply]{lapply()}}.
+formula of the submodel of the projection. The formula has the form that
+\pkg{projpred} uses for the submodel fits. Use it, for example, to set up the
+submodel in another package. For a \code{list} of \code{projection} objects, use
+\code{\link[=lapply]{lapply()}}.
 }
 \details{
 The right-hand side has an intercept and the predictor terms of \code{x}
-(see \code{\link[=predictor_terms]{predictor_terms()}}), with two changes that \pkg{projpred} also
-applies to the submodel fits:
+(see \code{\link[=predictor_terms]{predictor_terms()}}), with two changes that \pkg{projpred} applies to
+its submodel fits:
 \itemize{
 \item The group-level terms of one grouping factor are merged into one term.
 For example, \code{(1 | g) + (x1 | g)} becomes \code{(x1 | g)}.
@@ -41,22 +41,24 @@ object (element \code{formula} of the output of \code{\link[=get_refmodel]{get_r
 the response variable, so it can differ from the left-hand side of the
 reference model fit:
 \itemize{
-\item For a two-column binomial response (\code{cbind(successes, failures)}), it is
-the first column. The numbers of trials are observation weights.
-\item For a \pkg{brms} reference model, the addition terms (for example
-\code{trials()} or \code{weights()}) are not part of it.
-\item For the latent projection, it is the latent response.
+\item For a two-column binomial response (\code{cbind(successes, failures)}), the
+left-hand side is the first column. The numbers of trials are observation
+weights.
+\item For a \pkg{brms} reference model, the left-hand side has no addition
+terms (for example \code{trials()} or \code{weights()}).
+\item For the latent projection, the left-hand side is the latent response.
 }
 
 Observation weights and offsets are not part of the formula.
 \pkg{projpred} fits the submodels without the offsets and adds the offsets
 of the reference model to the predictions. If you fit the submodel in
-another package, add the offsets there. The environment of the formula is
-that of the reference model formula.
+another package, add the offsets there.
+
+The environment of the formula is that of the reference model formula.
 
 With \code{refit_prj = FALSE} in \code{\link[=project]{project()}}, the submodel fits come from the
-search. After an L1 search, these fits are penalized fits on the same
-predictor terms, not fits of this formula.
+search. After an L1 search, these fits are the L1-penalized fits of the
+search path.
 }
 \examples{
 \dontshow{if (requireNamespace("rstanarm", quietly = TRUE)) withAutoprint(\{ # examplesIf}

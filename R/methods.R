@@ -2949,17 +2949,17 @@ predictor_terms.projection <- function(object, ...) {
 #' Formula of the submodel of a [project()] run
 #'
 #' For a `projection` object (returned by [project()]), this method gives the
-#' formula of the submodel onto which the projection was performed, in the form
-#' that \pkg{projpred} uses for the submodel fits. Use it, for example, to set
-#' up the submodel in another package. For a `list` of `projection` objects,
-#' use [lapply()].
+#' formula of the submodel of the projection. The formula has the form that
+#' \pkg{projpred} uses for the submodel fits. Use it, for example, to set up the
+#' submodel in another package. For a `list` of `projection` objects, use
+#' [lapply()].
 #'
 #' @param x An object of class `projection` (returned by [project()]).
 #' @param ... Currently ignored.
 #'
 #' @details The right-hand side has an intercept and the predictor terms of `x`
-#'   (see [predictor_terms()]), with two changes that \pkg{projpred} also
-#'   applies to the submodel fits:
+#'   (see [predictor_terms()]), with two changes that \pkg{projpred} applies to
+#'   its submodel fits:
 #'   * The group-level terms of one grouping factor are merged into one term.
 #'   For example, `(1 | g) + (x1 | g)` becomes `(x1 | g)`.
 #'   * A linear main-effect term is dropped if the submodel also has a smooth
@@ -2973,21 +2973,23 @@ predictor_terms.projection <- function(object, ...) {
 #'   object (element `formula` of the output of [get_refmodel()]). It has only
 #'   the response variable, so it can differ from the left-hand side of the
 #'   reference model fit:
-#'   * For a two-column binomial response (`cbind(successes, failures)`), it is
-#'   the first column. The numbers of trials are observation weights.
-#'   * For a \pkg{brms} reference model, the addition terms (for example
-#'   `trials()` or `weights()`) are not part of it.
-#'   * For the latent projection, it is the latent response.
+#'   * For a two-column binomial response (`cbind(successes, failures)`), the
+#'   left-hand side is the first column. The numbers of trials are observation
+#'   weights.
+#'   * For a \pkg{brms} reference model, the left-hand side has no addition
+#'   terms (for example `trials()` or `weights()`).
+#'   * For the latent projection, the left-hand side is the latent response.
 #'
 #'   Observation weights and offsets are not part of the formula.
 #'   \pkg{projpred} fits the submodels without the offsets and adds the offsets
 #'   of the reference model to the predictions. If you fit the submodel in
-#'   another package, add the offsets there. The environment of the formula is
-#'   that of the reference model formula.
+#'   another package, add the offsets there.
+#'
+#'   The environment of the formula is that of the reference model formula.
 #'
 #'   With `refit_prj = FALSE` in [project()], the submodel fits come from the
-#'   search. After an L1 search, these fits are penalized fits on the same
-#'   predictor terms, not fits of this formula.
+#'   search. After an L1 search, these fits are the L1-penalized fits of the
+#'   search path.
 #'
 #' @return A [`formula`].
 #'
