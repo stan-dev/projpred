@@ -285,11 +285,11 @@ test_that(".srs_diff_est_w() gives a correct `v_y_hat` with unequal `wobs`", {
   }
   # `v_y_hat` estimates the variance of `y_hat` over the subsamples (the
   # linearization variance is a little too small for heavy-tailed `wobs`):
-  expect_equal(mean(v_y_hat), var(y_hat), tol = 2e-1)
+  expect_equal(mean(v_y_hat), var(y_hat), tolerance = 2e-1)
   q_ci <- qnorm(0.975)
   in_ci <- abs(y_hat - sum_y_true) < q_ci * sqrt(v_y_hat)
   # Here, the coverage is 0.931 (0.737 with the old variance formula):
-  expect_equal(mean(in_ci), 0.95, tol = 4e-2)
+  expect_equal(mean(in_ci), 0.95, tolerance = 4e-2)
 })
 
 test_that(".srs_diff_est_w() is stable for values with a large common offset", {
@@ -309,9 +309,9 @@ test_that(".srs_diff_est_w() is stable for values with a large common offset", {
                               y = y_true[y_idx] + offs,
                               y_idx = y_idx,
                               wobs = wobs)
-  expect_equal(res_offs$hat_v_y, res_ref$hat_v_y, tol = 1e-6)
-  expect_equal(res_offs$v_y_hat, res_ref$v_y_hat, tol = 1e-6)
-  expect_equal(res_offs$y_hat, res_ref$y_hat + N * offs, tol = 1e-12)
+  expect_equal(res_offs$hat_v_y, res_ref$hat_v_y, tolerance = 1e-6)
+  expect_equal(res_offs$v_y_hat, res_ref$v_y_hat, tolerance = 1e-6)
+  expect_equal(res_offs$y_hat, res_ref$y_hat + N * offs, tolerance = 1e-12)
 })
 
 test_that(".srs_diff_est_w() with equal `wobs` equals the unweighted case", {
@@ -328,10 +328,11 @@ test_that(".srs_diff_est_w() with equal `wobs` equals the unweighted case", {
                            y = y_true[y_idx],
                            y_idx = y_idx,
                            wobs = rep(3, N))
-  expect_equal(res_w, res_unw, tol = 1e-12)
+  expect_equal(res_w, res_unw, tolerance = 1e-12)
   e_i <- y_true[y_idx] - y_approx[y_idx]
-  expect_equal(res_unw$y_hat, sum(y_approx) + N * mean(e_i), tol = 1e-12)
-  expect_equal(res_unw$v_y_hat, N^2 * (1 - m / N) * var(e_i) / m, tol = 1e-12)
+  expect_equal(res_unw$y_hat, sum(y_approx) + N * mean(e_i), tolerance = 1e-12)
+  expect_equal(res_unw$v_y_hat, N^2 * (1 - m / N) * var(e_i) / m,
+               tolerance = 1e-12)
 })
 
 test_that(".srs_diff_est_w() propagates input `NA`s to its output", {
