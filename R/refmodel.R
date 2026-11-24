@@ -1178,7 +1178,10 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
 
   if (!called_from_cvrefbuilder) {
     if (family$family == "Student_t") {
-      warning("Support for the `Student_t` family is still experimental.")
+      warning("The `Student_t()` family is deprecated, and project(), ",
+              "varsel(), and cv_varsel() do not support it. For a ",
+              "Student-t reference model, use the latent projection (see ",
+              "the latent-projection vignette).")
     } else if (family$family == "Gamma") {
       warning("Support for the `Gamma` family is still experimental.")
     }
