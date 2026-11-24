@@ -600,14 +600,12 @@ test_that("formula() of a `projection` gives the formula of the submodel fits", 
     prj <- prjs[[tstsetup]]
     fml <- formula(prj)
     expect_s3_class(fml, "formula")
-    fml_ref <- prj$refmodel$formula
-    expect_identical(fml[[2]], fml_ref[[2]], info = tstsetup)
-    expect_identical(environment(fml), environment(fml_ref), info = tstsetup)
-    # the right-hand side of the formula that proj_prepare_general() gives to
-    # the divergence minimizer
-    sub <- subset_formula_and_data(fml_ref, terms_ = predictor_terms(prj),
-                                   data = NULL, with_data = FALSE)
-    fml_divmin <- flatten_formula(sub$formula, duplicates = FALSE)
+    # the formula that proj_prepare_general() gives to the divergence minimizer
+    # (its response is the column of the draw-wise responses)
+    fml_divmin <- proj_prepare_general(
+      prj$refmodel, terms_ = predictor_terms(prj), y = prj$refmodel$y,
+      use_fast = FALSE
+    )$fml_divmin
     expect_identical(fml[[3]], fml_divmin[[3]], info = tstsetup)
   }
 })

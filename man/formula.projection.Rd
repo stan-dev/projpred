@@ -7,8 +7,7 @@
 \method{formula}{projection}(x, ...)
 }
 \arguments{
-\item{x}{An object of class \code{projection} (returned by \code{\link[=project]{project()}}, possibly
-as elements of a \code{list}).}
+\item{x}{An object of class \code{projection} (returned by \code{\link[=project]{project()}}).}
 
 \item{...}{Currently ignored.}
 }
@@ -16,11 +15,11 @@ as elements of a \code{list}).}
 A \code{\link{formula}}.
 }
 \description{
-For a \code{projection} object (returned by \code{\link[=project]{project()}}, possibly as elements of a
-\code{list}), this method gives the formula of the submodel onto which the
-projection was performed, in the form that \pkg{projpred} uses for the
-submodel fits. Use it, for example, to set up the submodel in another
-package.
+For a \code{projection} object (returned by \code{\link[=project]{project()}}), this method gives the
+formula of the submodel onto which the projection was performed, in the form
+that \pkg{projpred} uses for the submodel fits. Use it, for example, to set
+up the submodel in another package. For a \code{list} of \code{projection} objects,
+use \code{\link[=lapply]{lapply()}}.
 }
 \details{
 The right-hand side has an intercept and the predictor terms of \code{x}
@@ -29,16 +28,35 @@ applies to the submodel fits:
 \itemize{
 \item The group-level terms of one grouping factor are merged into one term.
 For example, \code{(1 | g) + (x1 | g)} becomes \code{(x1 | g)}.
-\item A linear term is dropped if the submodel also has a smooth term of the
-same variable. For example, \code{x1 + s(x1)} becomes \code{s(x1)}.
+\item A linear main-effect term is dropped if the submodel also has a smooth
+term of the same variable. For example, \code{x1 + s(x1)} becomes \code{s(x1)}.
 }
 
+The term labels of the formula can differ from \code{\link[=predictor_terms]{predictor_terms()}} in the
+order of the variables of an interaction (for example, \code{x2:x1} instead of
+\code{x1:x2}).
+
 The left-hand side is the response of the formula of the reference model
-object (element \code{formula} of the output of \code{\link[=get_refmodel]{get_refmodel()}}). It can
-differ from the response of the reference model fit; for example, the
-latent projection uses the latent response. Offsets are not part of the
-formula. The environment of the formula is that of the reference model
-formula.
+object (element \code{formula} of the output of \code{\link[=get_refmodel]{get_refmodel()}}). It has only
+the response variable, so it can differ from the left-hand side of the
+reference model fit:
+\itemize{
+\item For a two-column binomial response (\code{cbind(successes, failures)}), it is
+the first column. The numbers of trials are observation weights.
+\item For a \pkg{brms} reference model, the addition terms (for example
+\code{trials()} or \code{weights()}) are not part of it.
+\item For the latent projection, it is the latent response.
+}
+
+Observation weights and offsets are not part of the formula.
+\pkg{projpred} fits the submodels without the offsets and adds the offsets
+of the reference model to the predictions. If you fit the submodel in
+another package, add the offsets there. The environment of the formula is
+that of the reference model formula.
+
+With \code{refit_prj = FALSE} in \code{\link[=project]{project()}}, the submodel fits come from the
+search. After an L1 search, these fits are penalized fits on the same
+predictor terms, not fits of this formula.
 }
 \examples{
 \dontshow{if (requireNamespace("rstanarm", quietly = TRUE)) withAutoprint(\{ # examplesIf}
