@@ -10,7 +10,7 @@ If you read this from a place other than <https://mc-stan.org/projpred/news/inde
 
 ## Bug fixes
 
-* For `rstanarm::stan_gamm4()` reference models with `t2()` terms, `rstanarm::posterior_linpred()` gives wrong linear predictors. projpred now computes them itself, so the reference model predictions, the projections and the predictive performance results are correct.
+* For `rstanarm::stan_gamm4()` reference models with `t2()` terms, `rstanarm::posterior_linpred()` gives wrong linear predictors. projpred now computes them itself, so the reference model predictions, the projections and the predictive performance results are correct. (GitHub: #677)
 
 
 
