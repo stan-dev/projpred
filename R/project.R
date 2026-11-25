@@ -364,12 +364,17 @@ is_full_projection <- function(prd_trms, object, refmodel) {
                                       data = refmodel$fetch_data(),
                                       add_lower_terms = FALSE)
   }
-  trm_labels <- function(trms) {
-    fml <- flatten_formula(make_formula(trms), duplicates = FALSE)
-    return(norm_term_labels(labels(terms(fml))))
-  }
-  return(all(trm_labels(unique(split_plus(search_terms_all))) %in%
-               trm_labels(prd_trms)))
+  return(all(flat_term_labels(search_terms_all) %in%
+               flat_term_labels(prd_trms)))
+}
+
+# The term labels (see norm_term_labels()) of the submodel with the predictor
+# terms `trms`. A linear term next to a smooth term of the same variable does
+# not count, because the projection drops such a linear term.
+flat_term_labels <- function(trms) {
+  fml <- flatten_formula(make_formula(unique(split_plus(trms))),
+                         duplicates = FALSE)
+  return(norm_term_labels(labels(terms(fml))))
 }
 
 #' Print information about [project()] output

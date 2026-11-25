@@ -274,6 +274,33 @@
 #' model, and setting `projpred.mlvl_proj_ref_new` to `TRUE` would make sense if
 #' the group-level effects should be integrated out completely.
 #'
+#' # Submodel with all terms of the reference model
+#'
+#' If the submodel has all terms of the reference model, its projection
+#' reproduces each projected draw of the reference model (in the limit of a
+#' converged fit). The results of the reference model are then the results
+#' that this projection should give. The projection itself can differ from
+#' them because it uses fewer draws or clusters, and for multilevel submodels,
+#' it can be unstable (see GitHub issue
+#' [#323](https://github.com/stan-dev/projpred/issues/323)). Therefore, if the
+#' search of [varsel()] or [cv_varsel()] reaches the submodel with all search
+#' terms and these give all terms of the reference model, this submodel is not
+#' projected (neither in the search nor in the performance evaluation). Its
+#' predictive performance is that of the reference model, and its value `ce`
+#' is the cross-entropy of the projected reference draws with themselves. In
+#' [summary.vsel()], a line below the table names this size, and in
+#' [plot.vsel()], its point is open. [project()] (and with it
+#' [proj_linpred()] and [proj_predict()]) still projects onto this submodel.
+#'
+#' This does not apply to a reference model of class `datafit`, to custom
+#' `search_terms` that do not give all terms of the reference model, and with
+#' global option `projpred.mlvl_proj_ref_new` set to `TRUE` (for a multilevel
+#' reference model). For a custom reference model (see [init_refmodel()]),
+#' \pkg{projpred} cannot check whether the reference model predictions come
+#' from the terms of the reference model formula. In that case, or to get the
+#' projection onto the submodel with all search terms, set global option
+#' `projpred.full_size_ref` to `FALSE` (default `TRUE`).
+#'
 #' # Memory usage
 #'
 #' By setting the global option `projpred.run_gc` to `TRUE`, \pkg{projpred} will

@@ -419,7 +419,10 @@ test_that(paste(
   "the warning about the projection onto the full multilevel model uses the",
   "submodel with all search terms"
 ), {
-  withr::local_options(projpred.warn_instable_projections = TRUE)
+  # Without the option, the submodel with all terms of the reference model is
+  # not projected and gives no warning (see the test below):
+  withr::local_options(projpred.warn_instable_projections = TRUE,
+                       projpred.full_size_ref = FALSE)
   dat <- data.frame(y = 1:12, x1 = sin(1:12), x2 = cos(1:12), g = gl(3, 4))
   refmod_fake <- function(fml) {
     list(formula = fml, fetch_data = function(...) dat,
@@ -468,6 +471,68 @@ test_that(paste(
   vs$args_search$search_terms <- NULL
   expect_true(is_full_projection(c("(1 | g)", "x1 + (x1 | g)"), vs, refmod))
   expect_false(is_full_projection(c("(1 | g)", "x1 + (1 | g)"), vs, refmod))
+})
+
+test_that(paste(
+  "parse_args_varsel() uses the reference model for the submodel with all",
+  "terms of the reference model, without the warning about its projection"
+), {
+  withr::local_options(projpred.warn_instable_projections = TRUE,
+                       projpred.full_size_ref = NULL)
+  dat <- data.frame(y = 1:12, x1 = sin(1:12), x2 = cos(1:12), g = gl(3, 4))
+  refmod_fake <- function(fml, cls = NULL) {
+    structure(list(formula = fml, fetch_data = function(...) dat,
+                   family = list(family = "gaussian", for_latent = FALSE,
+                                 for_augdat = FALSE)),
+              class = cls)
+  }
+  parse_args <- function(fml, search_terms, nterms_max = NULL, cls = NULL) {
+    parse_args_varsel(refmod_fake(fml, cls = cls), method = "forward",
+                      refit_prj = FALSE, nterms_max = nterms_max,
+                      nclusters = 1, search_terms = search_terms, verbose = 0)
+  }
+  warn_full <- "the projection onto the full model can be instable"
+  fml <- y ~ x2 + s(x1) + (1 | g)
+  # Default search terms:
+  expect_no_warning(args <- parse_args(fml, NULL))
+  expect_true(args$full_ref)
+  expect_equal(args$nterms_max, 4)
+  # The search does not reach the submodel with all search terms:
+  expect_no_warning(args <- parse_args(fml, NULL, nterms_max = 3))
+  expect_false(args$full_ref)
+  # Custom search terms that give all terms of the reference model (`x1` is part
+  # of `s(x1)`):
+  expect_no_warning(args <- parse_args(fml, c("s(x1)", "x2", "(1 | g)")))
+  expect_true(args$full_ref)
+  expect_identical(args$nterms_all, 3L)
+  expect_no_warning(args <- parse_args(y ~ x1 + x2 + (1 | g),
+                                       c("x1 + x2", "x1 + x2 + (1 | g)")))
+  expect_true(args$full_ref)
+  # Custom search terms without a term of the reference model:
+  expect_no_warning(args <- parse_args(y ~ x1 + x2 + (1 | g), c("x1", "x2")))
+  expect_false(args$full_ref)
+  expect_warning(args <- parse_args(y ~ x1 + x2 + (1 | g), c("x1", "(1 | g)")),
+                 warn_full)
+  expect_false(args$full_ref)
+  # Group-level slopes:
+  expect_no_warning(args <- parse_args(y ~ x1 + (x1 | g),
+                                       c("x1", "(1 | g)", "(x1 | g)")))
+  expect_true(args$full_ref)
+  expect_warning(args <- parse_args(y ~ x1 + (x1 | g), c("x1", "(1 | g)")),
+                 warn_full)
+  expect_false(args$full_ref)
+  # A `datafit`:
+  args <- parse_args(y ~ x1 + x2, NULL, cls = c("datafit", "refmodel"))
+  expect_false(args$full_ref)
+  # The global options:
+  withr::local_options(projpred.mlvl_proj_ref_new = TRUE)
+  expect_warning(args <- parse_args(fml, NULL), warn_full)
+  expect_false(args$full_ref)
+  args <- parse_args(y ~ x1 + x2, NULL)
+  expect_true(args$full_ref)
+  withr::local_options(projpred.full_size_ref = FALSE)
+  args <- parse_args(y ~ x1 + x2, NULL)
+  expect_false(args$full_ref)
 })
 
 test_that("split_plus() splits term strings only at the `+` between terms", {

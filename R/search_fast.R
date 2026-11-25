@@ -6,20 +6,21 @@
 # `search_screen` is `NULL` or no screen applies; then search_forward()
 # continues with its own search (with a message in verbose mode).
 search_forward_fast <- function(p_ref, refmodel, nterms_max, verbose,
-                                search_terms, search_screen = NULL, ...) {
+                                search_terms, search_screen = NULL,
+                                skip_full = FALSE, ...) {
   if (is.null(search_screen)) {
     return(NULL)
   }
   out <- search_forward_screen(
     p_ref = p_ref, refmodel = refmodel, nterms_max = nterms_max,
     verbose = verbose, search_terms = search_terms,
-    screen_m = as.integer(search_screen), ...
+    screen_m = as.integer(search_screen), skip_full = skip_full, ...
   )
   if (is.null(out)) {
     out <- search_forward_latent(
       p_ref = p_ref, refmodel = refmodel, nterms_max = nterms_max,
       verbose = verbose, search_terms = search_terms,
-      screen_m = as.integer(search_screen), ...
+      screen_m = as.integer(search_screen), skip_full = skip_full, ...
     )
   }
   if (is.null(out)) {
@@ -45,7 +46,8 @@ search_forward_fast <- function(p_ref, refmodel, nterms_max, verbose,
 # to the reference means without the offsets, so `mu_ref` and `mu_A` are the
 # means without the offsets, too.
 search_forward_screen <- function(p_ref, refmodel, nterms_max, verbose,
-                                  search_terms, screen_m, ...) {
+                                  search_terms, screen_m, skip_full = FALSE,
+                                  ...) {
   fam <- refmodel$family
   canon <- c(binomial = "logit", poisson = "log")
   if (!fam$family %in% names(canon) || fam$link != canon[[fam$family]] ||
@@ -93,6 +95,14 @@ search_forward_screen <- function(p_ref, refmodel, nterms_max, verbose,
     cands <- st$cands
     if (is.null(cands)) {
       next
+    }
+    if (skip_full && size == nterms_max + 1L) {
+      # The submodel with all search terms is not projected (see
+      # search_forward()):
+      chosen <- c(chosen, cands[1])
+      outdmins <- c(outdmins, list(NULL))
+      latent_verb_progress(chosen, iq, verbose)
+      break
     }
     gain <- NULL
     if (!is.null(cur) && length(cands) > 1L) {

@@ -271,6 +271,33 @@ model, and setting \code{projpred.mlvl_proj_ref_new} to \code{TRUE} would make s
 the group-level effects should be integrated out completely.
 }
 
+\section{Submodel with all terms of the reference model}{
+If the submodel has all terms of the reference model, its projection
+reproduces each projected draw of the reference model (in the limit of a
+converged fit). The results of the reference model are then the results
+that this projection should give. The projection itself can differ from
+them because it uses fewer draws or clusters, and for multilevel submodels,
+it can be unstable (see GitHub issue
+\href{https://github.com/stan-dev/projpred/issues/323}{#323}). Therefore, if the
+search of \code{\link[=varsel]{varsel()}} or \code{\link[=cv_varsel]{cv_varsel()}} reaches the submodel with all search
+terms and these give all terms of the reference model, this submodel is not
+projected (neither in the search nor in the performance evaluation). Its
+predictive performance is that of the reference model, and its value \code{ce}
+is the cross-entropy of the projected reference draws with themselves. In
+\code{\link[=summary.vsel]{summary.vsel()}}, a line below the table names this size, and in
+\code{\link[=plot.vsel]{plot.vsel()}}, its point is open. \code{\link[=project]{project()}} (and with it
+\code{\link[=proj_linpred]{proj_linpred()}} and \code{\link[=proj_predict]{proj_predict()}}) still projects onto this submodel.
+
+This does not apply to a reference model of class \code{datafit}, to custom
+\code{search_terms} that do not give all terms of the reference model, and with
+global option \code{projpred.mlvl_proj_ref_new} set to \code{TRUE} (for a multilevel
+reference model). For a custom reference model (see \code{\link[=init_refmodel]{init_refmodel()}}),
+\pkg{projpred} cannot check whether the reference model predictions come
+from the terms of the reference model formula. In that case, or to get the
+projection onto the submodel with all search terms, set global option
+\code{projpred.full_size_ref} to \code{FALSE} (default \code{TRUE}).
+}
+
 \section{Memory usage}{
 By setting the global option \code{projpred.run_gc} to \code{TRUE}, \pkg{projpred} will
 call \code{\link[=gc]{gc()}} at some places (e.g., after each size that the forward search

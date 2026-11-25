@@ -6,6 +6,8 @@ If you read this from a place other than <https://mc-stan.org/projpred/news/inde
 
 ## Major changes
 
+* In `varsel()` and `cv_varsel()`, the submodel with all terms of the reference model gets the results of the reference model, not of a projection. This avoids the unstable full multilevel projection. Global option `projpred.full_size_ref` turns this off. (GitHub: #323, #441)
+
 ## Minor changes
 
 * For projections onto submodels with smooth terms, `as.matrix()` and `as_draws_matrix()` give the smooth terms in the basis and with the parameter names of a **brms** or `rstanarm::stan_gamm4()` reference model fit, with the SDs of the penalized parts of the smooth terms. (GitHub: #151, #152, #676)

@@ -581,6 +581,13 @@ test_that(paste(
     sub_e <- vs_e$summaries$sub[[k]]$oscale
     sub_p <- vs_p$summaries$sub[[k]]$oscale
     expect_equal(sub_e$lppd, sub_p$lppd, info = info_k)
+    if (isTRUE(vs_e$full_ref) && k == length(vs_e$summaries$sub)) {
+      # The submodel with all terms gets the results of the reference model
+      # (see test_full_size_ref.R):
+      expect_identical(vs_e$summaries$sub[[k]], vs_e$summaries$ref,
+                       info = info_k)
+      next
+    }
     prj_k <- project(vs_e, nterms = k - 1, ndraws = 30, verbose = FALSE)
     pl_lat_k <- proj_linpred(prj_k, transform = FALSE)$pred
     expect_equal(unname(sub_e$mu),

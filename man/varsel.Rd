@@ -90,7 +90,11 @@ which the search is continued. If \code{NULL}, then \code{min(19, D)} is used wh
 \code{D} is the number of terms in the reference model (or in \code{search_terms}, if
 supplied). Note that \code{nterms_max} does not count the intercept, so use
 \code{nterms_max = 0} for the intercept-only model. (Correspondingly, \code{D} above
-does not count the intercept.)}
+does not count the intercept.) If the search reaches the submodel with all
+search terms and these are all terms of the reference model, this submodel
+gets the predictive performance of the reference model, without a
+projection (see section "Submodel with all terms of the reference model" in
+\link{projpred-package}).}
 
 \item{verbose}{A single integer value from the set \eqn{\{0, 1, 2, 3,
 4\}}{{0, 1, 2, 3, 4}} (for \code{\link[=varsel]{varsel()}}, \eqn{3} and \eqn{4} have the same

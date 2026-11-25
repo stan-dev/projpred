@@ -1,11 +1,13 @@
 # `return_outdmins = FALSE` tells the search that the caller does not use the
 # submodel fits along the ranking (element `outdmins`), so
 # search_forward_gauss() does not compute them. The draw-wise search computes
-# them anyway.
+# them anyway. `skip_full = TRUE` means that the last step (the submodel with
+# all search terms, if `nterms_max` is its size) adds its term without a
+# projection and stores `NULL` in `outdmins` (see .select()).
 search_forward <- function(p_ref, refmodel, nterms_max, verbose = TRUE,
                            search_terms, est_runtime = TRUE,
                            search_terms_was_null, return_outdmins = TRUE,
-                           search_screen = NULL, ...) {
+                           search_screen = NULL, skip_full = FALSE, ...) {
   nterms_max_with_icpt <- nterms_max + 1L
   iq <- ceiling(quantile(seq_len(nterms_max_with_icpt), 1:10 / 10))
   if (is.null(search_terms)) {
@@ -18,7 +20,7 @@ search_forward <- function(p_ref, refmodel, nterms_max, verbose = TRUE,
     out_gauss <- search_forward_gauss(
       p_ref = p_ref, refmodel = refmodel, nterms_max = nterms_max,
       verbose = verbose, search_terms = search_terms,
-      return_outdmins = return_outdmins, ...
+      return_outdmins = return_outdmins, skip_full = skip_full, ...
     )
     if (!is.null(out_gauss)) {
       return(out_gauss)
@@ -30,7 +32,7 @@ search_forward <- function(p_ref, refmodel, nterms_max, verbose = TRUE,
   out_fast <- search_forward_fast(
     p_ref = p_ref, refmodel = refmodel, nterms_max = nterms_max,
     verbose = verbose, search_terms = search_terms,
-    search_screen = search_screen, ...
+    search_screen = search_screen, skip_full = skip_full, ...
   )
   if (!is.null(out_fast)) {
     return(out_fast)
@@ -45,6 +47,13 @@ search_forward <- function(p_ref, refmodel, nterms_max, verbose = TRUE,
                                         use_term_info = TRUE)
     if (is.null(cands))
       next
+    if (skip_full && size == nterms_max_with_icpt) {
+      # Each candidate gives the submodel with all search terms:
+      chosen <- c(chosen, cands[1])
+      outdmins <- c(outdmins, list(NULL))
+      latent_verb_progress(chosen, iq, verbose)
+      break
+    }
     full_cands <- lapply(cands, function(cand) c(chosen, cand))
 
     # Perform the projections (for the intercept-only model, we measure the
@@ -243,7 +252,8 @@ cands_single_label <- function(single, labels_chosen, size) {
 # if one of its conditions does not hold; then search_forward() continues with
 # its own search.
 search_forward_gauss <- function(p_ref, refmodel, nterms_max, verbose,
-                                 search_terms, return_outdmins = TRUE, ...) {
+                                 search_terms, return_outdmins = TRUE,
+                                 skip_full = FALSE, ...) {
   # The arguments for the divergence minimizer, as in proj_to_submodl():
   dot_args <- list(...)
   divmin_args <- dot_args$search_control %||%
@@ -468,10 +478,20 @@ search_forward_gauss <- function(p_ref, refmodel, nterms_max, verbose,
   }
 
   # The submodel fits along the ranking (as stored by search_forward()), if the
-  # caller uses them:
+  # caller uses them. With `skip_full`, the submodel with all search terms
+  # (size `nterms_max`) is not projected:
   outdmins <- NULL
   if (return_outdmins) {
+    j_skip <- if (skip_full &&
+                  count_terms_chosen(chosen) == nterms_max + 1L) {
+      length(chosen)
+    } else {
+      0L
+    }
     outdmins <- lapply(seq_along(chosen), function(j) {
+      if (j == j_skip) {
+        return(NULL)
+      }
       proj_to_submodl(predictor_terms = chosen[seq_len(j)], p_ref = p_ref,
                       refmodel = refmodel, verbose = verbose, ...)$outdmin
     })

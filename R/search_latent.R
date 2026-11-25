@@ -60,7 +60,8 @@ latent_project_best <- function(chosen, cands, fit_idx, p_ref, refmodel,
 # a search term with more than one model-matrix column (for example, a factor
 # with more than two levels).
 search_forward_latent_cum <- function(p_ref, refmodel, nterms_max, verbose,
-                                      search_terms, screen_m, ...) {
+                                      search_terms, screen_m,
+                                      skip_full = FALSE, ...) {
   fam <- refmodel$family
   if (!isTRUE(fam$for_augdat) || !identical(fam$family, "cumulative") ||
       !isTRUE(fam$link %in% c("logit", "probit")) ||
@@ -107,6 +108,14 @@ search_forward_latent_cum <- function(p_ref, refmodel, nterms_max, verbose,
     cands <- st$cands
     if (is.null(cands)) {
       next
+    }
+    if (skip_full && size == nterms_max + 1L) {
+      # The submodel with all search terms is not projected (see
+      # search_forward()):
+      chosen <- c(chosen, cands[1])
+      outdmins <- c(outdmins, list(NULL))
+      latent_verb_progress(chosen, iq, verbose)
+      break
     }
     gain <- NULL
     if (size > 1L && length(cands) > screen_m) {
@@ -202,7 +211,8 @@ latent_cum_gains <- function(x_c, eta_ref, v_ref, wdraws, cols_cands,
 # Limits (the function returns `NULL`): offsets; smooth terms; a reference
 # model without group-level terms.
 search_forward_latent_mlvl <- function(p_ref, refmodel, nterms_max, verbose,
-                                       search_terms, screen_m, ...) {
+                                       search_terms, screen_m,
+                                       skip_full = FALSE, ...) {
   fam <- refmodel$family
   if (!isTRUE(fam$for_latent) || isTRUE(fam$for_augdat) ||
       !identical(refmodel$div_minimizer, divmin) ||
@@ -244,6 +254,14 @@ search_forward_latent_mlvl <- function(p_ref, refmodel, nterms_max, verbose,
                                         use_term_info = TRUE)
     if (is.null(cands)) {
       next
+    }
+    if (skip_full && size == nterms_max + 1L) {
+      # The submodel with all search terms is not projected (see
+      # search_forward()):
+      chosen <- c(chosen, cands[1])
+      outdmins <- c(outdmins, list(NULL))
+      latent_verb_progress(chosen, iq, verbose)
+      break
     }
     fit_idx <- seq_along(cands)
     if (size > 1L && length(cands) > screen_m) {
