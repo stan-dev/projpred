@@ -849,9 +849,18 @@ mo_lmer_cons <- function(fit, formula, lmer_args, signs_full) {
   Lambdat <- rt$Lambdat
   # The constrained solution for given `theta`:
   gls <- function(theta) {
+    if (any(!is.finite(theta))) {
+      return(list(crit = Inf))
+    }
     Lambdat@x <- theta[rt$Lind]
     LtZt <- Lambdat %*% Zt
-    L <- Matrix::Cholesky(Matrix::tcrossprod(LtZt), LDL = FALSE, Imult = 1)
+    L <- tryCatch(
+      Matrix::Cholesky(Matrix::tcrossprod(LtZt), LDL = FALSE, Imult = 1),
+      error = function(e) NULL
+    )
+    if (is.null(L)) {
+      return(list(crit = Inf))
+    }
     # V^{-1} a with V = I + Z Lambda Lambda' Z' (weighted):
     vinv <- function(a) {
       a <- as.matrix(a)
@@ -859,9 +868,11 @@ mo_lmer_cons <- function(fit, formula, lmer_args, signs_full) {
         LtZt, Matrix::solve(L, LtZt %*% a, system = "A")
       ))
     }
-    qmat <- crossprod(Xf, vinv(Xf))
-    qvec <- drop(crossprod(Xf, vinv(yw)))
-    b0 <- tryCatch(solve(qmat, qvec), error = function(e) NULL)
+    b0 <- tryCatch({
+      qmat <- crossprod(Xf, vinv(Xf))
+      qvec <- drop(crossprod(Xf, vinv(yw)))
+      solve(qmat, qvec)
+    }, error = function(e) NULL)
     if (is.null(b0)) {
       # (A singular system, for example for very large `theta`.)
       return(list(crit = Inf))
