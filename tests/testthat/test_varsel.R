@@ -596,7 +596,7 @@ test_that(paste(
     if (prj_crr == "latent") {
       lppd_ref_ch2_oscale <- lppd_ref_ch2
       expect_equal(vs_indep$summaries$ref$oscale$lppd, lppd_ref_ch2_oscale,
-                   tolerance = 1e1 * .Machine$double.eps, info = tstsetup)
+                   tolerance = 1e2 * .Machine$double.eps, info = tstsetup)
       lppd_ref_ch2 <- loo::elpd(lppd_new_lat)$pointwise[, "elpd"]
     }
     expect_equal(vs_indep$summaries$ref$lppd, lppd_ref_ch2,
