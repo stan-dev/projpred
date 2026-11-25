@@ -1057,10 +1057,16 @@ shared_model_matrix <- function(formulas, data, mo_groups = FALSE) {
     return(NULL)
   }
   # The response names (as from model.response()) are also shared, so the
-  # draw-wise responses do not each get their own copy:
-  return(list(x = xy$x, xlvls = xy$xlvls, y_names = names(xy$y),
-              terms = xy$terms, mo_groups = xy$mo_groups,
-              contrasts = xy$contrasts))
+  # draw-wise responses do not each get their own copy. The sign groups of
+  # mo() terms (element `mo_groups`) are in the output only for
+  # `mo_groups = TRUE`. Otherwise, the output has the elements of the output
+  # of shared_x_from_design():
+  out <- list(x = xy$x, xlvls = xy$xlvls, y_names = names(xy$y),
+              terms = xy$terms, contrasts = xy$contrasts)
+  if (mo_groups) {
+    out$mo_groups <- xy$mo_groups
+  }
+  return(out)
 }
 
 # The model frame and the model matrix of all main-effect terms of `formula` for
