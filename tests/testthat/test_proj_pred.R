@@ -184,7 +184,7 @@ test_that(paste(
   for (tstsetup in tstsetups) {
     args_prj_i <- args_prj[[tstsetup]]
     pl_from_fit <- do.call(proj_linpred, c(
-      list(object = fits[[args_prj_i$tstsetup_fit]],
+      list(object = get_fit(args_prj_i$tstsetup_fit),
            allow_nonconst_wdraws_prj = TRUE, .seed = seed2_tst),
       excl_nonargs(args_prj_i),
       excl_nonargs(args_ref[[args_prj_i$tstsetup_ref]])
@@ -253,9 +253,9 @@ test_that("`object` not of class `vsel` and missing `predictor_terms` fails", {
     paste("^Please provide an `object` of class `vsel` or use argument",
           "`predictor_terms`\\.$")
   )
-  if (length(fits)) {
+  if (length(args_fit)) {
     expect_error(
-      proj_linpred(fits[[1]], .seed = seed2_tst),
+      proj_linpred(get_fit(names(args_fit)[1]), .seed = seed2_tst),
       paste("^Please provide an `object` of class `vsel` or use argument",
             "`predictor_terms`\\.$")
     )
@@ -1212,7 +1212,7 @@ test_that(paste(
   for (tstsetup in tstsetups) {
     args_prj_i <- args_prj[[tstsetup]]
     pp_from_fit <- do.call(proj_predict, c(
-      list(object = fits[[args_prj_i$tstsetup_fit]],
+      list(object = get_fit(args_prj_i$tstsetup_fit),
            .seed = seed2_tst),
       excl_nonargs(args_ref[[args_prj_i$tstsetup_ref]]),
       excl_nonargs(args_prj_i)
@@ -1281,9 +1281,9 @@ test_that("`object` not of class `vsel` and missing `predictor_terms` fails", {
     paste("^Please provide an `object` of class `vsel` or use argument",
           "`predictor_terms`\\.$")
   )
-  if (length(fits)) {
+  if (length(args_fit)) {
     expect_error(
-      proj_predict(fits[[1]], .seed = seed2_tst),
+      proj_predict(get_fit(names(args_fit)[1]), .seed = seed2_tst),
       paste("^Please provide an `object` of class `vsel` or use argument",
             "`predictor_terms`\\.$")
     )

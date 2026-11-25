@@ -246,7 +246,7 @@ test_that(paste(
         d_test_crr$y <- y_oscale_crr
       } else if (prj_crr == "latent") {
         d_test_crr$y <- colMeans(
-          unname(posterior_linpred(fits[[args_vs_i$tstsetup_fit]]))
+          unname(posterior_linpred(get_fit(args_vs_i$tstsetup_fit)))
         )
       }
     }
@@ -351,11 +351,11 @@ test_that(paste(
         d_test_crr$y <- y_oscale_crr
       } else if (prj_crr == "latent") {
         if (pkg_crr == "rstanarm") {
-          post_linpred <- posterior_linpred(fits[[args_vs_i$tstsetup_fit]],
+          post_linpred <- posterior_linpred(get_fit(args_vs_i$tstsetup_fit),
                                             newdata = dat_indep,
                                             offset = d_test_crr$offset)
         } else {
-          post_linpred <- posterior_linpred(fits[[args_vs_i$tstsetup_fit]],
+          post_linpred <- posterior_linpred(get_fit(args_vs_i$tstsetup_fit),
                                             newdata = dat_indep)
         }
         d_test_crr$y <- colMeans(unname(post_linpred))
@@ -955,7 +955,7 @@ test_that("`penalty` of invalid length fails", {
   tstsetups <- grep("\\.L1\\.", names(vss), value = TRUE)
   for (tstsetup in tstsetups) {
     args_vs_i <- args_vs[[tstsetup]]
-    formul_crr <- get_formul_from_fit(fits[[args_vs_i$tstsetup_fit]])
+    formul_crr <- get_formul_from_fit(get_fit(args_vs_i$tstsetup_fit))
     formul_crr <- rm_addresp(formul_crr)
     penal_possbl <- get_penal_possbl(formul_crr)
     len_penal <- length(penal_possbl)
@@ -1005,7 +1005,7 @@ test_that("for L1 search, `penalty` has an expected effect", {
   for (tstsetup in tstsetups) {
     args_vs_i <- args_vs[[tstsetup]]
 
-    formul_crr <- get_formul_from_fit(fits[[args_vs_i$tstsetup_fit]])
+    formul_crr <- get_formul_from_fit(get_fit(args_vs_i$tstsetup_fit))
     formul_crr <- rm_addresp(formul_crr)
     penal_possbl <- get_penal_possbl(formul_crr)
     len_penal <- length(penal_possbl)
@@ -1075,7 +1075,7 @@ test_that("L1 search handles three-way (second-order) interactions correctly", {
   trms_universe_split_bu <- trms_universe_split
   withr::defer(trms_universe_split <<- trms_universe_split_bu)
   trms_universe_split <<- union(trms_universe_split, all_ias)
-  tstsetup <- head(grep("^rstanarm\\.glm\\.", names(fits), value = TRUE), 1)
+  tstsetup <- head(grep("^rstanarm\\.glm\\.", names(args_fit), value = TRUE), 1)
   args_fit_i <- args_fit[[tstsetup]]
   stopifnot(!(args_fit_i$pkg_nm == "rstanarm" && args_fit_i$fam_nm == "cumul"))
   fit_fun_nm <- get_fit_fun_nm(args_fit_i)
@@ -1702,7 +1702,7 @@ test_that("`validate_search` works", {
 ## Arguments specific to K-fold CV ----------------------------------------
 
 test_that("invalid `K` fails", {
-  skip_if_not(length(fits) > 0)
+  skip_if_not(length(args_fit) > 0)
   expect_error(cv_varsel(refmods[[1]], cv_method = "kfold", K = 1),
                "^`K` must be at least 2\\.$")
   expect_error(cv_varsel(refmods[[1]], cv_method = "kfold", K = 1000),
@@ -1738,7 +1738,7 @@ test_that(paste(
     fam_crr <- args_cvvs_i$fam_nm
     prj_crr <- args_cvvs_i$prj_nm
     meth_exp_crr <- args_cvvs_i$method %||% "forward"
-    fit_crr <- fits[[tstsetup_fit]]
+    fit_crr <- get_fit(tstsetup_fit)
     K_crr <- K_tst
 
     # Refit `K_crr` times (note: below, the seed for constructing `folds_vec`
@@ -1852,7 +1852,7 @@ test_that(paste(
     fam_crr <- args_cvvs_i$fam_nm
     prj_crr <- args_cvvs_i$prj_nm
     meth_exp_crr <- args_cvvs_i$method %||% "forward"
-    fit_crr <- fits[[tstsetup_fit]]
+    fit_crr <- get_fit(tstsetup_fit)
     K_crr <- K_tst
 
     # Refit `K_crr` times (note: below, the seed for constructing `folds_vec`

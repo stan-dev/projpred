@@ -121,14 +121,14 @@ test_that("rstanarm: special formulas work", {
   # Within projpred, arithmetic expressions on the left-hand side of a formula
   # are handled by get_refmodel() and init_refmodel(); arithmetic expressions on
   # the right-hand side of a formula are handled by the `div_minimizer`.
-  tstsetups <- grep("^rstanarm.*\\.spclformul", names(fits), value = TRUE)
+  tstsetups <- grep("^rstanarm.*\\.spclformul", names(args_fit), value = TRUE)
   # Compare the "special formula" fit with the corresponding "standard formula"
   # fit (which does not have the special formula elements):
   for (tstsetup in tstsetups) {
-    mf_spclformul <- fits[[tstsetup]]$model
+    mf_spclformul <- get_fit(tstsetup)$model
     if (grepl("\\.glmm\\.", tstsetup)) {
       expect_null(mf_spclformul, info = tstsetup)
-      mf_spclformul <- fits[[tstsetup]]$glmod$fr
+      mf_spclformul <- get_fit(tstsetup)$glmod$fr
     } else {
       expect_false(is.null(mf_spclformul), info = tstsetup)
     }
@@ -136,11 +136,11 @@ test_that("rstanarm: special formulas work", {
 
     tstsetup_stdformul <- sub("\\.spclformul", ".stdformul", tstsetup)
     stopifnot(tstsetup_stdformul != tstsetup)
-    if (tstsetup_stdformul %in% names(fits)) {
-      mf_stdformul <- fits[[tstsetup_stdformul]]$model
+    if (tstsetup_stdformul %in% names(args_fit)) {
+      mf_stdformul <- get_fit(tstsetup_stdformul)$model
       if (grepl("\\.glmm\\.", tstsetup_stdformul)) {
         expect_null(mf_stdformul, info = tstsetup_stdformul)
-        mf_stdformul <- fits[[tstsetup_stdformul]]$glmod$fr
+        mf_stdformul <- get_fit(tstsetup_stdformul)$glmod$fr
       } else {
         expect_false(is.null(mf_stdformul), info = tstsetup_stdformul)
       }

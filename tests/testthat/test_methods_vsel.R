@@ -6,11 +6,11 @@ test_that("invalid `object` fails", {
     some_numbers = 1:3,
     some_letters = head(letters, 17)
   )
-  if (length(fits)) {
+  if (length(args_fit)) {
     objs_invalid <- c(
       objs_invalid,
       nlist(NULL,
-            fit = fits[[1]],
+            fit = get_fit(names(args_fit)[1]),
             refmod = refmods[[1]])
     )
   }

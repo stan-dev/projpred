@@ -31,7 +31,7 @@ test_that("`object` of class `stanreg` or `brmsfit` works", {
     refmodel_tester(
       refmods[[tstsetup]],
       pkg_nm = args_ref[[tstsetup]]$pkg_nm,
-      fit_expected = fits[[tstsetup_fit]],
+      fit_expected = get_fit(tstsetup_fit),
       with_spclformul = with_spclformul_crr,
       wobs_expected = wobs_expected_crr,
       offs_expected = offs_expected_crr,
@@ -115,7 +115,7 @@ test_that("offsets specified via argument `offset` work", {
   refmod_offs_arg <- get_refmodel(fit_offs_arg)
   expect_equal(
     as.matrix(fit_offs_arg),
-    as.matrix(fits$rstanarm.glm.gauss.stdformul.with_wobs.with_offs),
+    as.matrix(get_fit("rstanarm.glm.gauss.stdformul.with_wobs.with_offs")),
     tolerance = 1e-12,
     info = "rstanarm.glm.gauss.stdformul.with_wobs.with_offs"
   )
@@ -144,10 +144,11 @@ test_that(paste(
     chains = chains_tst, seed = seed_fit, iter = iter_tst, QR = TRUE,
     refresh = 0
   ))
-  if ("rstanarm.glm.binom.stdformul.without_wobs.with_offs" %in% names(fits)) {
+  if ("rstanarm.glm.binom.stdformul.without_wobs.with_offs" %in%
+      names(args_fit)) {
     expect_equal(
       as.matrix(fit_binom_1col_wobs),
-      as.matrix(fits$rstanarm.glm.binom.stdformul.without_wobs.with_offs)
+      as.matrix(get_fit("rstanarm.glm.binom.stdformul.without_wobs.with_offs"))
     )
   }
   expect_error(get_refmodel(fit_binom_1col_wobs),
@@ -292,7 +293,7 @@ test_that("function calls in group terms fail", {
   tstsetup <- "brms.glmm.brnll.stdformul.without_wobs.without_offs"
   args_fit_i <- args_fit[[tstsetup]]
   skip_if_not(!is.null(args_fit_i))
-  fit_gr <- fits[[tstsetup]]
+  fit_gr <- get_fit(tstsetup)
   fit_gr$formula <- update(fit_gr$formula,
                            . ~ . - (xco.1 | z.1) + (xco.1 | gr(z.1)))
   expect_error(
@@ -310,14 +311,14 @@ test_that(paste(
   tstsetup <- "brms.glmm.brnll.stdformul.without_wobs.without_offs"
   args_fit_i <- args_fit[[tstsetup]]
   skip_if_not(!is.null(args_fit_i))
-  fit_id <- fits[[tstsetup]]
+  fit_id <- get_fit(tstsetup)
   fit_id$formula <- update(fit_id$formula,
                            . ~ . - (xco.1 | z.1) + (xco.1 |p| z.1))
   expect_message(refmod_id <- get_refmodel(fit_id),
                  "correlation ID(s) `p`", fixed = TRUE, info = tstsetup)
   expect_identical(extract_terms_response(refmod_id$formula)$group_terms,
                    "xco.1 | z.1", info = tstsetup)
-  fit_dbar <- fits[[tstsetup]]
+  fit_dbar <- get_fit(tstsetup)
   fit_dbar$formula <- update(fit_dbar$formula,
                              . ~ . - (xco.1 | z.1) + (xco.1 || z.1))
   expect_error(get_refmodel(fit_dbar),
@@ -384,11 +385,11 @@ test_that(paste(
   "the `cvrefbuilder` of get_refmodel.stanreg() takes the default `dis` from",
   "the fold-wise fit and passes a user-supplied `dis` unchanged"
 ), {
-  tstsetups <- grep("^rstanarm\\..*\\.gauss\\.", names(fits), value = TRUE)
+  tstsetups <- grep("^rstanarm\\..*\\.gauss\\.", names(args_fit), value = TRUE)
   skip_if_not(length(tstsetups) >= 2)
   # The second fit stands in for a fold refit:
-  fit_full <- fits[[tstsetups[1]]]
-  fit_fold <- fits[[tstsetups[2]]]
+  fit_full <- get_fit(tstsetups[1])
+  fit_fold <- get_fit(tstsetups[2])
   sigma_full <- data.frame(fit_full)[, "sigma"]
   sigma_fold <- data.frame(fit_fold)[, "sigma"]
   skip_if(isTRUE(all.equal(sigma_full, sigma_fold)))
@@ -406,9 +407,9 @@ test_that(paste(
   "get_refmodel.stanreg() uses user-supplied `cvfun` and `cvrefbuilder`",
   "functions in K-fold CV"
 ), {
-  tstsetups <- grep("^rstanarm\\..*\\.gauss\\.", names(fits), value = TRUE)
+  tstsetups <- grep("^rstanarm\\..*\\.gauss\\.", names(args_fit), value = TRUE)
   skip_if_not(length(tstsetups) >= 1)
-  fit <- fits[[tstsetups[1]]]
+  fit <- get_fit(tstsetups[1])
 
   # The user-supplied `cvfun` returns the full-data fit for each fold, so no
   # refit is needed:
@@ -447,11 +448,11 @@ test_that(paste(
   "the default of the other, and the default `cvrefbuilder` does not pass a",
   "user-supplied `cvfun` to the folds"
 ), {
-  tstsetups <- grep("^rstanarm\\..*\\.gauss\\.", names(fits), value = TRUE)
+  tstsetups <- grep("^rstanarm\\..*\\.gauss\\.", names(args_fit), value = TRUE)
   skip_if_not(length(tstsetups) >= 2)
   # The second fit stands in for a fold refit:
-  fit_full <- fits[[tstsetups[1]]]
-  fit_fold <- fits[[tstsetups[2]]]
+  fit_full <- get_fit(tstsetups[1])
+  fit_fold <- get_fit(tstsetups[2])
   sigma_fold <- data.frame(fit_fold)[, "sigma"]
   refmod_dflt <- get_refmodel(fit_full)
 
@@ -473,9 +474,9 @@ test_that(paste(
   "get_refmodel.stanreg() rejects a `cvfun` or `cvrefbuilder` that is not a",
   "function"
 ), {
-  tstsetups <- grep("^rstanarm\\.", names(fits), value = TRUE)
+  tstsetups <- grep("^rstanarm\\.", names(args_fit), value = TRUE)
   skip_if_not(length(tstsetups) >= 1)
-  fit <- fits[[tstsetups[1]]]
+  fit <- get_fit(tstsetups[1])
   expect_error(get_refmodel(fit, cvfun = "a"),
                "^Argument `cvfun` must be a function or `NULL`\\.$")
   expect_error(get_refmodel(fit, cvrefbuilder = 1),
@@ -485,13 +486,13 @@ test_that(paste(
 # predict.refmodel() ------------------------------------------------------
 
 test_that("invalid `type` fails", {
-  skip_if_not(length(fits) > 0)
+  skip_if_not(length(args_fit) > 0)
   expect_error(predict(refmods[[1]], dat, type = "zzz"),
                "^type should be one of")
 })
 
 test_that("invalid `ynew` fails", {
-  skip_if_not(length(fits) > 0)
+  skip_if_not(length(args_fit) > 0)
   expect_error(predict(refmods[[1]], dat, ynew = dat),
                "^Argument `ynew` must be a numeric vector\\.$")
 })

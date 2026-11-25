@@ -1,7 +1,7 @@
 # Setup -------------------------------------------------------------------
 
 # Note: Since PR #351, offsets are not supported anymore for `datafit`s. Here,
-# we use the data as generated in `setup.R`, i.e., sometimes with offsets. So
+# we use the data of `helpers/data.R`, i.e., sometimes with offsets. So
 # far, this doesn't seem to cause problems in the submodel fitting routines, but
 # it might do in the future. Then, either the scenarios including offsets have
 # to be excluded or new data has to be generated without offsets.
@@ -207,7 +207,7 @@ test_that("init_refmodel(): `object` of class `datafit` works", {
       is_datafit = TRUE,
       pkg_nm = args_datafit[[tstsetup]]$pkg_nm,
       fit_expected = NULL,
-      formul_expected = get_formul_from_fit(fits[[tstsetup_fit]]),
+      formul_expected = get_formul_from_fit(get_fit(tstsetup_fit)),
       with_spclformul = with_spclformul_crr,
       wobs_expected = wobs_expected_crr,
       offs_expected = rep(0, nobsv),

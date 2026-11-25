@@ -97,7 +97,7 @@ test_that("`object` of class `stanreg` or `brmsfit` works", {
   for (tstsetup in tstsetups) {
     args_prj_i <- args_prj[[tstsetup]]
     p_fit <- do.call(project, c(
-      list(object = fits[[args_prj_i$tstsetup_fit]]),
+      list(object = get_fit(args_prj_i$tstsetup_fit)),
       excl_nonargs(args_prj_i),
       excl_nonargs(args_ref[[args_prj_i$tstsetup_ref]])
     ))
@@ -297,9 +297,9 @@ test_that(paste(
 })
 
 test_that("`object` not of class `vsel` and missing `predictor_terms` fails", {
-  skip_if_not(length(fits) > 0)
+  skip_if_not(length(args_fit) > 0)
   expect_error(
-    project(fits[[1]]),
+    project(get_fit(names(args_fit)[1])),
     paste("^Please provide an `object` of class `vsel` or use argument",
           "`predictor_terms`\\.$")
   )

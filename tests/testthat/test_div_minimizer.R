@@ -9,7 +9,7 @@ test_that("divmin() works", {
   # For comparison with the divmin_augdat() test:
   outdmin_brnll_tmp <- list()
 
-  for (tstsetup in grep(fam_nms_aug_regex, names(fits), value = TRUE,
+  for (tstsetup in grep(fam_nms_aug_regex, names(args_fit), value = TRUE,
                         invert = TRUE)) {
     args_fit_i <- args_fit[[tstsetup]]
     pkg_crr <- args_fit_i$pkg_nm
@@ -17,9 +17,9 @@ test_that("divmin() works", {
     fam_crr <- args_fit_i$fam_nm
 
     if (fam_crr == "gauss") {
-      mu_crr <- posterior_linpred(fits[[tstsetup]])
+      mu_crr <- posterior_linpred(get_fit(tstsetup))
       # Crude approximations for the predictive variances:
-      var_crr <- mean(as.matrix(fits[[tstsetup]])[, "sigma"]^2) +
+      var_crr <- mean(as.matrix(get_fit(tstsetup))[, "sigma"]^2) +
         (colMeans(mu_crr^2) - colMeans(mu_crr)^2)
     } else {
       var_crr <- rep(NA, nobsv)
