@@ -479,15 +479,15 @@ nb_alternate <- function(args_divmin, p_ref, refmodel, tol = 1e-5,
   phi <- pmin(phi, nb_phi_max())
   # Monotonic projection of mo() terms: whether the sign constraint applies to
   # a draw depends on the shape, and near the switch point the decision and
-  # the shape can alternate between two states. A draw whose decision has
-  # changed twice keeps the constraint in the later iterations (in such a
-  # cycle, only the constrained fit and its shape agree). A single change
-  # (for example from the start shape) stays free:
+  # the shape can alternate between two states without end. A draw in such a
+  # cycle (its decision changes, and its decision and shape are those of two
+  # iterations before) keeps the constraint in the later iterations; its
+  # constrained fit then converges:
   mo_force <- NULL
   if (!is.null(args_divmin$projpred_mo_signs)) {
     mo_force <- rep(FALSE, length(phi))
-    mo_state <- NULL
-    mo_changes <- integer(length(phi))
+    # The decisions and the shapes of the last two iterations:
+    mo_hist <- list()
   }
   for (it in seq_len(maxit)) {
     outdmin <- do.call(divmin, c(args_divmin, list(projpred_nb_phi = phi),
@@ -495,13 +495,14 @@ nb_alternate <- function(args_divmin, p_ref, refmodel, tol = 1e-5,
                                    list(projpred_mo_force = mo_force)
                                  }))
     if (!is.null(mo_force)) {
-      mo_cons <- vapply(outdmin, function(fit) isTRUE(fit$mo_cons),
-                        logical(1))
-      if (!is.null(mo_state)) {
-        mo_changes <- mo_changes + (mo_cons != mo_state)
+      cons <- vapply(outdmin, function(fit) isTRUE(fit$mo_constrained),
+                     logical(1))
+      if (length(mo_hist) == 2) {
+        cyc <- cons != mo_hist[[2]]$cons & cons == mo_hist[[1]]$cons &
+          abs(log(phi) - log(mo_hist[[1]]$phi)) < 1e-3
+        mo_force <- mo_force | cyc
       }
-      mo_state <- mo_cons
-      mo_force <- mo_force | mo_changes >= 2L
+      mo_hist <- c(utils::tail(mo_hist, 1), list(list(cons = cons, phi = phi)))
     }
     mu <- refmodel$mu_fun(outdmin, offset = refmodel$offset)
     if (anyNA(mu) || any(mu <= 0)) {

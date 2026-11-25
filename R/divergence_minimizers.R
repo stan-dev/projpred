@@ -94,10 +94,13 @@ divmin <- function(
   mo_force <- rep(FALSE, length(formulas))
   if (!is.null(projpred_mo_force)) {
     if (is.null(projpred_mo_signs) ||
-        length(projpred_mo_force) != length(formulas)) {
-      stop("Internal error: `projpred_mo_force` needs `projpred_mo_signs` ",
-           "and one element per projected draw. Please notify the package ",
-           "maintainer.")
+        length(projpred_mo_force) != length(formulas) ||
+        (any(projpred_mo_force) &&
+         !identical(sdivmin, fit_glm_ridge_callback))) {
+      stop("Internal error: `projpred_mo_force` needs `projpred_mo_signs`, ",
+           "one element per projected draw and the default submodel fitter ",
+           "without group-level and additive terms. Please notify the ",
+           "package maintainer.")
     }
     mo_force <- projpred_mo_force
   }
@@ -1024,10 +1027,10 @@ fit_glm_ridge_callback <- function(formula, data,
   # Monotonic projection of mo() terms: if a sign group of the unconstrained
   # solution has coefficients of both signs (or with `projpred_mo_force`), fit
   # again with the signs of the groups fixed (see mo_cons_signs()):
-  mo_cons <- !is.null(projpred_mo_signs) &&
+  mo_constrained <- !is.null(projpred_mo_signs) &&
     (isTRUE(projpred_mo_force) ||
        mo_binding(fit$beta, x, mo_groups, weights = dot_args$weights))
-  if (mo_cons) {
+  if (mo_constrained) {
     fit <- do.call(glm_ridge, c(
       args_fit, mo_cons_args(fit, x, mo_groups, projpred_mo_signs, dot_args)
     ))
@@ -1043,9 +1046,9 @@ fit_glm_ridge_callback <- function(formula, data,
   # "predvars"), for predictions for new data:
   sub <- nlist(alpha = fit$beta0, beta = fit$beta, w = fit$w, formula, x, y,
                xlvls, terms = terms_train, contrasts = ctrs)
-  if (mo_cons) {
+  if (mo_constrained) {
     # The fit has the sign constraint of mo() terms (see nb_alternate()):
-    sub$mo_cons <- TRUE
+    sub$mo_constrained <- TRUE
   }
   class(sub) <- "subfit"
   return(sub)
