@@ -1954,12 +1954,16 @@ test_that(paste(
   # `w` decreases with `x`, so the effect of `x` in the submodel without `w`
   # has the opposite sign of its effect in the full model (log link):
   dat$w <- -0.5 * dat$x + rnorm(n, sd = 0.5)
-  eff_x <- c(0, 0.4, -0.2, 0.3, 0.1)
+  # Offsets that increase with `x`: a fit to the means without the offsets
+  # gives the opposite sign of the effect of `x` in the full model:
+  dat$off <- 0.6 * dat$x + log(runif(n, 0.5, 2))
+  eff_x <- c(0, 0.4, -0.2, 0.3, 0.3)
   b <- cbind(alpha = rnorm(S, 1, 0.05), bx = rnorm(S, 1, 0.1),
              bz = rnorm(S, 0.3, 0.05))
+  # The linear predictor with the offsets (init_refmodel() subtracts them):
   eta_fun <- function(nd) {
     outer(eff_x[nd$x + 1], b[, "bx"]) + outer(nd$z, b[, "bz"]) + 0.5 * nd$w +
-      matrix(b[, "alpha"], nrow(nd), S, byrow = TRUE)
+      matrix(b[, "alpha"], nrow(nd), S, byrow = TRUE) + nd$off
   }
   dat$y <- rnbinom(n, size = 4, mu = exp(rowMeans(eta_fun(dat))))
   fml <- y ~ mo(x) + z + w
@@ -1971,19 +1975,29 @@ test_that(paste(
     ref_predfun = function(fit, newdata = NULL) {
       eta_fun(if (is.null(newdata)) fit$data else newdata)
     },
+    extract_model_data = function(object, newdata = NULL, wrhs = NULL,
+                                  orhs = NULL, extract_y = TRUE) {
+      nd <- if (is.null(newdata)) dat else newdata
+      list(y = if (extract_y) nd$y, weights = rep(1, nrow(nd)),
+           offset = nd$off)
+    },
     dis = 4 * exp(rnorm(S, sd = 0.2)), cvfun = function(folds) NULL,
     cvrefbuilder = function(cvfit) NULL
   ))
   expect_identical(refm$family$family, "negbinomial")
+  expect_equal(refm$offset, dat$off)
   terms_sub <- c("mo(x)", "z")
+  # (With a small convergence threshold for the comparison with glm_ridge()
+  # below.)
   expect_no_warning(prj <- project(refm, predictor_terms = terms_sub,
-                                   ndraws = S, verbose = FALSE))
+                                   ndraws = S, thresh_conv = 1e-12,
+                                   verbose = FALSE))
   b_x <- prj_coefs(prj)[, cols_x]
   expect_true(all(is_mono(b_x)))
   # Unconstrained projections (onto the submodel and onto the full model):
   options(projpred.mo_monotone = FALSE)
   prj_unc <- project(refm, predictor_terms = terms_sub, ndraws = S,
-                     verbose = FALSE)
+                     thresh_conv = 1e-12, verbose = FALSE)
   prj_full <- project(refm, predictor_terms = c(terms_sub, "w"), ndraws = S,
                       verbose = FALSE)
   options(projpred.mo_monotone = TRUE)
@@ -1995,22 +2009,48 @@ test_that(paste(
   # The signs of the full model differ from those of the submodel:
   expect_true(all(s_full[binding] != s_sum[binding]))
   expect_true(all(b_x[binding, ] * s_full[binding] >= 0))
-  # Draws without a binding constraint keep the unconstrained fit and shape:
+  # Draws without a binding constraint keep the unconstrained fit and shape
+  # (up to the stopping rule of nb_alternate(), which depends on all draws):
   expect_equal(prj_coefs(prj)[!binding, , drop = FALSE],
-               b_unc[!binding, , drop = FALSE], tolerance = 1e-10)
-  expect_equal(prj$dis[!binding], prj_unc$dis[!binding], tolerance = 1e-10)
-  # A constrained draw is the sign-constrained glm_ridge() fit with its
-  # projected shape fixed (the fixed point of nb_alternate()):
+               b_unc[!binding, , drop = FALSE], tolerance = 1e-4)
+  expect_equal(prj$dis[!binding], prj_unc$dis[!binding], tolerance = 1e-4)
+  # Each draw is the glm_ridge() fit to the means with the offsets, with its
+  # projected shape fixed (the fixed point of nb_alternate()), and with the
+  # signs of the full model for the binding draws:
   x <- cbind(strip_attr(mo(dat$x)), z = dat$z)
-  for (s in which(binding)[1:2]) {
-    fit_s <- glm_ridge(x, refm$mu[, s],
-                       family = refm$family$fixed_dis_family(prj$dis[s]),
-                       weights = refm$wobs, lambda = 1e-4, thresh = 1e-12,
-                       cons_cols = 1:4, cons_signs = rep(s_full[s], 4))
+  for (s in seq_len(S)) {
+    args_cons <- if (binding[s]) {
+      list(cons_cols = 1:4, cons_signs = rep(s_full[s], 4))
+    }
+    fit_s <- do.call(glm_ridge, c(list(
+      x, refm$mu_offs[, s], family = refm$family$fixed_dis_family(prj$dis[s]),
+      weights = refm$wobs, offset = refm$offset, lambda = 1e-4,
+      thresh = 1e-12
+    ), args_cons))
     expect_equal(unname(c(prj$outdmin[[s]]$alpha, prj_coefs(prj)[s, ])),
                  unname(c(fit_s$beta0, drop(fit_s$beta))), tolerance = 1e-4,
                  info = paste("draw", s))
   }
+  # The parallel path of divmin() (the mo() signs and the family of each
+  # draw):
+  opts_par <- options(projpred.parallel_proj_trigger = 1)
+  n_par <- 0
+  prj_par <- with_mocked_bindings(
+    project(refm, predictor_terms = terms_sub, ndraws = S,
+            thresh_conv = 1e-12, verbose = FALSE),
+    par_backend = function(...) "future",
+    par_lapply = function(.X, .FUN, ..., .backend, .rng = FALSE,
+                          .progress = FALSE) {
+      n_par <<- n_par + 1
+      par_chunk(list(xs = .X, seeds = NULL),
+                list(fun = .FUN, args = list(...), opts = list(),
+                     globs = list()))
+    }
+  )
+  options(opts_par)
+  expect_gt(n_par, 0)
+  expect_equal(prj_coefs(prj_par), prj_coefs(prj), tolerance = 1e-12)
+  expect_equal(prj_par$dis, prj$dis, tolerance = 1e-12)
   # Forward search with monotonic projections:
   vs <- varsel(refm, method = "forward", ndraws = 4, nclusters_pred = 4,
                verbose = FALSE)
