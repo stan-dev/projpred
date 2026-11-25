@@ -304,6 +304,15 @@ package (`TRUE` or `FALSE`), but since that global option defaults to
 usually does not need to be set by the user. Messages and warnings from
 the workers are shown in the main R session.
 
+## Monotonic terms
+
+Global option `projpred.mo_monotone` (default `TRUE`) controls whether
+the projected effects of monotonic terms `mo()` are monotonic. See
+section "Monotonic terms" in
+[`init_refmodel()`](https://mc-stan.org/projpred/dev/reference/refmodel-init-get.md)
+and
+[`mo_effects()`](https://mc-stan.org/projpred/dev/reference/mo_effects.md).
+
 ## Multilevel models: "Integrating out" group-level effects
 
 In case of multilevel models, projpred offers two global options for

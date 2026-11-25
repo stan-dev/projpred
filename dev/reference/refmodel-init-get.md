@@ -313,6 +313,76 @@ Note that all smooth terms need to be included in `formula` (there is no
 [`rstanarm::stan_gamm4()`](https://mc-stan.org/rstanarm/reference/stan_gamm4.html),
 for example).
 
+## Monotonic terms
+
+Monotonic terms `mo(x)` (see
+[`brms::mo()`](https://paulbuerkner.com/brms/reference/mo.html)) are
+supported for an ordered factor `x` or an integer `x`. In the submodels,
+projpred codes `mo(x)` by the indicators of \\x \geq l_k\\ for the
+levels \\l_1, \ldots, l_D\\ of `x` above the lowest level \\l_0\\. As in
+brms, the levels of an integer `x` are all integers from \\\min(x)\\ to
+\\\max(x)\\ in the training data, also those that do not occur in the
+data (the indicators of such values are equal to those of the next
+value). Argument `id` of
+[`brms::mo()`](https://paulbuerkner.com/brms/reference/mo.html) has no
+effect in projpred. New data must not have values of `x` outside the
+levels of the training data (in \\K\\-fold CV, the training data of a
+fold). An ordered factor `x` must be a factor or a character vector in
+new data, and an integer `x` must be an integer. Monotonic terms are not
+supported in group-level terms and in additive multilevel models.
+
+If no observation has a value inside the range of an integer `x`, the
+indicator of this value equals the indicator of the next value. In LOO
+CV with validated search, this also occurs if only the left-out
+observation has the value. The GLM submodel fitter handles equal
+indicators. [`lme4::lmer()`](https://rdrr.io/pkg/lme4/man/lmer.html) and
+[`lme4::glmer()`](https://rdrr.io/pkg/lme4/man/glmer.html) drop one of
+them with a warning, and the predictions of
+[`MASS::polr()`](https://rdrr.io/pkg/MASS/man/polr.html) fail. To avoid
+this, use an ordered factor without unused levels.
+
+By default (global option `projpred.mo_monotone = TRUE`), the projected
+effect of each `mo()` term is monotonic: the coefficients of its
+indicators have the same sign. If the unconstrained projection of a
+projected draw (or cluster) is monotonic, projpred keeps it. Otherwise,
+projpred takes the sign from the unconstrained projection of the same
+draw onto the full model (all predictor terms of `formula`): the sign of
+the sum of the coefficients of the same term (same name and same coding
+of its factors). In `mo(x) * z`, for example, the full-model term
+`mo(x)` is the effect of `x` at `z = 0`. If the full model does not have
+the term (possible with custom `search_terms`) or if the projection onto
+the full model fails, projpred takes the sign of the sum of the
+unconstrained coefficients in the submodel. In an interaction of a
+`mo()` term with a factor (for example `mo(x):f`), each column of the
+factor has its own monotonic effect, as in brms. So in `mo(x) * f`, the
+effect of `x` within a level of `f` other than the first is the sum of
+two monotonic effects, and this sum is not necessarily monotonic.
+[`mo_effects()`](https://mc-stan.org/projpred/dev/reference/mo_effects.md)
+gives the projected effects in the parametrization of brms.
+
+Monotonic projections are supported for forward search. They are
+supported for submodels without group-level and smooth terms (with the
+default submodel fitter) and for multilevel submodels with the
+[`gaussian()`](https://rdrr.io/r/stats/family.html) family (also in the
+latent projection). projpred throws an error before the search or the
+projection starts for L1 search, the augmented-data projection, custom
+divergence minimizers, reference models with smooth terms, multilevel
+submodels with another family, terms with more than one `mo()` call, and
+`mo()` calls inside other calls. With
+`options(projpred.mo_monotone = FALSE)`, the coefficients of the
+indicators are not constrained (so the projected effect of `x` is not
+necessarily monotonic), and these cases are supported. projpred reads
+the option when it projects. With `refit_prj = FALSE`, the submodel fits
+of the search are reused, so the value of the option at the time of the
+search applies. In a parallel run, the workers get the value of the
+option from the main R session if the option is set there; otherwise,
+each worker uses the value of its own R session. In a screened forward
+search (argument `search_screen` of
+[`varsel()`](https://mc-stan.org/projpred/dev/reference/varsel.md) and
+[`cv_varsel()`](https://mc-stan.org/projpred/dev/reference/cv_varsel.md)),
+the screening criterion ranks the candidates without the monotonicity
+constraint; the exact projections onto the m best candidates apply it.
+
 ## Arguments `ref_predfun`, `proj_predfun`, and `div_minimizer`
 
 Arguments `ref_predfun`, `proj_predfun`, and `div_minimizer` may be

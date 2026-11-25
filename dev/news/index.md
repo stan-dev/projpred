@@ -11,6 +11,13 @@
   2.1.0. For a Student-t reference model, use the latent projection; the
   latent-projection vignette has a new example. (GitHub:
   [\#3](https://github.com/stan-dev/projpred/issues/3))
+- Support for monotonic terms `mo()` (as in **brms**). By default, the
+  projected effect of each `mo()` term is monotonic (global option
+  `projpred.mo_monotone`). New function
+  [`mo_effects()`](https://mc-stan.org/projpred/dev/reference/mo_effects.md)
+  gives these effects in the **brms** parametrization. (GitHub:
+  [\#557](https://github.com/stan-dev/projpred/issues/557),
+  [\#591](https://github.com/stan-dev/projpred/issues/591))
 
 ### Bug fixes
 

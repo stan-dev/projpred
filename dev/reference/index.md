@@ -62,6 +62,11 @@
 - [`mesquite`](https://mc-stan.org/projpred/dev/reference/mesquite.md) :
   Mesquite data set
 
+- [`mo_effects()`](https://mc-stan.org/projpred/dev/reference/mo_effects.md)
+  :
+
+  Monotonic effects of `mo()` terms in the parametrization of brms
+
 - [`performances()`](https://mc-stan.org/projpred/dev/reference/performances.md)
   : Predictive performance results
 

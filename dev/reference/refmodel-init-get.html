@@ -368,6 +368,65 @@ that all smooth terms need to be included in <code>formula</code> (there is no <
 argument as in <code><a href="https://mc-stan.org/rstanarm/reference/stan_gamm4.html" class="external-link">rstanarm::stan_gamm4()</a></code>, for example).</p>
     </div>
     <div class="section level2">
+    <h2 id="monotonic-terms">Monotonic terms<a class="anchor" aria-label="anchor" href="#monotonic-terms"></a></h2>
+    <p>Monotonic terms <code>mo(x)</code> (see <code><a href="https://paulbuerkner.com/brms/reference/mo.html" class="external-link">brms::mo()</a></code>) are supported for an ordered
+factor <code>x</code> or an integer <code>x</code>. In the submodels, <span class="pkg">projpred</span> codes <code>mo(x)</code>
+by the indicators of \(x \geq l_k\) for the levels \(l_1,
+\ldots, l_D\) of <code>x</code> above the lowest level \(l_0\). As
+in <span class="pkg">brms</span>, the levels of an integer <code>x</code> are all integers from
+\(\min(x)\) to \(\max(x)\) in the training data, also
+those that do not occur in the data (the indicators of such values are equal
+to those of the next value). Argument <code>id</code> of <code><a href="https://paulbuerkner.com/brms/reference/mo.html" class="external-link">brms::mo()</a></code> has no effect in
+<span class="pkg">projpred</span>. New data must not have values of <code>x</code> outside the levels of
+the training data (in \(K\)-fold CV, the training data of a fold). An
+ordered factor <code>x</code> must be a factor or a character vector in new data, and an
+integer <code>x</code> must be an integer. Monotonic terms are not supported in
+group-level terms and in additive multilevel models.</p>
+<p>If no observation has a value inside the range of an integer <code>x</code>, the
+indicator of this value equals the indicator of the next value. In LOO CV
+with validated search, this also occurs if only the left-out observation
+has the value. The GLM submodel fitter handles equal indicators.
+<code><a href="https://rdrr.io/pkg/lme4/man/lmer.html" class="external-link">lme4::lmer()</a></code> and <code><a href="https://rdrr.io/pkg/lme4/man/glmer.html" class="external-link">lme4::glmer()</a></code> drop one of them with a warning, and the
+predictions of <code><a href="https://rdrr.io/pkg/MASS/man/polr.html" class="external-link">MASS::polr()</a></code> fail. To avoid this, use an ordered factor
+without unused levels.</p>
+<p>By default (global option <code>projpred.mo_monotone = TRUE</code>), the projected
+effect of each <code>mo()</code> term is monotonic: the coefficients of its indicators
+have the same sign. If the unconstrained projection of a projected draw (or
+cluster) is monotonic, <span class="pkg">projpred</span> keeps it. Otherwise, <span class="pkg">projpred</span>
+takes the sign from the unconstrained projection of the same draw onto the
+full model (all predictor terms of <code>formula</code>): the sign of the sum of the
+coefficients of the same term (same name and same coding of its factors).
+In <code>mo(x) * z</code>, for example, the full-model term <code>mo(x)</code> is the effect of
+<code>x</code> at <code>z = 0</code>. If the full model does not have the term (possible with
+custom <code>search_terms</code>) or if the projection onto the full model fails,
+<span class="pkg">projpred</span> takes the sign of the sum of the unconstrained coefficients
+in the submodel. In an interaction of a <code>mo()</code> term with a factor (for
+example <code>mo(x):f</code>), each column of the factor has its own monotonic effect,
+as in <span class="pkg">brms</span>. So in <code>mo(x) * f</code>, the effect of <code>x</code> within a level of <code>f</code>
+other than the first is the sum of two monotonic effects, and this sum is
+not necessarily monotonic. <code><a href="mo_effects.html">mo_effects()</a></code> gives the projected effects in the
+parametrization of <span class="pkg">brms</span>.</p>
+<p>Monotonic projections are supported for forward search. They are supported
+for submodels without group-level and smooth terms (with the default
+submodel fitter) and for multilevel submodels with the <code><a href="https://rdrr.io/r/stats/family.html" class="external-link">gaussian()</a></code> family
+(also in the latent projection). <span class="pkg">projpred</span> throws an error before the
+search or the projection starts for L1 search, the augmented-data
+projection, custom divergence minimizers, reference models with smooth
+terms, multilevel submodels with another family, terms with more than one
+<code>mo()</code> call, and <code>mo()</code> calls inside other calls.
+With <code>options(projpred.mo_monotone = FALSE)</code>, the coefficients of the
+indicators are not constrained (so the projected effect of <code>x</code> is not
+necessarily monotonic), and these cases are supported. <span class="pkg">projpred</span> reads
+the option when it projects. With <code>refit_prj = FALSE</code>, the submodel fits of
+the search are reused, so the value of the option at the time of the search
+applies. In a parallel run, the workers get the value of the option from
+the main R session if the option is set there; otherwise, each worker uses
+the value of its own R session. In a screened forward search (argument
+<code>search_screen</code> of <code><a href="varsel.html">varsel()</a></code> and <code><a href="cv_varsel.html">cv_varsel()</a></code>), the screening criterion
+ranks the candidates without the monotonicity constraint; the exact
+projections onto the m best candidates apply it.</p>
+    </div>
+    <div class="section level2">
     <h2 id="arguments-ref-predfun-proj-predfun-and-div-minimizer">Arguments <code>ref_predfun</code>, <code>proj_predfun</code>, and <code>div_minimizer</code><a class="anchor" aria-label="anchor" href="#arguments-ref-predfun-proj-predfun-and-div-minimizer"></a></h2>
     <p>Arguments <code>ref_predfun</code>, <code>proj_predfun</code>, and <code>div_minimizer</code> may be <code>NULL</code>
 for using an internal default (see <a href="projpred-package.html">projpred-package</a> for the functions used
