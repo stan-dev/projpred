@@ -14,6 +14,8 @@ If you read this from a place other than <https://mc-stan.org/projpred/news/inde
 
 ## Bug fixes
 
+* With subsampled LOO (`nloo` below the number of observations) and unequal observation weights, the SEs of `"mse"`, `"rmse"`, `"R2"` and pointwise custom statistics were too small. All SEs with subsampled LOO are now also numerically stable for values with a large common offset. (GitHub: #679)
+
 * For `rstanarm::stan_gamm4()` reference models with `t2()` terms, `rstanarm::posterior_linpred()` gives wrong linear predictors. projpred now computes them itself, so the reference model predictions, the projections and the predictive performance results are correct. (GitHub: #677)
 
 
