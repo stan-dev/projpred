@@ -8,7 +8,12 @@
 #'   objects, this has to be a character string here.
 #' @param nu Degrees of freedom for the Student-\eqn{t} distribution.
 #'
-#' @note Support for the [Student_t()] family is still experimental.
+#' @details [Student_t()] is deprecated and will be removed in a future
+#'   release. [project()], [varsel()], and [cv_varsel()] do not support it.
+#'   For a Student-\eqn{t} reference model, use the latent projection (see
+#'   [extend_family()] and section ["Example: Student-t
+#'   distribution"](https://mc-stan.org/projpred/articles/latent.html#studentex)
+#'   of the latent-projection vignette).
 #'
 #' @return A family object analogous to those described in [`family`].
 #'
@@ -20,6 +25,9 @@ NULL
 #' @rdname extra-families
 #' @export
 Student_t <- function(link = "identity", nu = 3) {
+  warning("Student_t() is deprecated and will be removed in a future ",
+          "release. For a Student-t reference model, use the latent ",
+          "projection (see the latent-projection vignette).")
   if (!(link %in% c("identity", "log", "inverse"))) {
     stop("Non-supported link: ", link)
   }

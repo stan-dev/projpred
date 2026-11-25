@@ -988,5 +988,6 @@ has_family_extras <- function(family) {
 fams_linkinv_mean <- function() {
   return(c("poisson", "neg_binomial_2", "negbinomial", "negbinomial2",
            "geometric", "Gamma", "gamma", "inverse.gaussian", "Beta",
-           "weibull", "exponential", "frechet", "skew_normal", "exgaussian"))
+           "weibull", "exponential", "frechet", "skew_normal", "exgaussian",
+           "student"))
 }

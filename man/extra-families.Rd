@@ -19,6 +19,10 @@ A family object analogous to those described in \code{\link{family}}.
 \description{
 Family objects not in the set of default \code{\link{family}} objects.
 }
-\note{
-Support for the \code{\link[=Student_t]{Student_t()}} family is still experimental.
+\details{
+\code{\link[=Student_t]{Student_t()}} is deprecated and will be removed in a future
+release. \code{\link[=project]{project()}}, \code{\link[=varsel]{varsel()}}, and \code{\link[=cv_varsel]{cv_varsel()}} do not support it.
+For a Student-\eqn{t} reference model, use the latent projection (see
+\code{\link[=extend_family]{extend_family()}} and section \href{https://mc-stan.org/projpred/articles/latent.html#studentex}{"Example: Student-t distribution"}
+of the latent-projection vignette).
 }
