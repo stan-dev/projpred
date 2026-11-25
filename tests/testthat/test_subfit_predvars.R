@@ -54,8 +54,10 @@ test_that(paste(
   refm <- refm_predvars()
   vs <- suppressWarnings(varsel(refm, method = "L1", refit_prj = FALSE,
                                 nterms_max = 3, seed = 3906, verbose = FALSE))
-  prj <- suppressWarnings(project(vs, nterms = 3, refit_prj = FALSE,
-                                  verbose = FALSE))
+  # The L1 submodel with all terms (`nterms = 3` would give the reference
+  # model draws, see test_full_size_ref.R):
+  prj <- suppressWarnings(project(vs, predictor_terms = vs$predictor_ranking,
+                                  refit_prj = FALSE, verbose = FALSE))
   pred_train <- proj_linpred(prj)$pred
   pred_new <- proj_linpred(prj, newdata = refm$fetch_data()[1:10, ])$pred
   expect_equal(unname(drop(pred_new)), unname(drop(pred_train)[1:10]),

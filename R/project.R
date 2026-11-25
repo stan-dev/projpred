@@ -436,7 +436,7 @@ flat_term_labels <- function(trms) {
 # the reference model (see full_size_ref_ok()): `ndraws` thinned draws of the
 # reference model, with the elements of an init_submodl() output. Element
 # `outdmin` has class `projpred_ref_draws` and holds the indices `draws` of the
-# reference model draws, from which mu_fun() (see init_refmodel()) predicts.
+# reference model draws, from which proj_mu() predicts.
 # Element `dis` holds the dispersion draws of the reference model, and `ce` is
 # the cross-entropy of these draws with themselves (see ce_ref_self()).
 proj_full_ref <- function(refmodel, predictor_terms, ndraws,
@@ -475,6 +475,49 @@ stop_ref_draws <- function(proj, fun_txt) {
          "draws of the reference model fit instead.")
   }
   return(invisible(NULL))
+}
+
+# The predictions of the `projection` object `proj` for `newdata` (`NULL` for
+# the training data) with the offsets `offset`, as `proj$refmodel$mu_fun()`
+# gives them for submodel fits. For reference model draws (see
+# proj_full_ref()), these are the predictions of the reference model fit for
+# these draws. (mu_fun() itself cannot make them: its copy for the parallel CV
+# folds has no fit, see refmodel_for_folds().)
+proj_mu <- function(proj, newdata = NULL, offset, transform = TRUE) {
+  refm <- proj$refmodel
+  if (!is_ref_draws(proj)) {
+    return(refm$mu_fun(proj$outdmin, newdata = newdata, offset = offset,
+                       transform = transform))
+  }
+  sgn <- if (refm$family$family %in% fams_neg_linpred()) -1 else 1
+  if (is.null(newdata)) {
+    # The predictions include the offsets of the training data; replace them
+    # by `offset`:
+    pred <- refm$ref_predfun(refm$fit, excl_offs = FALSE)
+    pred <- pred[, proj$outdmin$draws, drop = FALSE] +
+      sgn * (offset - refm$offset)
+  } else {
+    newdata <- as.data.frame(newdata)
+    if ("projpred_internal_offs_stanreg" %in%
+        names(refm$fetch_data(obs = 1L))) {
+      # The offset column of an rstanarm fit (see get_refmodel.stanreg()):
+      newdata$projpred_internal_offs_stanreg <- offset
+    }
+    # The predictions include the offsets of `newdata`; replace them by
+    # `offset`. (With `wrhs`, extract_model_data() needs no observation
+    # weights in `newdata`.)
+    pred <- refm$ref_predfun(refm$fit, newdata = newdata, excl_offs = FALSE)
+    offs_new <- refm$extract_model_data(
+      refm$fit, newdata = newdata, wrhs = rep(1, nrow(newdata)),
+      extract_y = FALSE
+    )$offset
+    pred <- pred[, proj$outdmin$draws, drop = FALSE] +
+      sgn * (offset - offs_new)
+  }
+  if (transform) {
+    pred <- refm$family$linkinv(pred)
+  }
+  return(pred)
 }
 
 #' Print information about [project()] output

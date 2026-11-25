@@ -464,6 +464,42 @@ test_that(paste(
   expect_warning(prj_cv <- project(cvvs, nterms = 3, ndraws = 50), warn_ref)
   expect_identical(prj_cv$outdmin, prj$outdmin)
 
+  # A custom reference model with an offset column `o`: argument `offsetnew`
+  # replaces the offsets, for the training data and for new data:
+  dat_o <- dat
+  dat_o$o <- withr::with_seed(2283, runif(nrow(dat), -0.5, 0.5))
+  fml_o <- y ~ x1 + x2 + x3
+  beta_o <- refm$fit$beta
+  x_o <- model.matrix(delete.response(terms(fml_o)), dat_o)
+  refm_o <- suppressWarnings(init_refmodel(
+    list(beta = beta_o, data = dat_o), data = dat_o, formula = fml_o,
+    family = gaussian(),
+    ref_predfun = function(fit, newdata = NULL) {
+      nd <- if (is.null(newdata)) fit$data else newdata
+      unname(model.matrix(delete.response(terms(fml_o)), nd) %*% fit$beta +
+               nd$o)
+    },
+    extract_model_data = function(object, newdata, wrhs = NULL, orhs = NULL,
+                                  extract_y = TRUE) {
+      y_wobs_offs(newdata = newdata, wrhs = wrhs, orhs = orhs %||% ~ o,
+                  resp_form = if (extract_y) ~ y else NULL)
+    },
+    dis = refm$dis
+  ))
+  vs_o <- varsel(refm_o, nclusters = 3, ndraws_pred = 50)
+  expect_true(vs_o$full_ref)
+  expect_warning(prj_o <- project(vs_o, nterms = 3, ndraws = 50), warn_ref)
+  eta_x <- x_o %*% beta_o[, prj_o$outdmin$draws]
+  for (offs in list(dat_o$o, dat_o$o + 0.3)) {
+    expect_equal(unname(proj_linpred(prj_o, offsetnew = offs)$pred),
+                 unname(t(eta_x + offs)))
+    expect_equal(
+      unname(proj_linpred(prj_o, newdata = dat_o[1:5, ],
+                          offsetnew = offs[1:5])$pred),
+      unname(t(eta_x[1:5, ] + offs[1:5]))
+    )
+  }
+
   # The latent projection (response-scale predictions):
   dat_b <- dat
   dat_b$y <- withr::with_seed(2281, {
@@ -522,9 +558,14 @@ test_that(paste(
   expect_warning(prj <- project(vs, nterms = 3, ndraws = 20),
                  "returns 20 draws of the reference model")
   draws <- prj$outdmin$draws
-  # Training data:
+  # Training data, also with other offsets:
   expect_equal(unname(proj_linpred(prj)$pred),
                unname(rstanarm::posterior_linpred(fit)[draws, ]))
+  offs_tr <- dat$o + 0.3
+  expect_equal(unname(proj_linpred(prj, offsetnew = offs_tr)$pred),
+               unname(rstanarm::posterior_linpred(
+                 fit, newdata = dat, offset = offs_tr
+               )[draws, ]))
   # New data with new offsets and trials:
   nd <- dat[1:6, ]
   offs_new <- seq(-1, 1, length.out = 6)
