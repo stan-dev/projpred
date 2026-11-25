@@ -16,9 +16,8 @@ test_that("is_known_setup_err() accepts an error only for its model types", {
 })
 
 test_that("setup.R reports the dropped test setups", {
-  # setup.R stops after an unexpected error and drops a test setup only after
-  # a known upstream error (see is_known_setup_err()). The skip message lists
-  # the dropped setups.
+  # setup.R drops a test setup only after a known upstream error (see
+  # is_known_setup_err()). The skip message lists the dropped test setups.
   if (length(setup_drops) > 0) {
     skip(paste0(
       "setup.R dropped test setups after a known upstream error: ",

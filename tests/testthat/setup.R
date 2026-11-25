@@ -177,9 +177,9 @@ is_gamm_backsolve_msg <- function(msg) {
     grepl("singular matrix in 'backsolve'", msg, fixed = TRUE)
 }
 
-# A test setup below may be dropped only after a known upstream error, and only
-# for the model types (`mod_nm`) for which that error is known. Other errors
-# stop the setup. `kfold` marks the K-fold refits of run_cvfun().
+# Drop a test setup below only after a known upstream error, and only for the
+# model types (`mod_nm`) with that error. Other errors stop setup.R. `kfold`
+# marks the K-fold refits of run_cvfun().
 is_known_setup_err <- function(msg, mod_nm, kfold = FALSE) {
   if (!is.character(mod_nm) || length(mod_nm) != 1L) {
     return(FALSE)
@@ -191,8 +191,8 @@ is_known_setup_err <- function(msg, mod_nm, kfold = FALSE) {
   if (kfold && identical(
     msg, "pwrssUpdate did not converge in (maxit) iterations"
   )) {
-    # An lme4 error of rstanarm:::kfold.stanreg(), accepted for the multilevel
-    # models:
+    # lme4 error from rstanarm:::kfold.stanreg(), accepted for `mod_nm` "glmm"
+    # and "gamm":
     return(mod_nm %in% c("glmm", "gamm"))
   }
   return(FALSE)

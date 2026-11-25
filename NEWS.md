@@ -8,7 +8,7 @@ If you read this from a place other than <https://mc-stan.org/projpred/news/inde
 
 ## Minor changes
 
-* Tests: Stop on an unexpected error in the test setup, also for a known upstream error in another model type, and report each dropped test setup in a skipped test. (GitHub: #565)
+* Tests: The test setup stops on an unexpected error, also when the error is known for another model type. A skipped test lists each dropped test setup. (GitHub: #565)
 
 * `Student_t()` is deprecated. Its projection has stopped with an error since projpred 2.1.0. For a Student-t reference model, use the latent projection; the latent-projection vignette has a new example. (GitHub: #3)
 
