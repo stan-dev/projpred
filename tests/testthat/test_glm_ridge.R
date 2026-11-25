@@ -43,6 +43,9 @@ test_that(paste(
     return(df)
   }
 
+  expect_warning(fam_t3 <- Student_t(nu = 3, link = "identity"), "deprecated")
+  expect_warning(fam_t4 <- Student_t(nu = 4, link = "log"), "deprecated")
+  expect_warning(fam_t7 <- Student_t(nu = 7, link = "inverse"), "deprecated")
   fams <- list(
     extend_family(gaussian(link = "identity")),
     extend_family(gaussian(link = "log")),
@@ -50,9 +53,9 @@ test_that(paste(
     extend_family(binomial(link = "probit")),
     extend_family(binomial(link = "cauchit")),
     extend_family(poisson(link = "log")),
-    extend_family(student_t_tst(nu = 3, link = "identity")),
-    extend_family(student_t_tst(nu = 4, link = "log")),
-    extend_family(student_t_tst(nu = 7, link = "inverse"))
+    extend_family(fam_t3),
+    extend_family(fam_t4),
+    extend_family(fam_t7)
   )
 
   n <- 10

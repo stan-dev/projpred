@@ -41,7 +41,8 @@ test_that(paste(
   fam_gauss <- extend_family(gaussian())
   expect_equal(fam_gauss$predvar(inp$mu, inp$dis, inp$wdraws),
                sum(inp$wdraws * inp$dis^2) + v_mu, tolerance = 1e-12)
-  fam_t <- extend_family(student_t_tst(nu = 5))
+  expect_warning(fam_t <- Student_t(nu = 5), "deprecated")
+  fam_t <- extend_family(fam_t)
   expect_equal(fam_t$predvar(inp$mu, inp$dis, inp$wdraws),
                5 / 3 * sum(inp$wdraws * inp$dis^2) + v_mu, tolerance = 1e-12)
 })

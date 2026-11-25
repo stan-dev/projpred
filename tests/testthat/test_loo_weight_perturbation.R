@@ -241,15 +241,14 @@ test_that(paste(
   get_p_clust_ns <- function(...) {
     get("get_p_clust", envir = asNamespace("projpred"))(...)
   }
+  expect_warning(fam_t <- Student_t(nu = 4), "deprecated")
   # `n_shift`: the number of calls that add the shift to the cluster means.
   cases <- list(
     several = list(cl = cl_several, w = w, n_shift = 1L),
     several_thinned = list(cl = replace(cl_several, 1:3, NA), w = w,
                            n_shift = 1L),
     student_t = list(cl = cl_several, w = w, n_shift = 1L,
-                     family = extend_family(
-                       student_t_tst(nu = 4)
-                     )),
+                     family = extend_family(fam_t)),
     latent = list(cl = cl_several, w = w, n_shift = 1L,
                   family = extend_family(binomial(), latent = TRUE)),
     several_special = list(cl = cl_several, w = w_special, n_shift = 0L),

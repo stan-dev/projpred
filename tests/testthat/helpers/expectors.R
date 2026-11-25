@@ -94,13 +94,6 @@ expect_all_true_tst <- function(object, info = NULL, label = NULL) {
   return(invisible(act$val))
 }
 
-# Student_t() is deprecated. This checks the deprecation warning and returns
-# the family object.
-student_t_tst <- function(...) {
-  expect_warning(fam <- Student_t(...), "deprecated")
-  return(fam)
-}
-
 # The reference class objects in the slots `resp` and `pp` of an lme4 fit hold
 # an external pointer, which differs between two fits with equal content.
 # expect_equal() (edition 3) compares the pointers, so this replaces each lme4

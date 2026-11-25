@@ -103,8 +103,9 @@ p_clust_cases <- function(inp) {
 }
 
 test_that("get_p_clust() gives the results of the cluster loop", {
+  expect_warning(fam_t <- Student_t(nu = 4), "deprecated")
   fams <- list(extend_family(gaussian()),
-               extend_family(student_t_tst(nu = 4)),
+               extend_family(fam_t),
                extend_family(binomial()), extend_family(poisson()))
   for (fam in fams) {
     inp <- p_clust_inputs(fam)
@@ -202,8 +203,9 @@ test_that(paste(
 })
 
 test_that("the built-in families give get_p_clust() its predvar_mix() path", {
+  expect_warning(fam_t <- Student_t(nu = 4), "deprecated")
   fams <- list(gaussian = extend_family(gaussian()),
-               Student_t = extend_family(student_t_tst(nu = 4)),
+               Student_t = extend_family(fam_t),
                binomial = extend_family(binomial()),
                poisson = extend_family(poisson()),
                latent = extend_family(binomial(), latent = TRUE))
@@ -265,8 +267,9 @@ test_that(paste(
 ), {
   need_var_args <- logical()
   clust_moments_orig <- clust_moments_c
+  expect_warning(fam_t <- Student_t(nu = 4), "deprecated")
   fams <- list(gaussian = extend_family(gaussian()),
-               Student_t = extend_family(student_t_tst(nu = 4)),
+               Student_t = extend_family(fam_t),
                latent = extend_family(binomial(), latent = TRUE),
                binomial = extend_family(binomial()),
                poisson = extend_family(poisson()))
