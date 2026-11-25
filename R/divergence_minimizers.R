@@ -94,13 +94,16 @@ divmin <- function(
   mo_force <- rep(FALSE, length(formulas))
   if (!is.null(projpred_mo_force)) {
     if (is.null(projpred_mo_signs) ||
-        length(projpred_mo_force) != length(formulas) ||
-        (any(projpred_mo_force) &&
-         !identical(sdivmin, fit_glm_ridge_callback))) {
-      stop("Internal error: `projpred_mo_force` needs `projpred_mo_signs`, ",
-           "one element per projected draw and the default submodel fitter ",
-           "without group-level and additive terms. Please notify the ",
-           "package maintainer.")
+        length(projpred_mo_force) != length(formulas)) {
+      stop("Internal error: `projpred_mo_force` needs `projpred_mo_signs` ",
+           "and one element per projected draw. Please notify the package ",
+           "maintainer.")
+    }
+    if (any(projpred_mo_force) &&
+        !identical(sdivmin, fit_glm_ridge_callback)) {
+      stop("Internal error: `projpred_mo_force` needs the default submodel ",
+           "fitter and a submodel without group-level and additive terms. ",
+           "Please notify the package maintainer.")
     }
     mo_force <- projpred_mo_force
   }

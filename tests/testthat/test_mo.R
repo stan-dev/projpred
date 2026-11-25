@@ -2094,12 +2094,14 @@ test_that(paste(
     cvrefbuilder = function(cvfit) NULL
   ))
   terms_sub <- c("mo(x)", "z")
-  # The number of fits with `projpred_mo_force = TRUE` (draws in a cycle):
+  # The responses of the fits with `projpred_mo_force = TRUE` (the draws in a
+  # cycle):
   fitter_orig <- fit_glm_ridge_callback
-  n_forced <- 0
+  forced <- character()
   fitter_rec <- function(...) {
-    if (isTRUE(list(...)$projpred_mo_force)) {
-      n_forced <<- n_forced + 1
+    args <- list(...)
+    if (isTRUE(args$projpred_mo_force)) {
+      forced <<- c(forced, deparse(args$formula[[2]]))
     }
     fitter_orig(...)
   }
@@ -2108,8 +2110,9 @@ test_that(paste(
             thresh_conv = 1e-12, verbose = FALSE),
     fit_glm_ridge_callback = fitter_rec
   ))
-  # The grid has draws in a cycle:
-  expect_gt(n_forced, 0)
+  # Only the 2 draws in a cycle get the constraint for good (the other draws
+  # that change the decision once converge without it):
+  expect_setequal(forced, c(".y.10", ".y.11"))
   options(projpred.mo_monotone = FALSE)
   prj_full <- project(refm, predictor_terms = c(terms_sub, "w"), ndraws = S,
                       verbose = FALSE)
@@ -2135,18 +2138,21 @@ test_that(paste(
   }
   # The parallel path of divmin() gives the same projection:
   opts_par <- options(projpred.parallel_proj_trigger = 1)
-  prj_par <- with_mocked_bindings(
+  on.exit(options(opts_par), add = TRUE)
+  n_par <- 0
+  expect_no_warning(prj_par <- with_mocked_bindings(
     project(refm, predictor_terms = terms_sub, ndraws = S,
             thresh_conv = 1e-12, verbose = FALSE),
     par_backend = function(...) "future",
     par_lapply = function(.X, .FUN, ..., .backend, .rng = FALSE,
                           .progress = FALSE) {
+      n_par <<- n_par + 1
       par_chunk(list(xs = .X, seeds = NULL),
                 list(fun = .FUN, args = list(...), opts = list(),
                      globs = list()))
     }
-  )
-  options(opts_par)
+  ))
+  expect_gt(n_par, 0)
   expect_equal(prj_coefs(prj_par), b, tolerance = 1e-12)
   expect_equal(prj_par$dis, prj$dis, tolerance = 1e-12)
 })

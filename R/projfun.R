@@ -459,7 +459,7 @@ nb_alternates <- function(refmodel) {
 # offsets (see proj_to_submodl()), the fit of the coefficients gets the
 # offsets, and the shape step uses the means with offsets.
 nb_alternate <- function(args_divmin, p_ref, refmodel, tol = 1e-5,
-                         maxit = 50L) {
+                         maxit = 50L, tol_cycle = 1e-3) {
   if (any(refmodel$offset != 0)) {
     # The predictions of a stats::glm() fit with argument `offset` would add
     # the offsets a second time:
@@ -479,15 +479,18 @@ nb_alternate <- function(args_divmin, p_ref, refmodel, tol = 1e-5,
   phi <- pmin(phi, nb_phi_max())
   # Monotonic projection of mo() terms: whether the sign constraint applies to
   # a draw depends on the shape, and near the switch point the decision and
-  # the shape can alternate between two states without end. A draw in such a
-  # cycle (its decision changes, and its decision and shape are those of two
-  # iterations before) keeps the constraint in the later iterations; its
-  # constrained fit then converges:
+  # the shape can alternate without end. A draw in such a cycle (its decision
+  # changes, and an earlier iteration, not the last one, had the same decision
+  # and shape within `tol_cycle` on the log scale) keeps the constraint in the
+  # later iterations, so that its decision no longer changes. `tol_cycle` is
+  # much larger than `tol` and much smaller than the change of the shape
+  # between the two decisions:
   mo_force <- NULL
   if (!is.null(args_divmin$projpred_mo_signs)) {
     mo_force <- rep(FALSE, length(phi))
-    # The decisions and the shapes of the last two iterations:
-    mo_hist <- list()
+    # The decisions and the log shapes of the earlier iterations (rows):
+    mo_cons_hist <- NULL
+    mo_lphi_hist <- NULL
   }
   for (it in seq_len(maxit)) {
     outdmin <- do.call(divmin, c(args_divmin, list(projpred_nb_phi = phi),
@@ -497,12 +500,16 @@ nb_alternate <- function(args_divmin, p_ref, refmodel, tol = 1e-5,
     if (!is.null(mo_force)) {
       cons <- vapply(outdmin, function(fit) isTRUE(fit$mo_constrained),
                      logical(1))
-      if (length(mo_hist) == 2) {
-        cyc <- cons != mo_hist[[2]]$cons & cons == mo_hist[[1]]$cons &
-          abs(log(phi) - log(mo_hist[[1]]$phi)) < 1e-3
-        mo_force <- mo_force | cyc
+      n_hist <- NROW(mo_cons_hist)
+      if (n_hist >= 2) {
+        changed <- cons != mo_cons_hist[n_hist, ]
+        earlier <- seq_len(n_hist - 1)
+        same <- t(mo_cons_hist[earlier, , drop = FALSE]) == cons &
+          abs(t(mo_lphi_hist[earlier, , drop = FALSE]) - log(phi)) < tol_cycle
+        mo_force <- mo_force | (changed & rowSums(same) > 0)
       }
-      mo_hist <- c(utils::tail(mo_hist, 1), list(list(cons = cons, phi = phi)))
+      mo_cons_hist <- rbind(mo_cons_hist, cons)
+      mo_lphi_hist <- rbind(mo_lphi_hist, log(phi))
     }
     mu <- refmodel$mu_fun(outdmin, offset = refmodel$offset)
     if (anyNA(mu) || any(mu <= 0)) {

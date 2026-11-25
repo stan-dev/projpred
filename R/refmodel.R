@@ -217,9 +217,9 @@
 #' the shape. If the shape and this decision alternate without end for a
 #' draw, \pkg{projpred} keeps the constrained projection of this draw (with
 #' the sign from the full model). In an interaction of a `mo()` term with a
-#' factor (for
-#' example `mo(x):f`), each column of the factor has its own monotonic effect,
-#' as in \pkg{brms}. So in `mo(x) * f`, the effect of `x` within a level of `f`
+#' factor (for example `mo(x):f`), each column of the factor has its own
+#' monotonic effect, as in \pkg{brms}. So in `mo(x) * f`, the effect of `x`
+#' within a level of `f`
 #' other than the first is the sum of two monotonic effects, and this sum is
 #' not necessarily monotonic. [mo_effects()] gives the projected effects in the
 #' parametrization of \pkg{brms}.
