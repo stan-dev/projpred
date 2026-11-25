@@ -269,3 +269,18 @@ test_that(paste(
                      res_general[[nm]]$summaries, info = nm)
   }
 })
+
+test_that(paste(
+  "proj_prepare_design() gives the cache entries of the general path for a",
+  "reference model with mo() terms"
+), {
+  # (The cache is used only for unconstrained projections, for example with
+  # `options(projpred.mo_monotone = FALSE)` or for submodels without mo()
+  # terms.)
+  dat <- dat_design()
+  dat$k <- sample(rep_len(0:3, nrow(dat)))
+  refm <- refm_parts(dat, y ~ mo(k) + mo(o1) + x1 + f1)
+  y <- matrix(runif(nrow(dat) * 3), ncol = 3)
+  sets <- list("x1", "mo(k)", c("mo(o1)", "f1"), c("mo(k)", "mo(o1)", "x1"))
+  expect_identical(expect_design_entries(refm, sets, y), length(sets))
+})

@@ -247,7 +247,9 @@ test_that(paste(
     several_thinned = list(cl = replace(cl_several, 1:3, NA), w = w,
                            n_shift = 1L),
     student_t = list(cl = cl_several, w = w, n_shift = 1L,
-                     family = extend_family(Student_t(nu = 4))),
+                     family = extend_family(
+                       expect_warning(Student_t(nu = 4), "deprecated")
+                     )),
     latent = list(cl = cl_several, w = w, n_shift = 1L,
                   family = extend_family(binomial(), latent = TRUE)),
     several_special = list(cl = cl_several, w = w_special, n_shift = 0L),
