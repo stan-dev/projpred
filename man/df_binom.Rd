@@ -12,10 +12,10 @@ A simulated classification dataset containing 100 observations.
 }
 }
 \source{
-\url{https://web.stanford.edu/~hastie/glmnet/glmnetData/BNExample.RData}
+\url{https://hastie.su.domains/glmnet/glmnetData/BNExample.RData}
 }
 \usage{
-data(df_binom)
+df_binom
 }
 \description{
 Binomial toy example

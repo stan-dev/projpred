@@ -431,3 +431,77 @@ test_that(paste(
                  info = nm)
   }
 })
+
+test_that(paste(
+  "cv_varsel() with LOO and validated search works if the PSIS weights of",
+  "all draws of a cluster underflow to 0"
+), {
+  skip_on_cran()
+  withr::local_seed(5311)
+  withr::local_options(projpred.warn_cvrefbuilder_NULL = FALSE)
+  n <- 30
+  S <- 40
+  x <- matrix(rnorm(n * 3), n, 3, dimnames = list(NULL, paste0("x", 1:3)))
+  dat <- data.frame(x)
+  dat$y_pois <- rpois(n, exp(0.5 + 0.5 * x[, 1]))
+  dat$y_gauss <- 0.5 + 0.5 * x[, 1] + rnorm(n)
+  beta <- rbind(rnorm(S, 0.5, 0.1), rnorm(S, 0.5, 0.1),
+                matrix(rnorm(2 * S, 0, 0.1), 2, S))
+  # Draws 1 to 4 predict a huge mean for observation 1. If observation 1 is
+  # left out, the PSIS weights of all other draws underflow to 0, so the
+  # clusters (or thinned draws) without draws 1 to 4 get weight sum 0:
+  eta_obs1 <- c(poisson = 20, gaussian = 1e4)
+  refs <- lapply(c(poisson = "poisson", gaussian = "gaussian"), function(fam) {
+    ref_predfun <- function(fit, newdata = NULL) {
+      nd <- if (is.null(newdata)) dat else newdata
+      eta <- cbind(1, as.matrix(nd[, colnames(x)])) %*% fit$beta
+      if (is.null(newdata)) {
+        eta[1, 1:4] <- eta_obs1[[fam]]
+      }
+      eta
+    }
+    y_nm <- c(poisson = "y_pois", gaussian = "y_gauss")[[fam]]
+    init_refmodel(object = list(beta = beta), data = dat,
+                  formula = reformulate(colnames(x), response = y_nm),
+                  family = get(fam)(), ref_predfun = ref_predfun,
+                  dis = if (fam == "gaussian") rep(1, S))
+  })
+  # The extreme draws give the expected warnings about the Pareto k values and
+  # about the weight perturbation:
+  muffle_expected <- function(expr) {
+    withCallingHandlers(expr, warning = function(w) {
+      if (grepl("Pareto|weight perturbation", conditionMessage(w))) {
+        invokeRestart("muffleWarning")
+      }
+    })
+  }
+  # Counts the calls of get_p_clust() that give a projected draw (or cluster)
+  # with weight 0, to show that the case occurs:
+  zero_calls <- new.env()
+  ns <- asNamespace("projpred")
+  withr::defer(suppressMessages(untrace("get_p_clust", where = ns)))
+  suppressMessages(trace(
+    "get_p_clust", where = ns, print = FALSE,
+    exit = bquote(if (any(returnValue()$wdraws_prj == 0, na.rm = TRUE)) {
+      assign("n", get("n", envir = .(zero_calls)) + 1L,
+             envir = .(zero_calls))
+    })
+  ))
+  args_draws <- list(clusters = list(nclusters = 5, nclusters_pred = 5),
+                     thinned = list(ndraws = S, ndraws_pred = S))
+  for (fam in names(refs)) {
+    for (case_name in names(args_draws)) {
+      info <- paste(fam, case_name)
+      zero_calls$n <- 0L
+      cvvs <- muffle_expected(do.call(cv_varsel, c(
+        list(refs[[fam]], cv_method = "LOO", validate_search = TRUE,
+             nterms_max = 2, seed = 1, verbose = FALSE),
+        args_draws[[case_name]]
+      )))
+      expect_s3_class(cvvs, "vsel")
+      expect_gt(zero_calls$n, 0L, label = info)
+      lppd <- sapply(cvvs$summaries$sub, `[[`, "lppd")
+      expect_true(all(is.finite(lppd)), info = info)
+    }
+  }
+})

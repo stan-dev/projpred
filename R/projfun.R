@@ -36,15 +36,22 @@ proj_to_submodl <- function(predictor_terms, p_ref, refmodel,
   }
   subset <- NULL
   if (is.null(ent)) {
-    subset <- subset_formula_and_data(
-      formula = refmodel$formula, terms_ = terms_,
-      data = refmodel$fetch_data(), y = p_ref$mu, y_unqs = y_unqs_aug
-    )
-    subset$data <- set_contrasts(subset$data, refmodel$contrasts)
-    # A linear term next to a smooth term of the same variable (`x` and `s(x)`)
-    # is dropped (see smooth_covered_terms()):
-    fml_divmin <- flatten_formula(subset$formula, duplicates = FALSE)
-    prep <- if (use_fast) divmin_prepare(fml_divmin, subset$data) else NULL
+    prep <- NULL
+    if (!is.null(store)) {
+      ent_design <- proj_prepare_design(store, refmodel, terms_, p_ref$mu)
+      if (!is.null(ent_design)) {
+        fml_divmin <- ent_design$fml_divmin
+        prep <- ent_design$prep
+      }
+    }
+    if (is.null(prep)) {
+      ent_general <- proj_prepare_general(refmodel, terms_, p_ref$mu,
+                                          y_unqs = y_unqs_aug,
+                                          use_fast = use_fast)
+      subset <- ent_general$subset
+      fml_divmin <- ent_general$fml_divmin
+      prep <- ent_general$prep
+    }
     if (!is.null(store)) {
       proj_cache_put(store, cache_key,
                      list(fml_divmin = fml_divmin, prep = prep))
@@ -133,6 +140,103 @@ proj_to_submodl <- function(predictor_terms, p_ref, refmodel,
     outdmin = outdmin, p_ref = p_ref, refmodel = refmodel,
     predictor_terms = predictor_terms, wobs = refmodel$wobs
   ))
+}
+
+# The general path of proj_to_submodl() for the predictor terms `terms_` and the
+# draw-wise responses `y`: the submodel formula and data (see
+# subset_formula_and_data()) and, if `use_fast`, the output of
+# divmin_prepare(). Returns a list with elements `subset`, `fml_divmin` and
+# `prep`.
+proj_prepare_general <- function(refmodel, terms_, y, y_unqs = NULL,
+                                 use_fast = TRUE) {
+  subset <- subset_formula_and_data(
+    formula = refmodel$formula, terms_ = terms_,
+    data = refmodel$fetch_data(), y = y, y_unqs = y_unqs
+  )
+  subset$data <- set_contrasts(subset$data, refmodel$contrasts)
+  # A linear term next to a smooth term of the same variable (`x` and `s(x)`)
+  # is dropped (see smooth_covered_terms()):
+  fml_divmin <- flatten_formula(subset$formula, duplicates = FALSE)
+  prep <- if (use_fast) divmin_prepare(fml_divmin, subset$data) else NULL
+  return(nlist(subset, fml_divmin, prep))
+}
+
+# The cache entry of proj_to_submodl() (the submodel formula and the output of
+# divmin_prepare()) for the predictor terms `terms_` and the draw-wise
+# responses `y`, from the model matrix of all main-effect terms that the cache
+# store `store` keeps (see design_main_effects()). This avoids the data frame of
+# subset_formula_and_data() and the model frame and model matrix of each
+# submodel. The entry is the same as that of proj_prepare_general(). Returns
+# `NULL` if the design does not cover the submodel; then proj_to_submodl()
+# takes the general path.
+proj_prepare_design <- function(store, refmodel, terms_, y) {
+  # The design costs about as much as a few misses of the general path, so it
+  # is built at the third miss of a store (for example, project() has only a
+  # few misses):
+  store$design_misses <- (store$design_misses %||% 0L) + 1L
+  if (store$design_misses < 3L) {
+    return(NULL)
+  }
+  # model.matrix() codes the factors with the contrasts of `options()` at the
+  # time of the call:
+  ctr_opt <- getOption("contrasts")
+  if (is.null(store$design_ok) || !identical(store$design_ctr_opt, ctr_opt)) {
+    data <- set_contrasts(refmodel$fetch_data(), refmodel$contrasts)
+    design <- design_main_effects(refmodel$formula, data)
+    # The design stays in the store until the end of the outermost call, and
+    # the size limit of the cache (see proj_cache_add()) does not count it, so
+    # a large design is not built:
+    if (!is.null(design) &&
+        as.numeric(utils::object.size(design)) > proj_cache$limit / 4) {
+      design <- NULL
+    }
+    store$design <- design
+    store$design_ok <- !is.null(design)
+    store$design_ctr_opt <- ctr_opt
+    store$design_rn_y <- NULL
+    store$design_y_names <- NULL
+  }
+  if (!store$design_ok) {
+    return(NULL)
+  }
+  # The row names of the data frame of subset_formula_and_data() come from the
+  # names of `y` if it has them:
+  rn_y <- if (is.null(dim(y))) names(y) else rownames(y)
+  if (is.null(store$design_y_names) || !identical(store$design_rn_y, rn_y)) {
+    y_names <- tryCatch(
+      as.character(attr(data.frame(.z = y, refmodel$fetch_data()),
+                        "row.names")),
+      error = function(e) NULL
+    )
+    if (is.null(y_names)) {
+      return(NULL)
+    }
+    store$design_rn_y <- rn_y
+    store$design_y_names <- y_names
+    # The model matrix has these names as row names:
+    if (!identical(rownames(store$design$x), y_names)) {
+      rownames(store$design$x) <- y_names
+    }
+  }
+  subset <- subset_formula_and_data(
+    formula = refmodel$formula, terms_ = terms_, data = NULL, y = y,
+    with_data = FALSE
+  )
+  fml_divmin <- flatten_formula(subset$formula, duplicates = FALSE)
+  trms <- extract_terms_response(fml_divmin)
+  if (length(trms$group_terms) > 0 || length(trms$additive_terms) > 0) {
+    return(NULL)
+  }
+  formulas <- validate_response_formula(fml_divmin)
+  if (length(formulas) < 1) {
+    return(NULL)
+  }
+  shared_x <- shared_x_from_design(formulas, store$design,
+                                   store$design_y_names)
+  if (is.null(shared_x)) {
+    return(NULL)
+  }
+  return(list(fml_divmin = fml_divmin, prep = nlist(formulas, shared_x)))
 }
 
 # Whether proj_to_submodl() may call divmin_multi() instead of divmin(), with
@@ -338,24 +442,9 @@ init_submodl <- function(outdmin, p_ref, refmodel, predictor_terms, wobs) {
          "need an adaptation) or not (this would need an adaptation).")
   }
   if (refmodel$family$family == "Student_t") {
-    stop("For the `Student_t()` family, init_submodl() is not finished yet.")
-    ### TODO (Student_t()): Check if this is needed (perhaps with some
-    ### modifications) or if something completely different is needed (there
-    ### used to be no special handling of the `Student_t()` family here at all):
-    # pobs <- pseudo_data(
-    #   f = 0, y = p_ref$mu, family = refmodel$family, weights = wobs,
-    #   offset = refmodel$offset
-    # )
-    # ### TODO (Student_t()): Add `dis` and perhaps other elements here?:
-    # p_ref <- list(mu = pobs$z, var = p_ref$var)
-    # ###
-    # if (!all(refmodel$offset == 0)) {
-    #   p_ref$mu <- refmodel$family$linkinv(
-    #     refmodel$family$linkfun(p_ref$mu) + refmodel$offset
-    #   )
-    # }
-    # wobs <- pobs$wobs
-    ###
+    stop("The deprecated `Student_t()` family is not supported for the ",
+         "projection. For a Student-t reference model, use the latent ",
+         "projection (see the latent-projection vignette).")
   }
 
   mu <- refmodel$mu_fun(outdmin, offset = refmodel$offset)

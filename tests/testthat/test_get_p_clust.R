@@ -12,7 +12,13 @@ p_clust_loop <- function(family, mu, mu_offs, dis, wdraws, cl) {
   eps <- 1e-10
   for (j in seq_len(nclusters)) {
     ind <- which(cl == j)
-    ws <- wdraws[ind] / sum(wdraws[ind]) * (1 - eps)
+    # A cluster with weight sum 0 uses equal weights for its center (and keeps
+    # projection weight 0):
+    w_in <- wdraws[ind]
+    if (length(ind) > 0 && isTRUE(all(w_in == 0))) {
+      w_in <- rep(1, length(ind))
+    }
+    ws <- w_in / sum(w_in) * (1 - eps)
     centers[, j] <- mu[, ind, drop = FALSE] %*% ws
     centers_offs[, j] <- mu_offs[, ind, drop = FALSE] %*% ws
     wcluster[j] <- sum(wdraws[ind])
@@ -97,7 +103,9 @@ p_clust_cases <- function(inp) {
 }
 
 test_that("get_p_clust() gives the results of the cluster loop", {
-  fams <- list(extend_family(gaussian()), extend_family(Student_t(nu = 4)),
+  fams <- list(extend_family(gaussian()),
+               extend_family(expect_warning(Student_t(nu = 4),
+                                            "deprecated")),
                extend_family(binomial()), extend_family(poisson()))
   for (fam in fams) {
     inp <- p_clust_inputs(fam)
@@ -112,6 +120,63 @@ test_that("get_p_clust() gives the results of the cluster loop", {
     inp_1 <- p_clust_inputs(fam, n = 1, S = 1)
     expect_p_clust_loop(fam, inp_1, cl = 1L, info = paste(fam$family, "S 1"))
   }
+})
+
+test_that(paste(
+  "get_p_clust() gives a cluster with weight sum 0 finite centers and",
+  "projection weight 0"
+), {
+  fams <- list(extend_family(gaussian()), extend_family(poisson()))
+  for (fam in fams) {
+    inp <- p_clust_inputs(fam)
+    S <- ncol(inp$mu)
+    cl_cases <- list(one_draw = seq_len(S),
+                     several_draws = rep(1:8, length.out = S))
+    for (case_name in names(cl_cases)) {
+      cl <- cl_cases[[case_name]]
+      info <- paste(fam$family, case_name)
+      # All draws of cluster 2 have weight 0 (as PSIS-LOO weights that
+      # underflow to 0):
+      w <- inp$wdraws
+      w[cl == 2] <- 0
+      out <- get_p_clust(family = fam, eta = inp$eta, mu = inp$mu,
+                         mu_offs = inp$mu_offs, dis = inp$dis, wdraws = w,
+                         cl = cl)
+      expect_true(all(is.finite(out$mu)), info = info)
+      expect_true(all(is.finite(out$mu_offs)), info = info)
+      # The predictive variances are NA for some families, also for clusters
+      # with nonzero weights:
+      expect_identical(is.na(unclass(out$var)[, 2]),
+                       is.na(unclass(out$var)[, 1]), info = info)
+      expect_identical(out$wdraws_prj[2], 0, info = info)
+      # The center, dispersion and predictive variance of cluster 2 use equal
+      # weights of its draws:
+      ind <- which(cl == 2)
+      ws_eq <- rep(1 / length(ind), length(ind)) * (1 - 1e-10)
+      expect_equal(unclass(out$mu)[, 2],
+                   rowMeans(inp$mu[, ind, drop = FALSE]) * (1 - 1e-10),
+                   info = info)
+      expect_equal(out$dis[2], sum(inp$dis[ind] * ws_eq), info = info)
+      expect_equal(unclass(out$var)[, 2],
+                   as.vector(fam$predvar(inp$mu_offs[, ind, drop = FALSE],
+                                         inp$dis[ind], ws_eq)),
+                   info = info)
+    }
+  }
+  # If all projected draws have weight 0 (here thinned draws), get_p_clust()
+  # stops with an informative error:
+  inp <- p_clust_inputs(extend_family(gaussian()))
+  S <- ncol(inp$mu)
+  thin <- rep(NA, S)
+  thin[c(1, 5, 9)] <- 1:3
+  w <- inp$wdraws
+  w[c(1, 5, 9)] <- 0
+  expect_error(
+    get_p_clust(family = extend_family(gaussian()), eta = inp$eta,
+                mu = inp$mu, mu_offs = inp$mu_offs, dis = inp$dis,
+                wdraws = w, cl = thin),
+    "All projected draws have weight 0.", fixed = TRUE
+  )
 })
 
 test_that(paste(
@@ -139,7 +204,8 @@ test_that(paste(
 
 test_that("the built-in families give get_p_clust() its predvar_mix() path", {
   fams <- list(gaussian = extend_family(gaussian()),
-               Student_t = extend_family(Student_t(nu = 4)),
+               Student_t = extend_family(expect_warning(Student_t(nu = 4),
+                                                        "deprecated")),
                binomial = extend_family(binomial()),
                poisson = extend_family(poisson()),
                latent = extend_family(binomial(), latent = TRUE))
@@ -202,7 +268,8 @@ test_that(paste(
   need_var_args <- logical()
   clust_moments_orig <- clust_moments_c
   fams <- list(gaussian = extend_family(gaussian()),
-               Student_t = extend_family(Student_t(nu = 4)),
+               Student_t = extend_family(expect_warning(Student_t(nu = 4),
+                                                        "deprecated")),
                latent = extend_family(binomial(), latent = TRUE),
                binomial = extend_family(binomial()),
                poisson = extend_family(poisson()))

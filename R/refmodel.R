@@ -639,13 +639,18 @@ predict.refmodel <- function(object, newdata = NULL, ynew = NULL,
         if (length(dim(pred)) < 2) {
           stop("Unexpected structure for the output of `latent_ilink`.")
         }
+        pred <- latent_epred_apply(
+          refmodel$family, pred, dis = refmodel$dis,
+          cl_ref = seq_along(refmodel$wdraws_ref),
+          wdraws_ref = rep(1, length(refmodel$wdraws_ref))
+        )
         if (length(dim(pred)) == 3) {
           pred <- arr2augmat(pred, margin_draws = 1)
         }
         if (all(is.na(pred))) {
           message(
-            "`latent_ilink` returned only `NA`s, so the output will also be ",
-            "`NA` as long as `type = \"response\"`."
+            "`latent_ilink` (or `latent_epred`) returned only `NA`s, so the ",
+            "output will also be `NA` as long as `type = \"response\"`."
           )
         }
       } else {
@@ -1235,7 +1240,10 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
 
   if (!called_from_cvrefbuilder) {
     if (family$family == "Student_t") {
-      warning("Support for the `Student_t` family is still experimental.")
+      warning("The `Student_t()` family is deprecated, and project(), ",
+              "varsel(), and cv_varsel() do not support it. For a ",
+              "Student-t reference model, use the latent projection (see ",
+              "the latent-projection vignette).")
     } else if (family$family == "Gamma") {
       warning("Support for the `Gamma` family is still experimental.")
     }

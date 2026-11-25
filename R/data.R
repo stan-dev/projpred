@@ -5,7 +5,7 @@
 #'   \item{y}{response, 0 or 1.}
 #'   \item{x}{predictors, 30 in total.}
 #' }
-#' @source <https://web.stanford.edu/~hastie/glmnet/glmnetData/BNExample.RData>
+#' @source <https://hastie.su.domains/glmnet/glmnetData/BNExample.RData>
 "df_binom"
 
 #' Gaussian toy example
@@ -16,7 +16,7 @@
 #'   \item{x}{predictors, 20 in total. Mean and SD are approximately 0 and 1,
 #'   respectively.}
 #' }
-#' @source <https://web.stanford.edu/~hastie/glmnet/glmnetData/QSExample.RData>
+#' @source <https://hastie.su.domains/glmnet/glmnetData/QSExample.RData>
 "df_gaussian"
 
 #' Mesquite data set

@@ -247,13 +247,16 @@ test_that(paste(
     several_thinned = list(cl = replace(cl_several, 1:3, NA), w = w,
                            n_shift = 1L),
     student_t = list(cl = cl_several, w = w, n_shift = 1L,
-                     family = extend_family(Student_t(nu = 4))),
+                     family = extend_family(
+                       expect_warning(Student_t(nu = 4), "deprecated")
+                     )),
     latent = list(cl = cl_several, w = w, n_shift = 1L,
                   family = extend_family(binomial(), latent = TRUE)),
     several_special = list(cl = cl_several, w = w_special, n_shift = 0L),
     nan_weight = list(cl = cl_several, w = replace(w, 4, NaN), n_shift = 0L),
+    # A cluster with weight sum 0 uses equal weights of its draws:
     zero_weight_sum = list(cl = c(1, 1, rep(2, S - 2)),
-                           w = replace(w, 1:2, 0), n_shift = 0L),
+                           w = replace(w, 1:2, 0), n_shift = 1L),
     empty_cluster = list(cl = c(1, rep(3, S - 1)), w = w, n_shift = 0L),
     one_draw = list(cl = seq_len(S), w = w, n_shift = 0L),
     thinned = list(cl = replace(rep(NA, S), c(2, 9, 30), 1:3), w = w,

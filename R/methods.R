@@ -355,12 +355,6 @@ proj_linpred_aux <- function(proj, newdata, offsetnew, weightsnew,
     if (length(dim(pred_sub)) < 2) {
       stop("Unexpected structure for the output of `latent_ilink`.")
     }
-    if (all(is.na(pred_sub))) {
-      message(
-        "`latent_ilink` returned only `NA`s, so the corresponding output will ",
-        "also be `NA` as long as `transform = TRUE`."
-      )
-    }
   }
   ynew <- mdat$y
   if (!is.null(ynew) && proj$refmodel$family$for_latent && !transform) {
@@ -384,6 +378,17 @@ proj_linpred_aux <- function(proj, newdata, offsetnew, weightsnew,
   lpd_out <- compute_lpd(ynew = ynew, newdata = newdata, pred_sub = pred_sub,
                          proj = proj, weights = weights,
                          transformed = transform)
+  if (proj$refmodel$family$for_latent && transform) {
+    pred_sub <- latent_epred_apply(proj$refmodel$family, pred_sub,
+                                   dis = proj$dis, cl_ref = proj$cl_ref,
+                                   wdraws_ref = proj$wdraws_ref)
+    if (all(is.na(pred_sub))) {
+      message(
+        "`latent_ilink` (or `latent_epred`) returned only `NA`s, so the ",
+        "corresponding output will also be `NA` as long as `transform = TRUE`."
+      )
+    }
+  }
   if (integrated) {
     if (proj$refmodel$family$for_latent && transform &&
         length(dim(pred_sub)) == 3) {

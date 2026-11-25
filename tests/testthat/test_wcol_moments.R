@@ -54,7 +54,8 @@ test_that(paste(
   thin <- rep(NA, S)
   thin[c(2, 9, 17, 30)] <- 1:4
   for (fam in list(extend_family(gaussian()),
-                   extend_family(Student_t(nu = 5)))) {
+                   extend_family(expect_warning(Student_t(nu = 5),
+                                                "deprecated")))) {
     for (cl in list(seq_len(S), sample(S), thin)) {
       args <- list(family = fam, eta = mu, mu = mu, mu_offs = mu + 1,
                    dis = dis, wdraws = wdraws, cl = cl)
@@ -78,10 +79,21 @@ test_that(paste(
                mu_offs = mu, dis = dis, wdraws = wdraws, as_moments = TRUE)
   expect_null(do.call(get_p_clust,
                       c(args, list(cl = rep(1:5, length.out = S)))))
+  # A draw with weight 0 has projection weight 0, and its center uses weight 1
+  # (as in the full version):
   w_0 <- wdraws
   w_0[3] <- 0
-  expect_null(do.call(get_p_clust,
-                      modifyList(args, list(cl = seq_len(S), wdraws = w_0))))
+  args_0 <- modifyList(args, list(cl = seq_len(S), wdraws = w_0))
+  mom_0 <- do.call(get_p_clust, args_0)
+  full_0 <- do.call(get_p_clust, modifyList(args_0, list(as_moments = FALSE)))
+  expect_true(isTRUE(mom_0$moments_only))
+  expect_identical(mom_0$wdraws_prj[3], 0)
+  expect_identical(mom_0$ws[3], 1 - 1e-10)
+  expect_equal(unclass(full_0$mu_offs),
+               mu[, mom_0$idx] * rep(mom_0$ws, each = n), tolerance = 1e-15)
+  for (el in c("dis", "wdraws_prj", "const_wdraws_prj")) {
+    expect_identical(mom_0[[el]], full_0[[el]], info = el)
+  }
   # get_p_clust() does not check the projected draws. A non-finite value in a
   # projected draw gives a non-finite sum of squares in wcol_moments_c(), also
   # with a weight of 0 for its observation (perf_eval_gauss() checks this), but

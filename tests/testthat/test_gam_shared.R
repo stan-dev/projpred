@@ -43,6 +43,22 @@ noenv <- function(x) {
   x
 }
 
+# Compares two gam() fits. Some BLAS libraries (for example MKL) can round two
+# calls with the same data differently. `rV` is one of many matrices F with
+# F F' = Vp / scale, so a small rounding difference can change it much; compare
+# F F' instead. `outer.info$grad` is the gradient at the optimum. It is near 0,
+# so its relative difference from rounding is larger than the tolerance; leave
+# it out:
+expect_gam_equal <- function(fit, fit_ref, info) {
+  comparable_parts <- function(x) {
+    if (!is.null(x$rV)) x$rV <- tcrossprod(x$rV)
+    x$outer.info$grad <- NULL
+    x
+  }
+  expect_equal(comparable_parts(fit), comparable_parts(fit_ref),
+               tolerance = 1e-8, info = info)
+}
+
 test_that("divmin() gives the same gam() fits with and without sharing", {
   fits_shared <- divmin_gs(TRUE)
   fits_drawwise <- divmin_gs(FALSE)
@@ -50,8 +66,7 @@ test_that("divmin() gives the same gam() fits with and without sharing", {
   for (s in seq_len(n_draws_gs)) {
     info_s <- paste("draw", s)
     expect_s3_class(fits_shared[[s]], "gam")
-    expect_equal(fits_shared[[s]], fits_drawwise[[s]], tolerance = 0,
-                 info = info_s)
+    expect_gam_equal(fits_shared[[s]], fits_drawwise[[s]], info = info_s)
     expect_identical(formula(fits_shared[[s]]),
                      formula(fits_drawwise[[s]]), info = info_s)
     for (el in c("terms", "pterms")) {
@@ -99,8 +114,7 @@ test_that("divmin() passes the arguments of gam() and drops the others", {
     expect_true(is.data.frame(fits_drawwise[[s]]$data), info = info_s)
     expect_false(any(c("not_a_gam_arg", "projpred_var") %in%
                        names(fits_drawwise[[s]]$call)), info = info_s)
-    expect_equal(fits_shared[[s]], fits_drawwise[[s]], tolerance = 0,
-                 info = info_s)
+    expect_gam_equal(fits_shared[[s]], fits_drawwise[[s]], info = info_s)
   }
   # An argument of the estimation that does not change `method`:
   fits_default <- divmin_args(FALSE)
@@ -110,8 +124,7 @@ test_that("divmin() passes the arguments of gam() and drops the others", {
     info_s <- paste("draw", s)
     expect_gt(abs(sum(fits_drawwise[[s]]$edf) - sum(fits_default[[s]]$edf)),
               0.1, label = info_s)
-    expect_equal(fits_shared[[s]], fits_drawwise[[s]], tolerance = 0,
-                 info = info_s)
+    expect_gam_equal(fits_shared[[s]], fits_drawwise[[s]], info = info_s)
   }
 })
 
@@ -191,7 +204,7 @@ test_that(paste(
   fits_shared <- divmin_w0(TRUE)
   fits_drawwise <- divmin_w0(FALSE)
   for (s in seq_len(n_draws_gs)) {
-    expect_equal(fits_shared[[s]], fits_drawwise[[s]], tolerance = 0,
-                 info = s)
+    expect_gam_equal(fits_shared[[s]], fits_drawwise[[s]],
+                     info = paste("draw", s))
   }
 })
