@@ -363,7 +363,7 @@ In general, we recommend K-fold CV in this case.</code></pre>
 <div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">time_lat</span><span class="op">)</span></span></code></pre></div>
 <pre><code>   user  system elapsed 
- 13.224   0.017   3.472 </code></pre>
+ 14.221   0.008   3.864 </code></pre>
 <p>The warnings about high Pareto <span class="math inline">\(\hat{k}\)</span> values concern only a few of the
 100 observations. With the short MCMC run of this vignette (1000
 posterior draws), the threshold for a reliable Pareto <span class="math inline">\(\hat{k}\)</span> is about 0.67 <span class="citation">(<a href="#ref-vehtari_pareto_2022">Vehtari et al.
@@ -445,7 +445,7 @@ are &gt; 0.67.</code></pre>
 <div class="sourceCode" id="cb23"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/cbind.html" class="external-link">rbind</a></span><span class="op">(</span>latent <span class="op">=</span> <span class="va">time_lat</span>, traditional <span class="op">=</span> <span class="va">time_trad</span><span class="op">)</span><span class="op">[</span>, <span class="st">"elapsed"</span><span class="op">]</span></span></code></pre></div>
 <pre><code>     latent traditional 
-      3.472      55.551 </code></pre>
+      3.864      55.996 </code></pre>
 <div class="sourceCode" id="cb25"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/suggest_size.html">suggest_size</a></span><span class="op">(</span><span class="va">cvvs_trad</span>, stat <span class="op">=</span> <span class="st">"gmpd"</span><span class="op">)</span></span></code></pre></div>
 <pre><code>[1] 5</code></pre>
@@ -881,9 +881,9 @@ functions”</a>.</p>
 <span><span class="op">)</span></span></code></pre></div>
 <pre><code>Cutting off the search at size 19. Use argument `nterms_max` to customize this.</code></pre>
 <pre><code>Warning: Some Pareto k diagnostic values are too high. See help('pareto-k-diagnostic') for details.</code></pre>
-<pre><code>Warning: Some (1 / 500) Pareto k's for the reference model's PSIS-LOO weights
+<pre><code>Warning: Some (2 / 500) Pareto k's for the reference model's PSIS-LOO weights
 are &gt; 0.7.</code></pre>
-<pre><code>Warning: In the recalculation of the latent response values, some (4 / 500) expectation-specific Pareto k-values are &gt; 0.7.
+<pre><code>Warning: In the recalculation of the latent response values, some (3 / 500) expectation-specific Pareto k-values are &gt; 0.7.
 In general, we recommend K-fold CV in this case.</code></pre>
 <p>As in the Poisson example, warnings about high Pareto <span class="math inline">\(\hat{k}\)</span> values can come from the short
 MCMC run of this vignette. In a real analysis, we would run more MCMC
@@ -1031,9 +1031,9 @@ functions”</a>.</p>
 <span><span class="op">)</span></span></code></pre></div>
 <pre><code>Cutting off the search at size 19. Use argument `nterms_max` to customize this.</code></pre>
 <pre><code>Warning: Some Pareto k diagnostic values are too high. See help('pareto-k-diagnostic') for details.</code></pre>
-<pre><code>Warning: Some (2 / 500) Pareto k's for the reference model's PSIS-LOO weights
+<pre><code>Warning: Some (5 / 500) Pareto k's for the reference model's PSIS-LOO weights
 are &gt; 0.7.</code></pre>
-<pre><code>Warning: In the recalculation of the latent response values, some (8 / 500) expectation-specific Pareto k-values are &gt; 0.7.
+<pre><code>Warning: In the recalculation of the latent response values, some (9 / 500) expectation-specific Pareto k-values are &gt; 0.7.
 In general, we recommend K-fold CV in this case.</code></pre>
 <p>As in the Poisson example, warnings about high Pareto <span class="math inline">\(\hat{k}\)</span> values can come from the short
 MCMC run of this vignette. In a real analysis, we would run more MCMC

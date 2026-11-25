@@ -136,11 +136,17 @@ therefore also their names) slightly differ from those in the <span class="pkg">
 reference model fit (see section "Augmented-data projection" in
 <code><a href="extend_family.html">extend_family()</a></code>'s documentation).</p>
 <p>For a submodel with smooth terms (fitted with <code><a href="https://rdrr.io/pkg/mgcv/man/gam.html" class="external-link">mgcv::gam()</a></code>), the columns
-of the smooth terms are the coefficients in the basis of <code>gam()</code>. The
-reference model fit can use another basis (<code><a href="https://mc-stan.org/rstanarm/reference/stan_gamm4.html" class="external-link">rstanarm::stan_gamm4()</a></code> and
-<span class="pkg">brms</span> do so for <code>s()</code> terms). Then these columns do not match the
-reference model parameters. For a submodel with smooth and group-level
-terms (GAMM), the projected draws cannot be extracted yet (error).</p>
+of the smooth terms use the basis and the parameter names of the
+reference model fit if the fit gives them: a <span class="pkg">brms</span> fit with
+<code>nm_scheme = "brms"</code> (columns <code>bs_&lt;label&gt;_&lt;k&gt;</code>, <code>sds_&lt;label&gt;_&lt;k&gt;</code> and
+<code>s_&lt;label&gt;_&lt;k&gt;[&lt;i&gt;]</code>) or a <code><a href="https://mc-stan.org/rstanarm/reference/stan_gamm4.html" class="external-link">rstanarm::stan_gamm4()</a></code> fit with <code>nm_scheme = "rstanarm"</code> (columns <code>&lt;term&gt;.&lt;i&gt;</code> and <code>smooth_sd[&lt;name&gt;]</code>). The change of
+basis does not change the projection. A constant part of a smooth term
+goes into the intercept. The SD columns come from the smoothing parameters
+and the scale of each <code>gam()</code> fit (by default, <code>gam()</code> estimates the
+smoothing parameters with GCV, or with UBRE for a known scale), as in the
+mixed-model form of the smooth term, so they are point estimates for each
+projected draw. Otherwise, the columns of the smooth terms are the
+coefficients in the basis of <code>gam()</code>.</p>
 <p>For the latent projection, column <code>sigma</code> contains the projected latent
 dispersion. If <code>&lt;refmodel&gt;$dis</code> consists of only <code>NA</code>s (see argument <code>dis</code>
 of <code><a href="refmodel-init-get.html">init_refmodel()</a></code>), there is no column <code>sigma</code>.</p>

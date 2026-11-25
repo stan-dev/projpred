@@ -6,6 +6,17 @@
 
 ### Minor changes
 
+- For projections onto submodels with smooth terms,
+  [`as.matrix()`](https://rdrr.io/r/base/matrix.html) and
+  [`as_draws_matrix()`](https://mc-stan.org/posterior/reference/draws_matrix.html)
+  give the smooth terms in the basis and with the parameter names of a
+  **brms** or
+  [`rstanarm::stan_gamm4()`](https://mc-stan.org/rstanarm/reference/stan_gamm4.html)
+  reference model fit, with the SDs of the penalized parts of the smooth
+  terms. (GitHub:
+  [\#151](https://github.com/stan-dev/projpred/issues/151),
+  [\#152](https://github.com/stan-dev/projpred/issues/152),
+  [\#676](https://github.com/stan-dev/projpred/issues/676))
 - [`Student_t()`](https://mc-stan.org/projpred/dev/reference/extra-families.md)
   is deprecated. Its projection has stopped with an error since projpred
   2.1.0. For a Student-t reference model, use the latent projection; the

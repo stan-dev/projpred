@@ -71,12 +71,20 @@ documentation).
 
 For a submodel with smooth terms (fitted with
 [`mgcv::gam()`](https://rdrr.io/pkg/mgcv/man/gam.html)), the columns of
-the smooth terms are the coefficients in the basis of `gam()`. The
-reference model fit can use another basis
-([`rstanarm::stan_gamm4()`](https://mc-stan.org/rstanarm/reference/stan_gamm4.html)
-and brms do so for `s()` terms). Then these columns do not match the
-reference model parameters. For a submodel with smooth and group-level
-terms (GAMM), the projected draws cannot be extracted yet (error).
+the smooth terms use the basis and the parameter names of the reference
+model fit if the fit gives them: a brms fit with `nm_scheme = "brms"`
+(columns `bs_<label>_<k>`, `sds_<label>_<k>` and `s_<label>_<k>[<i>]`)
+or a
+[`rstanarm::stan_gamm4()`](https://mc-stan.org/rstanarm/reference/stan_gamm4.html)
+fit with `nm_scheme = "rstanarm"` (columns `<term>.<i>` and
+`smooth_sd[<name>]`). The change of basis does not change the
+projection. A constant part of a smooth term goes into the intercept.
+The SD columns come from the smoothing parameters and the scale of each
+`gam()` fit (by default, `gam()` estimates the smoothing parameters with
+GCV, or with UBRE for a known scale), as in the mixed-model form of the
+smooth term, so they are point estimates for each projected draw.
+Otherwise, the columns of the smooth terms are the coefficients in the
+basis of `gam()`.
 
 For the latent projection, column `sigma` contains the projected latent
 dispersion. If `<refmodel>$dis` consists of only `NA`s (see argument
