@@ -21,7 +21,10 @@ proj_to_submodl <- function(predictor_terms, p_ref, refmodel,
   # submodel formula, the draw-wise formulas and the shared model matrix depend
   # only on the reference model and the predictor terms, so proj_cache_store()
   # caches them. The submodel fits are the same as from divmin().
-  use_fast <- is.null(y_unqs_aug) &&
+  # divmin_multi() has no sign constraints, so the monotonic projection of mo()
+  # terms uses divmin():
+  mo_cons <- mo_monotone() && has_mo_term(terms_)
+  use_fast <- !mo_cons && is.null(y_unqs_aug) &&
     identical(refmodel$div_minimizer, divmin) &&
     proj_fast_ok(dot_args_divmin) &&
     !anyNA(p_ref$mu)
@@ -105,6 +108,31 @@ proj_to_submodl <- function(predictor_terms, p_ref, refmodel,
                           projpred_ws_aug = projpred_ws_aug,
                           verbose_divmin = verbose >= 3L),
                      dot_args_divmin)
+    if (mo_cons) {
+      if (refmodel$family$for_augdat ||
+          !identical(refmodel$div_minimizer, divmin)) {
+        stop_mo_unsupported(paste(
+          "the augmented-data projection (the latent projection is supported)",
+          "and custom divergence minimizers"
+        ))
+      }
+      trms_sub <- extract_terms_response(fml_divmin)
+      has_grp <- length(trms_sub$group_terms) > 0
+      if (length(trms_sub$additive_terms) > 0 ||
+          (has_grp && !mo_lmm_supported(refmodel$family)) ||
+          (!has_grp && !identical(getOption("projpred.glm_fitter",
+                                            "fit_glm_ridge_callback"),
+                                  "fit_glm_ridge_callback"))) {
+        stop_mo_unsupported(paste0(
+          "additive submodels, other submodel fitters than the default one, ",
+          "and ", mo_lmm_unsupported_why()
+        ))
+      }
+      # The signs of the mo() terms in the projection onto the full model, for
+      # the monotonicity constraint:
+      args_divmin$projpred_mo_signs <- mo_full_signs(p_ref, refmodel,
+                                                     args_divmin)
+    }
     outdmin <- do.call(refmodel$div_minimizer, args_divmin)
   }
 
@@ -280,12 +308,18 @@ perf_eval <- function(search_path,
         S = length(refmodel$wdraws_ref)
       )[["clust_used"]]
       p_clust <- function(as_moments = FALSE) {
-        get_p_clust(
+        p_ref <- get_p_clust(
           family = refmodel$family, eta = refmodel$eta, mu = refmodel$mu,
           mu_offs = refmodel$mu_offs, dis = refmodel$dis,
           wdraws = reweighting_args$wdraws_ref, cl = reweighting_args$cl_ref,
           clust_used_forced = clust_used_forced, as_moments = as_moments
         )
+        if (!as_moments) {
+          # (The signs from the full model need the draw matrices, so only
+          # the full result gets the cache, see perf_eval_gauss().)
+          p_ref <- mo_add_cache(p_ref, refmodel)
+        }
+        return(p_ref)
       }
       p_ref <- NULL
       if (use_gauss_crossprod && !return_p_ref &&
