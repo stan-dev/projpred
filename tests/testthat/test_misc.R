@@ -264,6 +264,77 @@ test_that(".srs_diff_est_w() works as expected with `wobs` not full of ones", {
   expect_equal(sqrt(res$hat_v_y), sigma_hat_true, tolerance = 1e-1)
 })
 
+test_that(".srs_diff_est_w() gives a correct `v_y_hat` with unequal `wobs`", {
+  withr::local_seed(3)
+  N <- 1e3
+  m <- 1e2
+  S <- 1e4
+  wobs <- rlnorm(N)
+  y_true <- rnorm(N, -1, 1)
+  y_approx <- y_true + rnorm(N, 0.2, 0.5)
+  sum_y_true <- N * weighted.mean(y_true, w = wobs)
+  y_hat <- v_y_hat <- numeric(S)
+  for (i in seq_len(S)) {
+    y_idx <- sample.int(N, size = m)
+    res <- .srs_diff_est_w(y_approx = y_approx,
+                           y = y_true[y_idx],
+                           y_idx = y_idx,
+                           wobs = wobs)
+    y_hat[i] <- res$y_hat
+    v_y_hat[i] <- res$v_y_hat
+  }
+  # `v_y_hat` estimates the variance of `y_hat` over the subsamples (the
+  # linearization variance is a little too small for heavy-tailed `wobs`):
+  expect_equal(mean(v_y_hat), var(y_hat), tolerance = 2e-1)
+  q_ci <- qnorm(0.975)
+  in_ci <- abs(y_hat - sum_y_true) < q_ci * sqrt(v_y_hat)
+  # Here, the coverage is 0.931 (0.737 with the old variance formula):
+  expect_equal(mean(in_ci), 0.95, tolerance = 4e-2)
+})
+
+test_that(".srs_diff_est_w() is stable for values with a large common offset", {
+  withr::local_seed(4)
+  N <- 1e5
+  m <- 1e3
+  wobs <- rlnorm(N)
+  y_true <- rnorm(N, 0, 0.3)
+  y_approx <- y_true + rnorm(N, 0, 0.1)
+  y_idx <- sample.int(N, size = m)
+  res_ref <- .srs_diff_est_w(y_approx = y_approx,
+                             y = y_true[y_idx],
+                             y_idx = y_idx,
+                             wobs = wobs)
+  offs <- 1e8
+  res_offs <- .srs_diff_est_w(y_approx = y_approx + offs,
+                              y = y_true[y_idx] + offs,
+                              y_idx = y_idx,
+                              wobs = wobs)
+  expect_equal(res_offs$hat_v_y, res_ref$hat_v_y, tolerance = 1e-6)
+  expect_equal(res_offs$v_y_hat, res_ref$v_y_hat, tolerance = 1e-6)
+  expect_equal(res_offs$y_hat, res_ref$y_hat + N * offs, tolerance = 1e-12)
+})
+
+test_that(".srs_diff_est_w() with equal `wobs` equals the unweighted case", {
+  withr::local_seed(5)
+  N <- 1e3
+  m <- 1e2
+  y_true <- rnorm(N)
+  y_approx <- y_true + rnorm(N, 0.2, 0.5)
+  y_idx <- sample.int(N, size = m)
+  res_unw <- .srs_diff_est_w(y_approx = y_approx,
+                             y = y_true[y_idx],
+                             y_idx = y_idx)
+  res_w <- .srs_diff_est_w(y_approx = y_approx,
+                           y = y_true[y_idx],
+                           y_idx = y_idx,
+                           wobs = rep(3, N))
+  expect_equal(res_w, res_unw, tolerance = 1e-12)
+  e_i <- y_true[y_idx] - y_approx[y_idx]
+  expect_equal(res_unw$y_hat, sum(y_approx) + N * mean(e_i), tolerance = 1e-12)
+  expect_equal(res_unw$v_y_hat, N^2 * (1 - m / N) * var(e_i) / m,
+               tolerance = 1e-12)
+})
+
 test_that(".srs_diff_est_w() propagates input `NA`s to its output", {
   nloo_tst <- nobsv %/% 5L
   loo_inds_tst <- ceiling(seq(1L, nobsv, length.out = nloo_tst))
