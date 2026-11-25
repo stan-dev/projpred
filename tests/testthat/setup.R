@@ -174,6 +174,38 @@ is_gamm_backsolve_msg <- function(msg) {
     grepl("singular matrix in 'backsolve'", msg, fixed = TRUE)
 }
 
+# Drop a test setup below only after a known upstream error, and only for the
+# model types (`mod_nm`) with that error. Other errors stop setup.R. `kfold`
+# marks the K-fold refits of run_cvfun().
+is_known_setup_err <- function(msg, mod_nm, kfold = FALSE) {
+  if (!is.character(mod_nm) || length(mod_nm) != 1L) {
+    return(FALSE)
+  }
+  if (is_gamm_backsolve_msg(msg)) {
+    # Only the submodel fits of gamm4 give this error, not the K-fold refits:
+    return(!kfold && mod_nm == "gamm")
+  }
+  if (kfold && identical(
+    msg, "pwrssUpdate did not converge in (maxit) iterations"
+  )) {
+    # lme4 error from rstanarm:::kfold.stanreg(), accepted for `mod_nm` "glmm"
+    # and "gamm":
+    return(mod_nm %in% c("glmm", "gamm"))
+  }
+  return(FALSE)
+}
+# The dropped test setups, one element per stage (see test_setup.R):
+setup_drops <- list()
+add_setup_drops <- function(stage, tstsetups) {
+  if (length(tstsetups) == 0) {
+    return(invisible())
+  }
+  setup_drops[[stage]] <<- tstsetups
+  message("[", stage, "] dropped ", length(tstsetups), " test setup(s) after ",
+          "a known upstream error: ", paste(tstsetups, collapse = ", "))
+  return(invisible())
+}
+
 # Data --------------------------------------------------------------------
 
 ## Setup ------------------------------------------------------------------
@@ -1144,18 +1176,16 @@ if (run_vs) {
     )), silent = TRUE)
   })
   success_vs <- !sapply(vss, inherits, "try-error")
-  err_ok_vs <- vapply(vss[!success_vs], function(vs_err) {
-    is_gamm_backsolve_msg(attr(vs_err, "condition")$message)
+  err_ok_vs <- vapply(names(vss)[!success_vs], function(tstsetup) {
+    is_known_setup_err(attr(vss[[tstsetup]], "condition")$message,
+                       mod_nm = args_vs[[tstsetup]]$mod_nm)
   }, logical(1))
   expect_true(
     all(err_ok_vs),
     info = paste("Unexpected error for",
                  paste(names(vss)[!success_vs][!err_ok_vs], collapse = ", "))
   )
-  if (any(!success_vs)) {
-    message("[vs] skipped (known-fragile upstream gamm4 getVb() limitation): ",
-            paste(names(vss)[!success_vs], collapse = ", "))
-  }
+  add_setup_drops("vs", names(vss)[!success_vs])
   vss <- vss[success_vs]
   args_vs <- args_vs[success_vs]
 }
@@ -1288,16 +1318,17 @@ if (run_cvvs) {
                          seed = seed3_tst), silent = TRUE))
   })
   success_cvfits <- !sapply(cvfitss, inherits, "try-error")
-  err_ok_cvfits <- sapply(cvfitss[!success_cvfits], function(cvfits_err) {
-    attr(cvfits_err, "condition")$message ==
-      "pwrssUpdate did not converge in (maxit) iterations"
-  })
+  err_ok_cvfits <- vapply(names(cvfitss)[!success_cvfits], function(tstsetup) {
+    is_known_setup_err(attr(cvfitss[[tstsetup]], "condition")$message,
+                       mod_nm = args_ref[[tstsetup]]$mod_nm, kfold = TRUE)
+  }, logical(1))
   expect_true(
     all(err_ok_cvfits),
     info = paste("Unexpected error for",
                  paste(names(cvfitss[!success_cvfits])[!err_ok_cvfits],
                        collapse = ", "))
   )
+  add_setup_drops("cvfits", names(cvfitss)[!success_cvfits])
   args_cvvs_kfold <- args_cvvs_kfold[!sapply(
     lapply(args_cvvs_kfold, "[[", "tstsetup_ref"),
     `%in%`, names(cvfitss)[!success_cvfits]
@@ -1325,15 +1356,17 @@ if (run_cvvs) {
     }
   })
   success_cvvs <- !sapply(cvvss, inherits, "try-error")
-  err_ok_cvvs <- sapply(cvvss[!success_cvvs], function(cvvs_err) {
-    is_gamm_backsolve_msg(attr(cvvs_err, "condition")$message)
-  })
+  err_ok_cvvs <- vapply(names(cvvss)[!success_cvvs], function(tstsetup) {
+    is_known_setup_err(attr(cvvss[[tstsetup]], "condition")$message,
+                       mod_nm = args_cvvs[[tstsetup]]$mod_nm)
+  }, logical(1))
   expect_true(
     all(err_ok_cvvs),
     info = paste("Unexpected error for",
                  paste(names(cvvss[!success_cvvs])[!err_ok_cvvs],
                        collapse = ", "))
   )
+  add_setup_drops("cvvs", names(cvvss)[!success_cvvs])
   cvvss <- cvvss[success_cvvs]
   args_cvvs <- args_cvvs[success_cvvs]
 }
@@ -1462,7 +1495,8 @@ if (run_prj) {
       message("  ", prj_err$info, ": ", prj_err$message)
     }
     err_ok_prj <- vapply(prj_errors, function(prj_err) {
-      is_gamm_backsolve_msg(prj_err$message)
+      is_known_setup_err(prj_err$message,
+                         mod_nm = args_prj[[prj_err$idx]]$mod_nm)
     }, logical(1))
     if (!all(err_ok_prj)) {
       stop("Unexpected error in ", sum(!err_ok_prj), " project() call(s) ",
@@ -1471,12 +1505,9 @@ if (run_prj) {
            call. = FALSE)
     }
     drop_idx <- unique(vapply(prj_errors[err_ok_prj], `[[`, integer(1), "idx"))
+    add_setup_drops("prj", names(args_prj)[drop_idx])
     prjs <- prjs[-drop_idx]
     args_prj <- args_prj[-drop_idx]
-    message("[prj] skipped ", length(drop_idx), " known-fragile projection(s) ",
-            "(upstream gamm4 getVb() limitation): ",
-            paste(vapply(prj_errors[err_ok_prj], `[[`, character(1), "info"),
-                  collapse = " || "))
   }
 }
 
@@ -1560,8 +1591,9 @@ if (run_vs) {
     )), silent = TRUE)
   })
   success_prj_vs <- !sapply(prjs_vs, inherits, "try-error")
-  err_ok_prj_vs <- vapply(prjs_vs[!success_prj_vs], function(prj_vs_err) {
-    is_gamm_backsolve_msg(attr(prj_vs_err, "condition")$message)
+  err_ok_prj_vs <- vapply(names(prjs_vs)[!success_prj_vs], function(tstsetup) {
+    is_known_setup_err(attr(prjs_vs[[tstsetup]], "condition")$message,
+                       mod_nm = args_prj_vs[[tstsetup]]$mod_nm)
   }, logical(1))
   expect_true(
     all(err_ok_prj_vs),
@@ -1569,11 +1601,7 @@ if (run_vs) {
                  paste(names(prjs_vs)[!success_prj_vs][!err_ok_prj_vs],
                        collapse = ", "))
   )
-  if (any(!success_prj_vs)) {
-    message("[prj_vs] skipped (known-fragile upstream gamm4 getVb() ",
-            "limitation): ",
-            paste(names(prjs_vs)[!success_prj_vs], collapse = ", "))
-  }
+  add_setup_drops("prj_vs", names(prjs_vs)[!success_prj_vs])
   prjs_vs <- prjs_vs[success_prj_vs]
   args_prj_vs <- args_prj_vs[success_prj_vs]
 }
@@ -1618,23 +1646,21 @@ if (run_cvvs) {
     )), silent = TRUE)
   })
   success_prj_cvvs <- !sapply(prjs_cvvs, inherits, "try-error")
-  err_ok_prj_cvvs <- vapply(prjs_cvvs[!success_prj_cvvs],
-                            function(prj_cvvs_err) {
-                              is_gamm_backsolve_msg(
-                                attr(prj_cvvs_err, "condition")$message
-                              )
-                            }, logical(1))
+  err_ok_prj_cvvs <- vapply(
+    names(prjs_cvvs)[!success_prj_cvvs],
+    function(tstsetup) {
+      is_known_setup_err(attr(prjs_cvvs[[tstsetup]], "condition")$message,
+                         mod_nm = args_prj_cvvs[[tstsetup]]$mod_nm)
+    },
+    logical(1)
+  )
   expect_true(
     all(err_ok_prj_cvvs),
     info = paste("Unexpected error for",
                  paste(names(prjs_cvvs)[!success_prj_cvvs][!err_ok_prj_cvvs],
                        collapse = ", "))
   )
-  if (any(!success_prj_cvvs)) {
-    message("[prj_cvvs] skipped (known-fragile upstream gamm4 getVb() ",
-            "limitation): ",
-            paste(names(prjs_cvvs)[!success_prj_cvvs], collapse = ", "))
-  }
+  add_setup_drops("prj_cvvs", names(prjs_cvvs)[!success_prj_cvvs])
   prjs_cvvs <- prjs_cvvs[success_prj_cvvs]
   args_prj_cvvs <- args_prj_cvvs[success_prj_cvvs]
 }
