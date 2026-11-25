@@ -32,6 +32,22 @@
 
 ### Bug fixes
 
+- With subsampled LOO (`nloo` below the number of observations) and
+  unequal observation weights, the SEs of `"mse"`, `"rmse"`, `"R2"` and
+  pointwise custom statistics were too small. All SEs with subsampled
+  LOO are now also numerically stable for values with a large common
+  offset. (GitHub:
+  [\#679](https://github.com/stan-dev/projpred/issues/679))
+
+- For
+  [`rstanarm::stan_gamm4()`](https://mc-stan.org/rstanarm/reference/stan_gamm4.html)
+  reference models with `t2()` terms,
+  [`rstanarm::posterior_linpred()`](https://mc-stan.org/rstantools/reference/posterior_linpred.html)
+  gives wrong linear predictors. projpred now computes them itself, so
+  the reference model predictions, the projections and the predictive
+  performance results are correct. (GitHub:
+  [\#677](https://github.com/stan-dev/projpred/issues/677))
+
 ## projpred 3.0.0
 
 CRAN release: 2026-11-20

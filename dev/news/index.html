@@ -77,7 +77,9 @@
 </ul></div>
 <div class="section level3">
 <h3 id="bug-fixes-3-0-0-9000">Bug fixes<a class="anchor" aria-label="anchor" href="#bug-fixes-3-0-0-9000"></a></h3>
-</div>
+<ul><li><p>With subsampled LOO (<code>nloo</code> below the number of observations) and unequal observation weights, the SEs of <code>"mse"</code>, <code>"rmse"</code>, <code>"R2"</code> and pointwise custom statistics were too small. All SEs with subsampled LOO are now also numerically stable for values with a large common offset. (GitHub: <a href="https://github.com/stan-dev/projpred/issues/679" class="external-link">#679</a>)</p></li>
+<li><p>For <code><a href="https://mc-stan.org/rstanarm/reference/stan_gamm4.html" class="external-link">rstanarm::stan_gamm4()</a></code> reference models with <code>t2()</code> terms, <code><a href="https://mc-stan.org/rstantools/reference/posterior_linpred.html" class="external-link">rstanarm::posterior_linpred()</a></code> gives wrong linear predictors. projpred now computes them itself, so the reference model predictions, the projections and the predictive performance results are correct. (GitHub: <a href="https://github.com/stan-dev/projpred/issues/677" class="external-link">#677</a>)</p></li>
+</ul></div>
 </div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="3.0.0" id="projpred-300">projpred 3.0.0<a class="anchor" aria-label="anchor" href="#projpred-300"></a></h2><p class="text-muted">CRAN release: 2026-11-20</p>
