@@ -283,14 +283,9 @@ In \code{mo(x) * z}, for example, the full-model term \code{mo(x)} is the effect
 \code{x} at \code{z = 0}. If the full model does not have the term (possible with
 custom \code{search_terms}) or if the projection onto the full model fails,
 \pkg{projpred} takes the sign of the sum of the unconstrained coefficients
-in the submodel. For the negative binomial family, the shape is projected
-too, and whether the unconstrained projection is monotonic can depend on
-the shape. If the shape and this decision alternate without end for a
-draw, \pkg{projpred} keeps the constrained projection of this draw (with
-the sign from the full model). In an interaction of a \code{mo()} term with a
-factor (for example \code{mo(x):f}), each column of the factor has its own
-monotonic effect, as in \pkg{brms}. So in \code{mo(x) * f}, the effect of \code{x}
-within a level of \code{f}
+in the submodel. In an interaction of a \code{mo()} term with a factor (for
+example \code{mo(x):f}), each column of the factor has its own monotonic effect,
+as in \pkg{brms}. So in \code{mo(x) * f}, the effect of \code{x} within a level of \code{f}
 other than the first is the sum of two monotonic effects, and this sum is
 not necessarily monotonic. \code{\link[=mo_effects]{mo_effects()}} gives the projected effects in the
 parametrization of \pkg{brms}.
