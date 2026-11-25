@@ -1,10 +1,14 @@
 test_that("as.matrix.projection() works", {
   skip_if_not(run_prj)
   for (tstsetup in names(prjs)) {
-    if (args_prj[[tstsetup]]$mod_nm == "gam") {
-      # For GAMs, only the columns of the smooth terms are checked here: they
-      # must be parameters of the reference model fit, with one SD column per
-      # s() term. `test_smooth_basis.R` checks their values.
+    is_gamm4 <- inherits(prjs[[tstsetup]]$outdmin[[1]], "gamm4")
+    if (args_prj[[tstsetup]]$mod_nm == "gam" ||
+        (args_prj[[tstsetup]]$mod_nm == "gamm" &&
+         (is_gamm4 || inherits(prjs[[tstsetup]]$outdmin[[1]], "gam")))) {
+      # For GAMs and GAMMs, only the columns of the smooth terms (and of the
+      # group-level terms) are checked here: they must be parameters of the
+      # reference model fit, with one SD column per s() term.
+      # `test_smooth_basis.R` checks their values.
       allow_nonconst <- ndr_ncl_dtls(args_prj[[tstsetup]])$clust_used_gt1
       expect_warning(
         m <- as.matrix(prjs[[tstsetup]],
@@ -38,19 +42,25 @@ test_that("as.matrix.projection() works", {
       } else {
         expect_length(sm_nms, 0)
       }
+      if (is_gamm4) {
+        grp_rgx <- if (args_prj[[tstsetup]]$pkg_nm == "brms") {
+          "^(sd|cor|r)_"
+        } else {
+          "^(Sigma|b)\\["
+        }
+        grp_nms <- grep(grp_rgx, colnames(m), value = TRUE)
+        expect_gt(length(grp_nms), 0, label = tstsetup)
+        expect_true(all(grp_nms %in% par_nms), info = tstsetup)
+        # (lme4 gives a `NaN` correlation if one of its SDs is 0.)
+        expect_false(anyNA(m[, grep("^cor_", grp_nms, value = TRUE,
+                                    invert = TRUE)]),
+                     info = tstsetup)
+      }
       next
     }
     if (args_prj[[tstsetup]]$mod_nm == "gamm") {
-      # as.matrix() stops for GAMM submodels. The other submodels of GAMM
-      # reference models stay skipped.
-      # TODO (GAMMs): Fix this.
-      if (inherits(prjs[[tstsetup]]$outdmin[[1]], "gamm4")) {
-        expect_error(
-          as.matrix(prjs[[tstsetup]], allow_nonconst_wdraws_prj = TRUE),
-          "do not support submodels with smooth and group-level terms",
-          info = tstsetup
-        )
-      }
+      # The GLM and GLMM submodels of GAMM reference models stay skipped.
+      # TODO (GAMMs): Check these submodels too.
       next
     }
     tstsetup_ref <- args_prj[[tstsetup]]$tstsetup_ref
@@ -326,17 +336,10 @@ test_that(paste(
 ), {
   skip_if_not(run_prj)
   for (tstsetup in names(prjs)) {
-    if (args_prj[[tstsetup]]$mod_nm == "gamm") {
-      # as_draws_matrix() stops for GAMM submodels. The other submodels of
-      # GAMM reference models stay skipped.
-      # TODO (GAMMs): Fix this.
-      if (inherits(prjs[[tstsetup]]$outdmin[[1]], "gamm4")) {
-        expect_error(
-          posterior::as_draws_matrix(prjs[[tstsetup]]),
-          "do not support submodels with smooth and group-level terms",
-          info = tstsetup
-        )
-      }
+    if (args_prj[[tstsetup]]$mod_nm == "gamm" &&
+        !inherits(prjs[[tstsetup]]$outdmin[[1]], c("gamm4", "gam"))) {
+      # The GLM and GLMM submodels of GAMM reference models stay skipped.
+      # TODO (GAMMs): Check these submodels too.
       next
     }
     m <- as.matrix(prjs[[tstsetup]],
@@ -393,14 +396,9 @@ if (run_snaps) {
     withr::local_options(list(width = 145))
     skip_if_not(run_vs)
     for (tstsetup in names(prjs_vs)) {
-      if (args_prj_vs[[tstsetup]]$mod_nm == "gam") {
-        # No snapshots for GAMs. The first test of this file and
+      if (args_prj_vs[[tstsetup]]$mod_nm %in% c("gam", "gamm")) {
+        # No snapshots for GAMs and GAMMs. The first test of this file and
         # `test_smooth_basis.R` check the columns of the smooth terms.
-        next
-      }
-      if (args_prj_vs[[tstsetup]]$mod_nm == "gamm") {
-        # Skipping GAMMs because of issue #131.
-        # TODO (GAMMs): Fix this.
         next
       }
       nterms_crr <- args_prj_vs[[tstsetup]]$nterms
@@ -430,14 +428,9 @@ if (run_snaps) {
     withr::local_options(list(width = 145))
     skip_if_not(run_cvvs)
     for (tstsetup in names(prjs_cvvs)) {
-      if (args_prj_cvvs[[tstsetup]]$mod_nm == "gam") {
-        # No snapshots for GAMs. The first test of this file and
+      if (args_prj_cvvs[[tstsetup]]$mod_nm %in% c("gam", "gamm")) {
+        # No snapshots for GAMs and GAMMs. The first test of this file and
         # `test_smooth_basis.R` check the columns of the smooth terms.
-        next
-      }
-      if (args_prj_cvvs[[tstsetup]]$mod_nm == "gamm") {
-        # Skipping GAMMs because of issue #131.
-        # TODO (GAMMs): Fix this.
         next
       }
       nterms_crr <- args_prj_cvvs[[tstsetup]]$nterms

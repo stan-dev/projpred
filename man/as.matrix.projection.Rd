@@ -68,6 +68,12 @@ mixed-model form of the smooth term, so they are point estimates for each
 projected draw. Otherwise, the columns of the smooth terms are the
 coefficients in the basis of \code{gam()}.
 
+For a submodel with smooth and group-level terms (fitted with
+\code{\link[gamm4:gamm4]{gamm4::gamm4()}}), the columns of the smooth terms are as for a \code{gam()}
+submodel, and the group-level columns are as for a multilevel submodel.
+The SD columns of the smooth terms are the SDs of the variance components
+of the smooth terms in the \pkg{lme4} part of the \code{gamm4()} fit.
+
 For the latent projection, column \code{sigma} contains the projected latent
 dispersion. If \verb{<refmodel>$dis} consists of only \code{NA}s (see argument \code{dis}
 of \code{\link[=init_refmodel]{init_refmodel()}}), there is no column \code{sigma}.

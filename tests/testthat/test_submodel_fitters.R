@@ -721,14 +721,26 @@ test_that(paste(
 })
 
 test_that(paste(
-  "as.matrix.projection() stops for a gamm4() submodel (its parameter",
-  "extraction get_subparams() stops)"
+  "get_subparams() of a gamm4() submodel gives the coefficients of the gam",
+  "part and the group-level parameters without the smooth variance components"
 ), {
   d <- dat_fitters()
   fit_gamm <- divmin_tst("s(z) + x + (1 | g)", d, extend_family(gaussian()),
                          d$eta)[[1]]
-  expect_error(get_subparams(fit_gamm, nm_scheme = "rstanarm"),
-               "do not support submodels with smooth and group-level terms")
+  sp <- get_subparams(fit_gamm, nm_scheme = "rstanarm")
+  b_nms <- paste0("b[(Intercept) g:", levels(d$g), "]")
+  expect_identical(names(sp),
+                   c(names(coef(fit_gamm$gam)),
+                     "Sigma[g:(Intercept),(Intercept)]", b_nms))
+  expect_identical(unname(sp[names(coef(fit_gamm$gam))]),
+                   unname(coef(fit_gamm$gam)))
+  # rstanarm naming: the variance, not the SD
+  expect_equal(sp[["Sigma[g:(Intercept),(Intercept)]"]],
+               lme4::VarCorr(fit_gamm$mer)$g[1, 1], tolerance = 1e-12)
+  ranef_g <- lme4::ranef(fit_gamm$mer)$g
+  expect_equal(unname(sp[b_nms]),
+               ranef_g[paste0("g", seq_len(nlevels(d$g))), "(Intercept)"],
+               tolerance = 1e-12)
 })
 
 test_that(paste(
