@@ -87,7 +87,9 @@ If the projection is performed onto a single submodel (i.e.,
 \code{length(nterms) == 1 || !is.null(predictor_terms)}), an object of class
 \code{projection} which is a \code{list} containing the following elements:
 \describe{
-\item{\code{dis}}{Projected draws for the dispersion parameter.}
+\item{\code{dis}}{Projected draws for the dispersion parameter (for the
+reference model draws of section "Details": the dispersion draws of the
+reference model).}
 \item{\code{ce}}{The cross-entropy part of the Kullback-Leibler (KL)
 divergence from the reference model to the submodel. For some families,
 this is not the actual cross-entropy, but a reduced one where terms which
@@ -102,7 +104,9 @@ projected draw). This is the same as the return value of the
 \code{div_minimizer} function (see \code{\link[=init_refmodel]{init_refmodel()}}), except if \code{\link[=project]{project()}}
 was used with an \code{object} of class \code{vsel} based on an L1 search as well
 as with \code{refit_prj = FALSE}, in which case this is the output from an
-internal \emph{L1-penalized} divergence minimizer.}
+internal \emph{L1-penalized} divergence minimizer. For the reference model
+draws of section "Details", this is an object of class
+\code{projpred_ref_draws} with the indices of these draws.}
 \item{\code{cl_ref}}{A numeric vector of length equal to the number of
 posterior draws in the reference model, containing the cluster indices of
 these draws.}
@@ -146,6 +150,14 @@ coarse clustering or thinning of the reference model's posterior draws (by
 default, \code{\link[=varsel]{varsel()}} and \code{\link[=cv_varsel]{cv_varsel()}} use \code{nclusters = 20}). Consequently,
 \code{\link[=project]{project()}} with \code{refit_prj = FALSE} then inherits this coarse clustering
 or thinning.
+
+If \code{object} is of class \code{vsel} and its results for the submodel with all
+search terms are those of the reference model (see section "Submodel with
+all terms of the reference model" in \link{projpred-package}), \code{\link[=project]{project()}}
+returns \code{ndraws} thinned draws of the reference model for this submodel
+size, not a projection, and gives a warning. With \code{nclusters}, the number
+of these thinned draws is \code{nclusters}. \code{refit_prj} has no effect for this
+size. To project onto this submodel, use argument \code{predictor_terms}.
 }
 \examples{
 \dontshow{if (requireNamespace("rstanarm", quietly = TRUE)) withAutoprint(\{ # examplesIf}

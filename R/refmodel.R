@@ -1639,7 +1639,37 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
   mu_fun <- function(fits, obs = NULL, newdata = NULL, offset = NULL,
                      transform = TRUE) {
     pred_sub <- NULL
-    if (proj_predfun_is_subprd && is.null(obs) && is.null(newdata)) {
+    if (inherits(fits, "projpred_ref_draws")) {
+      # The reference model draws `fits$draws` instead of submodel fits (see
+      # proj_full_ref()). The copy of this function for the CV folds (see
+      # refmodel_for_folds()) has no `ref_predfun`, and the CV folds do not use
+      # this case:
+      if (!is.null(obs) ||
+          !exists("ref_predfun", envir = parent.env(environment()),
+                  inherits = FALSE)) {
+        stop("Unexpected prediction from reference model draws. Please notify ",
+             "the package maintainer.")
+      }
+      newdata_ref <- newdata
+      offs_ref <- offset %||% 0
+      if (!is.null(newdata_ref)) {
+        newdata_ref <- as.data.frame(newdata_ref)
+        if ("projpred_internal_offs_stanreg" %in% names(data)) {
+          # The offsets of an rstanarm fit (see get_refmodel.stanreg()):
+          newdata_ref$projpred_internal_offs_stanreg <- offs_ref
+        }
+      }
+      # The predictions with the offsets (`excl_offs = FALSE` needs no
+      # extract_model_data(), so no observation weights for `newdata`). The
+      # offsets `offset` are added again below:
+      pred_sub <- ref_predfun(object, newdata = newdata_ref,
+                              excl_offs = FALSE)[, fits$draws, drop = FALSE]
+      if (family$family %in% fams_neg_linpred()) {
+        pred_sub <- pred_sub + offs_ref
+      } else {
+        pred_sub <- pred_sub - offs_ref
+      }
+    } else if (proj_predfun_is_subprd && is.null(obs) && is.null(newdata)) {
       # Training data: use the model matrices stored in the submodel fits
       # instead of building them again for every projection:
       pred_sub <- subprd_fitted(fits, nobs = nrow(data))

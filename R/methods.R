@@ -2661,6 +2661,7 @@ as.matrix.projection <- function(x, nm_scheme = NULL,
     stop("as.matrix.projection() does not work for objects based on ",
          "`datafit`s.")
   }
+  stop_ref_draws(x, "as.matrix() and as_draws_matrix()")
   if (!x[["const_wdraws_prj"]] && !allow_nonconst_wdraws_prj) {
     stop("The projected draws have different (i.e., nonconstant) weights, so ",
          "please use either `allow_nonconst_wdraws_prj = TRUE` (and then ",

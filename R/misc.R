@@ -1338,7 +1338,10 @@ refmodel_restore_draws <- function(refmodel) {
 }
 
 # The objects of the init_refmodel() environment that mu_fun() and
-# fetch_data() of a reference model use (see refmodel_for_folds()):
+# fetch_data() of a reference model use (see refmodel_for_folds()). The
+# predictions of mu_fun() for the reference model draws of project() (see
+# proj_full_ref()) also need `ref_predfun` and the fit `object`; the CV folds do
+# not make such predictions.
 refmodel_fun_objs <- c("data", "family", "proj_predfun",
                        "proj_predfun_is_subprd")
 

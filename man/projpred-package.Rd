@@ -285,8 +285,14 @@ projected (neither in the search nor in the performance evaluation). Its
 predictive performance is that of the reference model, and its value \code{ce}
 is the cross-entropy of the projected reference draws with themselves. In
 \code{\link[=summary.vsel]{summary.vsel()}}, a line below the table names this size, and in
-\code{\link[=plot.vsel]{plot.vsel()}}, its point is open. \code{\link[=project]{project()}} (and with it
-\code{\link[=proj_linpred]{proj_linpred()}} and \code{\link[=proj_predict]{proj_predict()}}) still projects onto this submodel.
+\code{\link[=plot.vsel]{plot.vsel()}}, its point is open. For this size of a \code{\link[=varsel]{varsel()}} or
+\code{\link[=cv_varsel]{cv_varsel()}} output, \code{\link[=project]{project()}} returns thinned draws of the reference
+model, not a projection, and gives a warning. \code{\link[=proj_linpred]{proj_linpred()}},
+\code{\link[=proj_predict]{proj_predict()}} and \code{\link[=proj_epred]{proj_epred()}} then give the predictions of these
+draws. \code{\link[=as.matrix.projection]{as.matrix.projection()}}, \code{\link[=as_draws_matrix.projection]{as_draws_matrix.projection()}} and
+\code{\link[=mo_effects]{mo_effects()}} stop for this output: use the parameter draws of the
+reference model fit. \code{\link[=project]{project()}} with argument \code{predictor_terms} always
+projects.
 
 This does not apply to a reference model of class \code{datafit}, to custom
 \code{search_terms} that do not give all terms of the reference model, and with
@@ -295,7 +301,8 @@ reference model). For a custom reference model (see \code{\link[=init_refmodel]{
 \pkg{projpred} cannot check whether the reference model predictions come
 from the terms of the reference model formula. In that case, or to get the
 projection onto the submodel with all search terms, set global option
-\code{projpred.full_size_ref} to \code{FALSE} (default \code{TRUE}).
+\code{projpred.full_size_ref} to \code{FALSE} (default \code{TRUE}) before \code{\link[=varsel]{varsel()}} or
+\code{\link[=cv_varsel]{cv_varsel()}}. The \code{vsel} object keeps the setting.
 }
 
 \section{Memory usage}{
