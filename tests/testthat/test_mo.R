@@ -2057,3 +2057,75 @@ test_that(paste(
   expect_setequal(ranking(vs)$fulldata, c("mo(x)", "z", "w"))
   expect_true(all(is.finite(summary(vs)$perf_sub$elpd)))
 })
+
+test_that(paste(
+  "the negative binomial projection converges for draws close to the point",
+  "where the sign constraint of mo() terms switches"
+), {
+  skip_if_not_installed("MASS")
+  opts_old <- options(projpred.mo_monotone = TRUE)
+  on.exit(options(opts_old), add = TRUE)
+  set.seed(6213)
+  n <- 100
+  # The first effect `a` of `x` in the submodel without `w`: for a < 0 the
+  # unconstrained effect decreases monotonically (opposite to the sign of the
+  # full model), for a > 0 it is not monotonic. Close to a = 0, the decision
+  # depends on the shape:
+  a_grid <- seq(-0.035, -0.01, length.out = 11)
+  S <- length(a_grid)
+  dat <- data.frame(x = sample(rep_len(0:4, n)), z = rnorm(n))
+  dat$w <- -0.5 * dat$x + rnorm(n, sd = 0.5)
+  g_mat <- sapply(a_grid, function(a) c(0, a, -0.3, -0.6, -0.9) + 0.25 * 0:4)
+  eta_fun <- function(nd) {
+    g_mat[nd$x + 1, , drop = FALSE] + 0.3 * nd$z + 0.5 * nd$w + 1
+  }
+  dat$y <- rnbinom(n, size = 4, mu = exp(rowMeans(eta_fun(dat))))
+  fml <- y ~ mo(x) + z + w
+  environment(fml) <- list2env(list(mo = mo_brms_like),
+                               parent = environment(fml))
+  refm <- suppressWarnings(init_refmodel(
+    list(data = dat), data = dat, formula = fml,
+    family = MASS::negative.binomial(theta = 4),
+    ref_predfun = function(fit, newdata = NULL) {
+      eta_fun(if (is.null(newdata)) fit$data else newdata)
+    },
+    dis = rep(4, S), cvfun = function(folds) NULL,
+    cvrefbuilder = function(cvfit) NULL
+  ))
+  terms_sub <- c("mo(x)", "z")
+  expect_no_warning(prj <- project(refm, predictor_terms = terms_sub,
+                                   ndraws = S, thresh_conv = 1e-12,
+                                   verbose = FALSE))
+  options(projpred.mo_monotone = FALSE)
+  prj_full <- project(refm, predictor_terms = c(terms_sub, "w"), ndraws = S,
+                      verbose = FALSE)
+  options(projpred.mo_monotone = TRUE)
+  s_full <- ifelse(rowSums(prj_coefs(prj_full)[, 1:4]) >= 0, 1, -1)
+  expect_true(all(s_full == 1))
+  b <- prj_coefs(prj)
+  expect_true(all(is_mono(b[, 1:4])))
+  # Each draw is the unconstrained or the constrained glm_ridge() fit with its
+  # projected shape fixed. A draw is "switching" if its unconstrained fit at
+  # its projected shape is monotonic but the projection kept the constraint:
+  x <- cbind(strip_attr(mo(dat$x)), z = dat$z)
+  n_switch <- 0
+  for (s in seq_len(S)) {
+    args_fit <- list(x, refm$mu[, s],
+                     family = refm$family$fixed_dis_family(prj$dis[s]),
+                     weights = refm$wobs, lambda = 1e-4, thresh = 1e-12)
+    fit_unc <- do.call(glm_ridge, args_fit)
+    fit_cons <- do.call(glm_ridge, c(args_fit, list(cons_cols = 1:4,
+                                                    cons_signs = rep(1, 4))))
+    b_s <- unname(c(prj$outdmin[[s]]$alpha, b[s, ]))
+    b_unc <- unname(c(fit_unc$beta0, drop(fit_unc$beta)))
+    b_cons <- unname(c(fit_cons$beta0, drop(fit_cons$beta)))
+    is_cons <- isTRUE(prj$outdmin[[s]]$mo_cons)
+    expect_equal(b_s, if (is_cons) b_cons else b_unc, tolerance = 1e-4,
+                 info = paste("draw", s))
+    if (is_cons && is_mono(matrix(b_unc[2:5], 1))) {
+      n_switch <- n_switch + 1
+    }
+  }
+  # The grid has draws close to the switch point:
+  expect_gt(n_switch, 0)
+})

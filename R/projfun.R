@@ -477,8 +477,32 @@ nb_alternate <- function(args_divmin, p_ref, refmodel, tol = 1e-5,
   phi[phi == Inf] <- nb_phi_max()
   phi[!is.finite(phi) | phi <= 0] <- 1
   phi <- pmin(phi, nb_phi_max())
+  # Monotonic projection of mo() terms: whether the sign constraint applies to
+  # a draw depends on the shape, and near the switch point the decision and
+  # the shape can alternate between two states. A draw whose decision has
+  # changed twice keeps the constraint in the later iterations (in such a
+  # cycle, only the constrained fit and its shape agree). A single change
+  # (for example from the start shape) stays free:
+  mo_force <- NULL
+  if (!is.null(args_divmin$projpred_mo_signs)) {
+    mo_force <- rep(FALSE, length(phi))
+    mo_state <- NULL
+    mo_changes <- integer(length(phi))
+  }
   for (it in seq_len(maxit)) {
-    outdmin <- do.call(divmin, c(args_divmin, list(projpred_nb_phi = phi)))
+    outdmin <- do.call(divmin, c(args_divmin, list(projpred_nb_phi = phi),
+                                 if (!is.null(mo_force)) {
+                                   list(projpred_mo_force = mo_force)
+                                 }))
+    if (!is.null(mo_force)) {
+      mo_cons <- vapply(outdmin, function(fit) isTRUE(fit$mo_cons),
+                        logical(1))
+      if (!is.null(mo_state)) {
+        mo_changes <- mo_changes + (mo_cons != mo_state)
+      }
+      mo_state <- mo_cons
+      mo_force <- mo_force | mo_changes >= 2L
+    }
     mu <- refmodel$mu_fun(outdmin, offset = refmodel$offset)
     if (anyNA(mu) || any(mu <= 0)) {
       stop("The negative binomial projection gave submodel means <= 0. Use ",
