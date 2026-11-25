@@ -1034,7 +1034,10 @@ glm_model_matrix <- function(formula, data, mo_groups = FALSE) {
 # Model matrix shared by the draw-wise formulas `formulas` (which have to differ
 # only in the response). Returns `NULL` if sharing is not possible: different
 # right-hand sides, a response that is not a plain column of `data`, or missing
-# values (which would make the model frames differ between the draws).
+# values (which would make the model frames differ between the draws). With
+# `mo_groups = TRUE`, the output also has the sign groups of mo() terms
+# (element `mo_groups`, see mo_groups_x()). Otherwise, it has the elements of
+# the output of shared_x_from_design().
 shared_model_matrix <- function(formulas, data, mo_groups = FALSE) {
   if (!is.data.frame(data)) {
     return(NULL)
@@ -1057,10 +1060,7 @@ shared_model_matrix <- function(formulas, data, mo_groups = FALSE) {
     return(NULL)
   }
   # The response names (as from model.response()) are also shared, so the
-  # draw-wise responses do not each get their own copy. The sign groups of
-  # mo() terms (element `mo_groups`) are in the output only for
-  # `mo_groups = TRUE`. Otherwise, the output has the elements of the output
-  # of shared_x_from_design():
+  # draw-wise responses do not each get their own copy:
   out <- list(x = xy$x, xlvls = xy$xlvls, y_names = names(xy$y),
               terms = xy$terms, contrasts = xy$contrasts)
   if (mo_groups) {
