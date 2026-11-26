@@ -22,55 +22,9 @@ withr::defer({
 
 options(warn = 1)
 
-# These switches may be set to `FALSE` to save time (e.g., when debugging
-# interactively):
-# Run more tests, at the downside of increased runtime?:
-run_more <- identical(Sys.getenv("RUN_MORE"), "true")
-# Run project()?:
-run_prj <- identical(Sys.getenv("NOT_CRAN"), "true")
-# Run varsel()?:
-run_vs <- identical(Sys.getenv("NOT_CRAN"), "true")
-# Run cv_varsel()?:
-run_cvvs <- run_vs
-# Run cv_varsel() with `validate_search = TRUE` always (`TRUE`) or just for L1
-# search (`FALSE`)?:
-run_valsearch_always <- FALSE
-# Run cv_varsel() with `validate_search = TRUE` also for the latent and the
-# augmented-data projection (and the corresponding traditional projection
-# settings which are used for comparison)? (Only relevant if
-# `run_valsearch_always = FALSE`.):
-run_valsearch_aug_lat <- FALSE
-# Run the `cvfits` test for all possible test setups (`TRUE`) or just for the
-# first one among the GLMMs (`FALSE`; note that if there is no GLMM available in
-# that test, the first test setup among those for K-fold CV is used)?:
-run_cvfits_all <- run_more
-# Run tests for `brmsfit`s?:
-run_brms <- identical(Sys.getenv("NOT_CRAN"), "true")
-# Run snapshot tests?:
-# Notes:
-#   * For general information about snapshot tests, see, e.g.,
-#   `?expect_snapshot` and `vignette("snapshotting", package = "testthat")`.
-#   * The snapshot tests are at least OS-dependent (perhaps even
-#   machine-dependent), so they only make sense locally. Therefore, we don't run
-#   the snapshot tests on CRAN or continuous integration (CI) systems. The
-#   detection of a CI system by the help of environment variable `CI` needs
-#   special care, see <https://github.com/r-lib/testthat/issues/825> and the
-#   source code of `testthat:::on_ci()`.
-#   * The last of the following conditions avoids that the snapshot tests are
-#   run by a local `R CMD check` (at least in RStudio). The reason for avoiding
-#   this is that in `R CMD check`, the previous snapshots are not available (at
-#   least as long as they are listed in the `.Rbuildignore` file), so they would
-#   be re-created, which would throw a lot of test warnings (which could obscure
-#   potentially important warnings).
-run_snaps <- Sys.getenv("RUN_SNAPS")
-if (identical(run_snaps, "")) {
-  run_snaps <- identical(Sys.getenv("NOT_CRAN"), "true") &&
-    !identical(toupper(Sys.getenv("CI")), "TRUE") &&
-    identical(Sys.getenv("_R_CHECK_FORCE_SUGGESTS_"), "")
-} else {
-  run_snaps <- as.logical(toupper(run_snaps))
-  stopifnot(isTRUE(run_snaps) || isFALSE(run_snaps))
-}
+source(testthat::test_path("helpers", "switches.R"), local = TRUE)
+# Turn off the tests that need a package or more than one core if these are
+# not available:
 if (run_snaps && !requireNamespace("rlang", quietly = TRUE)) {
   warning("Package 'rlang' is needed for snapshot testing, but could not be ",
           "found. Deactivating snapshot testing now.")
@@ -81,14 +35,6 @@ if (run_snaps && !requireNamespace("vdiffr", quietly = TRUE)) {
           "found. Deactivating snapshot testing now.")
   run_snaps <- FALSE
 }
-# Run the tests that need parallel workers (see test_parallel.R)?:
-# Notes:
-#   * We don't run these tests on CRAN or continuous integration (CI) systems
-#   because parallelization might require special care there.
-#   * The parallelization is not tested on Windows.
-run_prll <- identical(Sys.getenv("NOT_CRAN"), "true") &&
-  !identical(toupper(Sys.getenv("CI")), "TRUE") &&
-  !identical(.Platform$OS.type, "windows")
 if (run_prll) {
   if (parallel::detectCores(logical = FALSE) == 1) {
     warning("Deactivating the parallel tests because only a single worker ",
@@ -96,31 +42,18 @@ if (run_prll) {
     run_prll <- FALSE
   }
 }
-# Run all test scripts (following this setup script) in a completely random RNG
-# state? (The tests should still pass then, because in all situations where RNG
-# is used, a specific seed is supposed to be set.):
-run_randRNG <- identical(Sys.getenv("NOT_CRAN"), "true")
-# Run tests for additive models (GAMs and GAMMs)?:
-run_additive <- TRUE
 
-# Use a factor or an integer response for ordinal and categorical families?:
-use_fac <- TRUE
-
-# Use polym() instead of poly()?:
-use_polym <- FALSE
-
-source(testthat::test_path("helpers", "skips.R"), local = TRUE)
 # When the tests end, restore the state of the random number generator:
 withr::local_preserve_seed(.local_envir = testthat::teardown_env())
-source(testthat::test_path("helpers", "unlist_cust.R"), local = TRUE)
+# These helpers use objects of this file. When testthat loads the package from
+# source (devtools::test(), testthat::test_local()), it does not source the
+# helper-*.R files into this environment; they are then in the package
+# environment (where an object of the same name in the global environment
+# hides them) and cannot see the objects of this file. So this file sources
+# these helpers itself:
 source(testthat::test_path("helpers", "testers.R"), local = TRUE)
 source(testthat::test_path("helpers", "args.R"), local = TRUE)
 source(testthat::test_path("helpers", "getters.R"), local = TRUE)
-source(testthat::test_path("helpers", "formul_handlers.R"), local = TRUE)
-source(testthat::test_path("helpers", "predictor_handlers.R"), local = TRUE)
-source(testthat::test_path("helpers", "dummies.R"), local = TRUE)
-source(testthat::test_path("helpers", "creators.R"), local = TRUE)
-source(testthat::test_path("helpers", "expectors.R"), local = TRUE)
 source(testthat::test_path("helpers", "fixtures.R"), local = TRUE)
 
 # Note: The following `mod_nms` refer to *generalized* (linear/additive,
