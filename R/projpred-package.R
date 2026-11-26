@@ -372,7 +372,8 @@
 #' `"fit_glm_ridge_callback"` (the default) and `"fit_glm_callback"`. For a
 #' reference model with offsets, \pkg{projpred} accepts only
 #' `"fit_glm_ridge_callback"` (except for the Gaussian family with the identity
-#' link and the latent projection).
+#' link, the latent projection and a custom `div_minimizer` in
+#' [init_refmodel()]).
 #' * `projpred.gaussian_not_as_generalized`: A single logical value indicating
 #' whether to treat the [gaussian()] family not as a family for a *generalized
 #' linear* model (i.e., for which [glm()] would typically be used as a model
@@ -386,7 +387,9 @@
 #' projections (see GitHub issue
 #' [#207](https://github.com/stan-dev/projpred/issues/207) and GitHub pull
 #' request [#353](https://github.com/stan-dev/projpred/pull/353)). Currently,
-#' this is an experimental feature.
+#' this is an experimental feature. For a reference model with offsets,
+#' \pkg{projpred} accepts only `FALSE` (with the same exceptions as for
+#' `projpred.glm_fitter`).
 #' * `projpred.search_gauss_crossprod`: A single logical value indicating
 #' whether to compute the forward search and the evaluation in the LOO CV with
 #' validated search for Gaussian submodels with the identity link (including
