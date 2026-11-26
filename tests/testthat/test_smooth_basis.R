@@ -296,6 +296,16 @@ test_that(paste(
       }
     })
   }
+  # The SDs from as.matrix() agree with the SDs of the lme4 part, element by
+  # element: relatively for an SD above 1, absolutely below. An SD at the
+  # boundary is exactly 0 in both:
+  n_zero <- 0L
+  expect_sds_lme4 <- function(act, exp, info) {
+    expect_identical(length(act), length(exp), info = info)
+    expect_lt(max(abs(act - exp) / pmax(abs(exp), 1)), 1e-6, label = info)
+    expect_identical(act[exp == 0], exp[exp == 0], info = info)
+    n_zero <<- n_zero + sum(exp == 0)
+  }
   fml <- y ~ s(x) + v + (1 | g)
   fit <- brmsfit_sb(fml)
   X_sm <- brms_basis_sb(fit)
@@ -327,8 +337,8 @@ test_that(paste(
     }, numeric(2)))
     expect_equal(unname(m[, "sd_g__Intercept"]), unname(sds_mer[, 1]),
                  tolerance = 1e-10, info = fam_nm)
-    expect_equal(unname(m[, "sds_sx_1"]), unname(sds_mer[, 2]),
-                 tolerance = 1e-6, info = fam_nm)
+    expect_sds_lme4(unname(m[, "sds_sx_1"]), unname(sds_mer[, 2]),
+                    info = fam_nm)
     # as_draws_matrix() gives the same draws:
     expect_identical(unclass(posterior::as_draws_matrix(prj))[, colnames(m)],
                      unclass(posterior::as_draws_matrix(m))[, colnames(m)],
@@ -358,12 +368,16 @@ test_that(paste(
       vapply(sm_j$lmer.name, function(nm) attr(vc[[nm]], "stddev"),
              numeric(1))
     })
-    expect_equal(unname(m_t2[s, "sds_sx_1"]), unname(sd_lme4[[1]]),
-                 tolerance = 1e-6, info = paste("t2, draw", s))
-    expect_equal(sort(unname(m_t2[s, paste0("sds_t2zw_", 1:3)])),
-                 sort(unname(sd_lme4[[2]])), tolerance = 1e-6,
-                 info = paste("t2, draw", s))
+    expect_sds_lme4(unname(m_t2[s, "sds_sx_1"]), unname(sd_lme4[[1]]),
+                    info = paste("t2, draw", s))
+    expect_sds_lme4(sort(unname(m_t2[s, paste0("sds_t2zw_", 1:3)]),
+                         na.last = TRUE),
+                    sort(unname(sd_lme4[[2]])), info = paste("t2, draw", s))
   }
+  # Some of the compared variance components are at the boundary (SD 0). (For
+  # these data, lme4 2.1-0 and gamm4 0.3-0; other versions might not give
+  # such a case.)
+  expect_gt(n_zero, 0)
 
   # rstanarm naming (a stan_gamm4() fit without Stan; the group-level term
   # is only in the reference model formula of the projection):
@@ -382,8 +396,8 @@ test_that(paste(
   # The variance (not the SD) of the group-level intercepts:
   expect_equal(unname(m_r[, "Sigma[g:(Intercept),(Intercept)]"]),
                unname(vc_r[, 1]), tolerance = 1e-10)
-  expect_equal(unname(m_r[, "smooth_sd[s(x)1]"]), unname(vc_r[, 2]),
-               tolerance = 1e-6)
+  expect_sds_lme4(unname(m_r[, "smooth_sd[s(x)1]"]), unname(vc_r[, 2]),
+                  info = "rstanarm")
   Z_g_r <- Z_g
   colnames(Z_g_r) <- b_nms
   X_r <- fit_r$x

@@ -342,9 +342,11 @@ smooth_sds <- function(setup, j, fits, qr_B1, tgt, tol) {
   }
   blk <- tgt$blk
   nblk <- length(tgt$sd_nms)
-  # c_bk: the factor of penalty k on block b; has_pen: whether block b has a
-  # penalty (relative to the largest entry of each penalty).
+  # c_bk: the factor of penalty k on block b; pen_bk: whether penalty k acts on
+  # block b (relative to the largest entry of the penalty); has_pen: whether
+  # block b has a penalty.
   c_bk <- matrix(0, nblk, length(S_list))
+  pen_bk <- matrix(FALSE, nblk, length(S_list))
   has_pen <- rep(FALSE, nblk)
   same_blk <- outer(blk, blk, "==") & outer(blk > 0L, blk > 0L, "&")
   for (k in seq_along(S_list)) {
@@ -370,12 +372,16 @@ smooth_sds <- function(setup, j, fits, qr_B1, tgt, tol) {
         return(no_sds(pen_problem))
       }
       c_bk[b, k] <- c_b
-      has_pen[b] <- has_pen[b] || abs(c_b) > tol * P_max
+      pen_bk[b, k] <- abs(c_b) > tol * P_max
+      has_pen[b] <- has_pen[b] || pen_bk[b, k]
     }
   }
   if (!any(has_pen)) {
     return(no_sds(pen_problem))
   }
+  # Numerical noise of a penalty on another block would count with a large
+  # smoothing parameter in kappa_b:
+  c_bk[!pen_bk] <- 0
   # The penalty of a block is negligible if kappa_b is below `tol_ident` times
   # the mean diagonal element of B_b' W B_b (W: the working weights of the
   # fit). Then the SD is not identified. A scale of 0 gives no SD either. (In
@@ -410,6 +416,16 @@ smooth_sds <- function(setup, j, fits, qr_B1, tgt, tol) {
     sd_b <- sqrt(fit$sig2 / kappa_b)
     unident <- has_pen & (!(kappa_b > tol_ident * info_b) | !(fit$sig2 > 0))
     sd_b[unident] <- NA_real_
+    # A block with a smoothing parameter at the value that stands for a
+    # variance component of 0 (attribute `projpred_sp_zero`, see
+    # as.matrix.projection()) has an SD of 0. One such penalty on a block is
+    # sufficient: the precision of the block is then infinite. (`>=` also sets
+    # an SD of at most 1e-5 times the square root of the scale to 0.)
+    sp_zero <- attr(fit, "projpred_sp_zero")
+    if (!is.null(sp_zero)) {
+      at_zero <- drop(pen_bk %*% (sp[sp_idxs] >= sp_zero)) > 0
+      sd_b[at_zero & !is.na(sd_b)] <- 0
+    }
     sd_b
   }, fits, sp_list))
   sds <- sds[, has_pen, drop = FALSE]
