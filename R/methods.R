@@ -2439,11 +2439,32 @@ get_subparams.projpred_mlvl_cumul <- function(x, ...) {
 #' @noRd
 #' @export
 get_subparams.gamm4 <- function(x, ...) {
-  # coef() of a gamm4 fit is `NULL`, so get_subparams.lm() would return no
-  # parameters:
-  stop("as.matrix.projection() and as_draws_matrix.projection() do not ",
-       "support submodels with smooth and group-level terms (GAMMs) yet.",
-       call. = FALSE)
+  # A gamm4 fit has two parts: `x$gam` (an mgcv `gam` object) holds the
+  # population-level and the smooth coefficients in the basis of mgcv, and
+  # `x$mer` (an lme4 fit) holds the group-level terms. The penalized parts of
+  # the smooth terms are also group-level terms of `x$mer` (named in element
+  # `lmer.name` of the smooths); these are left out here, as.matrix.projection()
+  # gives the smooth SDs.
+  population_effects <- get_subparams.lm(x$gam, ...)
+
+  group_vc_raw <- lme4::VarCorr(x$mer)
+  sm_nms <- unlist(lapply(x$gam$smooth, "[[", "lmer.name"))
+  is_grp <- !names(group_vc_raw) %in% sm_nms
+  group_vc_raw <- unclass(group_vc_raw)[is_grp]
+  coef_nms <- lapply(group_vc_raw, rownames)
+  group_vc <- proc_VarCorr(group_vc_raw, coef_nms = coef_nms, ...)
+
+  subparams <- c(population_effects, group_vc)
+
+  if (!getOption("projpred.mlvl_pred_new", FALSE)) {
+    group_ef_raw <- lme4::ranef(x$mer, condVar = FALSE)
+    group_ef_raw <- unclass(group_ef_raw)[names(group_ef_raw) %in%
+                                            names(group_vc_raw)]
+    group_ef <- proc_ranef(group_ef_raw, coef_nms = coef_nms, ...)
+    subparams <- c(subparams, group_ef)
+  }
+
+  return(subparams)
 }
 
 #' @noRd
@@ -2572,6 +2593,12 @@ get_subparams.mmblogit <- function(x, ...) {
 #'   projected draw. Otherwise, the columns of the smooth terms are the
 #'   coefficients in the basis of `gam()`.
 #'
+#'   For a submodel with smooth and group-level terms (fitted with
+#'   [gamm4::gamm4()]), the columns of the smooth terms are as for a `gam()`
+#'   submodel, and the group-level columns are as for a multilevel submodel.
+#'   The SD columns of the smooth terms are the SDs of the variance components
+#'   of the smooth terms in the \pkg{lme4} part of the `gamm4()` fit.
+#'
 #'   For the latent projection, column `sigma` contains the projected latent
 #'   dispersion. If `<refmodel>$dis` consists of only `NA`s (see argument `dis`
 #'   of [init_refmodel()]), there is no column `sigma`.
@@ -2647,10 +2674,16 @@ as.matrix.projection <- function(x, nm_scheme = NULL,
   }
   stopifnot(nm_scheme %in% c("rstanarm", "brms"))
   res <- do.call(rbind, lapply(x$outdmin, get_subparams, nm_scheme = nm_scheme))
-  if (all(vapply(x$outdmin, function(fit) {
-    inherits(fit, "gam") && !inherits(fit, "gamm4")
-  }, logical(1)))) {
-    res <- smooth_to_ref_basis(res, fits = x$outdmin, refmodel = x$refmodel,
+  if (all(vapply(x$outdmin, inherits, logical(1), what = "gamm4"))) {
+    # The smooth terms of the `gam` parts (see get_subparams.gamm4()):
+    gam_fits <- lapply(x$outdmin, "[[", "gam")
+  } else if (all(vapply(x$outdmin, inherits, logical(1), what = "gam"))) {
+    gam_fits <- x$outdmin
+  } else {
+    gam_fits <- NULL
+  }
+  if (!is.null(gam_fits)) {
+    res <- smooth_to_ref_basis(res, fits = gam_fits, refmodel = x$refmodel,
                                nm_scheme = nm_scheme,
                                warn_no_basis = nm_scheme_given)
   }
@@ -2959,6 +2992,85 @@ predictor_terms <- function(object, ...) {
 #' @export
 predictor_terms.projection <- function(object, ...) {
   return(object[["predictor_terms"]])
+}
+
+#' Formula of the submodel of a [project()] run
+#'
+#' For a `projection` object (returned by [project()]), this method gives the
+#' formula of the submodel of the projection. The formula has the form that
+#' \pkg{projpred} uses for the submodel fits. Use it, for example, to set up the
+#' submodel in another package. For a `list` of `projection` objects, use
+#' [lapply()].
+#'
+#' @param x An object of class `projection` (returned by [project()]).
+#' @param ... Currently ignored.
+#'
+#' @details The right-hand side has an intercept and the predictor terms of `x`
+#'   (see [predictor_terms()]), with two changes that \pkg{projpred} applies to
+#'   its submodel fits:
+#'   * The group-level terms of one grouping factor are merged into one term.
+#'   For example, `(1 | g) + (x1 | g)` becomes `(x1 | g)`.
+#'   * A linear main-effect term is dropped if the submodel also has a smooth
+#'   term of the same variable. For example, `x1 + s(x1)` becomes `s(x1)`.
+#'
+#'   The term labels of the formula can differ from [predictor_terms()] in the
+#'   order of the variables of an interaction (for example, `x2:x1` instead of
+#'   `x1:x2`).
+#'
+#'   The left-hand side is the response of the formula of the reference model
+#'   object (element `formula` of the output of [get_refmodel()]). It has only
+#'   the response variable, so it can differ from the left-hand side of the
+#'   reference model fit:
+#'   * For a two-column binomial response (`cbind(successes, failures)`), the
+#'   left-hand side is only the first column. The projection still uses the
+#'   numbers of trials (`successes + failures`): \pkg{projpred} keeps them in
+#'   the reference model object (element `wobs`), not in the formula.
+#'   * For a \pkg{brms} reference model, the left-hand side is only the
+#'   response variable, without addition terms such as `trials()` or
+#'   `weights()`. The projection still uses them: \pkg{projpred} keeps the
+#'   numbers of trials (or the weights) in the reference model object (element
+#'   `wobs`), not in the formula.
+#'   * For the latent projection, the left-hand side is the latent response.
+#'
+#'   Observation weights and offsets are not part of the formula.
+#'   \pkg{projpred} fits the submodels without the offsets and adds the offsets
+#'   of the reference model to the predictions. If you fit the submodel in
+#'   another package, add the offsets there.
+#'
+#'   The environment of the formula is that of the reference model formula.
+#'
+#'   With `refit_prj = FALSE` in [project()], the submodel fits come from the
+#'   search. After an L1 search, these fits are the L1-penalized fits of the
+#'   search path. A fit of this formula in another package gives other
+#'   coefficients.
+#'
+#' @return A [`formula`].
+#'
+#' @examplesIf requireNamespace("rstanarm", quietly = TRUE)
+#' # Data:
+#' dat_gauss <- data.frame(y = df_gaussian$y, df_gaussian$x)
+#'
+#' # The `stanreg` fit which will be used as the reference model (with small
+#' # values for `chains` and `iter`, but only for technical reasons in this
+#' # example; this is not recommended in general):
+#' fit <- rstanarm::stan_glm(
+#'   y ~ X1 + X2 + X3 + X4 + X5, family = gaussian(), data = dat_gauss,
+#'   QR = TRUE, chains = 2, iter = 500, refresh = 0, seed = 9876
+#' )
+#'
+#' # Projection onto an arbitrary combination of predictor terms (with a small
+#' # value for `nclusters`, but only for the sake of speed in this example;
+#' # this is not recommended in general):
+#' prj <- project(fit, predictor_terms = c("X1", "X3", "X5"), nclusters = 10,
+#'                seed = 9182)
+#' print(formula(prj)) # gives `y ~ X1 + X3 + X5`
+#'
+#' @export
+formula.projection <- function(x, ...) {
+  return(flatten_formula(
+    make_formula(predictor_terms(x), formula = x[["refmodel"]][["formula"]]),
+    duplicates = FALSE
+  ))
 }
 
 #' Predictor ranking(s)

@@ -1937,3 +1937,221 @@ test_that(paste(
   expect_equal(gauss_quad_cols(out$beta, cols, des, c_mat, out$fixed),
                q_direct[out$fixed], tolerance = 1e-10)
 })
+
+test_that(paste(
+  "monotonic projections onto negative binomial submodels take the signs",
+  "from the negative binomial projection onto the full model"
+), {
+  skip_if_not_installed("MASS")
+  opts_old <- options(projpred.mo_monotone = TRUE)
+  on.exit(options(opts_old), add = TRUE)
+  cols_x <- paste0("mo(x)", 1:4)
+  set.seed(6213)
+  n <- 100
+  S <- 12
+  dat <- data.frame(x = sample(rep_len(0:4, n)), z = rnorm(n))
+  # `w` decreases with `x`, so the effect of `x` in the submodel without `w`
+  # has the opposite sign of its effect in the full model (log link):
+  dat$w <- -0.5 * dat$x + rnorm(n, sd = 0.5)
+  # Offsets that increase with `x`: a fit to the means without the offsets
+  # gives the opposite sign of the effect of `x` in the full model:
+  dat$off <- 0.6 * dat$x + log(runif(n, 0.5, 2))
+  eff_x <- c(0, 0.4, -0.2, 0.3, 0.3)
+  b <- cbind(alpha = rnorm(S, 1, 0.05), bx = rnorm(S, 1, 0.1),
+             bz = rnorm(S, 0.3, 0.05))
+  # The linear predictor with the offsets (init_refmodel() subtracts them):
+  eta_fun <- function(nd) {
+    outer(eff_x[nd$x + 1], b[, "bx"]) + outer(nd$z, b[, "bz"]) + 0.5 * nd$w +
+      matrix(b[, "alpha"], nrow(nd), S, byrow = TRUE) + nd$off
+  }
+  dat$y <- rnbinom(n, size = 4, mu = exp(rowMeans(eta_fun(dat))))
+  fml <- y ~ mo(x) + z + w
+  environment(fml) <- list2env(list(mo = mo_brms_like),
+                               parent = environment(fml))
+  refm <- suppressWarnings(init_refmodel(
+    list(data = dat), data = dat, formula = fml,
+    family = MASS::negative.binomial(theta = 4),
+    ref_predfun = function(fit, newdata = NULL) {
+      eta_fun(if (is.null(newdata)) fit$data else newdata)
+    },
+    extract_model_data = function(object, newdata = NULL, wrhs = NULL,
+                                  orhs = NULL, extract_y = TRUE) {
+      nd <- if (is.null(newdata)) dat else newdata
+      list(y = if (extract_y) nd$y, weights = rep(1, nrow(nd)),
+           offset = nd$off)
+    },
+    dis = 4 * exp(rnorm(S, sd = 0.2)), cvfun = function(folds) NULL,
+    cvrefbuilder = function(cvfit) NULL
+  ))
+  expect_identical(refm$family$family, "negbinomial")
+  expect_equal(refm$offset, dat$off)
+  terms_sub <- c("mo(x)", "z")
+  # (With a small convergence threshold for the comparison with glm_ridge()
+  # below.)
+  expect_no_warning(prj <- project(refm, predictor_terms = terms_sub,
+                                   ndraws = S, thresh_conv = 1e-12,
+                                   verbose = FALSE))
+  b_x <- prj_coefs(prj)[, cols_x]
+  expect_true(all(is_mono(b_x)))
+  # Unconstrained projections (onto the submodel and onto the full model):
+  options(projpred.mo_monotone = FALSE)
+  prj_unc <- project(refm, predictor_terms = terms_sub, ndraws = S,
+                     thresh_conv = 1e-12, verbose = FALSE)
+  prj_full <- project(refm, predictor_terms = c(terms_sub, "w"), ndraws = S,
+                      verbose = FALSE)
+  options(projpred.mo_monotone = TRUE)
+  b_unc <- prj_coefs(prj_unc)
+  binding <- !is_mono(b_unc[, cols_x])
+  expect_gt(sum(binding), S / 2)
+  s_full <- ifelse(rowSums(prj_coefs(prj_full)[, cols_x]) >= 0, 1, -1)
+  s_sum <- ifelse(rowSums(b_unc[, cols_x]) >= 0, 1, -1)
+  # The signs of the full model differ from those of the submodel:
+  expect_true(all(s_full[binding] != s_sum[binding]))
+  expect_true(all(b_x[binding, ] * s_full[binding] >= 0))
+  # Draws without a binding constraint keep the unconstrained fit and shape
+  # (up to the stopping rule of nb_alternate(), which depends on all draws):
+  expect_equal(prj_coefs(prj)[!binding, , drop = FALSE],
+               b_unc[!binding, , drop = FALSE], tolerance = 1e-4)
+  expect_equal(prj$dis[!binding], prj_unc$dis[!binding], tolerance = 1e-4)
+  # Each draw is the glm_ridge() fit to the means with the offsets, with its
+  # projected shape fixed (the fixed point of nb_alternate()), and with the
+  # signs of the full model for the binding draws:
+  x <- cbind(strip_attr(mo(dat$x)), z = dat$z)
+  for (s in seq_len(S)) {
+    args_cons <- if (binding[s]) {
+      list(cons_cols = 1:4, cons_signs = rep(s_full[s], 4))
+    }
+    fit_s <- do.call(glm_ridge, c(list(
+      x, refm$mu_offs[, s], family = refm$family$fixed_dis_family(prj$dis[s]),
+      weights = refm$wobs, offset = refm$offset, lambda = 1e-4,
+      thresh = 1e-12
+    ), args_cons))
+    expect_equal(unname(c(prj$outdmin[[s]]$alpha, prj_coefs(prj)[s, ])),
+                 unname(c(fit_s$beta0, drop(fit_s$beta))), tolerance = 1e-4,
+                 info = paste("draw", s))
+  }
+  # The parallel path of divmin() (the mo() signs and the family of each
+  # draw):
+  opts_par <- options(projpred.parallel_proj_trigger = 1)
+  n_par <- 0
+  prj_par <- with_mocked_bindings(
+    project(refm, predictor_terms = terms_sub, ndraws = S,
+            thresh_conv = 1e-12, verbose = FALSE),
+    par_backend = function(...) "future",
+    par_lapply = function(.X, .FUN, ..., .backend, .rng = FALSE,
+                          .progress = FALSE) {
+      n_par <<- n_par + 1
+      par_chunk(list(xs = .X, seeds = NULL),
+                list(fun = .FUN, args = list(...), opts = list(),
+                     globs = list()))
+    }
+  )
+  options(opts_par)
+  expect_gt(n_par, 0)
+  expect_equal(prj_coefs(prj_par), prj_coefs(prj), tolerance = 1e-12)
+  expect_equal(prj_par$dis, prj$dis, tolerance = 1e-12)
+  # Forward search with monotonic projections:
+  vs <- varsel(refm, method = "forward", ndraws = 4, nclusters_pred = 4,
+               verbose = FALSE)
+  expect_setequal(ranking(vs)$fulldata, c("mo(x)", "z", "w"))
+  expect_true(all(is.finite(summary(vs)$perf_sub$elpd)))
+})
+
+test_that(paste(
+  "the negative binomial projection converges for draws close to the point",
+  "where the sign constraint of mo() terms switches"
+), {
+  skip_if_not_installed("MASS")
+  opts_old <- options(projpred.mo_monotone = TRUE)
+  on.exit(options(opts_old), add = TRUE)
+  set.seed(6213)
+  n <- 100
+  # The first effect `a` of `x` in the submodel without `w`: for a < 0 the
+  # unconstrained effect decreases monotonically (opposite to the sign of the
+  # full model), for a > 0 it is not monotonic. Close to a = 0, the decision
+  # depends on the shape (with this grid, 2 draws cycle without the rule of
+  # nb_alternate()):
+  a_grid <- seq(-0.04, -0.01, length.out = 21)
+  S <- length(a_grid)
+  dat <- data.frame(x = sample(rep_len(0:4, n)), z = rnorm(n))
+  dat$w <- -0.5 * dat$x + rnorm(n, sd = 0.5)
+  g_mat <- sapply(a_grid, function(a) c(0, a, -0.3, -0.6, -0.9) + 0.25 * 0:4)
+  eta_fun <- function(nd) {
+    g_mat[nd$x + 1, , drop = FALSE] + 0.3 * nd$z + 0.5 * nd$w + 1
+  }
+  dat$y <- rnbinom(n, size = 20, mu = exp(rowMeans(eta_fun(dat))))
+  fml <- y ~ mo(x) + z + w
+  environment(fml) <- list2env(list(mo = mo_brms_like),
+                               parent = environment(fml))
+  refm <- suppressWarnings(init_refmodel(
+    list(data = dat), data = dat, formula = fml,
+    family = MASS::negative.binomial(theta = 20),
+    ref_predfun = function(fit, newdata = NULL) {
+      eta_fun(if (is.null(newdata)) fit$data else newdata)
+    },
+    dis = rep(20, S), cvfun = function(folds) NULL,
+    cvrefbuilder = function(cvfit) NULL
+  ))
+  terms_sub <- c("mo(x)", "z")
+  # The responses of the fits with `projpred_mo_force = TRUE` (the draws in a
+  # cycle):
+  fitter_orig <- fit_glm_ridge_callback
+  forced <- character()
+  fitter_rec <- function(...) {
+    args <- list(...)
+    if (isTRUE(args$projpred_mo_force)) {
+      forced <<- c(forced, deparse(args$formula[[2]]))
+    }
+    fitter_orig(...)
+  }
+  expect_no_warning(prj <- with_mocked_bindings(
+    project(refm, predictor_terms = terms_sub, ndraws = S,
+            thresh_conv = 1e-12, verbose = FALSE),
+    fit_glm_ridge_callback = fitter_rec
+  ))
+  # Only the 2 draws in a cycle get the constraint for good (the other draws
+  # that change the decision once converge without it):
+  expect_setequal(forced, c(".y.10", ".y.11"))
+  options(projpred.mo_monotone = FALSE)
+  prj_full <- project(refm, predictor_terms = c(terms_sub, "w"), ndraws = S,
+                      verbose = FALSE)
+  options(projpred.mo_monotone = TRUE)
+  s_full <- ifelse(rowSums(prj_coefs(prj_full)[, 1:4]) >= 0, 1, -1)
+  expect_true(all(s_full == 1))
+  b <- prj_coefs(prj)
+  expect_true(all(is_mono(b[, 1:4])))
+  # Each draw is the unconstrained or the constrained glm_ridge() fit with its
+  # projected shape fixed:
+  x <- cbind(strip_attr(mo(dat$x)), z = dat$z)
+  for (s in seq_len(S)) {
+    args_fit <- list(x, refm$mu[, s],
+                     family = refm$family$fixed_dis_family(prj$dis[s]),
+                     weights = refm$wobs, lambda = 1e-4, thresh = 1e-12)
+    if (isTRUE(prj$outdmin[[s]]$mo_constrained)) {
+      args_fit <- c(args_fit, list(cons_cols = 1:4, cons_signs = rep(1, 4)))
+    }
+    fit_s <- do.call(glm_ridge, args_fit)
+    expect_equal(unname(c(prj$outdmin[[s]]$alpha, b[s, ])),
+                 unname(c(fit_s$beta0, drop(fit_s$beta))), tolerance = 1e-4,
+                 info = paste("draw", s))
+  }
+  # The parallel path of divmin() gives the same projection:
+  opts_par <- options(projpred.parallel_proj_trigger = 1)
+  on.exit(options(opts_par), add = TRUE)
+  n_par <- 0
+  expect_no_warning(prj_par <- with_mocked_bindings(
+    project(refm, predictor_terms = terms_sub, ndraws = S,
+            thresh_conv = 1e-12, verbose = FALSE),
+    par_backend = function(...) "future",
+    par_lapply = function(.X, .FUN, ..., .backend, .rng = FALSE,
+                          .progress = FALSE) {
+      n_par <<- n_par + 1
+      par_chunk(list(xs = .X, seeds = NULL),
+                list(fun = .FUN, args = list(...), opts = list(),
+                     globs = list()))
+    }
+  ))
+  expect_gt(n_par, 0)
+  expect_equal(prj_coefs(prj_par), b, tolerance = 1e-12)
+  expect_equal(prj_par$dis, prj$dis, tolerance = 1e-12)
+})
