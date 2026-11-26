@@ -54,7 +54,8 @@ test_that(paste(
   thin <- rep(NA, S)
   thin[c(2, 9, 17, 30)] <- 1:4
   for (fam in list(extend_family(gaussian()),
-                   extend_family(Student_t(nu = 5)))) {
+                   extend_family(expect_warning(Student_t(nu = 5),
+                                                "deprecated")))) {
     for (cl in list(seq_len(S), sample(S), thin)) {
       args <- list(family = fam, eta = mu, mu = mu, mu_offs = mu + 1,
                    dis = dis, wdraws = wdraws, cl = cl)

@@ -723,36 +723,56 @@ get_nfeat_baseline <- function(object, baseline, stat, custom_stats = list(),
 }
 
 ## Difference estimation using SRS-WOR sampling (Magnusson et al., 2020)
-## copied from loo:::srs_diff_est and added weights
+## based on loo:::srs_diff_est(), with observation weights
 .srs_diff_est_w <- function(y_approx, y, y_idx, wobs = 1) {
 
   N <- length(y_approx)
   m <- length(y)
-  y_approx_m <- y_approx[y_idx]
+  # weights with mean 1 over all observations and over the subsample
   wobs_m <- 1
   if (length(wobs) > 1) {
     wobs_m <- wobs[y_idx]
     wobs_m <- length(wobs_m) * wobs_m / sum(wobs_m)
     wobs <- length(wobs) * wobs / sum(wobs)
   }
+  # Subtract the (weighted) mean of `y_approx` from all values, so that the
+  # sums of squares in eq (9) do not cancel when the values have a large
+  # common offset. In exact arithmetic, `v_y_hat` and `hat_v_y` do not depend
+  # on the shift; `N * shift` is added to `y_hat` at the end. A non-finite
+  # mean (`NA` or infinite values) gives no shift.
+  shift <- sum(wobs * y_approx) / N
+  if (!is.finite(shift)) {
+    shift <- 0
+  }
+  y_approx <- y_approx - shift
+  y <- y - shift
+  y_approx_m <- y_approx[y_idx]
 
   e_i <- y - y_approx_m
   t_pi_tilde <- sum(wobs * y_approx)
   t_pi2_tilde <- sum(wobs * y_approx^2)
   t_e <- N * mean(wobs_m * e_i)
-  t_hat_epsilon <- N * mean(wobs_m * (y^2 - y_approx_m^2))
+  t_hat_epsilon <- N * mean(wobs_m * e_i * (y + y_approx_m))
 
   est_list <- nlist(m, N)
   # eq (7)
   est_list$y_hat <- t_pi_tilde + t_e
-  # eq (8)
-  var_e_i <- .weighted_sd(e_i, w = wobs_m)^2
-  est_list$v_y_hat <- N^2 * (1 - m / N) * var_e_i / m
+  # eq (8); with weights, the difference term is a ratio estimator, and its
+  # linearization variance is the sample variance of `wobs_m * (e_i -
+  # e_mean_w)` (with `wobs_m` scaled by the subsample mean of the weights, not
+  # by the mean over all observations)
+  e_mean_w <- t_e / N
+  est_list$v_y_hat <- if (m < 2) {
+    NA_real_
+  } else {
+    N^2 * (1 - m / N) * sum((wobs_m * (e_i - e_mean_w))^2) / ((m - 1) * m)
+  }
   # eq (9) first row second `+` should be `-`
   # Supplementary material eq (6) has this correct
   # Here the variance is for sum, while in the paper the variance is for mean
   # which explains the proportional difference of 1/N
   est_list$hat_v_y <- (t_pi2_tilde + t_hat_epsilon) - # a (has been checked)
     (1 / N) * (t_e^2 - est_list$v_y_hat + 2 * t_pi_tilde * est_list$y_hat - t_pi_tilde^2) # b
+  est_list$y_hat <- est_list$y_hat + N * shift
   return(est_list)
 }

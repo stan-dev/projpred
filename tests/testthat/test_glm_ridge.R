@@ -50,9 +50,12 @@ test_that(paste(
     extend_family(binomial(link = "probit")),
     extend_family(binomial(link = "cauchit")),
     extend_family(poisson(link = "log")),
-    extend_family(Student_t(nu = 3, link = "identity")),
-    extend_family(Student_t(nu = 4, link = "log")),
-    extend_family(Student_t(nu = 7, link = "inverse"))
+    extend_family(expect_warning(Student_t(nu = 3, link = "identity"),
+                                 "deprecated")),
+    extend_family(expect_warning(Student_t(nu = 4, link = "log"),
+                                 "deprecated")),
+    extend_family(expect_warning(Student_t(nu = 7, link = "inverse"),
+                                 "deprecated"))
   )
 
   n <- 10
