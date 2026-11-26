@@ -210,7 +210,8 @@ variance is the same for all observations). May be <code>NULL</code> if the subm
 have no dispersion parameter or if the submodels do have a dispersion
 parameter, but <code>object</code> is <code>NULL</code> (in which case <code>0</code> is used for <code>dis</code>).
 Note that for the <code><a href="https://rdrr.io/r/stats/family.html" class="external-link">gaussian()</a></code> <code>family</code>, <code>dis</code> is the standard deviation,
-not the variance.</p></dd>
+not the variance. For the negative binomial family, <code>dis</code> holds the draws
+of the shape parameter.</p></dd>
 
 
 <dt id="arg-cvfun">cvfun<a class="anchor" aria-label="anchor" href="#arg-cvfun"></a></dt>

@@ -45,22 +45,26 @@ by projpred's internal default `div_minimizer` functions, see
     purpose as [`lm()`](https://rdrr.io/r/stats/lm.html) for the
     [`gaussian()`](https://rdrr.io/r/stats/family.html) family and
     [`glm()`](https://rdrr.io/r/stats/glm.html) for all other families.
-    The returned object inherits from class `subfit`. Possible tuning
-    parameters for this internal C++ function are: `regul` (amount of
-    ridge regularization; default: `1e-4`), `thresh_conv` (convergence
-    threshold; default: `1e-7`, but not used in case of the Gaussian
-    family with identity link), `qa_updates_max` (maximum number of
-    quadratic approximation updates; default: `100`, but fixed to `1` in
-    case of the Gaussian family with identity link), `ls_iter_max`
-    (maximum number of line search iterations; default: `30`, but fixed
+    For the negative binomial family, projpred alternates the fit of
+    this function (with the shape fixed) with a Newton search for the
+    shape. The returned object inherits from class `subfit`. Possible
+    tuning parameters for this internal C++ function are: `regul`
+    (amount of ridge regularization; default: `1e-4`), `thresh_conv`
+    (convergence threshold; default: `1e-7`, but not used in case of the
+    Gaussian family with identity link), `qa_updates_max` (maximum
+    number of quadratic approximation updates; default: `100`, but fixed
     to `1` in case of the Gaussian family with identity link),
-    `normalize` (single logical value indicating whether to scale the
-    predictors internally with the returned regression coefficient
+    `ls_iter_max` (maximum number of line search iterations; default:
+    `30`, but fixed to `1` in case of the Gaussian family with identity
+    link), `normalize` (single logical value indicating whether to scale
+    the predictors internally with the returned regression coefficient
     estimates being back-adjusted appropriately; default: `TRUE`),
     `beta0_init` (single numeric value giving the starting value for the
-    intercept at centered predictors; default: `0`), and `beta_init`
-    (numeric vector giving the starting values for the regression
-    coefficients; default: vector of `0`s).
+    intercept at centered predictors; default: `0`, but for the negative
+    binomial family the link function of the weighted mean response,
+    minus the weighted mean offset), and `beta_init` (numeric vector
+    giving the starting values for the regression coefficients; default:
+    vector of `0`s).
 
   - For the augmented-data projection:
     [`MASS::polr()`](https://rdrr.io/pkg/MASS/man/polr.html) (the

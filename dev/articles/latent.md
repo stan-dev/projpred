@@ -291,7 +291,7 @@ print(time_lat)
 ```
 
        user  system elapsed 
-     20.903   0.021   6.063 
+     14.144   0.008   3.858 
 
 The warnings about high Pareto \\\hat{k}\\ values concern only a few of
 the 100 observations. With the short MCMC run of this vignette (1000
@@ -414,7 +414,7 @@ rbind(latent = time_lat, traditional = time_trad)[, "elapsed"]
 ```
 
          latent traditional 
-          6.063      66.227 
+          3.858      55.811 
 
 ``` r
 
@@ -459,8 +459,9 @@ latent projection was much faster.
 In this example, we will illustrate the latent projection in case of the
 negative binomial family (more precisely, we will use the
 [`rstanarm::neg_binomial_2()`](https://mc-stan.org/rstanarm/reference/neg_binomial_2.html)
-family here) which is a family that is not supported by **projpred**’s
-traditional projection[^6].
+family here). **projpred**’s traditional projection also supports this
+family, but only for submodels without group-level or additive
+terms[^6]. The latent projection does not have these restrictions.
 
 ### Data
 
@@ -605,10 +606,10 @@ for a demonstration of post-selection inference).
 
 ### Conclusion
 
-This example demonstrated how the latent projection can be used for
-those families which are neither supported by **projpred**’s traditional
-nor by **projpred**’s augmented-data projection, which reflects the
-flexibility of the latent approach.
+This example demonstrated the latent projection for a family that
+**projpred**’s traditional projection supports only with restrictions
+and that **projpred**’s augmented-data projection does not support. This
+reflects the flexibility of the latent approach.
 
 ## Example: Student-t distribution
 
@@ -722,7 +723,7 @@ cvvs_student <- cv_varsel(
 
     Cutting off the search at size 19. Use argument `nterms_max` to customize this.
 
-    Warning: In the recalculation of the latent response values, some (3 / 100) expectation-specific Pareto k-values are > 0.7.
+    Warning: In the recalculation of the latent response values, some (2 / 100) expectation-specific Pareto k-values are > 0.7.
     In general, we recommend K-fold CV in this case.
 
 The functions above use the draws of \\\sigma\\ and \\\nu\\ from the
@@ -926,12 +927,7 @@ cvvs_weib <- cv_varsel(
 
     Cutting off the search at size 19. Use argument `nterms_max` to customize this.
 
-    Warning: Some Pareto k diagnostic values are too high. See help('pareto-k-diagnostic') for details.
-
-    Warning: Some (1 / 500) Pareto k's for the reference model's PSIS-LOO weights
-    are > 0.7.
-
-    Warning: In the recalculation of the latent response values, some (1 / 500) expectation-specific Pareto k-values are > 0.7.
+    Warning: In the recalculation of the latent response values, some (4 / 500) expectation-specific Pareto k-values are > 0.7.
     In general, we recommend K-fold CV in this case.
 
 As in the Poisson example, warnings about high Pareto \\\hat{k}\\ values
@@ -1138,7 +1134,7 @@ cvvs_lnorm <- cv_varsel(
     Warning: Some (3 / 500) Pareto k's for the reference model's PSIS-LOO weights
     are > 0.7.
 
-    Warning: In the recalculation of the latent response values, some (8 / 500) expectation-specific Pareto k-values are > 0.7.
+    Warning: In the recalculation of the latent response values, some (9 / 500) expectation-specific Pareto k-values are > 0.7.
     In general, we recommend K-fold CV in this case.
 
 As in the Poisson example, warnings about high Pareto \\\hat{k}\\ values
@@ -1380,9 +1376,9 @@ Variable Selection for Discrete Response Families with Finite Support.”
     ([Jørgensen 1987](#ref-jorgensen_exponential_1987)), but strictly
     speaking, the class of DED families is not a subset of the class of
     ED families. GitHub issue
-    [\#361](https://github.com/stan-dev/projpred/issues/361) explains
-    why the “traditional” projection onto a DED-family submodel is
-    currently not implemented in **projpred**.
+    [\#361](https://github.com/stan-dev/projpred/issues/361) discusses
+    the “traditional” projection onto a DED-family submodel, including
+    the cases that **projpred** does not support yet.
 
 [^7]: The suffix `_prec` in `refm_prec` stands for “precision” because
     here, we follow the Stan convention (see the Stan documentation for

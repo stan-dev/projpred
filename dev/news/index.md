@@ -4,8 +4,26 @@
 
 ### Major changes
 
+- The traditional projection supports the negative binomial family
+  ([`rstanarm::neg_binomial_2()`](https://mc-stan.org/rstanarm/reference/neg_binomial_2.html),
+  [`brms::negbinomial()`](https://paulbuerkner.com/brms/reference/brmsfamily.html),
+  [`MASS::negative.binomial()`](https://rdrr.io/pkg/MASS/man/negative.binomial.html))
+  for submodels without group-level and additive terms. The shape
+  parameter is projected, too. (GitHub:
+  [\#361](https://github.com/stan-dev/projpred/issues/361),
+  [\#675](https://github.com/stan-dev/projpred/issues/675))
+
 ### Minor changes
 
+- Tests: The test setup stops on an unexpected error, also when the
+  error is known for another model type. A skipped test lists each
+  dropped test setup. (GitHub:
+  [\#565](https://github.com/stan-dev/projpred/issues/565),
+  [\#683](https://github.com/stan-dev/projpred/issues/683))
+- Tests: Use edition 3 of testthat. Checks that all elements are `TRUE`
+  now show the failing positions. (GitHub:
+  [\#565](https://github.com/stan-dev/projpred/issues/565),
+  [\#682](https://github.com/stan-dev/projpred/issues/682))
 - For projections onto submodels with smooth terms,
   [`as.matrix()`](https://rdrr.io/r/base/matrix.html) and
   [`as_draws_matrix()`](https://mc-stan.org/posterior/reference/draws_matrix.html)

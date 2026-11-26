@@ -17,7 +17,9 @@ activated during the unit tests.
 projpred.glm_fitter: A character string naming the function to be used as
 the submodel fitter for non-multilevel, non-additive projections. Currently,
 this is an experimental feature and allowed values are
-&quot;fit_glm_ridge_callback&quot; (the default) and &quot;fit_glm_callback&quot;.
+&quot;fit_glm_ridge_callback&quot; (the default) and &quot;fit_glm_callback&quot;. For the
+negative binomial family with offsets, projpred accepts only
+&quot;fit_glm_ridge_callback&quot;.
 projpred.gaussian_not_as_generalized: A single logical value indicating
 whether to treat the gaussian() family not as a family for a generalized
 linear model (i.e., for which glm() would typically be used as a model
@@ -43,6 +45,12 @@ fit the multilevel submodels of the augmented-data projection for the
 brms::categorical() family with mclogit::mblogit() (TRUE) or with
 projpred's own implementation of the PQL algorithm of
 mclogit::mblogit() (FALSE, the default).
+projpred.nb_gsum: A character string, &quot;quadrature&quot; (the default) or
+&quot;exact&quot;. It selects how projpred computes the aggregated predictive
+probability mass function of the reference model for the projection of the
+shape of the negative binomial family. &quot;quadrature&quot; sums the probabilities
+exactly for y &amp;lt; 100 and uses a quadrature for larger y. &quot;exact&quot; sums the
+probabilities of all y up to an upper tail probability of 1e-17.
 
 "><meta property="og:description" content="The following global options are for internal use:
 projpred.mssg_ndraws, projpred.mssg_cut_search, projpred.mssg_time,
@@ -61,7 +69,9 @@ activated during the unit tests.
 projpred.glm_fitter: A character string naming the function to be used as
 the submodel fitter for non-multilevel, non-additive projections. Currently,
 this is an experimental feature and allowed values are
-&quot;fit_glm_ridge_callback&quot; (the default) and &quot;fit_glm_callback&quot;.
+&quot;fit_glm_ridge_callback&quot; (the default) and &quot;fit_glm_callback&quot;. For the
+negative binomial family with offsets, projpred accepts only
+&quot;fit_glm_ridge_callback&quot;.
 projpred.gaussian_not_as_generalized: A single logical value indicating
 whether to treat the gaussian() family not as a family for a generalized
 linear model (i.e., for which glm() would typically be used as a model
@@ -87,6 +97,12 @@ fit the multilevel submodels of the augmented-data projection for the
 brms::categorical() family with mclogit::mblogit() (TRUE) or with
 projpred's own implementation of the PQL algorithm of
 mclogit::mblogit() (FALSE, the default).
+projpred.nb_gsum: A character string, &quot;quadrature&quot; (the default) or
+&quot;exact&quot;. It selects how projpred computes the aggregated predictive
+probability mass function of the reference model for the projection of the
+shape of the negative binomial family. &quot;quadrature&quot; sums the probabilities
+exactly for y &amp;lt; 100 and uses a quadrature for larger y. &quot;exact&quot; sums the
+probabilities of all y up to an upper tail probability of 1e-17.
 
 "><meta property="og:image" content="https://mc-stan.org/projpred/logo.svg"><meta name="robots" content="noindex"></head><body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
@@ -169,7 +185,9 @@ activated during the unit tests.</p></li>
 <li><p><code>projpred.glm_fitter</code>: A character string naming the function to be used as
 the submodel fitter for non-multilevel, non-additive projections. Currently,
 this is an experimental feature and allowed values are
-<code>"fit_glm_ridge_callback"</code> (the default) and <code>"fit_glm_callback"</code>.</p></li>
+<code>"fit_glm_ridge_callback"</code> (the default) and <code>"fit_glm_callback"</code>. For the
+negative binomial family with offsets, <span class="pkg">projpred</span> accepts only
+<code>"fit_glm_ridge_callback"</code>.</p></li>
 <li><p><code>projpred.gaussian_not_as_generalized</code>: A single logical value indicating
 whether to treat the <code><a href="https://rdrr.io/r/stats/family.html" class="external-link">gaussian()</a></code> family not as a family for a <em>generalized
 linear</em> model (i.e., for which <code><a href="https://rdrr.io/r/stats/glm.html" class="external-link">glm()</a></code> would typically be used as a model
@@ -195,6 +213,12 @@ fit the multilevel submodels of the augmented-data projection for the
 <code><a href="https://paulbuerkner.com/brms/reference/brmsfamily.html" class="external-link">brms::categorical()</a></code> family with <code><a href="https://melff.github.io/mclogit/reference/mblogit.html" class="external-link">mclogit::mblogit()</a></code> (<code>TRUE</code>) or with
 <span class="pkg">projpred</span>'s own implementation of the PQL algorithm of
 <code><a href="https://melff.github.io/mclogit/reference/mblogit.html" class="external-link">mclogit::mblogit()</a></code> (<code>FALSE</code>, the default).</p></li>
+<li><p><code>projpred.nb_gsum</code>: A character string, <code>"quadrature"</code> (the default) or
+<code>"exact"</code>. It selects how <span class="pkg">projpred</span> computes the aggregated predictive
+probability mass function of the reference model for the projection of the
+shape of the negative binomial family. <code>"quadrature"</code> sums the probabilities
+exactly for y &lt; 100 and uses a quadrature for larger y. <code>"exact"</code> sums the
+probabilities of all y up to an upper tail probability of 1e-17.</p></li>
 </ul></div>
 
 

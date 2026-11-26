@@ -884,7 +884,16 @@ Apart from the [`gaussian()`](https://rdrr.io/r/stats/family.html)
 response family used in this vignette, **projpred**’s traditional
 projection also supports the
 [`binomial()`](https://rdrr.io/r/stats/family.html)[^13] and the
-[`poisson()`](https://rdrr.io/r/stats/family.html) family.
+[`poisson()`](https://rdrr.io/r/stats/family.html) family. It also
+supports the negative binomial family
+([`rstanarm::neg_binomial_2()`](https://mc-stan.org/rstanarm/reference/neg_binomial_2.html),
+[`brms::negbinomial()`](https://paulbuerkner.com/brms/reference/brmsfamily.html)
+and
+[`MASS::negative.binomial()`](https://rdrr.io/pkg/MASS/man/negative.binomial.html))
+for submodels without group-level or additive terms. The projection
+includes the shape parameter. For a **brms** reference model, pass the
+draws of the shape parameter as argument `dis` of
+[`brms::get_refmodel.brmsfit()`](https://paulbuerkner.com/brms/reference/get_refmodel.brmsfit.html).
 
 The families currently supported by **projpred**’s augmented-data
 projection ([Weber et al. 2025](#ref-weber_projection_2025)) are

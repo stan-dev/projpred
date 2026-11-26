@@ -23,7 +23,8 @@ The following global options are for internal use:
   used as the submodel fitter for non-multilevel, non-additive
   projections. Currently, this is an experimental feature and allowed
   values are `"fit_glm_ridge_callback"` (the default) and
-  `"fit_glm_callback"`.
+  `"fit_glm_callback"`. For the negative binomial family with offsets,
+  projpred accepts only `"fit_glm_ridge_callback"`.
 
 - `projpred.gaussian_not_as_generalized`: A single logical value
   indicating whether to treat the
@@ -64,3 +65,11 @@ The following global options are for internal use:
   (`TRUE`) or with projpred's own implementation of the PQL algorithm of
   [`mclogit::mblogit()`](https://melff.github.io/mclogit/reference/mblogit.html)
   (`FALSE`, the default).
+
+- `projpred.nb_gsum`: A character string, `"quadrature"` (the default)
+  or `"exact"`. It selects how projpred computes the aggregated
+  predictive probability mass function of the reference model for the
+  projection of the shape of the negative binomial family.
+  `"quadrature"` sums the probabilities exactly for y \< 100 and uses a
+  quadrature for larger y. `"exact"` sums the probabilities of all y up
+  to an upper tail probability of 1e-17.

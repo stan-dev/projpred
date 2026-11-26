@@ -109,8 +109,11 @@ minimizers (in other words, these are the workhorse functions employed by
 <code><a href="refmodel-init-get.html">init_refmodel()</a></code>):</p><ul><li><p>Submodel without multilevel or additive terms:</p><ul><li><p>For the traditional (or latent) projection (or the augmented-data
 projection in case of the <code><a href="https://rdrr.io/r/stats/family.html" class="external-link">binomial()</a></code> or <code><a href="https://paulbuerkner.com/brms/reference/brmsfamily.html" class="external-link">brms::bernoulli()</a></code> family): An
 internal C++ function which basically serves the same purpose as <code><a href="https://rdrr.io/r/stats/lm.html" class="external-link">lm()</a></code>
-for the <code><a href="https://rdrr.io/r/stats/family.html" class="external-link">gaussian()</a></code> family and <code><a href="https://rdrr.io/r/stats/glm.html" class="external-link">glm()</a></code> for all other families. The
-returned object inherits from class <code>subfit</code>. Possible tuning parameters
+for the <code><a href="https://rdrr.io/r/stats/family.html" class="external-link">gaussian()</a></code> family and <code><a href="https://rdrr.io/r/stats/glm.html" class="external-link">glm()</a></code> for all other families. For the
+negative binomial family, <span class="pkg">projpred</span> alternates the fit of this
+function (with the shape fixed) with a Newton search for the shape. The
+returned object
+inherits from class <code>subfit</code>. Possible tuning parameters
 for this internal C++ function are: <code>regul</code> (amount of ridge
 regularization; default: <code>1e-4</code>), <code>thresh_conv</code> (convergence threshold;
 default: <code>1e-7</code>, but not used in case of the Gaussian family with
@@ -122,7 +125,9 @@ Gaussian family with identity link), <code>normalize</code> (single logical valu
 indicating whether to scale the predictors internally with the returned
 regression coefficient estimates being back-adjusted appropriately;
 default: <code>TRUE</code>), <code>beta0_init</code> (single numeric value giving the starting
-value for the intercept at centered predictors; default: <code>0</code>), and
+value for the intercept at centered predictors; default: <code>0</code>, but for
+the negative binomial family the link function of the weighted mean
+response, minus the weighted mean offset), and
 <code>beta_init</code> (numeric vector giving the starting values for the regression
 coefficients; default: vector of <code>0</code>s).</p></li>
 <li><p>For the augmented-data projection: <code><a href="https://rdrr.io/pkg/MASS/man/polr.html" class="external-link">MASS::polr()</a></code> (the returned object

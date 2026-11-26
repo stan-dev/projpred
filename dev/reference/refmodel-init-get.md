@@ -130,7 +130,8 @@ init_refmodel(
   dispersion parameter, but `object` is `NULL` (in which case `0` is
   used for `dis`). Note that for the
   [`gaussian()`](https://rdrr.io/r/stats/family.html) `family`, `dis` is
-  the standard deviation, not the variance.
+  the standard deviation, not the variance. For the negative binomial
+  family, `dis` holds the draws of the shape parameter.
 
 - cvfun:
 
