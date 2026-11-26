@@ -499,6 +499,11 @@ test_that(paste(
       unname(t(eta_x[1:5, ] + offs[1:5]))
     )
   }
+  # New data with their own offsets:
+  nd_o <- dat_o[1:5, ]
+  nd_o$o <- nd_o$o + 0.7
+  expect_equal(unname(proj_linpred(prj_o, newdata = nd_o)$pred),
+               unname(t(eta_x[1:5, ] + nd_o$o)))
 
   # The latent projection (response-scale predictions):
   dat_b <- dat
@@ -576,4 +581,103 @@ test_that(paste(
                  fit, newdata = nd, offset = offs_new
                )[draws, ]))
   expect_identical(dim(pl_new$lpd), c(20L, 6L))
+})
+
+test_that(paste(
+  "the reference model draws of project() give the predictions of an",
+  "augmented-data cumulative reference model with offsets"
+), {
+  withr::local_options(projpred.mssg_ndraws = FALSE,
+                       projpred.full_size_ref = NULL)
+  n <- 40L
+  ndraws <- 30L
+  dat <- withr::with_seed(6610, {
+    data.frame(x1 = rnorm(n), x2 = rnorm(n), offs = runif(n, -1, 1))
+  })
+  thr <- c(-1, 0.3, 1.2)
+  dat$y <- withr::with_seed(6611, {
+    cut(1.2 * dat$x1 - 0.8 * dat$x2 + dat$offs + rlogis(n),
+        c(-Inf, thr, Inf), labels = paste0("c", 1:4), ordered_result = TRUE)
+  })
+  fit <- withr::with_seed(6612, list(
+    beta = rbind(rnorm(ndraws, 1.2, 0.2), rnorm(ndraws, -0.8, 0.2)),
+    thr = t(sapply(thr, function(thr_k) thr_k + rnorm(ndraws, 0, 0.05))),
+    data = dat
+  ))
+  # Latent predictors thr_k - (lp + offs), S x N x C_lat:
+  eta_of <- function(nd, offs = nd$offs) {
+    lp <- t(as.matrix(nd[, c("x1", "x2")]) %*% fit$beta) +
+      matrix(offs, nrow = ndraws, ncol = nrow(nd), byrow = TRUE)
+    simplify2array(lapply(seq_len(nrow(fit$thr)), function(k) {
+      fit$thr[k, ] - lp
+    }))
+  }
+  refm <- init_refmodel(
+    fit, data = dat, formula = y ~ x1 + x2,
+    family = structure(list(family = "cumulative_rstanarm", link = "logit"),
+                       class = "family"),
+    ref_predfun = function(fit, newdata = NULL) {
+      eta_of(newdata %||% fit$data)
+    },
+    extract_model_data = function(object, newdata, wrhs = NULL, orhs = NULL,
+                                  extract_y = TRUE) {
+      y_wobs_offs(newdata = newdata, wrhs = wrhs, orhs = orhs %||% ~ offs,
+                  resp_form = if (extract_y) ~ y else NULL)
+    },
+    augdat_y_unqs = paste0("c", 1:4), augdat_link = augdat_link_cumul,
+    augdat_ilink = augdat_ilink_cumul, augdat_args_link = list(link = "logit"),
+    augdat_args_ilink = list(link = "logit")
+  )
+  expect_true(refm$family$for_augdat)
+  vs <- varsel(refm, nclusters = 3, ndraws_pred = 20)
+  expect_true(vs$full_ref)
+  expect_warning(prj <- project(vs, nterms = 2, ndraws = 20),
+                 "returns 20 draws of the reference model")
+  expect_true(is_ref_draws(prj))
+  draws <- prj$outdmin$draws
+  eta_draws <- function(nd, offs) {
+    unname(eta_of(nd, offs)[draws, , , drop = FALSE])
+  }
+  # The category probabilities (S x N x C_cat) and the log predictive
+  # densities (S x N), computed without augdat_ilink_cumul():
+  prb_of <- function(eta) {
+    cprb <- plogis(eta)
+    abind::abind(cprb[, , 1], cprb[, , 2] - cprb[, , 1],
+                 cprb[, , 3] - cprb[, , 2], 1 - cprb[, , 3], along = 3)
+  }
+  lpd_of <- function(eta, y) {
+    prb <- prb_of(eta)
+    log(sapply(seq_along(y), function(i) prb[, i, as.integer(y[i])]))
+  }
+  # Training data, with the offsets of the reference model and with other
+  # offsets:
+  pl <- proj_linpred(prj)
+  expect_equal(unname(pl$pred), eta_draws(dat, dat$offs))
+  expect_equal(unname(pl$lpd), lpd_of(eta_draws(dat, dat$offs), dat$y))
+  offs_tr <- dat$offs + 0.3
+  pl_tr <- proj_linpred(prj, offsetnew = offs_tr)
+  expect_equal(unname(pl_tr$pred), eta_draws(dat, offs_tr))
+  expect_equal(unname(pl_tr$lpd), lpd_of(eta_draws(dat, offs_tr), dat$y))
+  # New data (not the first rows of the training data) with their own offsets
+  # and with new offsets:
+  nd <- dat[c(3, 11, 17, 24, 30, 38), ]
+  nd$offs <- nd$offs - 0.4
+  expect_equal(unname(proj_linpred(prj, newdata = nd)$pred),
+               eta_draws(nd, nd$offs))
+  offs_new <- seq(-1, 1, length.out = 6)
+  pl_new <- proj_linpred(prj, newdata = nd, offsetnew = offs_new)
+  expect_equal(unname(pl_new$pred), eta_draws(nd, offs_new))
+  expect_equal(unname(pl_new$lpd), lpd_of(eta_draws(nd, offs_new), nd$y))
+  expect_equal(
+    unname(proj_epred(prj, newdata = nd, offsetnew = offs_new)),
+    unname(prb_of(eta_draws(nd, offs_new)))
+  )
+  pp <- proj_predict(prj, .seed = 1)
+  expect_identical(dim(pp), c(20L, n))
+  expect_true(all(pp %in% 1:4))
+  expect_identical(attr(pp, "cats"), paste0("c", 1:4))
+  expect_identical(
+    dim(proj_predict(prj, newdata = nd, offsetnew = offs_new, .seed = 1)),
+    c(20L, 6L)
+  )
 })
