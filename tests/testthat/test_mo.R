@@ -1,5 +1,3 @@
-context("monotonic terms mo()")
-
 # Helpers -----------------------------------------------------------------
 
 # Imitates brms::mo(), which returns a list that model.frame() cannot use. The
@@ -140,7 +138,7 @@ test_that("mo() gives the cumulative indicators of an integer predictor", {
   expect_identical(colnames(b_neg), c("0", "1"))
   expect_identical(strip_attr(b_neg), rbind(c(1, 0), c(0, 0), c(1, 1)))
   # Missing values give missing rows:
-  expect_true(all(is.na(mo(c(1, NA, 2))[2, ])))
+  expect_all_true_tst(is.na(mo(c(1, NA, 2))[2, ]))
 })
 
 test_that("mo() gives the cumulative indicators of an ordered factor", {
@@ -430,7 +428,7 @@ test_that(paste(
                          normalize = st[["normalize"]], thresh = 1e-12,
                          cons_cols = cons, cons_signs = s)
         b <- drop(fit$beta)
-        expect_true(all(s * b[cons] >= 0))
+        expect_all_true_tst(s * b[cons] >= 0)
         bound <- cons[b[cons] == 0]
         n_bound_total <- n_bound_total + length(bound)
         # The KKT conditions:
@@ -442,8 +440,8 @@ test_that(paste(
         free <- setdiff(seq_len(ncol(d$x)), bound)
         expect_lt(max(abs(grad[c(seq_len(i0), free + i0)])), 1e-6 * scale_g)
         if (length(bound) > 0) {
-          expect_true(all(s[match(bound, cons)] * grad[bound + i0] >
-                            -1e-6 * scale_g))
+          expect_all_true_tst(s[match(bound, cons)] * grad[bound + i0] >
+                                -1e-6 * scale_g)
         }
         # The fit without the bound columns (without constraints) has the
         # same coefficients:
@@ -533,7 +531,7 @@ test_that(paste(
         b <- drop(fit$beta)
         expect_identical(unname(b[const]), rep(0, length(const)),
                          info = info_crr)
-        expect_true(all(b[1:7] >= 0), info = info_crr)
+        expect_all_true_tst(b[1:7] >= 0, info = info_crr)
         expect_true(any(b[setdiff(1:4, const)] == 0), info = info_crr)
         expect_equal(c(fit$beta0, b[keep]),
                      c(fit_drop$beta0, drop(fit_drop$beta)),
@@ -799,7 +797,7 @@ test_that(paste(
     prj <- project(refm, predictor_terms = c("mo(x)", "z"), ndraws = S,
                    thresh_conv = 1e-12, verbose = FALSE)
     b_x <- prj_coefs(prj)[, cols_x]
-    expect_true(all(is_mono(b_x)), info = fam$family)
+    expect_all_true_tst(is_mono(b_x), info = fam$family)
     # Unconstrained projections (onto the submodel and onto the full model):
     options(projpred.mo_monotone = FALSE)
     prj_unc <- project(refm, predictor_terms = c("mo(x)", "z"), ndraws = S,
@@ -812,8 +810,9 @@ test_that(paste(
     s_full <- ifelse(rowSums(prj_coefs(prj_full)[, cols_x]) >= 0, 1, -1)
     s_sum <- ifelse(rowSums(b_unc[, cols_x]) >= 0, 1, -1)
     # The signs of the full model differ from those of the submodel:
-    expect_true(all(s_full[binding] != s_sum[binding]), info = fam$family)
-    expect_true(all(b_x[binding, ] * s_full[binding] >= 0), info = fam$family)
+    expect_all_true_tst(s_full[binding] != s_sum[binding], info = fam$family)
+    expect_all_true_tst(b_x[binding, ] * s_full[binding] >= 0,
+                        info = fam$family)
     # Draws without a binding constraint keep the unconstrained fit:
     expect_equal(prj_coefs(prj)[!binding, , drop = FALSE],
                  b_unc[!binding, , drop = FALSE], tolerance = 1e-12,
@@ -882,7 +881,7 @@ test_that(paste(
   fits <- divmin_rec(thresh_conv = 1e-12)
   expect_identical(calls_multi, list(list(report = FALSE, fits = TRUE)))
   b <- do.call(rbind, lapply(fits, function(f) drop(f$beta)))
-  expect_true(all(is_mono(b[, cols_x])))
+  expect_all_true_tst(is_mono(b[, cols_x]))
   # Without the native fitters:
   opts_old <- options(projpred.glm_native = FALSE)
   on.exit(options(opts_old), add = TRUE)
@@ -899,7 +898,7 @@ test_that(paste(
   expect_warning(divmin_rec(qa_updates_max = 2),
                  "maximum number of quadratic approximation updates")
   expect_length(calls_warn, 1)
-  expect_true(all(calls_warn[[1]]))
+  expect_all_true_tst(calls_warn[[1]])
 })
 
 test_that(paste(
@@ -1035,15 +1034,15 @@ test_that(paste(
     refm, cv_method = "LOO", validate_search = TRUE, nloo = 3, nclusters = 3,
     nclusters_pred = 6, seed = 3906, verbose = FALSE
   ), "Some Pareto k diagnostic values are too high"), "Not enough tail samples")
-  expect_true(all(is.finite(summary(cv_loo)$perf_sub$elpd)))
+  expect_all_true_tst(is.finite(summary(cv_loo)$perf_sub$elpd))
   prj <- project(cv_loo, nterms = 3, ndraws = 20, verbose = FALSE)
-  expect_true(all(is_mono(prj_coefs(prj)[, cols_x])))
+  expect_all_true_tst(is_mono(prj_coefs(prj)[, cols_x]))
   # Latent projection:
   refm_lat <- suppressMessages(mo_nonmono_refm(binomial(), latent = TRUE))
   prj_lat <- project(refm_lat, predictor_terms = c("mo(x)", "z"), ndraws = 20,
                      verbose = FALSE)
   b_lat <- prj_coefs(prj_lat)[, cols_x]
-  expect_true(all(is_mono(b_lat)))
+  expect_all_true_tst(is_mono(b_lat))
   expect_gt(sum(rowSums(abs(b_lat)) > 0), 0)
   # Multilevel reference model (the full model is projected with lme4), GLM
   # submodel. `g` has no effect, so lme4 warns about the full-model fits:
@@ -1055,7 +1054,7 @@ test_that(paste(
             verbose = FALSE),
     "Model failed to converge"
   ), "Model is nearly unidentifiable"), "might not have converged")
-  expect_true(all(is_mono(prj_coefs(prj_ml)[, cols_x])))
+  expect_all_true_tst(is_mono(prj_coefs(prj_ml)[, cols_x]))
 })
 
 # KKT conditions of the generalized least-squares step of the constrained
@@ -1099,7 +1098,7 @@ test_that(paste(
                           dip_sd = 0.4)
   prj <- project(refm, predictor_terms = trms, ndraws = 10, verbose = FALSE)
   fixefs <- t(vapply(prj$outdmin, lme4::fixef, numeric(6)))
-  expect_true(all(is_mono(fixefs[, cols_x])))
+  expect_all_true_tst(is_mono(fixefs[, cols_x]))
   opts_old2 <- options(projpred.mo_monotone = FALSE)
   on.exit(options(opts_old2), add = TRUE)
   prj_unc <- project(refm, predictor_terms = trms, ndraws = 10,
@@ -1169,7 +1168,7 @@ test_that(paste(
     beta <- lme4::fixef(fit_c)
     bound <- which(seq_along(beta) %in% 2:5 & beta == 0)
     expect_gt(length(bound), 0)
-    expect_true(all(beta[2:5] >= 0))
+    expect_all_true_tst(beta[2:5] >= 0)
     # The ML fit without the columns at the bound:
     dat$xr <- I(lme4::getME(fit_u, "X")[, -bound, drop = FALSE])
     fit_r <- lme4::lmer(as.formula(paste("y1 ~ 0 + xr +", re)), data = dat,
@@ -1228,13 +1227,13 @@ test_that(paste(
     expect_gt(sum(binding), 0)
     s_sum <- ifelse(rowSums(b_unc) >= 0, 1, -1)
     s_full <- ifelse(rowSums(coefs_of(prj_full)) >= 0, 1, -1)
-    expect_true(all(s_full[binding] != s_sum[binding]), info = nm)
+    expect_all_true_tst(s_full[binding] != s_sum[binding], info = nm)
     b_x <- coefs_of(prj)
-    expect_true(all(is_mono(b_x)), info = nm)
-    expect_true(all(b_x[binding, ] * s_full[binding] >= 0), info = nm)
+    expect_all_true_tst(is_mono(b_x), info = nm)
+    expect_all_true_tst(b_x[binding, ] * s_full[binding] >= 0, info = nm)
     b_sum <- coefs_of(prj_sum)
-    expect_true(all(is_mono(b_sum)), info = nm)
-    expect_true(all(b_sum[binding, ] * s_sum[binding] >= 0), info = nm)
+    expect_all_true_tst(is_mono(b_sum), info = nm)
+    expect_all_true_tst(b_sum[binding, ] * s_sum[binding] >= 0, info = nm)
   }
 })
 
@@ -1256,7 +1255,7 @@ test_that(paste(
   prj_lat <- project(refm_lat, predictor_terms = trms, ndraws = 10,
                      verbose = FALSE)
   fixefs <- t(vapply(prj_lat$outdmin, lme4::fixef, numeric(6)))
-  expect_true(all(is_mono(fixefs[, cols_x])))
+  expect_all_true_tst(is_mono(fixefs[, cols_x]))
   options(projpred.mo_monotone = FALSE)
   prj_lat_unc <- project(refm_lat, predictor_terms = trms, ndraws = 10,
                          verbose = FALSE)
@@ -1383,7 +1382,7 @@ test_that(paste(
                "more than one mo\\(\\) call")
   prj <- project(refm, predictor_terms = c("mo(x)", "mo(x2)"), ndraws = 4,
                  verbose = FALSE)
-  expect_true(all(is_mono(prj_coefs(prj)[, paste0("mo(x)", 1:4)])))
+  expect_all_true_tst(is_mono(prj_coefs(prj)[, paste0("mo(x)", 1:4)]))
   opts_old <- options(projpred.mo_monotone = FALSE)
   on.exit(options(opts_old), add = TRUE)
   expect_s3_class(project(refm, predictor_terms = trms_ia, ndraws = 4,
@@ -1448,15 +1447,15 @@ test_that(paste(
                   drop = FALSE]
     expect_equal(unname(rowSums(zeta)), rep(1, 3), tolerance = 1e-12,
                  info = grp)
-    expect_true(all(zeta >= 0), info = grp)
+    expect_all_true_tst(zeta >= 0, info = grp)
   }
   # With the main effects (contrast coding of `f`), each group is monotonic:
   refm_c <- mo_nonmono_refm(fml = y ~ mo(x) * f)
   prj_c <- project(refm_c, predictor_terms = c("mo(x)", "f", "mo(x):f"),
                    ndraws = 10, verbose = FALSE)
   b_c <- prj_coefs(prj_c)
-  expect_true(all(is_mono(b_c[, paste0("mo(x)", 1:4)])))
-  expect_true(all(is_mono(b_c[, paste0("mo(x)", 1:4, ":fb")])))
+  expect_all_true_tst(is_mono(b_c[, paste0("mo(x)", 1:4)]))
+  expect_all_true_tst(is_mono(b_c[, paste0("mo(x)", 1:4, ":fb")]))
   # Draws whose monotonic effect is 0 (the sign from the full model is the
   # opposite of the sign of the effect in the submodel):
   refm_w <- mo_nonmono_refm(fml = y ~ mo(x) + z + w, c_w = 1)
@@ -1466,7 +1465,7 @@ test_that(paste(
   is_zero <- eff_w[, "bsp_mox"] == 0
   expect_gt(sum(is_zero), 0)
   cols_simo <- grep("^simo_", colnames(eff_w), value = TRUE)
-  expect_true(all(is.na(eff_w[is_zero, cols_simo])))
+  expect_all_true_tst(is.na(eff_w[is_zero, cols_simo]))
   expect_false(anyNA(eff_w[!is_zero, cols_simo]))
 })
 
@@ -1497,7 +1496,7 @@ test_that(paste(
   b_full <- prj_coefs(project(refm, predictor_terms = trms_full, ndraws = S,
                               verbose = FALSE))
   options(projpred.mo_monotone = TRUE)
-  expect_true(all(c(cols_x, cols_xf) %in% colnames(b_full)))
+  expect_all_true_tst(c(cols_x, cols_xf) %in% colnames(b_full))
   expect_identical(
     unname(signs),
     unname(cbind(ifelse(rowSums(b_full[, cols_x]) >= 0, 1, -1),
@@ -1600,7 +1599,7 @@ test_that("cv_varsel() works with mo() terms (LOO and K-fold CV)", {
     seed = 3906, verbose = FALSE
   )
   expect_length(ranking(cv_kf)$foldwise, 2 * 4)
-  expect_true(all(is.finite(summary(cv_kf)$perf_sub$elpd)))
+  expect_all_true_tst(is.finite(summary(cv_kf)$perf_sub$elpd))
 })
 
 test_that(paste(
@@ -1646,7 +1645,7 @@ test_that(paste(
       dimnames(prd_i) <- NULL
       return(prd_i)
     })
-    expect_true(all(is.finite(unlist(prd))), info = info)
+    expect_all_true_tst(is.finite(unlist(prd)), info = info)
     expect_equal(prd[[1]], prd[[2]], info = info)
   }
   divmin_w0 <- function(fml, fam, signs = NULL) {
@@ -1668,7 +1667,7 @@ test_that(paste(
       for (fit in fits) {
         b_mo <- lme4::fixef(fit)[-1]
         if (mono) {
-          expect_true(all(b_mo >= -1e-8), info = info_txt)
+          expect_all_true_tst(b_mo >= -1e-8, info = info_txt)
         } else {
           expect_true(any(b_mo < 0), info = info_txt)
         }
@@ -1791,7 +1790,7 @@ test_that(paste(
     }
     invokeRestart("muffleWarning")
   })
-  expect_true(all(is.finite(summary(cv_loo)$perf_sub$elpd)))
+  expect_all_true_tst(is.finite(summary(cv_loo)$perf_sub$elpd))
 })
 
 test_that(paste(

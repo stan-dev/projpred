@@ -981,7 +981,8 @@ test_that(paste(
         expect_gt(length(res_drawwise$warns), 0)
       }
       expect_identical(res_shared$warns, res_drawwise$warns, info = info)
-      expect_equal(res_shared$fits, res_drawwise$fits, info = info)
+      expect_equal(drop_mer_ptrs(res_shared$fits),
+                   drop_mer_ptrs(res_drawwise$fits), info = info)
     }
   }
 })
@@ -1091,9 +1092,20 @@ test_that(paste(
   withr::local_seed(3)
   mu <- d$eta + rnorm(nrow(d), sd = 0.3)
   fam <- extend_family(gaussian())
+  # In edition 3, expect_warning() does not catch lme4's own convergence
+  # warning:
   expect_warning(
-    divmin_tst("s(z) + x + (1 | g)", d, fam, mu, check_conv = TRUE,
-               control = lme4::lmerControl(check.conv.grad = cc_grad_tight())),
+    withCallingHandlers(
+      divmin_tst("s(z) + x + (1 | g)", d, fam, mu, check_conv = TRUE,
+                 control = lme4::lmerControl(
+                   check.conv.grad = cc_grad_tight()
+                 )),
+      warning = function(w) {
+        if (grepl("^Model failed to converge", conditionMessage(w))) {
+          invokeRestart("muffleWarning")
+        }
+      }
+    ),
     "might not have converged"
   )
   expect_no_warning(

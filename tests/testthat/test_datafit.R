@@ -351,13 +351,11 @@ test_that(paste(
       ### TODO: Currently, the as.matrix() call below is not possible for
       ### `datafit`s. Fix this.
       # if (run_snaps) {
-      #   if (testthat_ed_max2) local_edition(3)
       #   m <- as.matrix(prjs_vs_datafit[[tstsetup]])
       #   expect_snapshot({
       #     print(tstsetup)
       #     print(rlang::hash(m)) # message(m)
       #   })
-      #   if (testthat_ed_max2) local_edition(2)
       # }
       ###
     } else {
@@ -376,7 +374,6 @@ test_that(paste(
       ### TODO: Currently, the as.matrix() call below is not possible for
       ### `datafit`s. Fix this.
       # if (run_snaps) {
-      #   if (testthat_ed_max2) local_edition(3)
       #   res_vs <- lapply(prjs_vs_datafit[[tstsetup]], function(prjs_vs_i) {
       #     m <- as.matrix(prjs_vs_i)
       #     expect_snapshot({
@@ -386,7 +383,6 @@ test_that(paste(
       #     })
       #     return(invisible(TRUE))
       #   })
-      #   if (testthat_ed_max2) local_edition(2)
       # }
       ###
     }
@@ -429,14 +425,12 @@ test_that(paste(
               nobsv_expected = tail(nobsv_tst, 1),
               info_str = paste(tstsetup, "with_args", sep = "__"))
     if (run_snaps) {
-      if (testthat_ed_max2) local_edition(3)
       withr::with_options(list(width = 145), {
         expect_snapshot({
           print(tstsetup)
           print(rlang::hash(pl_with_args))
         })
       })
-      if (testthat_ed_max2) local_edition(2)
     }
   }
 })
@@ -470,14 +464,12 @@ test_that(paste(
               nobsv_expected = tail(nobsv_tst, 1),
               info_str = paste(tstsetup, "with_args", sep = "__"))
     if (run_snaps) {
-      if (testthat_ed_max2) local_edition(3)
       withr::with_options(list(width = 145), {
         expect_snapshot({
           print(tstsetup)
           print(rlang::hash(pp_with_args))
         })
       })
-      if (testthat_ed_max2) local_edition(2)
     }
   }
 })
@@ -537,14 +529,12 @@ test_that(paste(
       from_datafit = TRUE
     )
     if (run_snaps) {
-      if (testthat_ed_max2) local_edition(3)
       withr::with_options(list(width = 145), {
         expect_snapshot({
           print(tstsetup)
           print(smmry, digits = 6)
         })
       })
-      if (testthat_ed_max2) local_edition(2)
     }
   }
 })
@@ -580,14 +570,12 @@ test_that(paste(
       from_datafit = TRUE
     )
     if (run_snaps) {
-      if (testthat_ed_max2) local_edition(3)
       withr::with_options(list(width = 145), {
         expect_snapshot({
           print(tstsetup)
           print(smmry, digits = 6)
         })
       })
-      if (testthat_ed_max2) local_edition(2)
     }
   }
 })

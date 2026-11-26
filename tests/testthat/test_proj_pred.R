@@ -24,14 +24,12 @@ test_that("pl: `object` of class `projection` works", {
               ncats_nlats_expected = list(ncats_nlats_expected_crr),
               info_str = tstsetup)
     if (run_snaps) {
-      if (testthat_ed_max2) local_edition(3)
       withr::with_options(list(width = 145), {
         expect_snapshot({
           print(tstsetup)
           print(rlang::hash(pls[[tstsetup]]))
         })
       })
-      if (testthat_ed_max2) local_edition(2)
     }
   }
 })
@@ -73,14 +71,12 @@ test_that(paste(
                                                simplify = FALSE),
               info_str = tstsetup)
     if (run_snaps) {
-      if (testthat_ed_max2) local_edition(3)
       withr::with_options(list(width = 145), {
         expect_snapshot({
           print(tstsetup)
           print(rlang::hash(pls_vs[[tstsetup]]))
         })
       })
-      if (testthat_ed_max2) local_edition(2)
     }
   }
 })
@@ -122,14 +118,12 @@ test_that(paste(
                                                simplify = FALSE),
               info_str = tstsetup)
     if (run_snaps) {
-      if (testthat_ed_max2) local_edition(3)
       withr::with_options(list(width = 145), {
         expect_snapshot({
           print(tstsetup)
           print(rlang::hash(pls_cvvs[[tstsetup]]))
         })
       })
-      if (testthat_ed_max2) local_edition(2)
     }
   }
 })
@@ -328,7 +322,7 @@ test_that("`newdata` and `integrated` work (even in edge cases)", {
       } else {
         offs_crr <- NULL
       }
-      expect_warning(
+      expect_warning_all(
         pl_false <- proj_linpred(
           prjs[[tstsetup]],
           newdata = head(dat_crr, nobsv_crr),
@@ -347,7 +341,7 @@ test_that("`newdata` and `integrated` work (even in edge cases)", {
                 nobsv_expected = nobsv_crr,
                 ncats_nlats_expected = list(ncats_nlats_expected_crr),
                 info_str = paste(tstsetup, nobsv_crr, sep = "__"))
-      expect_warning(
+      expect_warning_all(
         pl_true <- proj_linpred(prjs[[tstsetup]],
                                 newdata = head(dat_crr, nobsv_crr),
                                 weightsnew = wobs_crr,
@@ -393,7 +387,7 @@ test_that("`newdata` set to the original dataset doesn't change results", {
       offs_crr <- NULL
     }
     # With `transform = FALSE`:
-    expect_warning(
+    expect_warning_all(
       pl_newdata <- proj_linpred(
         prjs[[tstsetup]], newdata = dat_crr, weightsnew = wobs_crr,
         offsetnew = offs_crr,
@@ -406,7 +400,7 @@ test_that("`newdata` set to the original dataset doesn't change results", {
     pl_orig <- pls[[tstsetup]]
     expect_equal(pl_newdata, pl_orig, info = tstsetup)
     # With `transform = TRUE`:
-    expect_warning(
+    expect_warning_all(
       pl_newdata_t <- proj_linpred(
         prjs[[tstsetup]], newdata = dat_crr, weightsnew = wobs_crr,
         offsetnew = offs_crr,
@@ -509,7 +503,7 @@ test_that("`weightsnew` works", {
       ncats_nlats_expected_crr <- integer()
     }
     pl_orig <- pls[[tstsetup]]
-    expect_warning(
+    expect_warning_all(
       pl_ones <- proj_linpred(
         prjs[[tstsetup]],
         newdata = get_dat(tstsetup, dat_wobs_ones,
@@ -529,7 +523,7 @@ test_that("`weightsnew` works", {
               ncats_nlats_expected = list(ncats_nlats_expected_crr),
               info_str = tstsetup)
     if (!args_prj[[tstsetup]]$prj_nm %in% c("latent", "augdat")) {
-      expect_warning(
+      expect_warning_all(
         pl <- proj_linpred(prjs[[tstsetup]],
                            newdata = get_dat(tstsetup, dat,
                                              wobs_brms = dat$wobs_col),
@@ -546,7 +540,7 @@ test_that("`weightsnew` works", {
                 wdraws_prj_expected = wdr_crr,
                 ncats_nlats_expected = list(ncats_nlats_expected_crr),
                 info_str = tstsetup)
-      expect_warning(
+      expect_warning_all(
         plw <- proj_linpred(prjs[[tstsetup]],
                             newdata = get_dat(
                               tstsetup,
@@ -622,7 +616,7 @@ test_that("`offsetnew` works", {
     add_offs_crr <- args_prj[[tstsetup]]$prj_nm == "latent" &&
       args_prj[[tstsetup]]$pkg_nm == "rstanarm" &&
       grepl("\\.with_offs\\.", tstsetup)
-    expect_warning(
+    expect_warning_all(
       pl_zeros <- proj_linpred(
         prjs[[tstsetup]],
         newdata = get_dat(tstsetup, dat_offs_zeros,
@@ -643,7 +637,7 @@ test_that("`offsetnew` works", {
               wdraws_prj_expected = wdr_crr,
               ncats_nlats_expected = list(ncats_nlats_expected_crr),
               info_str = tstsetup)
-    expect_warning(
+    expect_warning_all(
       pl <- proj_linpred(prjs[[tstsetup]],
                          newdata = get_dat(tstsetup, dat),
                          weightsnew = wobs_crr,
@@ -659,7 +653,7 @@ test_that("`offsetnew` works", {
               wdraws_prj_expected = wdr_crr,
               ncats_nlats_expected = list(ncats_nlats_expected_crr),
               info_str = tstsetup)
-    expect_warning(
+    expect_warning_all(
       plo <- proj_linpred(prjs[[tstsetup]],
                           newdata = get_dat(
                             tstsetup, dat_offs_new,
@@ -840,7 +834,7 @@ test_that("`regul` works", {
       return(sum(pl$pred^2))
     })
     for (j in head(seq_along(regul_tst), -1)) {
-      expect_true(all(norms[!!j] >= norms[!!(j + 1)]), info = tstsetup)
+      expect_all_true_tst(norms[!!j] >= norms[!!(j + 1)], info = tstsetup)
     }
   }
 })
@@ -1098,14 +1092,12 @@ test_that("pp: `object` of class `projection` works", {
                 list(refmods[[args_prj[[tstsetup]]$tstsetup_ref]]$family$cats),
               info_str = tstsetup)
     if (run_snaps) {
-      if (testthat_ed_max2) local_edition(3)
       withr::with_options(list(width = 145), {
         expect_snapshot({
           print(tstsetup)
           print(rlang::hash(pps[[tstsetup]]))
         })
       })
-      if (testthat_ed_max2) local_edition(2)
     }
   }
 })
@@ -1132,14 +1124,12 @@ test_that(paste(
               ),
               info_str = tstsetup)
     if (run_snaps) {
-      if (testthat_ed_max2) local_edition(3)
       withr::with_options(list(width = 145), {
         expect_snapshot({
           print(tstsetup)
           print(rlang::hash(pps_vs[[tstsetup]]))
         })
       })
-      if (testthat_ed_max2) local_edition(2)
     }
   }
 })
@@ -1166,14 +1156,12 @@ test_that(paste(
               ),
               info_str = tstsetup)
     if (run_snaps) {
-      if (testthat_ed_max2) local_edition(3)
       withr::with_options(list(width = 145), {
         expect_snapshot({
           print(tstsetup)
           print(rlang::hash(pps_cvvs[[tstsetup]]))
         })
       })
-      if (testthat_ed_max2) local_edition(2)
     }
   }
 })
@@ -1351,7 +1339,7 @@ test_that("`newdata` and `nresample_clusters` work (even in edge cases)", {
         offs_crr <- NULL
       }
       for (nresample_clusters_crr in nresample_clusters_tst) {
-        expect_warning(
+        expect_warning_all(
           pp <- proj_predict(prjs[[tstsetup]],
                              newdata = head(dat, nobsv_crr),
                              weightsnew = wobs_crr,
@@ -1391,7 +1379,7 @@ test_that("`newdata` set to the original dataset doesn't change results", {
     } else {
       offs_crr <- NULL
     }
-    expect_warning(
+    expect_warning_all(
       pp_newdata <- proj_predict(prjs[[tstsetup]],
                                  newdata = dat,
                                  weightsnew = wobs_crr,
@@ -1452,7 +1440,7 @@ test_that("`weightsnew` works", {
       offs_crr <- NULL
     }
     pp_orig <- pps[[tstsetup]]
-    expect_warning(
+    expect_warning_all(
       pp_ones <- proj_predict(prjs[[tstsetup]],
                               newdata = get_dat(tstsetup, dat_wobs_ones,
                                                 wobs_brms = 1),
@@ -1470,7 +1458,7 @@ test_that("`weightsnew` works", {
               ),
               info_str = tstsetup)
     if (!args_prj[[tstsetup]]$prj_nm %in% c("latent", "augdat")) {
-      expect_warning(
+      expect_warning_all(
         pp <- proj_predict(prjs[[tstsetup]],
                            newdata = get_dat(tstsetup, dat,
                                              wobs_brms = dat$wobs_col),
@@ -1487,7 +1475,7 @@ test_that("`weightsnew` works", {
                   refmods[[args_prj[[tstsetup]]$tstsetup_ref]]$family$cats
                 ),
                 info_str = tstsetup)
-      expect_warning(
+      expect_warning_all(
         ppw <- proj_predict(prjs[[tstsetup]],
                             newdata = get_dat(
                               tstsetup,
@@ -1554,7 +1542,7 @@ test_that("`offsetnew` works", {
     add_offs_crr <- args_prj[[tstsetup]]$prj_nm == "latent" &&
       args_prj[[tstsetup]]$pkg_nm == "rstanarm" &&
       grepl("\\.with_offs\\.", tstsetup)
-    expect_warning(
+    expect_warning_all(
       pp_zeros <- proj_predict(prjs[[tstsetup]],
                                newdata = get_dat(tstsetup, dat_offs_zeros,
                                                  add_offs_dummy = add_offs_crr,
@@ -1572,7 +1560,7 @@ test_that("`offsetnew` works", {
                 refmods[[args_prj[[tstsetup]]$tstsetup_ref]]$family$cats
               ),
               info_str = tstsetup)
-    expect_warning(
+    expect_warning_all(
       pp <- proj_predict(prjs[[tstsetup]],
                          newdata = dat,
                          weightsnew = wobs_crr,
@@ -1588,7 +1576,7 @@ test_that("`offsetnew` works", {
                 refmods[[args_prj[[tstsetup]]$tstsetup_ref]]$family$cats
               ),
               info_str = tstsetup)
-    expect_warning(
+    expect_warning_all(
       ppo <- proj_predict(prjs[[tstsetup]],
                           newdata = get_dat(
                             tstsetup, dat_offs_new,

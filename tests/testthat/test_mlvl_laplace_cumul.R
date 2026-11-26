@@ -149,8 +149,8 @@ test_that(paste(
         info_str <- paste(link, paste(alpha, collapse = " "), tau)
         expect_false(is.nan(ev$L), info = info_str)
         if (is.finite(ev$L)) {
-          expect_true(all(is.finite(ev$grad)), info = info_str)
-          expect_true(all(is.finite(ev$u)), info = info_str)
+          expect_all_true_tst(is.finite(ev$grad), info = info_str)
+          expect_all_true_tst(is.finite(ev$u), info = info_str)
         } else {
           expect_identical(ev$L, Inf, info = info_str)
         }
@@ -245,7 +245,7 @@ test_that("mlvl_laplace_cumul() gives the clmm() fit for each link", {
   # Link `probit_approx` of brms is fitted as `probit`:
   dat <- dat_cumul_tst("probit")
   expect_equal(fit_cumul_tst(dat, "probit_approx"),
-               fit_cumul_tst(dat, "probit"))
+               fit_cumul_tst(dat, "probit"), ignore_formula_env = TRUE)
 })
 
 test_that(paste(
@@ -416,7 +416,7 @@ test_that(paste(
     prd <- subprd_augdat(list(fit), nd)
     prd_c <- subprd_augdat(list(fit_c), nd)
     expect_identical(dimnames(prd), dimnames(prd_c), info = info_str)
-    expect_true(all(is.finite(prd)), info = info_str)
+    expect_all_true_tst(is.finite(prd), info = info_str)
     # The clmm() path applies the link function to sums of the category
     # probabilities without the group-level effects, and then adds these
     # effects. For such a cumulative probability near 1, the rounding of the
@@ -464,7 +464,7 @@ test_that(paste(
 test_that("the methods for `projpred_mlvl_cumul` objects work", {
   dat <- dat_cumul_tst(n = 120, n_grp = 6)
   fit <- fit_cumul_tst(dat)
-  expect_equal(formula(fit), y ~ x + z + (1 | g))
+  expect_equal(formula(fit), y ~ x + z + (1 | g), ignore_formula_env = TRUE)
   prd <- predict(fit, dat$d[1:4, ])
   expect_identical(dimnames(prd), list(as.character(1:4), c("1|2", "2|3",
                                                             "3|4")))
@@ -542,9 +542,9 @@ test_that(paste(
   w_sums <- vapply(rec, function(r) sum(r$w), numeric(1))
   w_pert <- abs(w_sums - round(w_sums)) > 1e-6
   expect_true(any(w_pert))
-  expect_true(all(vapply(rec[w_pert], function(r) {
+  expect_all_true_tst(vapply(rec[w_pert], function(r) {
     inherits(r$fit, "projpred_mlvl_cumul") && r$fit$convergence == 0
-  }, logical(1))))
+  }, logical(1)))
   # The clmm() fits minimize the same objective:
   withr::local_options(projpred.mlvl_laplace = FALSE)
   cvvs_clmm <- run_cv()
