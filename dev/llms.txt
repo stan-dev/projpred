@@ -136,6 +136,13 @@ for more details.
 - [`force_search_terms()`](https://mc-stan.org/projpred/dev/reference/force_search_terms.md)
   : Force search terms
 
+- [`formula(`*`<projection>`*`)`](https://mc-stan.org/projpred/dev/reference/formula.projection.md)
+  :
+
+  Formula of the submodel of a
+  [`project()`](https://mc-stan.org/projpred/dev/reference/project.md)
+  run
+
 - [`mesquite`](https://mc-stan.org/projpred/dev/reference/mesquite.md) :
   Mesquite data set
 

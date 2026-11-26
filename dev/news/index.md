@@ -15,6 +15,11 @@
 
 ### Minor changes
 
+- New [`formula()`](https://rdrr.io/r/stats/formula.html) method for
+  `projection` objects. It gives the formula of the submodel in the form
+  that projpred fits, for example to set up the submodel in another
+  package. (GitHub:
+  [\#678](https://github.com/stan-dev/projpred/issues/678))
 - Tests: The test setup stops on an unexpected error, also when the
   error is known for another model type. A skipped test lists each
   dropped test setup. (GitHub:
