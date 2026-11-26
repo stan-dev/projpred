@@ -82,7 +82,7 @@ test_that("check that we properly flatten a formula with duplicated terms", {
   # don't check 'flat' directly as sorting of terms is OS specific
   terms <- attr(terms(flat), "term.labels")
   expect_length(terms, 4)
-  expect_true(all(terms %in% c("x", "z", "x + z + x:z | g", "x:z")))
+  expect_all_true_tst(terms %in% c("x", "z", "x + z + x:z | g", "x:z"))
 })
 
 test_that("split_interaction_term() works for 2-way interaction terms", {
@@ -227,7 +227,7 @@ test_that(paste(
   s <- subset_formula_and_data(formula, c("x.1", "x.3"), data, y = fake_y)
   cols <- colnames(s$data)
   expect_equal(cols[1:2], c(".y.1", ".y.2"))
-  expect_true(all(s$data[, 1:2] == fake_y))
+  expect_all_true_tst(s$data[, 1:2] == fake_y)
   expect_equal(s$formula, cbind(.y.1, .y.2) ~ x.1 + x.3)
 })
 

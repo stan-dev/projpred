@@ -392,6 +392,9 @@ This explains why in general, the following remarks refer to the submodels and n
 In the following and throughout **projpred**'s documentation, the term "traditional projection" is used whenever the projection type is neither "augmented-data" nor "latent" (see below for a description of these).
 
 Apart from the `gaussian()` response family used in this vignette, **projpred**'s traditional projection also supports the `binomial()`^[Via `brms::get_refmodel.brmsfit()`, the `brms::bernoulli()` family is supported as well.] and the `poisson()` family.
+It also supports the negative binomial family (`rstanarm::neg_binomial_2()`, `brms::negbinomial()` and `MASS::negative.binomial()`) for submodels without group-level or additive terms.
+The projection includes the shape parameter.
+For a **brms** reference model, pass the draws of the shape parameter as argument `dis` of `brms::get_refmodel.brmsfit()`.
 
 The families currently supported by **projpred**'s augmented-data projection [@weber_projection_2025] are `binomial()`^[Currently, the augmented-data support for the `binomial()` family does not include binomial distributions with more than one trial.
 In such a case, a workaround is to de-aggregate the Bernoulli trials which belong to the same (aggregated) observation, i.e., to use a "long" dataset.] ^[Like the traditional projection, the augmented-data projection also supports the `brms::bernoulli()` family via `brms::get_refmodel.brmsfit()`.], `brms::cumulative()`, `rstanarm::stan_polr()` fits, and `brms::categorical()`^[For the augmented-data projection based on a "typical" **brms** reference model object, **brms** version 2.17.0 or later is needed.].

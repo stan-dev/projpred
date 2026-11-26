@@ -403,9 +403,12 @@ mo_full_signs <- function(p_ref, refmodel, args_divmin) {
   data <- refmodel$fetch_data()
   terms_full <- setdiff(split_formula(refmodel$formula, data = data,
                                       add_lower_terms = FALSE), "1")
+  # The negative binomial projection alternates with the projection of the
+  # shapes and fits the means with offsets (as in proj_to_submodl()):
+  nb_alt <- nb_alternates(refmodel)
   subset <- subset_formula_and_data(formula = refmodel$formula,
                                     terms_ = terms_full, data = data,
-                                    y = p_ref$mu)
+                                    y = if (nb_alt) p_ref$mu_offs else p_ref$mu)
   # The contrasts of the reference model, as in the submodel fits (the
   # columns of a sign group and their names depend on the contrasts):
   subset$data <- set_contrasts(subset$data, refmodel$contrasts)
@@ -417,7 +420,11 @@ mo_full_signs <- function(p_ref, refmodel, args_divmin) {
   args_divmin$data <- subset$data
   args_divmin$projpred_mo_signs <- NULL
   outdmin <- tryCatch(
-    do.call(refmodel$div_minimizer, args_divmin),
+    if (nb_alt) {
+      nb_alternate(args_divmin, p_ref = p_ref, refmodel = refmodel)
+    } else {
+      do.call(refmodel$div_minimizer, args_divmin)
+    },
     error = function(e) {
       if (grepl("^Internal error", conditionMessage(e))) {
         stop(e)

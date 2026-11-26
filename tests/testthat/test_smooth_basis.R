@@ -1,5 +1,3 @@
-context("smooth_basis")
-
 # Projected draws of smooth terms in the basis of the reference model fit (see
 # `R/smooth_basis.R`). The reference models are custom reference models without
 # Stan: an empty `brmsfit` (brms::brm(empty = TRUE)) and an object of class
@@ -173,7 +171,7 @@ test_that("as.matrix.projection() gives smooth terms in the brms basis", {
   # With `nm_scheme = "rstanarm"`, a brmsfit gives no basis:
   expect_warning(m_r <- as.matrix(prj, nm_scheme = "rstanarm"),
                  "does not give the bases of the smooth terms")
-  expect_true(all(c("s(x).1", "t2(z,w).1") %in% colnames(m_r)))
+  expect_all_true_tst(c("s(x).1", "t2(z,w).1") %in% colnames(m_r))
 })
 
 test_that(paste(
@@ -248,7 +246,7 @@ test_that(paste(
   prj <- prj_sb(fit, fml, "s(x)", eta_draws = eta_span, ndraws = ndr_sb)
   expect_warning(m <- as.matrix(prj),
                  paste("not identified in", ndr_sb, "of", ndr_sb))
-  expect_true(all(is.na(m[, "sds_sx_1"])))
+  expect_all_true_tst(is.na(m[, "sds_sx_1"]))
   expect_lp_rebuilt(m, prj, cbind(b_Intercept = rep(1, n_sb)), X_sm,
                     info = "span")
 })
