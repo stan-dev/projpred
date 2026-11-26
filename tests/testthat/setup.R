@@ -175,9 +175,9 @@ is_gamm_backsolve_msg <- function(msg) {
     grepl("singular matrix in 'backsolve'", msg, fixed = TRUE)
 }
 
-# Drop a test setup below only after a known upstream error, and only for the
-# model types (`mod_nm`) with that error. Other errors stop setup.R. `kfold`
-# marks the K-fold refits of run_cvfun().
+# A getter (see helpers/fixtures.R) drops a test setup only after a known
+# upstream error, and only for the model types (`mod_nm`) with that error.
+# `kfold` marks the K-fold refits of run_cvfun().
 is_known_setup_err <- function(msg, mod_nm, kfold = FALSE) {
   if (!is.character(mod_nm) || length(mod_nm) != 1L) {
     return(FALSE)
@@ -194,17 +194,6 @@ is_known_setup_err <- function(msg, mod_nm, kfold = FALSE) {
     return(mod_nm %in% c("glmm", "gamm"))
   }
   return(FALSE)
-}
-# The dropped test setups, one element per stage (see test_setup.R):
-setup_drops <- list()
-add_setup_drops <- function(stage, tstsetups) {
-  if (length(tstsetups) == 0) {
-    return(invisible())
-  }
-  setup_drops[[stage]] <<- tstsetups
-  message("[", stage, "] dropped ", length(tstsetups), " test setup(s) after ",
-          "a known upstream error: ", paste(tstsetups, collapse = ", "))
-  return(invisible())
 }
 
 # Data --------------------------------------------------------------------
@@ -636,7 +625,7 @@ build_fit_tst <- function(tstsetup) {
 seed_tst <- 20411346
 seed2_tst <- 866028
 seed3_tst <- 1208499
-# The calls below without their own seed use this random state:
+# The tests start from this random state (unless `run_randRNG` is `TRUE`):
 set.seed(seed_tst)
 
 nclusters_tst <- 2L
@@ -700,7 +689,8 @@ options(projpred.check_convergence = FALSE)
 # Set default number of significant digits to be printed:
 options(projpred.digits = getOption("digits"))
 # The getters of helpers/fixtures.R build their objects with these options:
-opts_fixtures_tst <- options()[startsWith(names(options()), "projpred.")]
+opts_fixtures_tst <- c(options()[startsWith(names(options()), "projpred.")],
+                       options("contrasts", "na.action"))
 
 search_trms_tst <- list(
   default_search_trms = list(),
@@ -870,7 +860,6 @@ args_ref <- lapply(setNames(nm = names(args_fit)), function(tstsetup_fit) {
   })
 })
 args_ref <- unlist_cust(args_ref)
-add_setup_drops("ref", dropped_tst("ref", names(args_ref)))
 
 ## Variable selection -----------------------------------------------------
 
@@ -939,12 +928,6 @@ if (run_vs) {
   stopifnot(sum(sapply(args_vs, function(args_vs_i) {
     !is.null(args_vs_i$search_terms)
   })) >= 1)
-
-  # The objects below that are built from the `vsel` objects use only the test
-  # setups that are not dropped:
-  tstsetups_vs_drop <- dropped_tst("vs", names(args_vs))
-  add_setup_drops("vs", tstsetups_vs_drop)
-  args_vs_ok <- args_vs[setdiff(names(args_vs), tstsetups_vs_drop)]
 }
 
 ### cv_varsel() -----------------------------------------------------------
@@ -1068,12 +1051,6 @@ if (run_cvvs) {
   tstsetups_ref_kfold <- setNames(nm = unique(unname(
     sapply(args_cvvs_kfold, "[[", "tstsetup_ref")
   )))
-  # The objects below that are built from the `vsel` objects use only the test
-  # setups that are not dropped:
-  add_setup_drops("cvfits", dropped_tst("cvfits", tstsetups_ref_kfold))
-  tstsetups_cvvs_drop <- dropped_tst("cvvs", names(args_cvvs))
-  add_setup_drops("cvvs", tstsetups_cvvs_drop)
-  args_cvvs_ok <- args_cvvs[setdiff(names(args_cvvs), tstsetups_cvvs_drop)]
 }
 
 ## Projection -------------------------------------------------------------
@@ -1169,8 +1146,6 @@ if (run_prj) {
     })
   })
   args_prj <- unlist_cust(args_prj)
-
-  add_setup_drops("prj", dropped_tst("prj", names(args_prj)))
 }
 
 ### From `vsel` -----------------------------------------------------------
@@ -1218,11 +1193,11 @@ cre_args_prj_vsel <- function(tstsetups_prj_vsel) {
 
 if (run_vs) {
   tstsetups_prj_vs <- unlist(lapply(mod_nms, function(mod_nm) {
-    if (any(grepl(paste0("\\.", mod_nm, "\\.gauss\\."), names(args_vs_ok)))) {
+    if (any(grepl(paste0("\\.", mod_nm, "\\.gauss\\."), names(args_vs)))) {
       tstsetups_out <- grep(paste0("\\.", mod_nm, "\\.gauss\\."),
-                            names(args_vs_ok), value = TRUE)
+                            names(args_vs), value = TRUE)
     } else {
-      tstsetups_out <- grep(paste0("\\.", mod_nm, "\\."), names(args_vs_ok),
+      tstsetups_out <- grep(paste0("\\.", mod_nm, "\\."), names(args_vs),
                             value = TRUE)
     }
     if (any(grepl("\\.L1\\.", tstsetups_out))) {
@@ -1235,32 +1210,30 @@ if (run_vs) {
   }))
   tstsetups_prj_vs <- union(
     tstsetups_prj_vs,
-    grep("\\.default_search_trms", names(args_vs_ok), value = TRUE,
+    grep("\\.default_search_trms", names(args_vs), value = TRUE,
          invert = TRUE)
   )
   tstsetups_prj_vs <- union(
     tstsetups_prj_vs,
-    grep("\\.(latent|augdat)\\.", names(args_vs_ok), value = TRUE)
+    grep("\\.(latent|augdat)\\.", names(args_vs), value = TRUE)
   )
   tstsetups_prj_vs <- setNames(nm = tstsetups_prj_vs)
   stopifnot(length(tstsetups_prj_vs) > 0)
   args_prj_vs <- cre_args_prj_vsel(tstsetups_prj_vs)
   args_prj_vs <- unlist_cust(args_prj_vs)
-
-  add_setup_drops("prj_vs", dropped_tst("prj_vs", names(args_prj_vs)))
 }
 
 #### cv_varsel() ----------------------------------------------------------
 
 if (run_cvvs) {
   tstsetups_prj_cvvs <- unlist(lapply(mod_nms, function(mod_nm) {
-    if (any(grepl(paste0("\\.", mod_nm, "\\.gauss\\."), names(args_cvvs_ok)))) {
+    if (any(grepl(paste0("\\.", mod_nm, "\\.gauss\\."), names(args_cvvs)))) {
       tstsetups_out <- grep(paste0("\\.", mod_nm,
                                    "\\.gauss\\..*\\.default_cvmeth"),
-                            names(args_cvvs_ok), value = TRUE)
+                            names(args_cvvs), value = TRUE)
     } else {
       tstsetups_out <- grep(paste0("\\.", mod_nm, "\\..*\\.default_cvmeth"),
-                            names(args_cvvs_ok), value = TRUE)
+                            names(args_cvvs), value = TRUE)
     }
     if (any(grepl("\\.L1\\.", tstsetups_out))) {
       tstsetups_out <- grep("\\.L1\\.", tstsetups_out, value = TRUE)
@@ -1272,48 +1245,17 @@ if (run_cvvs) {
   }))
   tstsetups_prj_cvvs <- union(
     tstsetups_prj_cvvs,
-    grep("\\.default_search_trms", names(args_cvvs_ok), value = TRUE,
+    grep("\\.default_search_trms", names(args_cvvs), value = TRUE,
          invert = TRUE)
   )
   tstsetups_prj_cvvs <- union(
     tstsetups_prj_cvvs,
-    grep("\\.(latent|augdat)\\.", names(args_cvvs_ok), value = TRUE)
+    grep("\\.(latent|augdat)\\.", names(args_cvvs), value = TRUE)
   )
   tstsetups_prj_cvvs <- setNames(nm = tstsetups_prj_cvvs)
   stopifnot(length(tstsetups_prj_cvvs) > 0)
   args_prj_cvvs <- cre_args_prj_vsel(tstsetups_prj_cvvs)
   args_prj_cvvs <- unlist_cust(args_prj_cvvs)
-
-  add_setup_drops("prj_cvvs",
-                  dropped_tst("prj_cvvs", names(args_prj_cvvs)))
-}
-
-## Prediction -------------------------------------------------------------
-
-### From `projection` -----------------------------------------------------
-
-if (run_prj) {
-  invisible(lapply(c("pl", "pe", "pp"), function(type) {
-    add_setup_drops(type, dropped_tst(type, names(args_prj)))
-  }))
-}
-
-### From `proj_list` ------------------------------------------------------
-
-#### varsel() -------------------------------------------------------------
-
-if (run_vs) {
-  invisible(lapply(c("pl_vs", "pe_vs", "pp_vs"), function(type) {
-    add_setup_drops(type, dropped_tst(type, names(args_prj_vs)))
-  }))
-}
-
-#### cv_varsel() ----------------------------------------------------------
-
-if (run_cvvs) {
-  invisible(lapply(c("pl_cvvs", "pe_cvvs", "pp_cvvs"), function(type) {
-    add_setup_drops(type, dropped_tst(type, names(args_prj_cvvs)))
-  }))
 }
 
 ## summary.vsel() ---------------------------------------------------------
@@ -1432,47 +1374,21 @@ cre_args_smmry_vsel <- function(args_obj) {
 ### varsel() --------------------------------------------------------------
 
 if (run_vs) {
-  args_smmry_vs <- cre_args_smmry_vsel(args_vs_ok)
+  args_smmry_vs <- cre_args_smmry_vsel(args_vs)
   args_smmry_vs <- unlist_cust(args_smmry_vs)
   args_smmry_vs <- rm_dummies(args_smmry_vs)
   has_zero_vs <- any(sapply(lapply(args_smmry_vs, "[[", "nterms_max"),
                             identical, 0L))
-
-  smmrys_vs <- lapply(args_smmry_vs, function(args_smmry_vs_i) {
-    if (any(c("auc") %in% args_smmry_vs_i$stats)) {
-      smmry_seed <- list(seed = seed3_tst)
-    } else {
-      smmry_seed <- list()
-    }
-    do.call(summary, c(
-      list(object = get_vs(args_smmry_vs_i$tstsetup_vsel)),
-      excl_nonargs(args_smmry_vs_i),
-      smmry_seed
-    ))
-  })
 }
 
 ### cv_varsel() -----------------------------------------------------------
 
 if (run_cvvs) {
-  args_smmry_cvvs <- cre_args_smmry_vsel(args_cvvs_ok)
+  args_smmry_cvvs <- cre_args_smmry_vsel(args_cvvs)
   args_smmry_cvvs <- unlist_cust(args_smmry_cvvs)
   args_smmry_cvvs <- rm_dummies(args_smmry_cvvs)
   has_zero_cvvs <- any(sapply(lapply(args_smmry_cvvs, "[[", "nterms_max"),
                               identical, 0L))
-
-  smmrys_cvvs <- lapply(args_smmry_cvvs, function(args_smmry_cvvs_i) {
-    if (any(c("auc") %in% args_smmry_cvvs_i$stats)) {
-      smmry_seed <- list(seed = seed3_tst)
-    } else {
-      smmry_seed <- list()
-    }
-    do.call(summary, c(
-      list(object = get_cvvs(args_smmry_cvvs_i$tstsetup_vsel)),
-      excl_nonargs(args_smmry_cvvs_i),
-      smmry_seed
-    ))
-  })
 }
 
 if (run_more) {
@@ -1494,7 +1410,7 @@ if (run_more) {
 
 if (run_vs) {
   args_perf_vs <- lapply(
-    setNames(nm = names(smmrys_vs)),
+    setNames(nm = names(args_smmry_vs)),
     function(tstsetup_smmry_vsel) {
       return(c(
         nlist(tstsetup_smmry_vsel),
@@ -1503,20 +1419,13 @@ if (run_vs) {
     }
   )
   args_perf_vs <- unlist_cust(args_perf_vs)
-
-  perfs_vs <- lapply(args_perf_vs, function(args_perf_vs_i) {
-    do.call(performances, c(
-      list(object = smmrys_vs[[args_perf_vs_i$tstsetup_smmry_vsel]]),
-      excl_nonargs(args_perf_vs_i)
-    ))
-  })
 }
 
 ### cv_varsel() -----------------------------------------------------------
 
 if (run_cvvs) {
   args_perf_cvvs <- lapply(
-    setNames(nm = names(smmrys_cvvs)),
+    setNames(nm = names(args_smmry_cvvs)),
     function(tstsetup_smmry_vsel) {
       return(c(
         nlist(tstsetup_smmry_vsel),
@@ -1525,13 +1434,6 @@ if (run_cvvs) {
     }
   )
   args_perf_cvvs <- unlist_cust(args_perf_cvvs)
-
-  perfs_cvvs <- lapply(args_perf_cvvs, function(args_perf_cvvs_i) {
-    do.call(performances, c(
-      list(object = smmrys_cvvs[[args_perf_cvvs_i$tstsetup_smmry_vsel]]),
-      excl_nonargs(args_perf_cvvs_i)
-    ))
-  })
 }
 
 ## plot.vsel() ------------------------------------------------------------
@@ -1636,27 +1538,13 @@ cre_args_plot_vsel <- function(args_obj) {
 ### varsel() --------------------------------------------------------------
 
 if (run_vs) {
-  args_plot_vs <- cre_args_plot_vsel(args_vs_ok)
-
-  plots_vs <- lapply(args_plot_vs, function(args_plot_vs_i) {
-    do.call(plot, c(
-      list(x = get_vs(args_plot_vs_i$tstsetup_vsel)),
-      excl_nonargs(args_plot_vs_i)
-    ))
-  })
+  args_plot_vs <- cre_args_plot_vsel(args_vs)
 }
 
 ### cv_varsel() -----------------------------------------------------------
 
 if (run_cvvs) {
-  args_plot_cvvs <- cre_args_plot_vsel(args_cvvs_ok)
-
-  plots_cvvs <- lapply(args_plot_cvvs, function(args_plot_cvvs_i) {
-    do.call(plot, c(
-      list(x = get_cvvs(args_plot_cvvs_i$tstsetup_vsel)),
-      excl_nonargs(args_plot_cvvs_i)
-    ))
-  })
+  args_plot_cvvs <- cre_args_plot_vsel(args_cvvs)
 }
 
 ## ranking() --------------------------------------------------------------
@@ -1664,7 +1552,7 @@ if (run_cvvs) {
 ### varsel() --------------------------------------------------------------
 
 if (run_vs) {
-  tstsetups_rk_vs <- setNames(nm = names(args_vs_ok))
+  tstsetups_rk_vs <- setNames(nm = names(args_vs))
   args_rk_vs <- lapply(tstsetups_rk_vs, function(tstsetup_vsel) {
     lapply(nterms_max_rk, function(nterms_crr) {
       return(c(
@@ -1674,19 +1562,12 @@ if (run_vs) {
     })
   })
   args_rk_vs <- unlist_cust(args_rk_vs)
-
-  rks_vs <- lapply(args_rk_vs, function(args_rk_vs_i) {
-    do.call(ranking, c(
-      list(object = get_vs(args_rk_vs_i$tstsetup_vsel)),
-      excl_nonargs(args_rk_vs_i)
-    ))
-  })
 }
 
 ### cv_varsel() -----------------------------------------------------------
 
 if (run_cvvs) {
-  tstsetups_rk_cvvs <- setNames(nm = names(args_cvvs_ok))
+  tstsetups_rk_cvvs <- setNames(nm = names(args_cvvs))
   args_rk_cvvs <- lapply(tstsetups_rk_cvvs, function(tstsetup_vsel) {
     lapply(nterms_max_rk, function(nterms_crr) {
       return(c(
@@ -1696,13 +1577,6 @@ if (run_cvvs) {
     })
   })
   args_rk_cvvs <- unlist_cust(args_rk_cvvs)
-
-  rks_cvvs <- lapply(args_rk_cvvs, function(args_rk_cvvs_i) {
-    do.call(ranking, c(
-      list(object = get_cvvs(args_rk_cvvs_i$tstsetup_vsel)),
-      excl_nonargs(args_rk_cvvs_i)
-    ))
-  })
 }
 
 ## cv_proportions() -------------------------------------------------------
@@ -1712,34 +1586,21 @@ err_no_foldwise_rk <- "Could not find fold-wise predictor rankings"
 ### varsel() --------------------------------------------------------------
 
 if (run_vs) {
-  args_pr_vs <- lapply(setNames(nm = names(rks_vs)), function(tstsetup_rk) {
+  # cv_proportions() fails for all of these (see test_methods_vsel.R):
+  tstsetups_pr_vs <- setNames(nm = names(args_rk_vs))
+  args_pr_vs <- lapply(tstsetups_pr_vs, function(tstsetup_rk) {
     return(c(
       nlist(tstsetup_rk), only_nonargs(args_rk_vs[[tstsetup_rk]])
     ))
   })
   args_pr_vs <- unlist_cust(args_pr_vs)
-
-  prs_vs <- lapply(args_pr_vs, function(args_pr_vs_i) {
-    err_expected <- err_no_foldwise_rk
-    expect_error(
-      do.call(cv_proportions, c(
-        list(object = rks_vs[[args_pr_vs_i$tstsetup_rk]]),
-        excl_nonargs(args_pr_vs_i)
-      )),
-      err_expected,
-      info = args_pr_vs_i$tstsetup_rk
-    )
-    return(dummy_glob)
-  })
-  keep_prs_vs <- rm_dummies(prs_vs, return_logical = TRUE)
-  prs_vs <- prs_vs[keep_prs_vs]
-  args_pr_vs <- args_pr_vs[keep_prs_vs]
 }
 
 ### cv_varsel() -----------------------------------------------------------
 
 if (run_cvvs) {
-  args_pr_cvvs <- lapply(setNames(nm = names(rks_cvvs)), function(tstsetup_rk) {
+  tstsetups_pr_cvvs <- setNames(nm = names(args_rk_cvvs))
+  args_pr_cvvs <- lapply(tstsetups_pr_cvvs, function(tstsetup_rk) {
     lapply(cumulate_tst, function(cumulate_crr) {
       return(c(
         nlist(tstsetup_rk), only_nonargs(args_rk_cvvs[[tstsetup_rk]]),
@@ -1748,52 +1609,35 @@ if (run_cvvs) {
     })
   })
   args_pr_cvvs <- unlist_cust(args_pr_cvvs)
-
-  prs_cvvs <- lapply(args_pr_cvvs, function(args_pr_cvvs_i) {
+  # The expected error of cv_proportions() (`NA` for none):
+  err_pr_cvvs <- vapply(args_pr_cvvs, function(args_pr_cvvs_i) {
     if (isFALSE(args_cvvs[[args_pr_cvvs_i$tstsetup_vsel]]$validate_search)) {
-      err_expected <- err_no_foldwise_rk
+      return(err_no_foldwise_rk)
     } else if (isTRUE(
       args_rk_cvvs[[args_pr_cvvs_i$tstsetup_rk]]$nterms_max == 0
     )) {
-      err_expected <- "Needing `nterms_max >= 1`"
-    } else {
-      err_expected <- NA
+      return("Needing `nterms_max >= 1`")
     }
-    expect_error(
-      pr_out <- do.call(cv_proportions, c(
-        list(object = rks_cvvs[[args_pr_cvvs_i$tstsetup_rk]]),
-        excl_nonargs(args_pr_cvvs_i)
-      )),
-      err_expected,
-      info = args_pr_cvvs_i$tstsetup_rk
-    )
-    if (is.na(err_expected)) {
-      return(pr_out)
-    } else {
-      return(dummy_glob)
-    }
-  })
-  keep_prs_cvvs <- rm_dummies(prs_cvvs, return_logical = TRUE)
-  prs_cvvs <- prs_cvvs[keep_prs_cvvs]
-  args_pr_cvvs <- args_pr_cvvs[keep_prs_cvvs]
+    return(NA_character_)
+  }, character(1))
+  # The test setups with an expected error (see test_methods_vsel.R), and the
+  # others:
+  args_pr_cvvs_err <- args_pr_cvvs[!is.na(err_pr_cvvs)]
+  err_pr_cvvs <- err_pr_cvvs[!is.na(err_pr_cvvs)]
+  args_pr_cvvs <- args_pr_cvvs[setdiff(names(args_pr_cvvs),
+                                       names(args_pr_cvvs_err))]
 }
 
 ## plot.cv_proportions() --------------------------------------------------
 
 if (run_cvvs) {
-  args_plotpr <- lapply(setNames(nm = names(prs_cvvs)), function(tstsetup_pr) {
+  tstsetups_plotpr <- setNames(nm = names(args_pr_cvvs))
+  args_plotpr <- lapply(tstsetups_plotpr, function(tstsetup_pr) {
     return(c(
       nlist(tstsetup_pr), only_nonargs(args_pr_cvvs[[tstsetup_pr]])
     ))
   })
   args_plotpr <- unlist_cust(args_plotpr)
-
-  plotprs <- lapply(args_plotpr, function(args_plotpr_i) {
-    do.call(plot, c(
-      list(x = prs_cvvs[[args_plotpr_i$tstsetup_pr]]),
-      excl_nonargs(args_plotpr_i)
-    ))
-  })
 }
 
 ## Output names -----------------------------------------------------------

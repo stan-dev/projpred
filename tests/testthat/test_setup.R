@@ -15,16 +15,53 @@ test_that("is_known_setup_err() accepts an error only for its model types", {
   expect_false(is_known_setup_err(msg_bs, mod_nm = NULL))
 })
 
-test_that("setup.R reports the dropped test setups", {
-  # setup.R drops a test setup only after a known upstream error (see
-  # is_known_setup_err()). The skip message lists the dropped test setups.
-  if (length(setup_drops) > 0) {
+test_that("the getters report the dropped test setups", {
+  # A getter (see helpers/fixtures.R) drops a test setup only after a known
+  # upstream error (see is_known_setup_err()). This test builds all objects of
+  # the getters, one object type after the other. The skip message lists the
+  # dropped test setups. (The fits are never dropped; a failed fit stops this
+  # test.)
+  stages <- list(fit = names(args_fit), ref = names(args_ref))
+  if (run_vs) {
+    stages <- c(stages, list(vs = names(args_vs)))
+  }
+  if (run_cvvs) {
+    stages <- c(stages, list(cvfits = tstsetups_ref_kfold,
+                             cvvs = names(args_cvvs)))
+  }
+  if (run_prj) {
+    stages <- c(stages, list(prj = names(args_prj), pl = names(args_prj),
+                             pe = names(args_prj), pp = names(args_prj)))
+  }
+  for (vsel_type in c("vs", "cvvs")) {
+    if (!get(paste0("run_", vsel_type))) {
+      next
+    }
+    nms_prj <- names(get(paste0("args_prj_", vsel_type)))
+    stages_vsel <- list(
+      prj = nms_prj, pl = nms_prj, pe = nms_prj, pp = nms_prj,
+      smmry = names(get(paste0("args_smmry_", vsel_type))),
+      perf = names(get(paste0("args_perf_", vsel_type))),
+      plot = names(get(paste0("args_plot_", vsel_type))),
+      rk = names(get(paste0("args_rk_", vsel_type)))
+    )
+    names(stages_vsel) <- paste0(names(stages_vsel), "_", vsel_type)
+    stages <- c(stages, stages_vsel)
+  }
+  if (run_cvvs) {
+    stages <- c(stages, list(pr_cvvs = names(args_pr_cvvs),
+                             plotpr = names(args_plotpr)))
+  }
+  drops <- lapply(setNames(nm = names(stages)), function(type) {
+    dropped_tst(type, stages[[type]])
+  })
+  drops <- drops[lengths(drops) > 0]
+  if (length(drops) > 0) {
     skip(paste0(
-      "setup.R dropped test setups after a known upstream error: ",
-      paste(names(setup_drops),
-            vapply(setup_drops, paste, character(1), collapse = ", "),
+      "The getters dropped test setups after a known upstream error: ",
+      paste(names(drops), vapply(drops, paste, character(1), collapse = ", "),
             sep = ": ", collapse = "; ")
     ))
   }
-  expect_length(setup_drops, 0)
+  expect_length(drops, 0)
 })
