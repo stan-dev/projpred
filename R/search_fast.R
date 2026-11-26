@@ -51,12 +51,15 @@ search_forward_screen <- function(p_ref, refmodel, nterms_max, verbose,
   canon <- c(binomial = "logit", poisson = "log")
   if (!fam$family %in% names(canon) || fam$link != canon[[fam$family]] ||
       isTRUE(fam$for_augdat) || isTRUE(fam$for_latent) ||
-      !uses_divmin(refmodel) || anyNA(p_ref$mu) ||
-      !isTRUE(screen_m >= 1L)) {
+      !uses_divmin(refmodel) || !isTRUE(screen_m >= 1L)) {
     return(NULL)
   }
   offs_fit <- proj_offs_fit(refmodel)
   offs_sub <- if (offs_fit) refmodel$offset
+  mu_ref <- unclass(if (offs_fit) p_ref$mu_offs else p_ref$mu)
+  if (anyNA(mu_ref)) {
+    return(NULL)
+  }
   # The model matrix of all search terms (centered columns; the centering does
   # not change the score statistic of a submodel with an intercept). `regul`
   # only sets the unused `lambda_x`:
@@ -66,10 +69,6 @@ search_forward_screen <- function(p_ref, refmodel, nterms_max, verbose,
   }
   x_c <- des$x_c
   wobs <- des$wobs
-  mu_ref <- unclass(if (offs_fit) p_ref$mu_offs else p_ref$mu)
-  if (anyNA(mu_ref)) {
-    return(NULL)
-  }
   wdraws <- p_ref$wdraws_prj
   step_cands <- fast_step_cands(search_terms, des$cols_by_term)
 
