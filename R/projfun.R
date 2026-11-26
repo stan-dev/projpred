@@ -503,6 +503,10 @@ nb_alternates <- function(refmodel) {
 # uses the means with offsets.
 nb_alternate <- function(args_divmin, p_ref, refmodel, tol = 1e-5,
                          maxit = 50L, tol_cycle = 1e-3) {
+  if (proj_offs_fit(refmodel) && is.null(args_divmin[["offset"]])) {
+    stop("Internal error: nb_alternate() did not get the offsets. Please ",
+         "notify the package maintainer.")
+  }
   p_ref_offs <- p_ref
   p_ref_offs$mu <- p_ref$mu_offs
   phi <- as.numeric(p_ref$dis)

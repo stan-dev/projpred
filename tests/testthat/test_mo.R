@@ -2138,6 +2138,11 @@ test_that(paste(
                  unname(c(fit_s$beta0, drop(fit_s$beta))), tolerance = 1e-5,
                  info = paste("draw", s))
   }
+  # Forward search with monotonic projections:
+  vs <- varsel(refm, method = "forward", ndraws = 4, nclusters_pred = 4,
+               verbose = FALSE)
+  expect_setequal(ranking(vs)$fulldata, c("mo(x)", "z", "w"))
+  expect_true(all(is.finite(summary(vs)$perf_sub$elpd)))
 })
 
 test_that(paste(
