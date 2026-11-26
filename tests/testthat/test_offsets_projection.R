@@ -134,12 +134,12 @@ test_that("the forward search passes the offsets to the cache path", {
   multi_orig <- divmin_multi
   local_mocked_bindings(
     divmin_multi = function(formulas, shared_x, dot_args, throw_warn_sdivmin,
-                            do_check_conv, y = NULL) {
+                            do_check_conv, y = NULL, report = TRUE) {
       if (!is.null(y) && identical(dot_args[["offset"]], ref$off)) {
         n_offs <<- n_offs + 1L
       }
       multi_orig(formulas, shared_x, dot_args, throw_warn_sdivmin,
-                 do_check_conv, y)
+                 do_check_conv, y, report = report)
     }
   )
   vs <- varsel(ref$refm, method = "forward", nclusters = 1, nterms_max = 3,
