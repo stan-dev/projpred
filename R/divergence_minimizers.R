@@ -10,6 +10,7 @@ divmin <- function(
     throw_warn_sdivmin = getOption("projpred.warn_proj_drawwise", TRUE),
     do_check_conv = getOption("projpred.check_convergence", TRUE),
     projpred_mo_signs = NULL,
+    projpred_mo_force = NULL,
     ...
 ) {
   if (missing(throw_warn_sdivmin) &&
@@ -35,6 +36,14 @@ divmin <- function(
   trms_all <- extract_terms_response(formula)
   has_grp <- length(trms_all$group_terms) > 0
   has_add <- length(trms_all$additive_terms) > 0
+  # Negative binomial: the shape of each draw for the fit of the coefficients
+  # (see proj_to_submodl()). Each draw gets the family with its shape fixed.
+  nb_phi <- list(...)$projpred_nb_phi
+  if (!is.null(nb_phi) && (has_grp || has_add)) {
+    stop("Currently, projpred supports the negative binomial family only for ",
+         "submodels without group-level and without additive terms.",
+         call. = FALSE)
+  }
   projpred_formulas_no_random <- NA
   projpred_random <- NA
   # Define sdivmin(), the divergence minimizer for each draw s = 1, ..., S (and
@@ -79,12 +88,36 @@ divmin <- function(
          "from the number of projected draws. Please notify the package ",
          "maintainer.")
   }
-  # The signs of the sign groups of mo() terms in the full model, per draw:
-  mo_signs <- lapply(seq_along(formulas), function(s) {
+  # `projpred_mo_force` (logical, one element per draw): fit these draws with
+  # the sign constraint also if their unconstrained fit is monotonic (see
+  # nb_alternate()):
+  mo_force <- rep(FALSE, length(formulas))
+  if (!is.null(projpred_mo_force)) {
+    if (is.null(projpred_mo_signs) ||
+        length(projpred_mo_force) != length(formulas)) {
+      stop("Internal error: `projpred_mo_force` needs `projpred_mo_signs` ",
+           "and one element per projected draw. Please notify the package ",
+           "maintainer.")
+    }
+    if (any(projpred_mo_force) &&
+        !identical(sdivmin, fit_glm_ridge_callback)) {
+      stop("Internal error: `projpred_mo_force` needs the default submodel ",
+           "fitter and a submodel without group-level and additive terms. ",
+           "Please notify the package maintainer.")
+    }
+    mo_force <- projpred_mo_force
+  }
+  # The arguments of the draw-wise fits for the monotonic projection of mo()
+  # terms (only if needed, because custom fitters from global option
+  # `projpred.glm_fitter` might not accept them): the signs of the sign groups
+  # in the full model, and `projpred_mo_force`:
+  mo_args <- lapply(seq_along(formulas), function(s) {
     if (is.null(projpred_mo_signs)) {
       return(NULL)
     }
-    stats::setNames(projpred_mo_signs[s, ], colnames(projpred_mo_signs))
+    c(list(projpred_mo_signs = stats::setNames(projpred_mo_signs[s, ],
+                                               colnames(projpred_mo_signs))),
+      if (mo_force[s]) list(projpred_mo_force = TRUE))
   })
   # Gaussian multilevel submodels: one lFormula() for all draws (see
   # lmer_shared_callback()). The options and the lme4 check run here, because
@@ -134,11 +167,16 @@ divmin <- function(
     shared_x <- shared_model_matrix(formulas, data = list(...)$data,
                                     mo_groups = !is.null(projpred_mo_signs))
     if (!is.null(shared_x)) {
-      outdmin <- divmin_multi(formulas, shared_x = shared_x,
-                              dot_args = list(...),
-                              throw_warn_sdivmin = throw_warn_sdivmin,
-                              do_check_conv = do_check_conv,
-                              report = is.null(projpred_mo_signs))
+      # The multi-draw fitters do not use the families of the draws, so the
+      # negative binomial fits are draw-wise (also with mo() terms):
+      outdmin <- NULL
+      if (is.null(nb_phi)) {
+        outdmin <- divmin_multi(formulas, shared_x = shared_x,
+                                dot_args = list(...),
+                                throw_warn_sdivmin = throw_warn_sdivmin,
+                                do_check_conv = do_check_conv,
+                                report = is.null(projpred_mo_signs))
+      }
       if (!is.null(outdmin)) {
         if (is.null(projpred_mo_signs)) {
           return(outdmin)
@@ -147,9 +185,10 @@ divmin <- function(
           rep(list(character()), length(outdmin))
         attr(outdmin, "mssgs_warns_capts") <- NULL
         # Monotonic projection of mo() terms: fit those draws again (below)
-        # whose unconstrained solution is not monotonic:
+        # whose unconstrained solution is not monotonic (or that
+        # `projpred_mo_force` names):
         scale_x <- mo_col_scale(shared_x$x, weights = list(...)$weights)
-        draws_todo <- which(vapply(outdmin, function(sub) {
+        draws_todo <- which(mo_force | vapply(outdmin, function(sub) {
           mo_binding(sub$beta, shared_x$x, shared_x$mo_groups,
                      scale = scale_x)
         }, logical(1)))
@@ -170,6 +209,11 @@ divmin <- function(
   }
 
   dot_args <- list(...)
+  dot_args$projpred_nb_phi <- NULL
+  # The family of draw s (`NULL`: the family in `dot_args`):
+  family_draw <- function(s) {
+    if (is.null(nb_phi)) NULL else dot_args$family$fixed_dis_family(nb_phi[s])
+  }
   # The option of the Laplace fit (see mlvl_laplace()) is read here, because the
   # draw-wise calls may run in parallel workers:
   if (identical(sdivmin, fit_glmer_callback)) {
@@ -224,18 +268,14 @@ divmin <- function(
       if (verbose_divmin) {
         on.exit(utils::setTxtProgressBar(pb, i))
       }
-      # (`projpred_mo_signs` only if needed, because custom fitters from
-      # global option `projpred.glm_fitter` might not accept it)
       mssgs_warns_capt <- capt_fun(
         soutdmin <- do.call(sdivmin, c(
           list(formula = formulas[[s]],
                projpred_var = projpred_var[, s, drop = FALSE],
                projpred_formula_no_random = projpred_formulas_no_random[[s]],
                projpred_random = projpred_random),
-          if (!is.null(mo_signs[[s]])) {
-            list(projpred_mo_signs = mo_signs[[s]])
-          },
-          dot_args
+          mo_args[[s]],
+          dot_args_family(dot_args, family_draw(s))
         ))
       )
       return(nlist(soutdmin = strip_call_data(soutdmin), mssgs_warns_capt))
@@ -246,7 +286,7 @@ divmin <- function(
     # namespace as parent:
     one_draw <- fun_with_objs(function(formula_s, projpred_var_s,
                                        projpred_formula_no_random_s,
-                                       mo_signs_s) {
+                                       mo_args_s, family_s = NULL) {
       mssgs_warns_capt <- capt_fun(
         soutdmin <- do.call(
           sdivmin,
@@ -254,10 +294,8 @@ divmin <- function(
                  projpred_var = projpred_var_s,
                  projpred_formula_no_random = projpred_formula_no_random_s,
                  projpred_random = projpred_random),
-            if (!is.null(mo_signs_s)) {
-              list(projpred_mo_signs = mo_signs_s)
-            },
-            dot_args)
+            mo_args_s,
+            dot_args_family(dot_args, family_s))
         )
       )
       return(nlist(soutdmin = strip_call_data(soutdmin), mssgs_warns_capt))
@@ -266,7 +304,8 @@ divmin <- function(
       list(formula_s = formulas[[s]],
            projpred_var_s = projpred_var[, s, drop = FALSE],
            projpred_formula_no_random_s = projpred_formulas_no_random[[s]],
-           mo_signs_s = mo_signs[[s]])
+           mo_args_s = mo_args[[s]],
+           family_s = family_draw(s))
     })
     outdmin <- par_lapply(args_draws, call_with_args, .fun = one_draw,
                           .backend = backend, .progress = verbose_divmin)
@@ -285,6 +324,14 @@ divmin <- function(
   check_conv(outdmin, lengths(mssgs_warns_capts), do_check = do_check_conv)
   attr(outdmin, "projpred_lost_lvls") <- lost_lvls
   return(outdmin)
+}
+
+# `dot_args` with element `family` replaced by `family` (if not `NULL`):
+dot_args_family <- function(dot_args, family) {
+  if (!is.null(family)) {
+    dot_args$family <- family
+  }
+  dot_args
 }
 
 # The data for the multilevel and additive submodel fitters of divmin(): `data`
@@ -938,7 +985,8 @@ fit_glm_ridge_callback <- function(formula, data,
                                    projpred_var = matrix(nrow = nrow(data)),
                                    regul = 1e-4, thresh_conv = 1e-7,
                                    projpred_shared_x = NULL,
-                                   projpred_mo_signs = NULL, ...) {
+                                   projpred_mo_signs = NULL,
+                                   projpred_mo_force = FALSE, ...) {
   # Preparations:
   if (!is.null(projpred_shared_x)) {
     # Model matrix built once by shared_model_matrix(); only the response
@@ -980,10 +1028,12 @@ fit_glm_ridge_callback <- function(formula, data,
   fit <- do.call(glm_ridge, args_fit)
   msgs <- fit$msgs
   # Monotonic projection of mo() terms: if a sign group of the unconstrained
-  # solution has coefficients of both signs, fit again with the signs of the
-  # groups fixed (see mo_cons_signs()):
-  if (!is.null(projpred_mo_signs) &&
-      mo_binding(fit$beta, x, mo_groups, weights = dot_args$weights)) {
+  # solution has coefficients of both signs (or with `projpred_mo_force`), fit
+  # again with the signs of the groups fixed (see mo_cons_signs()):
+  mo_constrained <- !is.null(projpred_mo_signs) &&
+    (isTRUE(projpred_mo_force) ||
+       mo_binding(fit$beta, x, mo_groups, weights = dot_args$weights))
+  if (mo_constrained) {
     fit <- do.call(glm_ridge, c(
       args_fit, mo_cons_args(fit, x, mo_groups, projpred_mo_signs, dot_args)
     ))
@@ -999,6 +1049,10 @@ fit_glm_ridge_callback <- function(formula, data,
   # "predvars"), for predictions for new data:
   sub <- nlist(alpha = fit$beta0, beta = fit$beta, w = fit$w, formula, x, y,
                xlvls, terms = terms_train, contrasts = ctrs)
+  if (mo_constrained) {
+    # The fit has the sign constraint of mo() terms (see nb_alternate()):
+    sub$mo_constrained <- TRUE
+  }
   class(sub) <- "subfit"
   return(sub)
 }

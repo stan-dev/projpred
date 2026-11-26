@@ -50,8 +50,11 @@
 #'     + For the traditional (or latent) projection (or the augmented-data
 #'     projection in case of the [binomial()] or [brms::bernoulli()] family): An
 #'     internal C++ function which basically serves the same purpose as [lm()]
-#'     for the [gaussian()] family and [glm()] for all other families. The
-#'     returned object inherits from class `subfit`. Possible tuning parameters
+#'     for the [gaussian()] family and [glm()] for all other families. For the
+#'     negative binomial family, \pkg{projpred} alternates the fit of this
+#'     function (with the shape fixed) with a Newton search for the shape. The
+#'     returned object
+#'     inherits from class `subfit`. Possible tuning parameters
 #'     for this internal C++ function are: `regul` (amount of ridge
 #'     regularization; default: `1e-4`), `thresh_conv` (convergence threshold;
 #'     default: `1e-7`, but not used in case of the Gaussian family with
@@ -63,7 +66,9 @@
 #'     indicating whether to scale the predictors internally with the returned
 #'     regression coefficient estimates being back-adjusted appropriately;
 #'     default: `TRUE`), `beta0_init` (single numeric value giving the starting
-#'     value for the intercept at centered predictors; default: `0`), and
+#'     value for the intercept at centered predictors; default: `0`, but for
+#'     the negative binomial family the link function of the weighted mean
+#'     response, minus the weighted mean offset), and
 #'     `beta_init` (numeric vector giving the starting values for the regression
 #'     coefficients; default: vector of `0`s).
 #'     + For the augmented-data projection: [MASS::polr()] (the returned object
@@ -381,7 +386,9 @@
 #' * `projpred.glm_fitter`: A character string naming the function to be used as
 #' the submodel fitter for non-multilevel, non-additive projections. Currently,
 #' this is an experimental feature and allowed values are
-#' `"fit_glm_ridge_callback"` (the default) and `"fit_glm_callback"`.
+#' `"fit_glm_ridge_callback"` (the default) and `"fit_glm_callback"`. For the
+#' negative binomial family with offsets, \pkg{projpred} accepts only
+#' `"fit_glm_ridge_callback"`.
 #' * `projpred.gaussian_not_as_generalized`: A single logical value indicating
 #' whether to treat the [gaussian()] family not as a family for a *generalized
 #' linear* model (i.e., for which [glm()] would typically be used as a model
@@ -407,6 +414,12 @@
 #' [brms::categorical()] family with [mclogit::mblogit()] (`TRUE`) or with
 #' \pkg{projpred}'s own implementation of the PQL algorithm of
 #' [mclogit::mblogit()] (`FALSE`, the default).
+#' * `projpred.nb_gsum`: A character string, `"quadrature"` (the default) or
+#' `"exact"`. It selects how \pkg{projpred} computes the aggregated predictive
+#' probability mass function of the reference model for the projection of the
+#' shape of the negative binomial family. `"quadrature"` sums the probabilities
+#' exactly for y < 100 and uses a quadrature for larger y. `"exact"` sums the
+#' probabilities of all y up to an upper tail probability of 1e-17.
 #'
 #' @name internal-global-options
 #' @keywords internal

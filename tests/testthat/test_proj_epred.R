@@ -156,7 +156,7 @@ test_that("pe: `newdata` works", {
       } else {
         offs_crr <- NULL
       }
-      expect_warning(
+      expect_warning_all(
         pe_crr <- proj_epred(
           prjs[[tstsetup]],
           newdata = head(dat_crr, nobsv_crr),

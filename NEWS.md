@@ -8,9 +8,12 @@ If you read this from a place other than <https://mc-stan.org/projpred/news/inde
 
 * In `varsel()` and `cv_varsel()`, the submodel with all terms of the reference model gets the results of the reference model, not of a projection. This avoids the unstable full multilevel projection. Global option `projpred.full_size_ref` turns this off. (GitHub: #323, #441)
 * For the submodel with all terms of the reference model, `project()` on a `vsel` object returns thinned draws of the reference model, with a warning. `as.matrix()`, `as_draws_matrix()` and `mo_effects()` stop for these draws. (GitHub: #323, #441)
+* The traditional projection supports the negative binomial family (`rstanarm::neg_binomial_2()`, `brms::negbinomial()`, `MASS::negative.binomial()`) for submodels without group-level and additive terms. The shape parameter is projected, too. (GitHub: #361, #675)
 
 ## Minor changes
 
+* Tests: The test setup stops on an unexpected error, also when the error is known for another model type. A skipped test lists each dropped test setup. (GitHub: #565, #683)
+* Tests: Use edition 3 of testthat. Checks that all elements are `TRUE` now show the failing positions. (GitHub: #565, #682)
 * For projections onto submodels with smooth terms, `as.matrix()` and `as_draws_matrix()` give the smooth terms in the basis and with the parameter names of a **brms** or `rstanarm::stan_gamm4()` reference model fit, with the SDs of the penalized parts of the smooth terms. (GitHub: #151, #152, #676)
 * `Student_t()` is deprecated. Its projection has stopped with an error since projpred 2.1.0. For a Student-t reference model, use the latent projection; the latent-projection vignette has a new example. (GitHub: #3)
 * Support for monotonic terms `mo()` (as in **brms**). By default, the projected effect of each `mo()` term is monotonic (global option `projpred.mo_monotone`). New function `mo_effects()` gives these effects in the **brms** parametrization. (GitHub: #557, #591)

@@ -43,6 +43,9 @@ test_that(paste(
     return(df)
   }
 
+  expect_warning(fam_t3 <- Student_t(nu = 3, link = "identity"), "deprecated")
+  expect_warning(fam_t4 <- Student_t(nu = 4, link = "log"), "deprecated")
+  expect_warning(fam_t7 <- Student_t(nu = 7, link = "inverse"), "deprecated")
   fams <- list(
     extend_family(gaussian(link = "identity")),
     extend_family(gaussian(link = "log")),
@@ -50,12 +53,9 @@ test_that(paste(
     extend_family(binomial(link = "probit")),
     extend_family(binomial(link = "cauchit")),
     extend_family(poisson(link = "log")),
-    extend_family(expect_warning(Student_t(nu = 3, link = "identity"),
-                                 "deprecated")),
-    extend_family(expect_warning(Student_t(nu = 4, link = "log"),
-                                 "deprecated")),
-    extend_family(expect_warning(Student_t(nu = 7, link = "inverse"),
-                                 "deprecated"))
+    extend_family(fam_t3),
+    extend_family(fam_t4),
+    extend_family(fam_t7)
   )
 
   n <- 10
@@ -87,7 +87,7 @@ test_that(paste(
     fval <- seq(-5, 5, len = 100)
     gan <- sapply(fval, gradan)
     gfd <- sapply(fval, gradfd)
-    expect_equal(gan, gfd, tol = 1e-4 * max(abs(gan), abs(gfd)))
+    expect_equal(gan, gfd, tolerance = 1e-4 * max(abs(gan), abs(gfd)))
   }
 })
 
@@ -126,18 +126,22 @@ test_that("glm_ridge: gaussian, id-link, intercept, lambda = 0.5", {
   y <- rnorm(n, x %*% b, dis)
   lambda <- 0.5
 
+  # Without the standardization of `x`, so that the analytic solution below
+  # applies:
   ridgefit <- glm_ridge(x_tr, y,
                         family = fam, lambda = lambda,
-                        weights = weights, offset = offset, intercept = TRUE
+                        weights = weights, offset = offset, intercept = TRUE,
+                        normalize = FALSE
   )
-  # analytic solution, no penalty on the intercept term
-  penalty <- 0.5 * diag(c(0, rep(lambda, nterms_fit)))
+  # analytic solution of the loss 0.5 * sum(w * r^2) + 0.5 * lambda * |beta|^2,
+  # no penalty on the intercept term
+  penalty <- diag(c(0, rep(lambda, nterms_fit)))
   exp_beta <- c(solve(
     crossprod(cbind(1, x_tr) * sqrt(weights)) + penalty,
     crossprod(cbind(1, x_tr) * weights, y - offset)
   ))
 
-  expect_equal(exp_beta, c(ridgefit$beta0, ridgefit$beta), tolerance = tol)
+  expect_equal(exp_beta, c(ridgefit$beta0, ridgefit$beta), tolerance = 1e-10)
 })
 
 test_that("glm_ridge: gaussian, log-link, intercept, lambda = 0", {

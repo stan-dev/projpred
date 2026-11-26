@@ -574,8 +574,9 @@ search_L1_surrogate <- function(p_ref, d_train, family, intercept, nterms_max,
       d_train$x, mu, family,
       lambda_min_ratio = search_control$lambda_min_ratio %||% 1e-5,
       nlambda = search_control$nlambda %||% 150, pmax = nterms_max + 1,
-      pmax_strict = FALSE, weights = d_train$weights, intercept = intercept,
-      obsvar = v, penalty = penalty, thresh = search_control$thresh %||% 1e-6
+      pmax_strict = FALSE, weights = d_train$weights,
+      offset = d_train$offset, intercept = intercept, obsvar = v,
+      penalty = penalty, thresh = search_control$thresh %||% 1e-6
     )
   )
   out_capt <- unique(grep("[Ww]arning|bug", out_capt, value = TRUE))
@@ -683,8 +684,22 @@ search_L1 <- function(p_ref, refmodel, nterms_max, penalty, search_control) {
   ## in which lasso will estimate the parameters
   tt <- terms(refmodel$formula)
   terms_ <- attr(tt, "term.labels")
+  fam_L1 <- refmodel$family
+  d_train <- nlist(x, weights = refmodel$wobs)
+  if (identical(fam_L1$family, "negbinomial")) {
+    # The L1 path of the negative binomial family uses the shape of the
+    # reference model (aggregated over the draws of the single cluster) as a
+    # fixed shape. The projections after the search (`refit_prj = TRUE`)
+    # project the shape. With offsets, the path uses the means with offsets as
+    # the response and passes the offsets to the fitter (as nb_alternate()):
+    fam_L1 <- fam_L1$fixed_dis_family(min(p_ref$dis, nb_phi_max()))
+    if (any(refmodel$offset != 0)) {
+      p_ref$mu <- p_ref$mu_offs
+      d_train$offset <- refmodel$offset
+    }
+  }
   search_path <- search_L1_surrogate(
-    p_ref, nlist(x, weights = refmodel$wobs), refmodel$family,
+    p_ref, d_train, fam_L1,
     intercept = TRUE, ncol(x), penalty, search_control
   )
 

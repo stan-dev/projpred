@@ -181,7 +181,7 @@ test_that("divmin_augdat() works", {
                              names(args_fit_i))]
       )
     } else {
-      expect_warning(
+      expect_warning_all(
         outdmin <- do.call(
           divmin_augdat,
           args_fit_i[intersect(c("formula", "data", "family", "weights",

@@ -329,9 +329,9 @@ test_that(paste(
       }
     )
     expect_false(any(grepl("contrast", warns)), info = deparse(fml))
-    expect_true(all(is.finite(
+    expect_all_true_tst(is.finite(
       performances(cv, deltas = FALSE)$submodels$elpd
-    )), info = deparse(fml))
+    ), info = deparse(fml))
   }
 })
 
@@ -363,7 +363,7 @@ test_that("get_refmodel() takes the contrasts of an rstanarm fit", {
                  verbose = FALSE)
   expect_identical(rownames(prj$outdmin[[1]]$beta), c("f1", "f2", "x"))
   # The reference model's coefficient names have the same coding:
-  expect_true(all(c("f1", "f2") %in% names(coef(fit))))
+  expect_all_true_tst(c("f1", "f2") %in% names(coef(fit)))
 })
 
 test_that("the augmented-data submodels use the contrasts", {
@@ -424,7 +424,7 @@ test_that("the augmented-data submodels use the contrasts", {
     fits_sum <- suppressWarnings(fit_aug(cs$fam_nm, cs$fml, ctrs))
     fits_dflt <- suppressWarnings(fit_aug(cs$fam_nm, cs$fml, NULL))
     nms_sum <- coef_nms(fits_sum[[1]])
-    expect_true(all(c("f1", "f2") %in% nms_sum), info = info_crr)
+    expect_all_true_tst(c("f1", "f2") %in% nms_sum, info = info_crr)
     expect_false(any(c("fb", "fc") %in% nms_sum), info = info_crr)
     expect_no_warning(prd_sum <- subprd_augdat(fits_sum, newdata = nd))
     expect_equal(prd_sum, subprd_augdat(fits_dflt, newdata = nd),

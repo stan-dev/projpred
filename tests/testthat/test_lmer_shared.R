@@ -1,5 +1,3 @@
-context("lmer_shared")
-
 # These tests run on CRAN on purpose: lmer_shared_fit() repeats the steps of
 # lme4::lmer() after a shared lme4::lFormula(), so a change in lme4 has to make
 # them fail (also in the reverse-dependency checks of lme4).
@@ -63,7 +61,8 @@ test_that("divmin() gives the same lmer() fits with and without sharing", {
   for (s in seq_len(n_draws_ls)) {
     info_s <- paste("draw", s)
     expect_s4_class(fits_shared[[s]], "lmerMod")
-    expect_equal(fits_shared[[s]], fits_drawwise[[s]], tolerance = 0,
+    expect_equal(drop_mer_ptrs(fits_shared[[s]]),
+                 drop_mer_ptrs(fits_drawwise[[s]]), tolerance = 0,
                  info = info_s)
     expect_identical(lme4::getME(fits_shared[[s]], "theta"),
                      lme4::getME(fits_drawwise[[s]], "theta"), info = info_s)
@@ -86,7 +85,8 @@ test_that(paste(
   fits_drawwise <- divmin_ls(FALSE)
   for (s in seq_len(n_draws_ls)) {
     info_s <- paste("draw", s)
-    expect_equal(fits_shared[[s]], fits_drawwise[[s]], tolerance = 0,
+    expect_equal(drop_mer_ptrs(fits_shared[[s]]),
+                 drop_mer_ptrs(fits_drawwise[[s]]), tolerance = 0,
                  info = info_s)
     expect_identical(lme4::getME(fits_shared[[s]], "theta"),
                      lme4::getME(fits_drawwise[[s]], "theta"), info = info_s)

@@ -22,7 +22,9 @@ activated during the unit tests.
 \item \code{projpred.glm_fitter}: A character string naming the function to be used as
 the submodel fitter for non-multilevel, non-additive projections. Currently,
 this is an experimental feature and allowed values are
-\code{"fit_glm_ridge_callback"} (the default) and \code{"fit_glm_callback"}.
+\code{"fit_glm_ridge_callback"} (the default) and \code{"fit_glm_callback"}. For the
+negative binomial family with offsets, \pkg{projpred} accepts only
+\code{"fit_glm_ridge_callback"}.
 \item \code{projpred.gaussian_not_as_generalized}: A single logical value indicating
 whether to treat the \code{\link[=gaussian]{gaussian()}} family not as a family for a \emph{generalized
 linear} model (i.e., for which \code{\link[=glm]{glm()}} would typically be used as a model
@@ -48,6 +50,12 @@ fit the multilevel submodels of the augmented-data projection for the
 \code{\link[brms:categorical]{brms::categorical()}} family with \code{\link[mclogit:mblogit]{mclogit::mblogit()}} (\code{TRUE}) or with
 \pkg{projpred}'s own implementation of the PQL algorithm of
 \code{\link[mclogit:mblogit]{mclogit::mblogit()}} (\code{FALSE}, the default).
+\item \code{projpred.nb_gsum}: A character string, \code{"quadrature"} (the default) or
+\code{"exact"}. It selects how \pkg{projpred} computes the aggregated predictive
+probability mass function of the reference model for the projection of the
+shape of the negative binomial family. \code{"quadrature"} sums the probabilities
+exactly for y < 100 and uses a quadrature for larger y. \code{"exact"} sums the
+probabilities of all y up to an upper tail probability of 1e-17.
 }
 }
 \keyword{internal}
