@@ -277,16 +277,8 @@ the group-level effects should be integrated out completely.
 }
 
 \section{Submodel with all terms of the reference model}{
-If the submodel has all terms of the reference model, its projection
-reproduces each projected draw of the reference model (in the limit of a
-converged fit). The results of the reference model are then the results
-that this projection should give. The projection itself can differ from
-them because it uses fewer draws or clusters, and for multilevel submodels,
-it can be unstable (see GitHub issue
-\href{https://github.com/stan-dev/projpred/issues/323}{#323}). Therefore, if the
-search of \code{\link[=varsel]{varsel()}} or \code{\link[=cv_varsel]{cv_varsel()}} reaches the submodel with all search
-terms and these give all terms of the reference model, this submodel is not
-projected (neither in the search nor in the performance evaluation). Its
+If the submodel has all terms of the reference model, the projection
+is replaced with the reference model results: Its
 predictive performance is that of the reference model, and its value \code{ce}
 is the cross-entropy of the projected reference draws with themselves. In
 \code{\link[=summary.vsel]{summary.vsel()}}, a line below the table names this size, and in
