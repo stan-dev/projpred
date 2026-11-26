@@ -1,5 +1,3 @@
-context("log-likelihood where the inverse link clamps the mean")
-
 test_that("binomial ll_fun() with `eta` is exact where linkinv() clamps", {
   fam <- extend_family(binomial())
   eta <- cbind(c(-450, -40, -31, -30), c(450, 40, 31, 30), c(-5, 0, 5, 20),

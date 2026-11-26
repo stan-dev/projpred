@@ -36,7 +36,7 @@ test_that("perturb_weights() sums to n and does not change the RNG state", {
   w <- perturb_weights(50, 10, 123L)
   expect_identical(.Random.seed, rng_before)
   expect_equal(sum(w), 50)
-  expect_true(all(w > 0))
+  expect_all_true_tst(w > 0)
   # The same weights for another RNG kind (as in the parallel workers):
   RNGkind("L'Ecuyer-CMRG")
   set.seed(2)
@@ -110,8 +110,8 @@ test_that(paste(
   refm_v <- refm
   refm_v$eta[3, s] <- Inf
   eta_shift <- refm_v$eta + drop(refm_v$eta %*% cd)
-  expect_true(all(eta_shift[3, ] == Inf))
-  expect_true(all(is.finite(refm_v$family$linkinv(eta_shift))))
+  expect_all_true_tst(eta_shift[3, ] == Inf)
+  expect_all_true_tst(is.finite(refm_v$family$linkinv(eta_shift)))
   expect_null(perturb_refmodel(refm_v, i = i, ll = pp$ll, lw_i = pp$lw_i,
                                alpha = 10, seed = 99L))
   # Log link with an offset: `mu` is finite, but `mu_offs` is not.
@@ -241,13 +241,14 @@ test_that(paste(
   get_p_clust_ns <- function(...) {
     get("get_p_clust", envir = asNamespace("projpred"))(...)
   }
+  expect_warning(fam_t <- Student_t(nu = 4), "deprecated")
   # `n_shift`: the number of calls that add the shift to the cluster means.
   cases <- list(
     several = list(cl = cl_several, w = w, n_shift = 1L),
     several_thinned = list(cl = replace(cl_several, 1:3, NA), w = w,
                            n_shift = 1L),
     student_t = list(cl = cl_several, w = w, n_shift = 1L,
-                     family = extend_family(Student_t(nu = 4))),
+                     family = extend_family(fam_t)),
     latent = list(cl = cl_several, w = w, n_shift = 1L,
                   family = extend_family(binomial(), latent = TRUE)),
     several_special = list(cl = cl_several, w = w_special, n_shift = 0L),

@@ -2,11 +2,42 @@ test_that("as.matrix.projection() works", {
   skip_if_not(run_prj)
   for (tstsetup in names(prjs)) {
     if (args_prj[[tstsetup]]$mod_nm == "gam") {
-      # Skipping GAMs because of issue #150 and issue #151. Note that for GAMs,
-      # the current expectations in `test_as_matrix.R` refer to a mixture of
-      # brms's and rstanarm's naming scheme; as soon as issue #152 is solved,
-      # these expectations need to be adapted.
-      # TODO (GAMs): Fix this.
+      # For GAMs, only the columns of the smooth terms are checked here: they
+      # must be parameters of the reference model fit, with one SD column per
+      # s() term. `test_smooth_basis.R` checks their values.
+      allow_nonconst <- ndr_ncl_dtls(args_prj[[tstsetup]])$clust_used_gt1
+      expect_warning(
+        m <- as.matrix(prjs[[tstsetup]],
+                       allow_nonconst_wdraws_prj = allow_nonconst),
+        NA, info = tstsetup
+      )
+      fit_ref <- refmods[[args_prj[[tstsetup]]$tstsetup_ref]]$fit
+      if (args_prj[[tstsetup]]$pkg_nm == "brms") {
+        par_nms <- brms::variables(fit_ref)
+        sm_rgx <- "^(bs|sds|s)_"
+        null_sd_nms <- character()
+      } else {
+        par_nms <- colnames(as.matrix(fit_ref))
+        sm_rgx <- "^(s\\(|smooth_sd\\[)"
+        # The SD of the null space (the last penalty of an s() term in
+        # mgcv::jagam()) has no projected value:
+        sp_nms <- names(fit_ref$jam$sp)
+        sp_ends <- cumsum(vapply(fit_ref$jam$smooth, function(sm) {
+          length(sm$rank)
+        }, integer(1)))
+        null_sd_nms <- paste0("smooth_sd[", sp_nms[sp_ends], "]")
+      }
+      sm_nms <- grep(sm_rgx, colnames(m), value = TRUE)
+      # The reference models of the GAM setups have one smooth term:
+      s_trms <- grep("^s\\(", args_prj[[tstsetup]]$predictor_terms,
+                     value = TRUE)
+      if (length(s_trms)) {
+        expect_setequal(sm_nms,
+                        setdiff(grep(sm_rgx, par_nms, value = TRUE),
+                                null_sd_nms))
+      } else {
+        expect_length(sm_nms, 0)
+      }
       next
     }
     if (args_prj[[tstsetup]]$mod_nm == "gamm") {
@@ -264,14 +295,12 @@ test_that("as.matrix.projection() works", {
                    tolerance = 1e-10, info = tstsetup)
     }
     if (run_snaps) {
-      if (testthat_ed_max2) local_edition(3)
       withr::with_options(list(width = 145), {
         expect_snapshot({
           print(tstsetup)
           print(rlang::hash(m)) # message(m)
         })
       })
-      if (testthat_ed_max2) local_edition(2)
     }
   }
 })
@@ -354,8 +383,6 @@ test_that(paste(
 })
 
 if (run_snaps) {
-  if (testthat_ed_max2) local_edition(3)
-
   test_that(paste(
     "as.matrix.projection() works for projections based on varsel() output"
   ), {
@@ -363,11 +390,8 @@ if (run_snaps) {
     skip_if_not(run_vs)
     for (tstsetup in names(prjs_vs)) {
       if (args_prj_vs[[tstsetup]]$mod_nm == "gam") {
-        # Skipping GAMs because of issue #150 and issue #151. Note that for
-        # GAMs, the current expectations in `test_as_matrix.R` refer to a
-        # mixture of brms's and rstanarm's naming scheme; as soon as issue #152
-        # is solved, these expectations need to be adapted.
-        # TODO (GAMs): Fix this.
+        # No snapshots for GAMs. The first test of this file and
+        # `test_smooth_basis.R` check the columns of the smooth terms.
         next
       }
       if (args_prj_vs[[tstsetup]]$mod_nm == "gamm") {
@@ -403,11 +427,8 @@ if (run_snaps) {
     skip_if_not(run_cvvs)
     for (tstsetup in names(prjs_cvvs)) {
       if (args_prj_cvvs[[tstsetup]]$mod_nm == "gam") {
-        # Skipping GAMs because of issue #150 and issue #151. Note that for
-        # GAMs, the current expectations in `test_as_matrix.R` refer to a
-        # mixture of brms's and rstanarm's naming scheme; as soon as issue #152
-        # is solved, these expectations need to be adapted.
-        # TODO (GAMs): Fix this.
+        # No snapshots for GAMs. The first test of this file and
+        # `test_smooth_basis.R` check the columns of the smooth terms.
         next
       }
       if (args_prj_cvvs[[tstsetup]]$mod_nm == "gamm") {
@@ -435,8 +456,6 @@ if (run_snaps) {
       })
     }
   })
-
-  if (testthat_ed_max2) local_edition(2)
 }
 
 test_that("replace_population_names() works for zero and more effects", {

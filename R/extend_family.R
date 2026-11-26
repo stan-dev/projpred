@@ -354,6 +354,7 @@ extend_family <- function(family,
   }
   aug_data <- !is.null(augdat_link) && !is.null(augdat_ilink) && !latent
   if (!aug_data) {
+    family <- nb_canonical_name(family)
     extend_family_specific <- paste0("extend_family_", tolower(family$family))
     if (!exists(extend_family_specific, mode = "function")) {
       stop("Family '", family$family, "' is not supported by projpred.")
@@ -972,7 +973,7 @@ extend_family_student_t <- function(family) {
 
 has_dispersion <- function(family) {
   # a function for checking whether the family has a dispersion parameter
-  family$family %in% c("gaussian", "Student_t", "Gamma")
+  family$family %in% c("gaussian", "Student_t", "Gamma", "negbinomial")
 }
 
 # A function for checking whether a `family` object has the required extra
@@ -988,5 +989,6 @@ has_family_extras <- function(family) {
 fams_linkinv_mean <- function() {
   return(c("poisson", "neg_binomial_2", "negbinomial", "negbinomial2",
            "geometric", "Gamma", "gamma", "inverse.gaussian", "Beta",
-           "weibull", "exponential", "frechet", "skew_normal", "exgaussian"))
+           "weibull", "exponential", "frechet", "skew_normal", "exgaussian",
+           "student"))
 }

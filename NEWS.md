@@ -6,12 +6,22 @@ If you read this from a place other than <https://mc-stan.org/projpred/news/inde
 
 ## Major changes
 
+* The traditional projection supports the negative binomial family (`rstanarm::neg_binomial_2()`, `brms::negbinomial()`, `MASS::negative.binomial()`) for submodels without group-level and additive terms. The shape parameter is projected, too. (GitHub: #361, #675)
+
 ## Minor changes
 
 * New `formula()` method for `projection` objects. It gives the formula of the submodel in the form that projpred fits, for example to set up the submodel in another package. (GitHub: #678)
+* Tests: The test setup stops on an unexpected error, also when the error is known for another model type. A skipped test lists each dropped test setup. (GitHub: #565, #683)
+* Tests: Use edition 3 of testthat. Checks that all elements are `TRUE` now show the failing positions. (GitHub: #565, #682)
+* For projections onto submodels with smooth terms, `as.matrix()` and `as_draws_matrix()` give the smooth terms in the basis and with the parameter names of a **brms** or `rstanarm::stan_gamm4()` reference model fit, with the SDs of the penalized parts of the smooth terms. (GitHub: #151, #152, #676)
+* `Student_t()` is deprecated. Its projection has stopped with an error since projpred 2.1.0. For a Student-t reference model, use the latent projection; the latent-projection vignette has a new example. (GitHub: #3)
+* Support for monotonic terms `mo()` (as in **brms**). By default, the projected effect of each `mo()` term is monotonic (global option `projpred.mo_monotone`). New function `mo_effects()` gives these effects in the **brms** parametrization. (GitHub: #557, #591)
 
 ## Bug fixes
 
+* With subsampled LOO (`nloo` below the number of observations) and unequal observation weights, the SEs of `"mse"`, `"rmse"`, `"R2"` and pointwise custom statistics were too small. All SEs with subsampled LOO are now also numerically stable for values with a large common offset. (GitHub: #679)
+
+* For `rstanarm::stan_gamm4()` reference models with `t2()` terms, `rstanarm::posterior_linpred()` gives wrong linear predictors. projpred now computes them itself, so the reference model predictions, the projections and the predictive performance results are correct. (GitHub: #677)
 
 
 

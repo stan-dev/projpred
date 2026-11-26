@@ -85,6 +85,13 @@ pseudo_data <- function(f, y, family, offset = rep(0, NROW(f)),
     dis <- NULL
     loss <- 0.5 * sum(family$deviance(mu, y, weights, dis))
     grad <- -wobs * (z - f)
+  } else if (isTRUE(family$nb_fixed)) {
+    # Negative binomial with a fixed shape (see nb_fixed_family()). The
+    # deviance residuals of MASS::negative.binomial() are finite for a
+    # non-integer `y`:
+    wobs <- (weights * dmu_df^2) / family$variance(mu)
+    loss <- 0.5 * sum(family$dev.resids(y, mu, weights))
+    grad <- -wobs * (z - f)
   } else {
     stop("Don't know how to compute quadratic approximation and gradients",
          sprintf(" for family '%s'.", family$family))
@@ -220,15 +227,33 @@ glm_ridge <- function(x, y, family = gaussian(), lambda = 0, thresh = 1e-7,
                       qa_updates_max = NULL, weights = NULL, offset = NULL,
                       obsvar = 0, intercept = TRUE, penalty = NULL,
                       normalize = TRUE, beta_init = NULL, beta0_init = NULL,
-                      ls_iter_max = 30, print_msgs = TRUE) {
+                      ls_iter_max = 30, cons_cols = NULL, cons_signs = NULL,
+                      print_msgs = TRUE) {
   #
   # Fits GLM with ridge penalty on the regression coefficients.
   # Does not handle any dispersion parameters.
+  # Optional sign constraints: cons_signs[k] * beta[cons_cols[k]] >= 0, with
+  # `cons_cols` the column indices of `x` and `cons_signs` 1 or -1. The C++
+  # code moves the elements of a start `beta_init` (on the scale of the
+  # standardized `x`) that violate them to the bound 0.
   # The warning messages of the C++ fitter are returned in element `msgs`. With
   # `print_msgs = TRUE`, they are also printed to the standard output.
   #
   if (is.null(x)) {
     x <- matrix(ncol = 0, nrow = length(y))
+  }
+  if (is.null(cons_cols)) {
+    cons_cols <- integer()
+  }
+  if (is.null(cons_signs)) {
+    cons_signs <- numeric()
+  }
+  if (length(cons_cols) != length(cons_signs) ||
+      anyDuplicated(cons_cols) ||
+      any(!cons_cols %in% seq_len(NCOL(x))) ||
+      any(!cons_signs %in% c(-1, 1))) {
+    stop("Internal error: invalid sign constraints. Please notify the ",
+         "package maintainer.")
   }
   family <- extend_family(family)
   if (family$family == "gaussian" && family$link == "identity") {
@@ -248,6 +273,14 @@ glm_ridge <- function(x, y, family = gaussian(), lambda = 0, thresh = 1e-7,
   }
   if (is.null(beta0_init)) {
     beta0_init <- 0
+    if (isTRUE(family$nb_fixed) && intercept) {
+      # For the negative binomial family with the sqrt or the identity link,
+      # the start 0 gives the mean 0 and IRLS weights 0. The predictors are
+      # centered below, so the intercept starts at the link of the mean (minus
+      # the mean offset):
+      beta0_init <- family$linkfun(sum(weights * y) / sum(weights)) -
+        sum(weights * offset) / sum(weights)
+    }
   }
   if (is.null(beta_init)) {
     beta_init <- rep(0, NCOL(x))
@@ -302,7 +335,8 @@ glm_ridge <- function(x, y, family = gaussian(), lambda = 0, thresh = 1e-7,
   w0 <- weights
   out <- glm_ridge_fit_c(x, y, family, weights, offset, obsvar, lambda,
                          intercept, penalty, beta_start, w0, thresh,
-                         qa_updates_max, ls_iter_max)
+                         qa_updates_max, ls_iter_max, cons_cols = cons_cols,
+                         cons_signs = cons_signs)
   beta <- out[[1]]
   beta0 <- as.vector(out[[2]])
   w <- out[[3]]
@@ -320,11 +354,13 @@ glm_ridge <- function(x, y, family = gaussian(), lambda = 0, thresh = 1e-7,
 
 # Calls the C++ fitter: glm_ridge_native_c() if it supports the family and the
 # link (see native_pseudo_codes()), otherwise glm_ridge_c() with pseudo_data()
-# as the R callback. Both give the same results.
+# as the R callback. Both give the same results. Sign constraints (see
+# glm_ridge()) always use glm_ridge_c().
 glm_ridge_fit_c <- function(x, y, family, weights, offset, obsvar, lambda,
                             intercept, penalty, beta_start, w0, thresh,
-                            qa_updates_max, ls_iter_max) {
-  codes <- native_pseudo_codes(family)
+                            qa_updates_max, ls_iter_max,
+                            cons_cols = integer(), cons_signs = numeric()) {
+  codes <- if (length(cons_cols) == 0) native_pseudo_codes(family) else NULL
   if (!is.null(codes)) {
     return(glm_ridge_native_c(
       x, as.numeric(y), as.numeric(weights), as.numeric(offset), codes[1],
@@ -337,7 +373,9 @@ glm_ridge_fit_c <- function(x, y, family, weights, offset, obsvar, lambda,
                 obsvar = obsvar, wprev = wprev)
   }
   return(glm_ridge_c(x, pseudo_obs, lambda, intercept, penalty, beta_start,
-                     w0, thresh, qa_updates_max, ls_iter_max))
+                     w0, thresh, qa_updates_max, ls_iter_max,
+                     cons_cols = as.integer(cons_cols),
+                     cons_signs = as.numeric(cons_signs)))
 }
 
 # Family and link codes for glm_ridge_native_c(), or `NULL` if the

@@ -85,9 +85,23 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// bls_c
+List bls_c(arma::mat Q, arma::vec q, Rcpp::IntegerVector cons, arma::vec b_init);
+RcppExport SEXP _projpred_bls_c(SEXP QSEXP, SEXP qSEXP, SEXP consSEXP, SEXP b_initSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< arma::mat >::type Q(QSEXP);
+    Rcpp::traits::input_parameter< arma::vec >::type q(qSEXP);
+    Rcpp::traits::input_parameter< Rcpp::IntegerVector >::type cons(consSEXP);
+    Rcpp::traits::input_parameter< arma::vec >::type b_init(b_initSEXP);
+    rcpp_result_gen = Rcpp::wrap(bls_c(Q, q, cons, b_init));
+    return rcpp_result_gen;
+END_RCPP
+}
 // glm_ridge_c
-List glm_ridge_c(arma::mat x, Function pseudo_obs, double lambda, bool intercept, arma::vec penalty, arma::vec beta_init, arma::vec w_init, double thresh, int qa_updates_max, int ls_iter_max, bool debug);
-RcppExport SEXP _projpred_glm_ridge_c(SEXP xSEXP, SEXP pseudo_obsSEXP, SEXP lambdaSEXP, SEXP interceptSEXP, SEXP penaltySEXP, SEXP beta_initSEXP, SEXP w_initSEXP, SEXP threshSEXP, SEXP qa_updates_maxSEXP, SEXP ls_iter_maxSEXP, SEXP debugSEXP) {
+List glm_ridge_c(arma::mat x, Function pseudo_obs, double lambda, bool intercept, arma::vec penalty, arma::vec beta_init, arma::vec w_init, double thresh, int qa_updates_max, int ls_iter_max, bool debug, Rcpp::IntegerVector cons_cols, Rcpp::NumericVector cons_signs);
+RcppExport SEXP _projpred_glm_ridge_c(SEXP xSEXP, SEXP pseudo_obsSEXP, SEXP lambdaSEXP, SEXP interceptSEXP, SEXP penaltySEXP, SEXP beta_initSEXP, SEXP w_initSEXP, SEXP threshSEXP, SEXP qa_updates_maxSEXP, SEXP ls_iter_maxSEXP, SEXP debugSEXP, SEXP cons_colsSEXP, SEXP cons_signsSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -102,7 +116,9 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< int >::type qa_updates_max(qa_updates_maxSEXP);
     Rcpp::traits::input_parameter< int >::type ls_iter_max(ls_iter_maxSEXP);
     Rcpp::traits::input_parameter< bool >::type debug(debugSEXP);
-    rcpp_result_gen = Rcpp::wrap(glm_ridge_c(x, pseudo_obs, lambda, intercept, penalty, beta_init, w_init, thresh, qa_updates_max, ls_iter_max, debug));
+    Rcpp::traits::input_parameter< Rcpp::IntegerVector >::type cons_cols(cons_colsSEXP);
+    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type cons_signs(cons_signsSEXP);
+    rcpp_result_gen = Rcpp::wrap(glm_ridge_c(x, pseudo_obs, lambda, intercept, penalty, beta_init, w_init, thresh, qa_updates_max, ls_iter_max, debug, cons_cols, cons_signs));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -202,6 +218,24 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// nb_gsum_c
+Rcpp::List nb_gsum_c(const Rcpp::NumericMatrix& mu, const Rcpp::NumericMatrix& shape, const Rcpp::NumericVector& w, const Rcpp::NumericVector& v, int y0, double c_bin, double tail, int method);
+RcppExport SEXP _projpred_nb_gsum_c(SEXP muSEXP, SEXP shapeSEXP, SEXP wSEXP, SEXP vSEXP, SEXP y0SEXP, SEXP c_binSEXP, SEXP tailSEXP, SEXP methodSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const Rcpp::NumericMatrix& >::type mu(muSEXP);
+    Rcpp::traits::input_parameter< const Rcpp::NumericMatrix& >::type shape(shapeSEXP);
+    Rcpp::traits::input_parameter< const Rcpp::NumericVector& >::type w(wSEXP);
+    Rcpp::traits::input_parameter< const Rcpp::NumericVector& >::type v(vSEXP);
+    Rcpp::traits::input_parameter< int >::type y0(y0SEXP);
+    Rcpp::traits::input_parameter< double >::type c_bin(c_binSEXP);
+    Rcpp::traits::input_parameter< double >::type tail(tailSEXP);
+    Rcpp::traits::input_parameter< int >::type method(methodSEXP);
+    rcpp_result_gen = Rcpp::wrap(nb_gsum_c(mu, shape, w, v, y0, c_bin, tail, method));
+    return rcpp_result_gen;
+END_RCPP
+}
 // wcol_moments_c
 List wcol_moments_c(const arma::mat& mu, const IntegerVector& idx, const arma::vec& scale, const arma::vec& wobs, double sum_w);
 RcppExport SEXP _projpred_wcol_moments_c(SEXP muSEXP, SEXP idxSEXP, SEXP scaleSEXP, SEXP wobsSEXP, SEXP sum_wSEXP) {
@@ -223,11 +257,13 @@ static const R_CallMethodDef CallEntries[] = {
     {"_projpred_clust_moments_c", (DL_FUNC) &_projpred_clust_moments_c, 7},
     {"_projpred_cumul_fit_multi_c", (DL_FUNC) &_projpred_cumul_fit_multi_c, 7},
     {"_projpred_glm_elnet_c", (DL_FUNC) &_projpred_glm_elnet_c, 14},
-    {"_projpred_glm_ridge_c", (DL_FUNC) &_projpred_glm_ridge_c, 11},
+    {"_projpred_bls_c", (DL_FUNC) &_projpred_bls_c, 4},
+    {"_projpred_glm_ridge_c", (DL_FUNC) &_projpred_glm_ridge_c, 13},
     {"_projpred_glm_ridge_native_c", (DL_FUNC) &_projpred_glm_ridge_native_c, 15},
     {"_projpred_glm_ridge_native_multi_c", (DL_FUNC) &_projpred_glm_ridge_native_multi_c, 15},
     {"_projpred_mlvl_cumul_c", (DL_FUNC) &_projpred_mlvl_cumul_c, 13},
     {"_projpred_mlvl_laplace_c", (DL_FUNC) &_projpred_mlvl_laplace_c, 13},
+    {"_projpred_nb_gsum_c", (DL_FUNC) &_projpred_nb_gsum_c, 8},
     {"_projpred_wcol_moments_c", (DL_FUNC) &_projpred_wcol_moments_c, 5},
     {NULL, NULL, 0}
 };

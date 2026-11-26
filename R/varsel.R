@@ -631,6 +631,7 @@ varsel.refmodel <- function(
       )[["clust_used"]],
       draws_shift = refmodel$draws_shift
     )
+    p_sel <- mo_add_cache(p_sel, refmodel)
   }
 
   verb_out(rep("-", verbose_line_length), "\nRunning ", method, " search ",
@@ -694,6 +695,9 @@ parse_args_varsel <- function(refmodel, method, refit_prj, nterms_max,
   if (!method %in% c("L1", "forward")) {
     stop("Unexpected value for argument `method`.")
   }
+  # Unsupported cases of monotonic projections of mo() terms, before the
+  # search starts:
+  check_mo_monotone(refmodel, terms_ = search_terms, method = method)
 
   if (!is.null(search_screen)) {
     if (!is.numeric(search_screen) || length(search_screen) != 1 ||
@@ -723,9 +727,15 @@ parse_args_varsel <- function(refmodel, method, refit_prj, nterms_max,
 
   if (!has_group_features &&
       getOption("projpred.warn_instable_projections", TRUE) &&
-      method == "L1" && refmodel$family$family == "poisson") {
+      method == "L1" &&
+      refmodel$family$family %in% c("poisson", "negbinomial")) {
+    fam_nm <- if (refmodel$family$family == "poisson") {
+      "Poisson"
+    } else {
+      "negative binomial"
+    }
     warning(
-      "For non-multilevel Poisson models, an L1 search based on the ",
+      "For non-multilevel ", fam_nm, " models, an L1 search based on the ",
       "traditional projection may be instable. The latent projection may be a ",
       "remedy. See section \"Troubleshooting\" of the main vignette for more ",
       "information."

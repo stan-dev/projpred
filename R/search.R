@@ -265,6 +265,7 @@ search_forward_gauss <- function(p_ref, refmodel, nterms_max, verbose,
   lambda_x <- des$lambda_x
   a_full <- des$a_full
   wdraws <- p_ref$wdraws_prj
+  signs_fun <- gauss_mo_signs_fun(p_ref, refmodel, divmin_args)
 
   # The term labels of a candidate string. The same strings come back in every
   # step, so the labels are computed once. `[[` and assign() make a symbol from
@@ -321,6 +322,21 @@ search_forward_gauss <- function(p_ref, refmodel, nterms_max, verbose,
       beta_c <- backsolve(r_chosen, y_c)
       quad <- quad + colSums(y_chosen^2) +
         colSums(lambda_x[cols_chosen] * beta_c^2)
+    }
+    # The monotonicity constraint of mo() terms (see gauss_mo_fix()):
+    cols_all <- c(cols_chosen, cols_new)
+    grps <- gauss_mo_groups_in(des, cols_all)
+    if (length(grps) > 0) {
+      beta_all <- rbind(if (length(cols_chosen) > 0) beta_c, beta_n)
+      mo_out <- gauss_mo_fix(beta_all, cols_all, des, c_mat, signs_fun,
+                             grps = grps)
+      if (is.null(mo_out)) {
+        return(list(crit = NA_real_))
+      }
+      if (length(mo_out$fixed) > 0) {
+        quad[mo_out$fixed] <- gauss_quad_cols(mo_out$beta, cols_all, des,
+                                              c_mat, mo_out$fixed)
+      }
     }
     return(list(crit = -sum(wdraws * quad), r_cn = r_cn, r_n = r_n, y_n = y_n))
   }
@@ -405,7 +421,10 @@ search_forward_gauss <- function(p_ref, refmodel, nterms_max, verbose,
       })
     }
     crits <- rep(NA_real_, length(cands))
-    is_single <- lengths(cols_cands) == 1L
+    # (crit_single() does not apply the constraint of mo() terms. A sign group
+    # has at least two columns, so a candidate with one column adds none.)
+    is_single <- lengths(cols_cands) == 1L &
+      length(gauss_mo_groups_in(des, cols_chosen)) == 0
     if (any(is_single)) {
       crits[is_single] <- crit_single(unlist(cols_cands[is_single]),
                                       cols_chosen, r_chosen, y_chosen)
@@ -535,8 +554,9 @@ search_L1_surrogate <- function(p_ref, d_train, family, intercept, nterms_max,
       d_train$x, mu, family,
       lambda_min_ratio = search_control$lambda_min_ratio %||% 1e-5,
       nlambda = search_control$nlambda %||% 150, pmax = nterms_max + 1,
-      pmax_strict = FALSE, weights = d_train$weights, intercept = intercept,
-      obsvar = v, penalty = penalty, thresh = search_control$thresh %||% 1e-6
+      pmax_strict = FALSE, weights = d_train$weights,
+      offset = d_train$offset, intercept = intercept, obsvar = v,
+      penalty = penalty, thresh = search_control$thresh %||% 1e-6
     )
   )
   out_capt <- unique(grep("[Ww]arning|bug", out_capt, value = TRUE))
@@ -644,8 +664,22 @@ search_L1 <- function(p_ref, refmodel, nterms_max, penalty, search_control) {
   ## in which lasso will estimate the parameters
   tt <- terms(refmodel$formula)
   terms_ <- attr(tt, "term.labels")
+  fam_L1 <- refmodel$family
+  d_train <- nlist(x, weights = refmodel$wobs)
+  if (identical(fam_L1$family, "negbinomial")) {
+    # The L1 path of the negative binomial family uses the shape of the
+    # reference model (aggregated over the draws of the single cluster) as a
+    # fixed shape. The projections after the search (`refit_prj = TRUE`)
+    # project the shape. With offsets, the path uses the means with offsets as
+    # the response and passes the offsets to the fitter (as nb_alternate()):
+    fam_L1 <- fam_L1$fixed_dis_family(min(p_ref$dis, nb_phi_max()))
+    if (any(refmodel$offset != 0)) {
+      p_ref$mu <- p_ref$mu_offs
+      d_train$offset <- refmodel$offset
+    }
+  }
   search_path <- search_L1_surrogate(
-    p_ref, nlist(x, weights = refmodel$wobs), refmodel$family,
+    p_ref, d_train, fam_L1,
     intercept = TRUE, ncol(x), penalty, search_control
   )
 

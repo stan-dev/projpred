@@ -182,6 +182,68 @@ test_that(paste(
 })
 
 test_that(paste(
+  "get_refmodel.stanreg() gives the linear predictors of the Stan fit for",
+  "rstanarm::stan_gamm4() fits with a t2() term"
+), {
+  skip_if_not_installed("rstanarm")
+  skip_if_not(run_additive)
+  n_t2 <- 60L
+  i_t2 <- seq_len(n_t2)
+  dat_t2 <- data.frame(x = (i_t2 * 0.618) %% 1, z = (i_t2 * 0.4142) %% 1,
+                       g = gl(6L, 10L))
+  dat_t2$y <- sin(2 * pi * dat_t2$x) + cos(3 * dat_t2$z) +
+    as.numeric(dat_t2$g) / 3 + 0.3 * sin(7 * i_t2)
+  fits_t2 <- suppressWarnings(list(
+    gam = rstanarm::stan_gamm4(
+      y ~ s(x) + t2(x, z), data = dat_t2,
+      chains = 1L, seed = seed_fit, iter = 200L, refresh = 0
+    ),
+    gamm = rstanarm::stan_gamm4(
+      y ~ s(x) + t2(x, z), random = ~ (1 | g), data = dat_t2,
+      chains = 1L, seed = seed_fit, iter = 200L, refresh = 0
+    )
+  ))
+  # New data: rows of the fit data, so that the design matrix of the Stan fit
+  # (`fit$x`) gives the population-level part. The last row has a new group
+  # level.
+  idx_new <- c(5:1, 31:35, 40L)
+  dat_new <- dat_t2[idx_new, ]
+  dat_new$g <- factor(as.character(dat_new$g),
+                      levels = c(levels(dat_t2$g), "7"))
+  dat_new$g[length(idx_new)] <- "7"
+  for (nm in names(fits_t2)) {
+    fit <- fits_t2[[nm]]
+    expect_false(is.null(fit$jam$P), info = nm)
+    # For a GAMM, `fit$x` also has the columns of the group-level terms:
+    x_all <- as.matrix(fit$x)
+    eta_stan <- t(tcrossprod(as.matrix(fit$stanfit)[, colnames(x_all)], x_all))
+    ncoef <- ncol(predict(fit$jam, type = "lpmatrix"))
+    beta <- as.matrix(fit)[, seq_len(ncoef), drop = FALSE]
+    eta_pop_new <- t(tcrossprod(beta,
+                                x_all[idx_new, seq_len(ncoef), drop = FALSE]))
+    re_new <- 0
+    if (!is.null(fit$glmod)) {
+      re_new <- t(rstanarm::posterior_linpred(fit, newdata = dat_new) -
+                    rstanarm::posterior_linpred(fit, newdata = dat_new,
+                                                re.form = NA))
+    }
+    refmod <- get_refmodel(fit)
+    expect_equal(unname(refmod$eta), unname(eta_stan), tolerance = 1e-8,
+                 info = nm)
+    expect_equal(unname(refmod$ref_predfun(fit, newdata = dat_new)),
+                 unname(eta_pop_new + re_new), tolerance = 1e-8, info = nm)
+    # With `mlvl_allrandom = TRUE`, all observations get new group levels, so
+    # the group-level part is the same for all observations of a draw:
+    re_allr <- unname(refmod$ref_predfun(fit, newdata = dat_new,
+                                         mlvl_allrandom = TRUE) - eta_pop_new)
+    expect_equal(re_allr,
+                 matrix(re_allr[1, ], nrow(re_allr), ncol(re_allr),
+                        byrow = TRUE),
+                 tolerance = 1e-8, info = nm)
+  }
+})
+
+test_that(paste(
   "get_refmodel.stanreg() expands `.` in the formula without the columns for",
   "the observation weights and offsets"
 ), {
@@ -472,7 +534,7 @@ test_that(paste(
     }
 
     # Without `ynew`:
-    expect_warning(
+    expect_warning_all(
       withCallingHandlers(
         predref_resp <- predict(refmods[[tstsetup]], dat, weightsnew = wobs_crr,
                                 offsetnew = offs_crr, type = "response"),
@@ -487,7 +549,7 @@ test_that(paste(
       info = tstsetup
     )
 
-    expect_warning(
+    expect_warning_all(
       predref_link <- predict(refmods[[tstsetup]], dat, weightsnew = wobs_crr,
                               offsetnew = offs_crr, type = "link"),
       get_warn_wrhs_orhs(tstsetup, weightsnew = wobs_crr,
@@ -496,7 +558,7 @@ test_that(paste(
     )
 
     # With `ynew`:
-    expect_warning(
+    expect_warning_all(
       predref_ynew_resp <- predict(refmods[[tstsetup]], dat,
                                    weightsnew = wobs_crr, offsetnew = offs_crr,
                                    ynew = y_crr, type = "response"),
@@ -504,7 +566,7 @@ test_that(paste(
                          offsetnew = offs_crr),
       info = tstsetup
     )
-    expect_warning(
+    expect_warning_all(
       predref_ynew_link <- predict(refmods[[tstsetup]], dat,
                                    weightsnew = wobs_crr, offsetnew = offs_crr,
                                    ynew = y_crr_link, type = "link"),
@@ -519,14 +581,14 @@ test_that(paste(
         expect_identical(dim(predref_resp),
                          c(nobsv, length(refmods[[tstsetup]]$family$cats)),
                          info = tstsetup)
-        expect_true(all(predref_resp >= 0 & predref_resp <= 1),
-                    info = tstsetup)
+        expect_all_true_tst(predref_resp >= 0 & predref_resp <= 1,
+                            info = tstsetup)
       } else {
         expect_true(is.vector(predref_resp, "double"), info = tstsetup)
         expect_length(predref_resp, nobsv)
         if (fam_crr %in% c("brnll", "binom")) {
-          expect_true(all(predref_resp >= 0 & predref_resp <= 1),
-                      info = tstsetup)
+          expect_all_true_tst(predref_resp >= 0 & predref_resp <= 1,
+                              info = tstsetup)
         }
       }
       if (prj_crr == "augdat") {
@@ -541,8 +603,8 @@ test_that(paste(
       expect_true(is.vector(predref_resp, "double"), info = tstsetup)
       expect_length(predref_resp, nobsv)
       if (fam_crr %in% c("brnll", "binom")) {
-        expect_true(all(predref_resp >= 0 & predref_resp <= 1),
-                    info = tstsetup)
+        expect_all_true_tst(predref_resp >= 0 & predref_resp <= 1,
+                            info = tstsetup)
       }
       expect_true(is.vector(predref_link, "double"), info = tstsetup)
       expect_length(predref_link, nobsv)
@@ -567,7 +629,6 @@ test_that(paste(
 
     # Snapshots:
     if (run_snaps) {
-      if (testthat_ed_max2) local_edition(3)
       withr::with_options(list(width = 145), {
         expect_snapshot({
           print(tstsetup)
@@ -577,7 +638,6 @@ test_that(paste(
           print(rlang::hash(predref_ynew_link))
         })
       })
-      if (testthat_ed_max2) local_edition(2)
     }
   }
 })

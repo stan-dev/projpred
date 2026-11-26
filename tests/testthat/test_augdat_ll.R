@@ -1,5 +1,3 @@
-context("augmented-data log-likelihood from the linear predictor")
-
 # Augmented-data families of the tests (`ilink` is the inverse link that the
 # family gets in extend_family()):
 softmax_ref1 <- function(eta_arr) {

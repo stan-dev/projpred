@@ -532,9 +532,13 @@ get_refdist <- function(refmodel, ndraws = NULL, nclusters = NULL,
       wdraws_orig = rep(1, S),
       clust_used = FALSE
     )
+    if (identical(refmodel$family$family, "negbinomial")) {
+      # Cache of nb_pref_gsum():
+      p_ref$nb_cache <- new.env(parent = emptyenv())
+    }
   }
 
-  return(p_ref)
+  return(mo_add_cache(p_ref, refmodel))
 }
 
 # Returns the draws (columns) of `eta` as an S x r matrix of coordinates in an
@@ -799,9 +803,36 @@ get_p_clust <- function(family, eta, mu, mu_offs, dis, nclusters = 10,
   }
   predvar <- unname(predvar)
   wcluster <- wcluster / sum(wcluster)
+  # Negative binomial: the draws of the clusters with several draws, for the
+  # mixture of their NB distributions (see nb_pref_gsum()), and a cache:
+  nb_mix <- NULL
+  nb_cache <- NULL
+  if (identical(family$family, "negbinomial")) {
+    nb_cache <- new.env(parent = emptyenv())
+    if (any(lengths(ind_by_cl) > 1L)) {
+      # Without a class, no copy of the draws is made:
+      mu_mix <- mu_offs
+      if (is.object(mu_mix)) {
+        mu_mix <- unclass(mu_mix)
+        attributes(mu_mix) <- list(dim = dim(mu_mix))
+      }
+      if (!is.null(draws_shift)) {
+        mu_mix <- mu_mix + draws_shift
+      }
+      v_mix <- lapply(ind_by_cl, function(ind) {
+        v <- wdraws_in[ind] / sum(wdraws_in[ind])
+        if (!all(is.finite(v))) {
+          v <- rep(1 / length(ind), length(ind))
+        }
+        v
+      })
+      nb_mix <- list(mu = mu_mix, dis = as.numeric(dis),
+                     ind = unname(ind_by_cl), v = unname(v_mix))
+    }
+  }
 
   # combine the results
-  return(list(
+  p_ref <- list(
     mu = structure(unname(centers),
                    ndiscrete = attr(mu, "ndiscrete"),
                    class = oldClass(mu)),
@@ -818,7 +849,12 @@ get_p_clust <- function(family, eta, mu, mu_offs, dis, nclusters = 10,
     cl = cl,
     wdraws_orig = wdraws,
     clust_used = clust_used_forced %||% TRUE
-  ))
+  )
+  if (!is.null(nb_cache)) {
+    p_ref$nb_mix <- nb_mix
+    p_ref$nb_cache <- nb_cache
+  }
+  return(p_ref)
 }
 
 # Stops if all projected draws (or clusters) have weight 0. In PSIS-LOO CV,

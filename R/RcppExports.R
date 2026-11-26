@@ -17,8 +17,12 @@ glm_elnet_c <- function(x, pseudo_obs, lambda, alpha, intercept, penalty, thresh
     .Call('_projpred_glm_elnet_c', PACKAGE = 'projpred', x, pseudo_obs, lambda, alpha, intercept, penalty, thresh, qa_updates_max, pmax, pmax_strict, beta, beta0, w0, as_updates_max)
 }
 
-glm_ridge_c <- function(x, pseudo_obs, lambda, intercept, penalty, beta_init, w_init, thresh, qa_updates_max, ls_iter_max = 100L, debug = FALSE) {
-    .Call('_projpred_glm_ridge_c', PACKAGE = 'projpred', x, pseudo_obs, lambda, intercept, penalty, beta_init, w_init, thresh, qa_updates_max, ls_iter_max, debug)
+bls_c <- function(Q, q, cons, b_init) {
+    .Call('_projpred_bls_c', PACKAGE = 'projpred', Q, q, cons, b_init)
+}
+
+glm_ridge_c <- function(x, pseudo_obs, lambda, intercept, penalty, beta_init, w_init, thresh, qa_updates_max, ls_iter_max = 100L, debug = FALSE, cons_cols = as.integer( c()), cons_signs = as.numeric( c())) {
+    .Call('_projpred_glm_ridge_c', PACKAGE = 'projpred', x, pseudo_obs, lambda, intercept, penalty, beta_init, w_init, thresh, qa_updates_max, ls_iter_max, debug, cons_cols, cons_signs)
 }
 
 glm_ridge_native_c <- function(x, y, weights, offset, family_code, link_code, lambda, intercept, penalty, beta_init, w_init, thresh, qa_updates_max, ls_iter_max = 100L, debug = FALSE) {
@@ -35,6 +39,10 @@ mlvl_cumul_c <- function(alpha, beta, tau, x, grp, nlev, y, w, u, link, want_gra
 
 mlvl_laplace_c <- function(theta, beta, x, grp, nlev, y, w, offset, u, fam, want_grad, tol = 1e-10, maxit = 50L) {
     .Call('_projpred_mlvl_laplace_c', PACKAGE = 'projpred', theta, beta, x, grp, nlev, y, w, offset, u, fam, want_grad, tol, maxit)
+}
+
+nb_gsum_c <- function(mu, shape, w, v, y0, c_bin, tail, method) {
+    .Call('_projpred_nb_gsum_c', PACKAGE = 'projpred', mu, shape, w, v, y0, c_bin, tail, method)
 }
 
 wcol_moments_c <- function(mu, idx, scale, wobs, sum_w) {

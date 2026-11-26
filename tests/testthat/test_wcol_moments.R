@@ -1,5 +1,3 @@
-context("weighted column moments in compiled code")
-
 test_that(paste(
   "wcol_moments_c() gives the weighted means and sums of squares of scaled",
   "columns"
@@ -53,8 +51,8 @@ test_that(paste(
   wdraws <- exp(rnorm(S))
   thin <- rep(NA, S)
   thin[c(2, 9, 17, 30)] <- 1:4
-  for (fam in list(extend_family(gaussian()),
-                   extend_family(Student_t(nu = 5)))) {
+  expect_warning(fam_t <- Student_t(nu = 5), "deprecated")
+  for (fam in list(extend_family(gaussian()), extend_family(fam_t))) {
     for (cl in list(seq_len(S), sample(S), thin)) {
       args <- list(family = fam, eta = mu, mu = mu, mu_offs = mu + 1,
                    dis = dis, wdraws = wdraws, cl = cl)
@@ -118,7 +116,7 @@ test_that(paste(
   args_inf <- args
   args_inf$mu_offs[2, 3] <- Inf
   mom <- do.call(get_p_clust, c(args_inf, list(cl = thin)))
-  expect_true(all(ss_finite(mom, wobs)))
+  expect_all_true_tst(ss_finite(mom, wobs))
   # A user-defined `family$predvar` (no `predvar_mix` for it):
   fam_user <- extend_family(gaussian())
   fam_user$predvar <- function(mu, dis, wdraws = 1) {

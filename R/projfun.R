@@ -21,7 +21,17 @@ proj_to_submodl <- function(predictor_terms, p_ref, refmodel,
   # submodel formula, the draw-wise formulas and the shared model matrix depend
   # only on the reference model and the predictor terms, so proj_cache_store()
   # caches them. The submodel fits are the same as from divmin().
-  use_fast <- is.null(y_unqs_aug) &&
+  # The negative binomial projection alternates with the projection of the
+  # shapes (see nb_alternate()):
+  nb_alt <- nb_alternates(refmodel)
+  # The response of the submodel fits: the reference means without offsets,
+  # for NB the means with offsets (the fit then uses the offsets, see
+  # nb_alternate()):
+  y_fit <- if (nb_alt) p_ref$mu_offs else p_ref$mu
+  # divmin_multi() has no sign constraints, so the monotonic projection of mo()
+  # terms uses divmin():
+  mo_cons <- mo_monotone() && has_mo_term(terms_)
+  use_fast <- !mo_cons && is.null(y_unqs_aug) && !nb_alt &&
     identical(refmodel$div_minimizer, divmin) &&
     proj_fast_ok(dot_args_divmin) &&
     !anyNA(p_ref$mu)
@@ -42,7 +52,7 @@ proj_to_submodl <- function(predictor_terms, p_ref, refmodel,
       }
     }
     if (is.null(prep)) {
-      ent_general <- proj_prepare_general(refmodel, terms_, p_ref$mu,
+      ent_general <- proj_prepare_general(refmodel, terms_, y_fit,
                                           y_unqs = y_unqs_aug,
                                           use_fast = use_fast)
       subset <- ent_general$subset
@@ -82,7 +92,7 @@ proj_to_submodl <- function(predictor_terms, p_ref, refmodel,
     if (is.null(subset)) {
       subset <- subset_formula_and_data(
         formula = refmodel$formula, terms_ = terms_,
-        data = refmodel$fetch_data(), y = p_ref$mu, y_unqs = y_unqs_aug
+        data = refmodel$fetch_data(), y = y_fit, y_unqs = y_unqs_aug
       )
       subset$data <- set_contrasts(subset$data, refmodel$contrasts)
     }
@@ -105,7 +115,36 @@ proj_to_submodl <- function(predictor_terms, p_ref, refmodel,
                           projpred_ws_aug = projpred_ws_aug,
                           verbose_divmin = verbose >= 3L),
                      dot_args_divmin)
-    outdmin <- do.call(refmodel$div_minimizer, args_divmin)
+    if (mo_cons) {
+      if (refmodel$family$for_augdat ||
+          !identical(refmodel$div_minimizer, divmin)) {
+        stop_mo_unsupported(paste(
+          "the augmented-data projection (the latent projection is supported)",
+          "and custom divergence minimizers"
+        ))
+      }
+      trms_sub <- extract_terms_response(fml_divmin)
+      has_grp <- length(trms_sub$group_terms) > 0
+      if (length(trms_sub$additive_terms) > 0 ||
+          (has_grp && !mo_lmm_supported(refmodel$family)) ||
+          (!has_grp && !identical(getOption("projpred.glm_fitter",
+                                            "fit_glm_ridge_callback"),
+                                  "fit_glm_ridge_callback"))) {
+        stop_mo_unsupported(paste0(
+          "additive submodels, other submodel fitters than the default one, ",
+          "and ", mo_lmm_unsupported_why()
+        ))
+      }
+      # The signs of the mo() terms in the projection onto the full model, for
+      # the monotonicity constraint:
+      args_divmin$projpred_mo_signs <- mo_full_signs(p_ref, refmodel,
+                                                     args_divmin)
+    }
+    if (nb_alt) {
+      outdmin <- nb_alternate(args_divmin, p_ref = p_ref, refmodel = refmodel)
+    } else {
+      outdmin <- do.call(refmodel$div_minimizer, args_divmin)
+    }
   }
 
   return(init_submodl(
@@ -280,12 +319,18 @@ perf_eval <- function(search_path,
         S = length(refmodel$wdraws_ref)
       )[["clust_used"]]
       p_clust <- function(as_moments = FALSE) {
-        get_p_clust(
+        p_ref <- get_p_clust(
           family = refmodel$family, eta = refmodel$eta, mu = refmodel$mu,
           mu_offs = refmodel$mu_offs, dis = refmodel$dis,
           wdraws = reweighting_args$wdraws_ref, cl = reweighting_args$cl_ref,
           clust_used_forced = clust_used_forced, as_moments = as_moments
         )
+        if (!as_moments) {
+          # (The signs from the full model need the draw matrices, so only
+          # the full result gets the cache, see perf_eval_gauss().)
+          p_ref <- mo_add_cache(p_ref, refmodel)
+        }
+        return(p_ref)
       }
       p_ref <- NULL
       if (use_gauss_crossprod && !return_p_ref &&
@@ -396,6 +441,95 @@ perf_eval <- function(search_path,
   return(out)
 }
 
+# Does the projection for `refmodel` use nb_alternate() (negative binomial
+# family and the default divergence minimizer)?
+nb_alternates <- function(refmodel) {
+  identical(refmodel$family$family, "negbinomial") &&
+    identical(refmodel$div_minimizer, divmin)
+}
+
+# The projection onto a negative binomial submodel: the coefficients depend on
+# the shape, so the fit of the coefficients with the shapes fixed (divmin()
+# with `projpred_nb_phi`, one shape per projected draw) and the projection of
+# the shapes (`family$dis_fun()`, as in init_submodl()) alternate. The start is
+# the shape of the reference model (`p_ref$dis`). The loop stops when the
+# largest change of log(shape) is below `tol`; attribute `nb_iter` of the
+# result is the number of iterations. This is the KL projection also with
+# offsets: the response in `args_divmin$data` is the reference means with
+# offsets (see proj_to_submodl()), the fit of the coefficients gets the
+# offsets, and the shape step uses the means with offsets.
+nb_alternate <- function(args_divmin, p_ref, refmodel, tol = 1e-5,
+                         maxit = 50L, tol_cycle = 1e-3) {
+  if (any(refmodel$offset != 0)) {
+    # The predictions of a stats::glm() fit with argument `offset` would add
+    # the offsets a second time:
+    if (!identical(getOption("projpred.glm_fitter", "fit_glm_ridge_callback"),
+                   "fit_glm_ridge_callback")) {
+      stop("For the negative binomial family with offsets, global option ",
+           "`projpred.glm_fitter` must be \"fit_glm_ridge_callback\".",
+           call. = FALSE)
+    }
+    args_divmin$offset <- refmodel$offset
+  }
+  p_ref_offs <- p_ref
+  p_ref_offs$mu <- p_ref$mu_offs
+  phi <- as.numeric(p_ref$dis)
+  phi[phi == Inf] <- nb_phi_max()
+  phi[!is.finite(phi) | phi <= 0] <- 1
+  phi <- pmin(phi, nb_phi_max())
+  # Monotonic projection of mo() terms: whether the sign constraint applies to
+  # a draw depends on the shape, and near the switch point the decision and
+  # the shape can alternate without end. A draw in such a cycle (its decision
+  # changes, and an earlier iteration, not the last one, had the same decision
+  # and shape within `tol_cycle` on the log scale) keeps the constraint in the
+  # later iterations, so that its decision no longer changes. `tol_cycle` is
+  # much larger than `tol` and much smaller than the change of the shape
+  # between the two decisions:
+  mo_force <- NULL
+  if (!is.null(args_divmin$projpred_mo_signs)) {
+    mo_force <- rep(FALSE, length(phi))
+    # The decisions and the log shapes of the earlier iterations (rows):
+    mo_cons_hist <- NULL
+    mo_lphi_hist <- NULL
+  }
+  for (it in seq_len(maxit)) {
+    outdmin <- do.call(divmin, c(args_divmin, list(projpred_nb_phi = phi),
+                                 if (!is.null(mo_force)) {
+                                   list(projpred_mo_force = mo_force)
+                                 }))
+    if (!is.null(mo_force)) {
+      cons <- vapply(outdmin, function(fit) isTRUE(fit$mo_constrained),
+                     logical(1))
+      n_hist <- NROW(mo_cons_hist)
+      if (n_hist >= 2) {
+        changed <- cons != mo_cons_hist[n_hist, ]
+        earlier <- seq_len(n_hist - 1)
+        same <- t(mo_cons_hist[earlier, , drop = FALSE]) == cons &
+          abs(t(mo_lphi_hist[earlier, , drop = FALSE]) - log(phi)) < tol_cycle
+        mo_force <- mo_force | (changed & rowSums(same) > 0)
+      }
+      mo_cons_hist <- rbind(mo_cons_hist, cons)
+      mo_lphi_hist <- rbind(mo_lphi_hist, log(phi))
+    }
+    mu <- refmodel$mu_fun(outdmin, offset = refmodel$offset)
+    if (anyNA(mu) || any(mu <= 0)) {
+      stop("The negative binomial projection gave submodel means <= 0. Use ",
+           "the log link.", call. = FALSE)
+    }
+    phi_new <- refmodel$family$dis_fun(p_ref_offs, nlist(mu, dis = phi),
+                                       refmodel$wobs)
+    change <- max(abs(log(phi_new) - log(phi)))
+    phi <- phi_new
+    if (change < tol) {
+      return(structure(outdmin, nb_iter = it))
+    }
+  }
+  warning("The projection of the negative binomial shape did not converge ",
+          "in ", maxit, " iterations (largest change of log(shape) in the ",
+          "last iteration: ", signif(change, 3), ").", call. = FALSE)
+  outdmin
+}
+
 # Process the output of the `div_minimizer` function (see init_refmodel()) to
 # create an object of class `submodl`.
 init_submodl <- function(outdmin, p_ref, refmodel, predictor_terms, wobs) {
@@ -408,24 +542,9 @@ init_submodl <- function(outdmin, p_ref, refmodel, predictor_terms, wobs) {
          "need an adaptation) or not (this would need an adaptation).")
   }
   if (refmodel$family$family == "Student_t") {
-    stop("For the `Student_t()` family, init_submodl() is not finished yet.")
-    ### TODO (Student_t()): Check if this is needed (perhaps with some
-    ### modifications) or if something completely different is needed (there
-    ### used to be no special handling of the `Student_t()` family here at all):
-    # pobs <- pseudo_data(
-    #   f = 0, y = p_ref$mu, family = refmodel$family, weights = wobs,
-    #   offset = refmodel$offset
-    # )
-    # ### TODO (Student_t()): Add `dis` and perhaps other elements here?:
-    # p_ref <- list(mu = pobs$z, var = p_ref$var)
-    # ###
-    # if (!all(refmodel$offset == 0)) {
-    #   p_ref$mu <- refmodel$family$linkinv(
-    #     refmodel$family$linkfun(p_ref$mu) + refmodel$offset
-    #   )
-    # }
-    # wobs <- pobs$wobs
-    ###
+    stop("The deprecated `Student_t()` family is not supported for the ",
+         "projection. For a Student-t reference model, use the latent ",
+         "projection (see the latent-projection vignette).")
   }
 
   mu <- refmodel$mu_fun(outdmin, offset = refmodel$offset)

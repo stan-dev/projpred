@@ -103,7 +103,9 @@ p_clust_cases <- function(inp) {
 }
 
 test_that("get_p_clust() gives the results of the cluster loop", {
-  fams <- list(extend_family(gaussian()), extend_family(Student_t(nu = 4)),
+  expect_warning(fam_t <- Student_t(nu = 4), "deprecated")
+  fams <- list(extend_family(gaussian()),
+               extend_family(fam_t),
                extend_family(binomial()), extend_family(poisson()))
   for (fam in fams) {
     inp <- p_clust_inputs(fam)
@@ -140,8 +142,8 @@ test_that(paste(
       out <- get_p_clust(family = fam, eta = inp$eta, mu = inp$mu,
                          mu_offs = inp$mu_offs, dis = inp$dis, wdraws = w,
                          cl = cl)
-      expect_true(all(is.finite(out$mu)), info = info)
-      expect_true(all(is.finite(out$mu_offs)), info = info)
+      expect_all_true_tst(is.finite(out$mu), info = info)
+      expect_all_true_tst(is.finite(out$mu_offs), info = info)
       # The predictive variances are NA for some families, also for clusters
       # with nonzero weights:
       expect_identical(is.na(unclass(out$var)[, 2]),
@@ -201,8 +203,9 @@ test_that(paste(
 })
 
 test_that("the built-in families give get_p_clust() its predvar_mix() path", {
+  expect_warning(fam_t <- Student_t(nu = 4), "deprecated")
   fams <- list(gaussian = extend_family(gaussian()),
-               Student_t = extend_family(Student_t(nu = 4)),
+               Student_t = extend_family(fam_t),
                binomial = extend_family(binomial()),
                poisson = extend_family(poisson()),
                latent = extend_family(binomial(), latent = TRUE))
@@ -250,9 +253,9 @@ test_that(paste(
   for (el in c("mu", "mu_offs", "dis")) {
     expect_identical(without_var[[el]], with_var[[el]], info = el)
   }
-  expect_true(all(is.na(without_var$var_offs)))
+  expect_all_true_tst(is.na(without_var$var_offs))
   expect_identical(dim(without_var$var_offs), dim(with_var$var_offs))
-  expect_true(all(is.na(without_var$dis2)))
+  expect_all_true_tst(is.na(without_var$dis2))
   expect_length(without_var$dis2, 2L)
   expect_false(anyNA(with_var$var_offs))
   expect_false(anyNA(with_var$dis2))
@@ -264,8 +267,9 @@ test_that(paste(
 ), {
   need_var_args <- logical()
   clust_moments_orig <- clust_moments_c
+  expect_warning(fam_t <- Student_t(nu = 4), "deprecated")
   fams <- list(gaussian = extend_family(gaussian()),
-               Student_t = extend_family(Student_t(nu = 4)),
+               Student_t = extend_family(fam_t),
                latent = extend_family(binomial(), latent = TRUE),
                binomial = extend_family(binomial()),
                poisson = extend_family(poisson()))

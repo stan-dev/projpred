@@ -46,7 +46,7 @@ extfam_tester <- function(extfam,
   if (fam_orig$family %in% bfam_nms) {
     # Just check that the basic names exist (to avoid depending too strongly on
     # brms internals):
-    expect_true(all(fam_orig_nms %in% names(fam_orig)), info = info_str)
+    expect_all_true_tst(fam_orig_nms %in% names(fam_orig), info = info_str)
   } else {
     if (fam_orig$family != "cumulative_rstanarm") {
       fam_orig_nms <- c(fam_orig_nms, "variance", "dev.resids", "aic", "mu.eta",
@@ -55,7 +55,7 @@ extfam_tester <- function(extfam,
         fam_orig_nms <- c(fam_orig_nms, "simulate")
       }
     }
-    expect_true(all(fam_orig_nms %in% names(fam_orig)), info = info_str)
+    expect_all_true_tst(fam_orig_nms %in% names(fam_orig), info = info_str)
   }
 
   ## For `extfam` -----------------------------------------------------------
@@ -89,7 +89,7 @@ extfam_tester <- function(extfam,
     }
   }
   extfam_nms <- c(fam_orig_nms, extfam_nms_add)
-  expect_true(all(extfam_nms %in% names(extfam)), info = info_str)
+  expect_all_true_tst(extfam_nms %in% names(extfam), info = info_str)
 
   # Detailed tests ----------------------------------------------------------
 
@@ -125,17 +125,17 @@ extfam_tester <- function(extfam,
   }
   if (!from_brms) {
     expect_identical(fam_orig_ch, fam_orig,
-                     ignore.environment = extfam$for_latent, info = info_str)
+                     ignore_function_env = extfam$for_latent, info = info_str)
   } else if (extfam$family %in% bfam_nms) {
     expect_identical(
       fam_orig_ch,
       structure(fam_orig[setdiff(names(fam_orig), c("dpars", "multi_dpars"))],
                 class = class(fam_orig)),
-      ignore.environment = TRUE,
+      ignore_function_env = TRUE,
       info = info_str
     )
   } else {
-    expect_identical(fam_orig_ch, fam_orig, ignore.environment = TRUE,
+    expect_identical(fam_orig_ch, fam_orig, ignore_function_env = TRUE,
                      info = info_str)
   }
 
@@ -558,7 +558,7 @@ refmodel_tester <- function(
     } else {
       expect_true(is.vector(refmod$dis, "double"), info = info_str)
       expect_length(refmod$dis, nrefdraws_expected)
-      expect_true(all(refmod$dis > 0), info = info_str)
+      expect_all_true_tst(refmod$dis > 0, info = info_str)
     }
   } else {
     expect_identical(refmod$dis, rep(NA, nrefdraws_expected), info = info_str)
@@ -628,7 +628,9 @@ refmodel_tester <- function(
                              stdized_lhs$y_nm)
         }
         refdat_ch <- data_expected[, refdat_colnms, drop = FALSE]
-        expect_equal(refmod$fetch_data(), refdat_ch, check.attributes = FALSE,
+        # `ignore_attr = TRUE` also ignores the class:
+        expect_s3_class(refmod$fetch_data(), "data.frame")
+        expect_equal(refmod$fetch_data(), refdat_ch, ignore_attr = TRUE,
                      info = info_str)
       } else {
         # TODO: The check in this case is not optimal yet because it subsets
@@ -640,8 +642,9 @@ refmodel_tester <- function(
           refdat_ch <- cbind(refdat_ch, wobs_col = data_expected$wobs_col)
         }
         names(refdat_ch) <- sub("^offset\\((.*)\\)$", "\\1", names(refdat_ch))
+        expect_s3_class(refmod$fetch_data(), "data.frame")
         expect_equal(refmod$fetch_data()[, names(refdat_ch), drop = FALSE],
-                     refdat_ch, check.attributes = FALSE, info = info_str)
+                     refdat_ch, ignore_attr = TRUE, info = info_str)
       }
     } else if (is_datafit && pkg_nm != "brms" && fam_nm == "binom") {
       refdat_ch <- data_expected
@@ -669,7 +672,7 @@ refmodel_tester <- function(
   # wdraws_ref
   expect_true(is.vector(refmod$wdraws_ref, "double"), info = info_str)
   expect_length(refmod$wdraws_ref, nrefdraws_expected)
-  expect_true(all(refmod$wdraws_ref > 0), info = info_str)
+  expect_all_true_tst(refmod$wdraws_ref > 0, info = info_str)
 
   # offset
   ### Not needed because of the more precise test below:
@@ -835,9 +838,9 @@ outdmin_tester_trad <- function(
           expect_length(outdmin_totest[[!!j]]$w, nobsv)
         }
         if (allow_w_zero) {
-          expect_true(all(outdmin_totest[[!!j]]$w >= 0), info = info_str)
+          expect_all_true_tst(outdmin_totest[[!!j]]$w >= 0, info = info_str)
         } else {
-          expect_true(all(outdmin_totest[[!!j]]$w > 0), info = info_str)
+          expect_all_true_tst(outdmin_totest[[!!j]]$w > 0, info = info_str)
         }
         if (sub_fam == "gaussian") {
           # Note: For non-Gaussian families, a comparison of
@@ -852,7 +855,7 @@ outdmin_tester_trad <- function(
         expect_s3_class(outdmin_totest[[!!j]]$formula, "formula")
         if (!grepl(":", as.character(outdmin_totest[[j]]$formula)[3])) {
           expect_equal(outdmin_totest[[!!j]]$formula, sub_formul[[!!j]],
-                       info = info_str)
+                       ignore_formula_env = TRUE, info = info_str)
         } else {
           # The order of terms as well as the order of individual terms within
           # ":" interaction terms might be changed in the reference model:
@@ -953,13 +956,14 @@ outdmin_tester_trad <- function(
       grps_expected <- mlvl_laplace_grps(sub_formul[[1]])
       for (j in seq_extensive_tests) {
         expect_equal(formula(outdmin_totest[[!!j]]),
-                     flatten_formula(sub_formul[[j]]), info = info_str)
+                     flatten_formula(sub_formul[[j]]),
+                     ignore_formula_env = TRUE, info = info_str)
         expect_identical(names(outdmin_totest[[!!j]]$coefficients),
                          colnames(mm_expected), info = info_str)
-        expect_true(all(is.finite(outdmin_totest[[!!j]]$coefficients)),
-                    info = info_str)
+        expect_all_true_tst(is.finite(outdmin_totest[[!!j]]$coefficients),
+                            info = info_str)
         expect_setequal(names(outdmin_totest[[!!j]]$sd), grps_expected)
-        expect_true(all(outdmin_totest[[!!j]]$sd >= 0), info = info_str)
+        expect_all_true_tst(outdmin_totest[[!!j]]$sd >= 0, info = info_str)
         for (g in grps_expected) {
           expect_identical(
             names(outdmin_totest[[!!j]]$ranef[[!!g]]),
@@ -1001,7 +1005,7 @@ outdmin_tester_trad <- function(
       }
       expect_equal(outdmin_totest[[!!j]]@call[["formula"]],
                    sub_formul_expected,
-                   info = info_str)
+                   ignore_formula_env = TRUE, info = info_str)
 
       # resp
       if (!with_offs) {
@@ -1103,8 +1107,8 @@ outdmin_tester_trad <- function(
         expect_identical(nrow(coefs_crr[[zz]]),
                          unname(nlvl_ran[zz]),
                          info = paste(info_str, j, zz, sep = "__"))
-        expect_true(all(sapply(coefs_crr[[zz]], is.numeric)),
-                    info = paste(info_str, j, zz, sep = "__"))
+        expect_all_true_tst(sapply(coefs_crr[[zz]], is.numeric),
+                            info = paste(info_str, j, zz, sep = "__"))
       }
     }
   } else if (!has_grp && has_add) {
@@ -1235,14 +1239,14 @@ outdmin_tester_aug <- function(
           paste(head(augdat_cats, -1), tail(augdat_cats, -1), sep = "|"),
           info = info_str
         )
-        expect_true(all(diff(fit_j$alpha) > 0), info = info_str)
+        expect_all_true_tst(diff(fit_j$alpha) > 0, info = info_str)
         expect_true(is.vector(fit_j$coefficients, "numeric"), info = info_str)
         if (length(coefs_nms_expected)) {
           expect_named(fit_j$coefficients, coefs_nms_expected, info = info_str)
         } else {
           expect_length(fit_j$coefficients, 0)
         }
-        expect_true(all(is.finite(fit_j$coefficients)), info = info_str)
+        expect_all_true_tst(is.finite(fit_j$coefficients), info = info_str)
         expect_named(fit_j$sd, "z.1", info = info_str)
         expect_true(fit_j$sd >= 0, info = info_str)
         expect_named(fit_j$ranef, "z.1", info = info_str)
@@ -1448,10 +1452,11 @@ outdmin_tester_aug <- function(
           expect_equal(
             random_crr[[1]]$formula,
             as.formula(paste("~", paste(coef_nms_no_icpt, collapse = "+"))),
-            info = info_str
+            ignore_formula_env = TRUE, info = info_str
           )
         } else {
-          expect_equal(random_crr[[1]]$formula, ~ 1, info = info_str)
+          expect_equal(random_crr[[1]]$formula, ~ 1, ignore_formula_env = TRUE,
+                       info = info_str)
         }
         expect_identical(random_crr[[1]]$groups, "z.1", info = info_str)
 
@@ -1620,6 +1625,11 @@ refdist_tester <- function(refd,
   expect_type(refd, "list")
   refd_nms <- c("mu", "mu_offs", "var", "dis", "wdraws_prj", "const_wdraws_prj",
                 "nprjdraws", "cl", "wdraws_orig", "clust_used")
+  # (Reference models with mo() terms add a cache, see mo_add_cache().)
+  if ("mo_cache" %in% names(refd)) {
+    expect_true(is.environment(refd$mo_cache), info = info_str)
+    refd_nms <- c(refd_nms, "mo_cache")
+  }
   expect_named(refd, refd_nms, info = info_str)
 
   # mu
@@ -1644,7 +1654,7 @@ refdist_tester <- function(refd,
   if (fam_expected == "gaussian") {
     expect_true(is.numeric(refd$var), info = info_str)
   } else {
-    expect_true(all(is.na(refd$var)), info = info_str)
+    expect_all_true_tst(is.na(refd$var), info = info_str)
   }
   if (aug_expected) {
     expect_s3_class(refd$var, "augmat")
@@ -1654,7 +1664,7 @@ refdist_tester <- function(refd,
   if (fam_expected == "gaussian") {
     expect_true(is.vector(refd$dis, "numeric"), info = info_str)
   } else {
-    expect_true(all(is.na(refd$dis)), info = info_str)
+    expect_all_true_tst(is.na(refd$dis), info = info_str)
   }
   expect_length(refd$dis, nprjdraws_expected)
 
@@ -1926,10 +1936,12 @@ proj_list_tester <- function(p,
     # For a sequential `proj_list` object and training data, `ce` should be
     # non-increasing for increasing model size:
     ceseq <- sapply(p, function(x) sum(x$ce))
-    expect_true(all(ifelse(sign(head(ceseq, -1)) == 1,
-                           tail(ceseq, -1) <= extra_tol * head(ceseq, -1),
-                           tail(ceseq, -1) <= 1 / extra_tol * head(ceseq, -1))),
-                info = info_str)
+    expect_all_true_tst(
+      ifelse(sign(head(ceseq, -1)) == 1,
+             tail(ceseq, -1) <= extra_tol * head(ceseq, -1),
+             tail(ceseq, -1) <= 1 / extra_tol * head(ceseq, -1)),
+      info = info_str
+    )
   }
   return(invisible(TRUE))
 }
@@ -2316,7 +2328,7 @@ vsel_tester <- function(
     rk_fulldata <- c(rk_fulldata,
                      labels(terms(as.formula(paste(". ~", rk_fulldata_plus)))))
   }
-  expect_true(all(rk_fulldata %in% trms_universe_split_lin), info = info_str)
+  expect_all_true_tst(rk_fulldata %in% trms_universe_split_lin, info = info_str)
 
   # predictor_ranking_cv
   if (with_cv && isTRUE(vs$validate_search)) {
@@ -2336,8 +2348,8 @@ vsel_tester <- function(
       rk_cv <- setdiff(rk_cv, rk_cv_plus)
       rk_cv <- c(rk_cv, labels(terms(as.formula(paste(". ~", rk_cv_plus)))))
     }
-    expect_true(all(rk_cv %in% c(trms_universe_split_lin, NA_character_)),
-                info = info_str)
+    expect_all_true_tst(rk_cv %in% c(trms_universe_split_lin, NA_character_),
+                        info = info_str)
   } else {
     expect_null(vs$predictor_ranking_cv, info = info_str)
   }
@@ -2349,10 +2361,12 @@ vsel_tester <- function(
     expect_type(vs$ce, "double")
     expect_length(vs$ce, prd_trms_len_expected + 1)
     # Expected to be non-increasing for increasing model size:
-    expect_true(all(ifelse(sign(head(vs$ce, -1)) == 1,
-                           tail(vs$ce, -1) <= extra_tol * head(vs$ce, -1),
-                           tail(vs$ce, -1) <= 1 / extra_tol * head(vs$ce, -1))),
-                info = info_str)
+    expect_all_true_tst(
+      ifelse(sign(head(vs$ce, -1)) == 1,
+             tail(vs$ce, -1) <= extra_tol * head(vs$ce, -1),
+             tail(vs$ce, -1) <= 1 / extra_tol * head(vs$ce, -1)),
+      info = info_str
+    )
   }
 
   # type_test
@@ -2373,7 +2387,7 @@ vsel_tester <- function(
     expect_identical(vs$y_wobs_test$wobs, vs$refmodel$wobs, info = info_str)
     if (vs$refmodel$family$for_latent && with_cv) {
       if (identical(cv_method_expected, "kfold")) {
-        expect_true(all(is.na(vs$y_wobs_test$y)), info = info_str)
+        expect_all_true_tst(is.na(vs$y_wobs_test$y), info = info_str)
       } else if (inherits(vs$refmodel$fit, "stanreg") &&
                  formula_contains_additive_terms(vs$refmodel$formula) &&
                  formula_contains_group_terms(vs$refmodel$formula)) {
@@ -2639,20 +2653,20 @@ smmrs_tester <- function(smmrs,
       expect_identical(sum(!is.na(smmrs_sub_j$mu)), nloo_expected * ncats,
                        info = info_str)
     } else {
-      expect_true(all(!is.na(smmrs_sub_j$mu)), info = info_str)
+      expect_all_true_tst(!is.na(smmrs_sub_j$mu), info = info_str)
     }
     expect_type(smmrs_sub_j$lppd, "double")
     expect_length(smmrs_sub_j$lppd, nobsv_summ)
     if (with_cv) {
       if (ref_fam$for_latent && !tests_oscale &&
           identical(cv_method_expected, "kfold")) {
-        expect_true(all(is.na(smmrs_sub_j$lppd)), info = info_str)
+        expect_all_true_tst(is.na(smmrs_sub_j$lppd), info = info_str)
       } else if (valsearch_expected && identical(cv_method_expected, "LOO")) {
         expect_identical(sum(!is.na(smmrs_sub_j$lppd)), nloo_expected,
                          info = info_str)
       }
     } else {
-      expect_true(all(!is.na(smmrs_sub_j$lppd)), info = info_str)
+      expect_all_true_tst(!is.na(smmrs_sub_j$lppd), info = info_str)
     }
     return(invisible(TRUE))
   }
@@ -2683,9 +2697,9 @@ smmrs_tester <- function(smmrs,
       expect_s3_class(smmrs_ref$mu, "augvec")
     }
     if (!from_datafit) {
-      expect_true(all(!is.na(smmrs_ref$mu)), info = info_str)
+      expect_all_true_tst(!is.na(smmrs_ref$mu), info = info_str)
     } else {
-      expect_true(all(is.na(smmrs_ref$mu)), info = info_str)
+      expect_all_true_tst(is.na(smmrs_ref$mu), info = info_str)
     }
     if (!from_datafit) {
       expect_type(smmrs_ref$lppd, "double")
@@ -2693,9 +2707,9 @@ smmrs_tester <- function(smmrs,
     expect_length(smmrs_ref$lppd, nobsv_summ)
     if (!from_datafit && !(ref_fam$for_latent && !tests_oscale &&
                            identical(cv_method_expected, "kfold"))) {
-      expect_true(all(!is.na(smmrs_ref$lppd)), info = info_str)
+      expect_all_true_tst(!is.na(smmrs_ref$lppd), info = info_str)
     } else {
-      expect_true(all(is.na(smmrs_ref$lppd)), info = info_str)
+      expect_all_true_tst(is.na(smmrs_ref$lppd), info = info_str)
     }
     return(invisible(TRUE))
   }
@@ -2895,8 +2909,8 @@ smmry_sub_tester <- function(
     identical(cv_method_expected, "kfold")
   if (is_lat_kfold) {
     for (stat_idx in seq_along(stats_expected)) {
-      expect_true(all(is.na(smmry_sub[, stats_mean_name[stat_idx]])),
-                  info = info_str)
+      expect_all_true_tst(is.na(smmry_sub[, stats_mean_name[stat_idx]]),
+                          info = info_str)
     }
   }
   if ("diff" %in% type_expected) {
@@ -2945,7 +2959,8 @@ smmry_sub_tester <- function(
           }
         }
       } else {
-        expect_true(all(is.na(smmry_sub[, diff_nm[stat_idx]])), info = info_str)
+        expect_all_true_tst(is.na(smmry_sub[, diff_nm[stat_idx]]),
+                            info = info_str)
       }
     }
   }
@@ -2955,9 +2970,9 @@ smmry_sub_tester <- function(
       if (!stats_expected[stat_idx] %in% c("auc")) {
         # AUC is excluded here because of PR #347 (originally, RMSE was excluded
         # as well, but PR #496 switched to the delta method for RMSE).
-        expect_true(all(smmry_sub[, stats_mean_name[stat_idx]] >=
-                          smmry_sub[, lower_nm[stat_idx]]),
-                    info = info_str)
+        expect_all_true_tst(smmry_sub[, stats_mean_name[stat_idx]] >=
+                              smmry_sub[, lower_nm[stat_idx]],
+                            info = info_str)
       }
     }
   }
@@ -2967,9 +2982,9 @@ smmry_sub_tester <- function(
       if (!stats_expected[stat_idx] %in% c("auc")) {
         # AUC is excluded here because of PR #347 (originally, RMSE was excluded
         # as well, but PR #496 switched to the delta method for RMSE).
-        expect_true(all(smmry_sub[, stats_mean_name[stat_idx]] <=
-                          smmry_sub[, upper_nm[stat_idx]]),
-                    info = info_str)
+        expect_all_true_tst(smmry_sub[, stats_mean_name[stat_idx]] <=
+                              smmry_sub[, upper_nm[stat_idx]],
+                            info = info_str)
       }
     }
   }
@@ -3036,8 +3051,8 @@ smmry_ref_tester <- function(
   # Elements in detail:
   if (is_lat_kfold) {
     for (stat_idx in seq_along(stats_expected)) {
-      expect_true(all(is.na(smmry_ref[stats_mean_name[stat_idx]])),
-                  info = info_str)
+      expect_all_true_tst(is.na(smmry_ref[stats_mean_name[stat_idx]]),
+                          info = info_str)
     }
   }
   if ("lower" %in% type_expected && !is_lat_kfold && !from_datafit) {
@@ -3046,9 +3061,9 @@ smmry_ref_tester <- function(
       if (!stats_expected[stat_idx] %in% c("auc")) {
         # AUC is excluded here because of PR #347 (originally, RMSE was excluded
         # as well, but PR #496 switched to the delta method for RMSE).
-        expect_true(all(smmry_ref[stats_mean_name[stat_idx]] >=
-                          smmry_ref[lower_nm[stat_idx]]),
-                    info = info_str)
+        expect_all_true_tst(smmry_ref[stats_mean_name[stat_idx]] >=
+                              smmry_ref[lower_nm[stat_idx]],
+                            info = info_str)
       }
     }
   }
@@ -3058,9 +3073,9 @@ smmry_ref_tester <- function(
       if (!stats_expected[stat_idx] %in% c("auc")) {
         # AUC is excluded here because of PR #347 (originally, RMSE was excluded
         # as well, but PR #496 switched to the delta method for RMSE).
-        expect_true(all(smmry_ref[stats_mean_name[stat_idx]] <=
-                          smmry_ref[upper_nm[stat_idx]]),
-                    info = info_str)
+        expect_all_true_tst(smmry_ref[stats_mean_name[stat_idx]] <=
+                              smmry_ref[upper_nm[stat_idx]],
+                            info = info_str)
       }
     }
   }

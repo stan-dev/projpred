@@ -95,10 +95,10 @@ test_that("cumul_fit_multi_c() gives the polr() objective at bounds +-100", {
     expect_identical(fit_nat$convergence, 0L, info = method)
     eta <- offs + drop(x_cn %*% fit_nat$beta)
     # The bounds apply to these observations:
-    expect_true(all(fit_nat$zeta[ncat_cn - 1] - eta[offs == 150] < -100),
-                info = method)
-    expect_true(all(fit_nat$zeta[1] - eta[offs == -150] > 100),
-                info = method)
+    expect_all_true_tst(fit_nat$zeta[ncat_cn - 1] - eta[offs == 150] < -100,
+                        info = method)
+    expect_all_true_tst(fit_nat$zeta[1] - eta[offs == -150] > 100,
+                        info = method)
     g <- c(-Inf, fit_nat$zeta, Inf)
     loss <- -sum(vapply(seq_len(ncat_cn), function(k) {
       z1 <- pmin(100, g[k + 1] - eta)

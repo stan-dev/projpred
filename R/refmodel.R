@@ -138,7 +138,8 @@
 #'   have no dispersion parameter or if the submodels do have a dispersion
 #'   parameter, but `object` is `NULL` (in which case `0` is used for `dis`).
 #'   Note that for the [gaussian()] `family`, `dis` is the standard deviation,
-#'   not the variance.
+#'   not the variance. For the negative binomial family, `dis` holds the draws
+#'   of the shape parameter.
 #' @param ... For [get_refmodel.default()] and [get_refmodel.stanreg()]:
 #'   arguments passed to [init_refmodel()]. For the [get_refmodel()] generic:
 #'   arguments passed to the appropriate method. For [init_refmodel()]:
@@ -175,6 +176,68 @@
 #' analogously for higher-order joint effects, e.g., of three predictors). Note
 #' that all smooth terms need to be included in `formula` (there is no `random`
 #' argument as in [rstanarm::stan_gamm4()], for example).
+#'
+#' # Monotonic terms
+#'
+#' Monotonic terms `mo(x)` (see [brms::mo()]) are supported for an ordered
+#' factor `x` or an integer `x`. In the submodels, \pkg{projpred} codes `mo(x)`
+#' by the indicators of \eqn{x \geq l_k}{x >= l_k} for the levels \eqn{l_1,
+#' \ldots, l_D}{l_1, ..., l_D} of `x` above the lowest level \eqn{l_0}{l_0}. As
+#' in \pkg{brms}, the levels of an integer `x` are all integers from
+#' \eqn{\min(x)}{min(x)} to \eqn{\max(x)}{max(x)} in the training data, also
+#' those that do not occur in the data (the indicators of such values are equal
+#' to those of the next value). Argument `id` of [brms::mo()] has no effect in
+#' \pkg{projpred}. New data must not have values of `x` outside the levels of
+#' the training data (in \eqn{K}-fold CV, the training data of a fold). An
+#' ordered factor `x` must be a factor or a character vector in new data, and an
+#' integer `x` must be an integer. Monotonic terms are not supported in
+#' group-level terms and in additive multilevel models.
+#'
+#' If no observation has a value inside the range of an integer `x`, the
+#' indicator of this value equals the indicator of the next value. In LOO CV
+#' with validated search, this also occurs if only the left-out observation
+#' has the value. The GLM submodel fitter handles equal indicators.
+#' [lme4::lmer()] and [lme4::glmer()] drop one of them with a warning, and the
+#' predictions of [MASS::polr()] fail. To avoid this, use an ordered factor
+#' without unused levels.
+#'
+#' By default (global option `projpred.mo_monotone = TRUE`), the projected
+#' effect of each `mo()` term is monotonic: the coefficients of its indicators
+#' have the same sign. If the unconstrained projection of a projected draw (or
+#' cluster) is monotonic, \pkg{projpred} keeps it. Otherwise, \pkg{projpred}
+#' takes the sign from the unconstrained projection of the same draw onto the
+#' full model (all predictor terms of `formula`): the sign of the sum of the
+#' coefficients of the same term (same name and same coding of its factors).
+#' In `mo(x) * z`, for example, the full-model term `mo(x)` is the effect of
+#' `x` at `z = 0`. If the full model does not have the term (possible with
+#' custom `search_terms`) or if the projection onto the full model fails,
+#' \pkg{projpred} takes the sign of the sum of the unconstrained coefficients
+#' in the submodel. In an interaction of a `mo()` term with a factor (for
+#' example `mo(x):f`), each column of the factor has its own monotonic effect,
+#' as in \pkg{brms}. So in `mo(x) * f`, the effect of `x` within a level of `f`
+#' other than the first is the sum of two monotonic effects, and this sum is
+#' not necessarily monotonic. [mo_effects()] gives the projected effects in the
+#' parametrization of \pkg{brms}.
+#'
+#' Monotonic projections are supported for forward search. They are supported
+#' for submodels without group-level and smooth terms (with the default
+#' submodel fitter) and for multilevel submodels with the [gaussian()] family
+#' (also in the latent projection). \pkg{projpred} throws an error before the
+#' search or the projection starts for L1 search, the augmented-data
+#' projection, custom divergence minimizers, reference models with smooth
+#' terms, multilevel submodels with another family, terms with more than one
+#' `mo()` call, and `mo()` calls inside other calls.
+#' With `options(projpred.mo_monotone = FALSE)`, the coefficients of the
+#' indicators are not constrained (so the projected effect of `x` is not
+#' necessarily monotonic), and these cases are supported. \pkg{projpred} reads
+#' the option when it projects. With `refit_prj = FALSE`, the submodel fits of
+#' the search are reused, so the value of the option at the time of the search
+#' applies. In a parallel run, the workers get the value of the option from
+#' the main R session if the option is set there; otherwise, each worker uses
+#' the value of its own R session. In a screened forward search (argument
+#' `search_screen` of [varsel()] and [cv_varsel()]), the screening criterion
+#' ranks the candidates without the monotonicity constraint; the exact
+#' projections onto the m best candidates apply it.
 #'
 #' # Arguments `ref_predfun`, `proj_predfun`, and `div_minimizer`
 #'
@@ -836,6 +899,40 @@ gamm4_vars_miss <- function(object) {
   return(setdiff(vars_expr, names(data)))
 }
 
+# For t2() terms, mgcv uses one identifiability constraint for the fit and
+# another one for the prediction. The coefficients of an rstanarm::stan_gamm4()
+# fit are in the basis of `fit$x`, which is
+# `predict(fit$jam, type = "lpmatrix") %*% fit$jam$P`, but rstanarm predicts
+# without `P`. This function computes `linpred` (draws x observations, from
+# posterior_linpred() with offsets `offset`) again with the correct
+# population-level part.
+gamm4_linpred_fix <- function(fit, linpred, newdata = NULL, offset) {
+  if (!inherits(fit, "gamm4") || is.null(fit$jam$P)) {
+    return(linpred)
+  }
+  if (is.null(newdata)) {
+    x_jam <- predict(fit$jam, type = "lpmatrix")
+  } else {
+    x_jam <- predict(fit$jam, newdata = newdata, type = "lpmatrix")
+  }
+  beta <- as.matrix(fit, pars = colnames(x_jam))
+  if (!identical(dim(fit$jam$P), rep(ncol(x_jam), 2L)) ||
+      !identical(dim(linpred), c(nrow(beta), nrow(x_jam))) ||
+      length(offset) != nrow(x_jam)) {
+    stop("Unexpected structure of the rstanarm::stan_gamm4() fit. Please ",
+         "notify the package maintainer.")
+  }
+  linpred_fix <- tcrossprod(beta, x_jam %*% fit$jam$P) +
+    rep(offset, each = nrow(beta))
+  if (!is.null(fit$glmod)) {
+    # Add the group-level part:
+    linpred_fix <- linpred_fix + linpred -
+      posterior_linpred(fit, newdata = newdata, re.form = NA, offset = offset)
+  }
+  linpred[] <- as.matrix(linpred_fix)
+  return(linpred)
+}
+
 #' @rdname refmodel-init-get
 #' @export
 get_refmodel.stanreg <- function(object, latent = FALSE, dis = NULL,
@@ -1052,6 +1149,8 @@ get_refmodel.stanreg <- function(object, latent = FALSE, dis = NULL,
     }
     linpred_out <- posterior_linpred(fit, newdata = newdata, offset = offs)
     stopifnot(length(dim(linpred_out)) == 2)
+    linpred_out <- gamm4_linpred_fix(fit, linpred_out, newdata = newdata,
+                                     offset = offs)
     aug_data <- fit$stan_function == "stan_polr" && !latent
     if (aug_data) {
       # Since rstanarm::posterior_linpred.stanreg() doesn't offer an argument
@@ -1100,6 +1199,11 @@ get_refmodel.stanreg <- function(object, latent = FALSE, dis = NULL,
 
   if (is.null(dis) && !latent && has_dispersion(family)) {
     dis <- data.frame(object)[, "sigma"]
+  } else if (is.null(dis) && !latent &&
+             isTRUE(family$family == "neg_binomial_2")) {
+    # rstanarm calls the shape of the negative binomial family
+    # `reciprocal_dispersion`:
+    dis <- as.matrix(object)[, "reciprocal_dispersion"]
   }
 
   # Augmented-data projection -----------------------------------------------
@@ -1178,7 +1282,10 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
 
   if (!called_from_cvrefbuilder) {
     if (family$family == "Student_t") {
-      warning("Support for the `Student_t` family is still experimental.")
+      warning("The `Student_t()` family is deprecated, and project(), ",
+              "varsel(), and cv_varsel() do not support it. For a ",
+              "Student-t reference model, use the latent projection (see ",
+              "the latent-projection vignette).")
     } else if (family$family == "Gamma") {
       warning("Support for the `Gamma` family is still experimental.")
     }
@@ -1205,6 +1312,7 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
   stopifnot(inherits(formula, "formula"))
   data <- na.fail(data)
   stopifnot(is.data.frame(data))
+  formula <- mo_formula_env(formula)
   fml_ids <- rm_group_ids(formula, verbose = !called_from_cvrefbuilder)
   formula <- expand_formula(fml_ids$formula, data)
   if (!as.logical(attr(terms(formula), "intercept"))) {
@@ -1216,6 +1324,7 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
     formula <- update(formula, . ~ . + 1)
   }
   fml_extractions <- extract_terms_response(formula)
+  check_mo_terms(fml_extractions)
   response_name <- fml_extractions$response
   if (length(response_name) == 2) {
     if (family_resp(family) != "binomial") {
@@ -1724,6 +1833,19 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
     # values which inevitably "include" the offsets):
     stop("For a `datafit`, offsets are not allowed.")
   }
+  # With the sqrt or the identity link, an offset can give means <= 0 at the
+  # start of the negative binomial fit:
+  if (identical(family$family, "negbinomial") && !all(offset == 0) &&
+      !identical(family$link, "log")) {
+    stop("Currently, projpred supports offsets for the negative binomial ",
+         "family only with the log link.", call. = FALSE)
+  }
+  # An offset of -Inf (zero exposure) would give an infinite start of the
+  # intercept of the negative binomial fit:
+  if (identical(family$family, "negbinomial") && !all(is.finite(offset))) {
+    stop("Currently, projpred supports offsets for the negative binomial ",
+         "family only if all offsets are finite.", call. = FALSE)
+  }
 
   # The contrasts of the factor predictors (`contrasts` attributes of the
   # columns of `data`). The stored data have no such attributes, which avoids
@@ -1782,6 +1904,12 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
 
   # Miscellaneous -----------------------------------------------------------
 
+  # A `datafit` has the observed response as its predictive distribution. For
+  # the negative binomial family, this is not a distribution with a shape:
+  if (!proper_model && identical(family$family, "negbinomial")) {
+    stop("Currently, projpred does not support a `datafit` with the negative ",
+         "binomial family.", call. = FALSE)
+  }
   ndraws <- ncol(mu)
   warn_allrandom_dis <- getOption("projpred.warn_allrandom_dis", TRUE)
   if (is.null(dis)) {
@@ -1803,6 +1931,11 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
       dis <- rep(NA, ndraws)
     } else {
       if (proper_model) {
+        if (identical(family$family, "negbinomial")) {
+          stop("Please supply argument `dis`. For the negative binomial ",
+               "family, `dis` holds the draws of the shape parameter (for ",
+               "example, `as.data.frame(<brmsfit>)$shape`).", call. = FALSE)
+        }
         stop("Please supply argument `dis`.")
       } else {
         dis <- 0

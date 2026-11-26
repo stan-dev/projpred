@@ -51,11 +51,17 @@ reference model fit (see section "Augmented-data projection" in
 \code{\link[=extend_family]{extend_family()}}'s documentation).
 
 For a submodel with smooth terms (fitted with \code{\link[mgcv:gam]{mgcv::gam()}}), the columns
-of the smooth terms are the coefficients in the basis of \code{gam()}. The
-reference model fit can use another basis (\code{\link[rstanarm:stan_gamm4]{rstanarm::stan_gamm4()}} and
-\pkg{brms} do so for \code{s()} terms). Then these columns do not match the
-reference model parameters. For a submodel with smooth and group-level
-terms (GAMM), the projected draws cannot be extracted yet (error).
+of the smooth terms use the basis and the parameter names of the
+reference model fit if the fit gives them: a \pkg{brms} fit with
+\code{nm_scheme = "brms"} (columns \verb{bs_<label>_<k>}, \verb{sds_<label>_<k>} and
+\verb{s_<label>_<k>[<i>]}) or a \code{\link[rstanarm:stan_gamm4]{rstanarm::stan_gamm4()}} fit with \code{nm_scheme = "rstanarm"} (columns \verb{<term>.<i>} and \verb{smooth_sd[<name>]}). The change of
+basis does not change the projection. A constant part of a smooth term
+goes into the intercept. The SD columns come from the smoothing parameters
+and the scale of each \code{gam()} fit (by default, \code{gam()} estimates the
+smoothing parameters with GCV, or with UBRE for a known scale), as in the
+mixed-model form of the smooth term, so they are point estimates for each
+projected draw. Otherwise, the columns of the smooth terms are the
+coefficients in the basis of \code{gam()}.
 
 For the latent projection, column \code{sigma} contains the projected latent
 dispersion. If \verb{<refmodel>$dis} consists of only \code{NA}s (see argument \code{dis}
