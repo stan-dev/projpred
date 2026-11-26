@@ -17,14 +17,18 @@ test_that("invalid `object` fails", {
   if (run_prj) {
     objs_invalid <- c(
       objs_invalid,
-      list(prj = prjs[[1]])
+      list(prj = get_prj(kept_tst("prj", names(args_prj), 1)))
     )
   }
   if (run_vs) {
-    objs_invalid <- c(objs_invalid, list(prj_vs = prjs_vs[[1]]))
+    objs_invalid <- c(objs_invalid, list(
+      prj_vs = get_prj_vs(kept_tst("prj_vs", names(args_prj_vs), 1))
+    ))
   }
   if (run_cvvs) {
-    objs_invalid <- c(objs_invalid, list(prj_cvvs = prjs_cvvs[[1]]))
+    objs_invalid <- c(objs_invalid, list(
+      prj_cvvs = get_prj_cvvs(kept_tst("prj_cvvs", names(args_prj_cvvs), 1))
+    ))
   }
   for (obj_nm in names(objs_invalid)) {
     for (vsel_fun in vsel_funs) {

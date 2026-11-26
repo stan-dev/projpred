@@ -78,15 +78,15 @@ local_par_workers <- function(backend, n = 2L, frame = parent.frame()) {
 }
 
 # A GLM with K-fold fits (in the setup, these are the reference models without
-# observation weights), preferably with the traditional projection (`NA` if
-# there is none). With `pkg`, a GLM of that package (e.g., "rstanarm"):
+# observation weights) and the traditional projection (`NA` if there is none;
+# the checks of the tests below hold only for the traditional projection).
+# With `pkg`, a GLM of that package (e.g., "rstanarm"):
 tstsetup_ref_par <- function(pkg = "[^.]*") {
-  tstsetups_ref <- grep(paste0("^", pkg, "\\.glm\\."),
+  tstsetups_ref <- grep(paste0("^", pkg, "\\.glm\\..*\\.trad(_compare)?$"),
                         tstsetups_ref_kfold, value = TRUE)
   tstsetups_ref <- setdiff(tstsetups_ref,
                            dropped_tst("cvfits", tstsetups_ref))
-  c(grep("\\.trad", tstsetups_ref, value = TRUE), tstsetups_ref,
-    NA_character_)[1]
+  c(tstsetups_ref, NA_character_)[1]
 }
 
 cvvs_par <- function(tstsetup_ref, cv_meth, parallel = TRUE) {
@@ -400,13 +400,14 @@ test_that("project() in parallel gives the same results as sequentially", {
   skip_if_not(run_prj)
   skip_if(length(par_backends_tst) == 0)
   withr::local_options(list(projpred.parallel_proj_trigger = 0L))
-  tstsetups <- grep("\\.glm\\.", names(prjs), value = TRUE)
+  tstsetups <- kept_tst("prj",
+                        grep("\\.glm\\.", names(args_prj), value = TRUE))
   # Most GLM projections fit all draws in one call, so add multilevel
   # submodels (loop in divmin(); the Gaussian one normally uses the shared
   # lmer() setup, the non-Gaussian one calls glmer() for each draw) and an
   # augmented-data projection (loop in divmin_augdat()):
   first_prj <- function(cond) {
-    names(Filter(cond, args_prj[names(prjs)]))[1]
+    c(kept_tst("prj", names(Filter(cond, args_prj)), 1), NA_character_)[1]
   }
   is_glmm_trad <- function(args_prj_i) {
     args_prj_i$mod_nm == "glmm" &&
@@ -464,13 +465,13 @@ test_that("project() in parallel gives the same results as sequentially", {
           draws_of <- function(prj) {
             suppressWarnings(suppressMessages(as.matrix(prj)))
           }
-          expect_equal(draws_of(p_repr), draws_of(prjs[[tstsetup]]),
+          expect_equal(draws_of(p_repr), draws_of(get_prj(tstsetup)),
                        info = info_i)
           nms_other <- setdiff(names(p_repr), "outdmin")
-          expect_equal(p_repr[nms_other], prjs[[tstsetup]][nms_other],
+          expect_equal(p_repr[nms_other], get_prj(tstsetup)[nms_other],
                        info = info_i)
         } else {
-          expect_equal(drop_mer_ptrs(p_repr), drop_mer_ptrs(prjs[[tstsetup]]),
+          expect_equal(drop_mer_ptrs(p_repr), drop_mer_ptrs(get_prj(tstsetup)),
                        ignore_formula_env = TRUE, info = info_i)
         }
       }
@@ -774,8 +775,7 @@ test_that(paste(
   # submodel (loop in divmin()) and an augmented-data projection (loop in
   # divmin_augdat()):
   first_prj <- function(cond) {
-    tstsetups_cond <- names(Filter(cond, args_prj[names(prjs)]))
-    c(tstsetups_cond, NA_character_)[1]
+    c(kept_tst("prj", names(Filter(cond, args_prj)), 1), NA_character_)[1]
   }
   tstsetups <- c(
     divmin = first_prj(function(args_prj_i) {
@@ -803,7 +803,7 @@ test_that(paste(
       list(object = get_ref(args_prj_i$tstsetup_ref)),
       excl_nonargs(args_prj_i)
     )))
-    expect_equal(drop_mer_ptrs(prj_i), drop_mer_ptrs(prjs[[tstsetup]]),
+    expect_equal(drop_mer_ptrs(prj_i), drop_mer_ptrs(get_prj(tstsetup)),
                  info = tstsetup)
     expect_gt(length(rec$calls), 0)
     for (cl in rec$calls) {

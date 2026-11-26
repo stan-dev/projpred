@@ -699,6 +699,8 @@ options(projpred.warn_proj_drawwise = FALSE)
 options(projpred.check_convergence = FALSE)
 # Set default number of significant digits to be printed:
 options(projpred.digits = getOption("digits"))
+# The getters of helpers/fixtures.R build their objects with these options:
+opts_fixtures_tst <- options()[startsWith(names(options()), "projpred.")]
 
 search_trms_tst <- list(
   default_search_trms = list(),
@@ -1168,50 +1170,7 @@ if (run_prj) {
   })
   args_prj <- unlist_cust(args_prj)
 
-  prj_errors <- list()
-  prjs <- lapply(seq_along(args_prj), function(prj_idx) {
-    args_prj_i <- args_prj[[prj_idx]]
-    refmod_i <- get_ref(args_prj_i$tstsetup_ref)
-    prj_info <- paste0("[prj ", prj_idx, "/", length(args_prj), "] ",
-                       args_prj_i$tstsetup_ref)
-    prj_res <- tryCatch(
-      do.call(project, c(
-        list(object = refmod_i),
-        excl_nonargs(args_prj_i)
-      )),
-      error = function(e) {
-        prj_errors[[length(prj_errors) + 1L]] <<- list(
-          idx = prj_idx,
-          info = prj_info,
-          message = conditionMessage(e)
-        )
-        NULL
-      }
-    )
-    return(prj_res)
-  })
-  names(prjs) <- names(args_prj)
-  if (length(prj_errors) > 0L) {
-    message("[prj] ", length(prj_errors), " of ", length(args_prj),
-            " project() call(s) failed:")
-    for (prj_err in prj_errors) {
-      message("  ", prj_err$info, ": ", prj_err$message)
-    }
-    err_ok_prj <- vapply(prj_errors, function(prj_err) {
-      is_known_setup_err(prj_err$message,
-                         mod_nm = args_prj[[prj_err$idx]]$mod_nm)
-    }, logical(1))
-    if (!all(err_ok_prj)) {
-      stop("Unexpected error in ", sum(!err_ok_prj), " project() call(s) ",
-           "during tests/testthat/setup.R (see messages above for the ",
-           "setups).",
-           call. = FALSE)
-    }
-    drop_idx <- unique(vapply(prj_errors[err_ok_prj], `[[`, integer(1), "idx"))
-    add_setup_drops("prj", names(args_prj)[drop_idx])
-    prjs <- prjs[-drop_idx]
-    args_prj <- args_prj[-drop_idx]
-  }
+  add_setup_drops("prj", dropped_tst("prj", names(args_prj)))
 }
 
 ### From `vsel` -----------------------------------------------------------
@@ -1288,26 +1247,7 @@ if (run_vs) {
   args_prj_vs <- cre_args_prj_vsel(tstsetups_prj_vs)
   args_prj_vs <- unlist_cust(args_prj_vs)
 
-  prjs_vs <- lapply(args_prj_vs, function(args_prj_vs_i) {
-    try(do.call(project, c(
-      list(object = get_vs(args_prj_vs_i$tstsetup_vsel)),
-      excl_nonargs(args_prj_vs_i)
-    )), silent = TRUE)
-  })
-  success_prj_vs <- !sapply(prjs_vs, inherits, "try-error")
-  err_ok_prj_vs <- vapply(names(prjs_vs)[!success_prj_vs], function(tstsetup) {
-    is_known_setup_err(attr(prjs_vs[[tstsetup]], "condition")$message,
-                       mod_nm = args_prj_vs[[tstsetup]]$mod_nm)
-  }, logical(1))
-  expect_true(
-    all(err_ok_prj_vs),
-    info = paste("Unexpected error for",
-                 paste(names(prjs_vs)[!success_prj_vs][!err_ok_prj_vs],
-                       collapse = ", "))
-  )
-  add_setup_drops("prj_vs", names(prjs_vs)[!success_prj_vs])
-  prjs_vs <- prjs_vs[success_prj_vs]
-  args_prj_vs <- args_prj_vs[success_prj_vs]
+  add_setup_drops("prj_vs", dropped_tst("prj_vs", names(args_prj_vs)))
 }
 
 #### cv_varsel() ----------------------------------------------------------
@@ -1344,30 +1284,8 @@ if (run_cvvs) {
   args_prj_cvvs <- cre_args_prj_vsel(tstsetups_prj_cvvs)
   args_prj_cvvs <- unlist_cust(args_prj_cvvs)
 
-  prjs_cvvs <- lapply(args_prj_cvvs, function(args_prj_cvvs_i) {
-    try(do.call(project, c(
-      list(object = get_cvvs(args_prj_cvvs_i$tstsetup_vsel)),
-      excl_nonargs(args_prj_cvvs_i)
-    )), silent = TRUE)
-  })
-  success_prj_cvvs <- !sapply(prjs_cvvs, inherits, "try-error")
-  err_ok_prj_cvvs <- vapply(
-    names(prjs_cvvs)[!success_prj_cvvs],
-    function(tstsetup) {
-      is_known_setup_err(attr(prjs_cvvs[[tstsetup]], "condition")$message,
-                         mod_nm = args_prj_cvvs[[tstsetup]]$mod_nm)
-    },
-    logical(1)
-  )
-  expect_true(
-    all(err_ok_prj_cvvs),
-    info = paste("Unexpected error for",
-                 paste(names(prjs_cvvs)[!success_prj_cvvs][!err_ok_prj_cvvs],
-                       collapse = ", "))
-  )
-  add_setup_drops("prj_cvvs", names(prjs_cvvs)[!success_prj_cvvs])
-  prjs_cvvs <- prjs_cvvs[success_prj_cvvs]
-  args_prj_cvvs <- args_prj_cvvs[success_prj_cvvs]
+  add_setup_drops("prj_cvvs",
+                  dropped_tst("prj_cvvs", names(args_prj_cvvs)))
 }
 
 ## Prediction -------------------------------------------------------------
@@ -1375,11 +1293,9 @@ if (run_cvvs) {
 ### From `projection` -----------------------------------------------------
 
 if (run_prj) {
-  pls <- lapply(prjs, proj_linpred, allow_nonconst_wdraws_prj = TRUE,
-                .seed = seed2_tst)
-  pes <- lapply(prjs, proj_epred, allow_nonconst_wdraws_prj = TRUE,
-                .seed = seed2_tst)
-  pps <- lapply(prjs, proj_predict, .seed = seed2_tst)
+  invisible(lapply(c("pl", "pe", "pp"), function(type) {
+    add_setup_drops(type, dropped_tst(type, names(args_prj)))
+  }))
 }
 
 ### From `proj_list` ------------------------------------------------------
@@ -1387,21 +1303,17 @@ if (run_prj) {
 #### varsel() -------------------------------------------------------------
 
 if (run_vs) {
-  pls_vs <- lapply(prjs_vs, proj_linpred, allow_nonconst_wdraws_prj = TRUE,
-                   .seed = seed2_tst)
-  pes_vs <- lapply(prjs_vs, proj_epred, allow_nonconst_wdraws_prj = TRUE,
-                   .seed = seed2_tst)
-  pps_vs <- lapply(prjs_vs, proj_predict, .seed = seed2_tst)
+  invisible(lapply(c("pl_vs", "pe_vs", "pp_vs"), function(type) {
+    add_setup_drops(type, dropped_tst(type, names(args_prj_vs)))
+  }))
 }
 
 #### cv_varsel() ----------------------------------------------------------
 
 if (run_cvvs) {
-  pls_cvvs <- lapply(prjs_cvvs, proj_linpred, allow_nonconst_wdraws_prj = TRUE,
-                     .seed = seed2_tst)
-  pes_cvvs <- lapply(prjs_cvvs, proj_epred, allow_nonconst_wdraws_prj = TRUE,
-                     .seed = seed2_tst)
-  pps_cvvs <- lapply(prjs_cvvs, proj_predict, .seed = seed2_tst)
+  invisible(lapply(c("pl_cvvs", "pe_cvvs", "pp_cvvs"), function(type) {
+    add_setup_drops(type, dropped_tst(type, names(args_prj_cvvs)))
+  }))
 }
 
 ## summary.vsel() ---------------------------------------------------------

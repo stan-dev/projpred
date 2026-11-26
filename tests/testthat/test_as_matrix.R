@@ -1,13 +1,13 @@
 test_that("as.matrix.projection() works", {
   skip_if_not(run_prj)
-  for (tstsetup in names(prjs)) {
+  for (tstsetup in names(args_prj)) {
     if (args_prj[[tstsetup]]$mod_nm == "gam") {
       # For GAMs, only the columns of the smooth terms are checked here: they
       # must be parameters of the reference model fit, with one SD column per
       # s() term. `test_smooth_basis.R` checks their values.
       allow_nonconst <- ndr_ncl_dtls(args_prj[[tstsetup]])$clust_used_gt1
       expect_warning(
-        m <- as.matrix(prjs[[tstsetup]],
+        m <- as.matrix(get_prj(tstsetup),
                        allow_nonconst_wdraws_prj = allow_nonconst),
         NA, info = tstsetup
       )
@@ -44,9 +44,9 @@ test_that("as.matrix.projection() works", {
       # as.matrix() stops for GAMM submodels. The other submodels of GAMM
       # reference models stay skipped.
       # TODO (GAMMs): Fix this.
-      if (inherits(prjs[[tstsetup]]$outdmin[[1]], "gamm4")) {
+      if (inherits(get_prj(tstsetup)$outdmin[[1]], "gamm4")) {
         expect_error(
-          as.matrix(prjs[[tstsetup]], allow_nonconst_wdraws_prj = TRUE),
+          as.matrix(get_prj(tstsetup), allow_nonconst_wdraws_prj = TRUE),
           "do not support submodels with smooth and group-level terms",
           info = tstsetup
         )
@@ -61,10 +61,10 @@ test_that("as.matrix.projection() works", {
     prd_trms <- args_prj[[tstsetup]]$predictor_terms
     ndr_ncl <- ndr_ncl_dtls(args_prj[[tstsetup]])
 
-    m <- as.matrix(prjs[[tstsetup]],
+    m <- as.matrix(get_prj(tstsetup),
                    allow_nonconst_wdraws_prj = ndr_ncl$clust_used_gt1)
-    if (!has_const_wdr_prj(prjs[[tstsetup]])) {
-      wdr_crr <- prjs[[tstsetup]][["wdraws_prj"]]
+    if (!has_const_wdr_prj(get_prj(tstsetup))) {
+      wdr_crr <- get_prj(tstsetup)[["wdraws_prj"]]
     } else {
       wdr_crr <- NULL
     }
@@ -78,14 +78,14 @@ test_that("as.matrix.projection() works", {
 
     if (fam_crr == "cumul" && prj_crr == "augdat") {
       # Note: Here, we could also derive `icpt_nm` from
-      # `prjs[[tstsetup]]$refmodel$family$cats`.
+      # `get_prj(tstsetup)$refmodel$family$cats`.
       if (pkg_crr == "rstanarm") {
-        icpt_nm <- paste(head(levels(prjs[[tstsetup]]$refmodel$y), -1),
-                         tail(levels(prjs[[tstsetup]]$refmodel$y), -1),
+        icpt_nm <- paste(head(levels(get_prj(tstsetup)$refmodel$y), -1),
+                         tail(levels(get_prj(tstsetup)$refmodel$y), -1),
                          sep = "|")
       } else if (pkg_crr == "brms") {
         icpt_nm <- paste0("Intercept[",
-                          seq_len(nlevels(prjs[[tstsetup]]$refmodel$y) - 1L),
+                          seq_len(nlevels(get_prj(tstsetup)$refmodel$y) - 1L),
                           "]")
       }
     } else {
@@ -126,8 +126,8 @@ test_that("as.matrix.projection() works", {
     if (pkg_crr == "brms") {
       if (fam_crr == "categ") {
         # Note: Here, we could also derive `yunq_norefcat` from
-        # `prjs[[tstsetup]]$refmodel$family$cats`.
-        yunq_norefcat <- tail(levels(prjs[[tstsetup]]$refmodel$y), -1)
+        # `get_prj(tstsetup)$refmodel$family$cats`.
+        yunq_norefcat <- tail(levels(get_prj(tstsetup)$refmodel$y), -1)
         colnms_prjmat_expect <- unlist(lapply(
           colnms_prjmat_expect,
           function(colnms_prjmat_expect_i) {
@@ -270,7 +270,7 @@ test_that("as.matrix.projection() works", {
         sigma_nms_expect <- "Sigma[z.1:(Intercept),(Intercept)]"
       }
       expect_identical(sigma_nms, sigma_nms_expect, info = tstsetup)
-      outdmin_crr <- prjs[[tstsetup]]$outdmin
+      outdmin_crr <- get_prj(tstsetup)$outdmin
       sigma_expect <- do.call(rbind, lapply(outdmin_crr, function(fit_j) {
         if (inherits(fit_j, "clmm")) {
           vc_j <- ordinal::VarCorr(fit_j)$z.1
@@ -307,13 +307,13 @@ test_that("as.matrix.projection() works", {
 
 test_that("`allow_nonconst_wdraws_prj = FALSE` causes an error", {
   skip_if_not(run_prj)
-  for (tstsetup in grep("\\.clust", names(prjs), value = TRUE)) {
+  for (tstsetup in grep("\\.clust", names(args_prj), value = TRUE)) {
     if (grepl("\\.clust1", tstsetup)) {
       err_expected <- NA
     } else {
       err_expected <- "different .* weights"
     }
-    expect_error(as.matrix(prjs[[tstsetup]]), err_expected, info = tstsetup)
+    expect_error(as.matrix(get_prj(tstsetup)), err_expected, info = tstsetup)
   }
 })
 
@@ -323,27 +323,27 @@ test_that(paste(
   "posterior::weight_draws()"
 ), {
   skip_if_not(run_prj)
-  for (tstsetup in names(prjs)) {
+  for (tstsetup in names(args_prj)) {
     if (args_prj[[tstsetup]]$mod_nm == "gamm") {
       # as_draws_matrix() stops for GAMM submodels. The other submodels of
       # GAMM reference models stay skipped.
       # TODO (GAMMs): Fix this.
-      if (inherits(prjs[[tstsetup]]$outdmin[[1]], "gamm4")) {
+      if (inherits(get_prj(tstsetup)$outdmin[[1]], "gamm4")) {
         expect_error(
-          posterior::as_draws_matrix(prjs[[tstsetup]]),
+          posterior::as_draws_matrix(get_prj(tstsetup)),
           "do not support submodels with smooth and group-level terms",
           info = tstsetup
         )
       }
       next
     }
-    m <- as.matrix(prjs[[tstsetup]],
+    m <- as.matrix(get_prj(tstsetup),
                    allow_nonconst_wdraws_prj = ndr_ncl_dtls(
                      args_prj[[tstsetup]]
                    )$clust_used_gt1)
-    m_dr <- posterior::as_draws_matrix(prjs[[tstsetup]])
+    m_dr <- posterior::as_draws_matrix(get_prj(tstsetup))
     m_dr_repl <- posterior::as_draws_matrix(m)
-    if (!has_const_wdr_prj(prjs[[tstsetup]])) {
+    if (!has_const_wdr_prj(get_prj(tstsetup))) {
       m_dr_repl <- posterior::weight_draws(m_dr_repl,
                                            weights = attr(m, "wdraws_prj"))
     }
@@ -356,14 +356,14 @@ test_that(paste(
   "as.matrix.projection()"
 ), {
   skip_if_not(run_prj)
-  for (tstsetup in grep("rstanarm\\.glm\\.", names(prjs), value = TRUE)) {
-    m <- as.matrix(prjs[[tstsetup]], nm_scheme = "brms",
+  for (tstsetup in grep("rstanarm\\.glm\\.", names(args_prj), value = TRUE)) {
+    m <- as.matrix(get_prj(tstsetup), nm_scheme = "brms",
                    allow_nonconst_wdraws_prj = ndr_ncl_dtls(
                      args_prj[[tstsetup]]
                    )$clust_used_gt1)
-    m_dr <- posterior::as_draws_matrix(prjs[[tstsetup]], nm_scheme = "brms")
+    m_dr <- posterior::as_draws_matrix(get_prj(tstsetup), nm_scheme = "brms")
     m_dr_repl <- posterior::as_draws_matrix(m)
-    if (!has_const_wdr_prj(prjs[[tstsetup]])) {
+    if (!has_const_wdr_prj(get_prj(tstsetup))) {
       m_dr_repl <- posterior::weight_draws(m_dr_repl,
                                            weights = attr(m, "wdraws_prj"))
     }
@@ -375,9 +375,9 @@ test_that(paste(
   "as_draws.projection() is a wrapper for as_draws_matrix.projection()"
 ), {
   skip_if_not(run_prj)
-  for (tstsetup in grep("rstanarm\\.glm\\.", names(prjs), value = TRUE)) {
-    m_dr <- posterior::as_draws_matrix(prjs[[tstsetup]], nm_scheme = "brms")
-    m_dr_unspec <- posterior::as_draws(prjs[[tstsetup]], nm_scheme = "brms")
+  for (tstsetup in grep("rstanarm\\.glm\\.", names(args_prj), value = TRUE)) {
+    m_dr <- posterior::as_draws_matrix(get_prj(tstsetup), nm_scheme = "brms")
+    m_dr_unspec <- posterior::as_draws(get_prj(tstsetup), nm_scheme = "brms")
     expect_identical(m_dr, m_dr_unspec, info = tstsetup)
   }
 })
@@ -388,7 +388,7 @@ if (run_snaps) {
   ), {
     withr::local_options(list(width = 145))
     skip_if_not(run_vs)
-    for (tstsetup in names(prjs_vs)) {
+    for (tstsetup in names(args_prj_vs)) {
       if (args_prj_vs[[tstsetup]]$mod_nm == "gam") {
         # No snapshots for GAMs. The first test of this file and
         # `test_smooth_basis.R` check the columns of the smooth terms.
@@ -401,7 +401,7 @@ if (run_snaps) {
       }
       nterms_crr <- args_prj_vs[[tstsetup]]$nterms
 
-      prjs_vs_l <- prjs_vs[[tstsetup]]
+      prjs_vs_l <- get_prj_vs(tstsetup)
       if (length(nterms_crr) <= 1) {
         prjs_vs_l <- list(prjs_vs_l)
       }
@@ -425,7 +425,7 @@ if (run_snaps) {
   ), {
     withr::local_options(list(width = 145))
     skip_if_not(run_cvvs)
-    for (tstsetup in names(prjs_cvvs)) {
+    for (tstsetup in names(args_prj_cvvs)) {
       if (args_prj_cvvs[[tstsetup]]$mod_nm == "gam") {
         # No snapshots for GAMs. The first test of this file and
         # `test_smooth_basis.R` check the columns of the smooth terms.
@@ -438,7 +438,7 @@ if (run_snaps) {
       }
       nterms_crr <- args_prj_cvvs[[tstsetup]]$nterms
 
-      prjs_cvvs_l <- prjs_cvvs[[tstsetup]]
+      prjs_cvvs_l <- get_prj_cvvs(tstsetup)
       if (length(nterms_crr) <= 1) {
         prjs_cvvs_l <- list(prjs_cvvs_l)
       }

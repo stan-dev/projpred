@@ -214,10 +214,10 @@ test_that(paste(
 ), {
   skip_if_not(run_prj)
   withr::local_preserve_seed()
-  tstsetups <- grep("\\.brnll\\..*\\.augdat\\.", names(prjs), value = TRUE)
+  tstsetups <- grep("\\.brnll\\..*\\.augdat\\.", names(args_prj), value = TRUE)
   for (tstsetup in tstsetups) {
     tstsetup_trad <- sub("\\.augdat\\.", ".trad_compare.", tstsetup)
-    if (!tstsetup_trad %in% names(prjs)) next
+    if (!tstsetup_trad %in% names(args_prj)) next
 
     args_prj_i <- args_prj[[tstsetup]]
     args_prj_i_trad <- args_prj[[tstsetup_trad]]
@@ -247,15 +247,15 @@ test_that(paste(
   "fit_glm_ridge_callback())"
 ), {
   skip_if_not(run_prj)
-  tstsetups <- grep("\\.brnll\\..*\\.augdat\\.", names(prjs), value = TRUE)
+  tstsetups <- grep("\\.brnll\\..*\\.augdat\\.", names(args_prj), value = TRUE)
   for (tstsetup in tstsetups) {
     tstsetup_trad <- sub("\\.augdat\\.", ".trad_compare.", tstsetup)
-    if (!tstsetup_trad %in% names(prjs)) next
+    if (!tstsetup_trad %in% names(args_prj)) next
 
     cl_used_gt1 <- ndr_ncl_dtls(args_prj[[tstsetup]])$clust_used_gt1
-    prjmat <- as.matrix(prjs[[tstsetup]],
+    prjmat <- as.matrix(get_prj(tstsetup),
                         allow_nonconst_wdraws_prj = cl_used_gt1)
-    prjmat_trad <- as.matrix(prjs[[tstsetup_trad]],
+    prjmat_trad <- as.matrix(get_prj(tstsetup_trad),
                              allow_nonconst_wdraws_prj = cl_used_gt1)
 
     tol_coefs <- ifelse(
@@ -273,11 +273,11 @@ test_that(paste(
   "case of the `brnll` family)"
 ), {
   skip_if_not(run_prj)
-  tstsetups <- grep("\\.glm\\.brnll\\..*\\.augdat\\.", names(prjs),
+  tstsetups <- grep("\\.glm\\.brnll\\..*\\.augdat\\.", names(args_prj),
                     value = TRUE)
   for (tstsetup in tstsetups) {
     tstsetup_trad <- sub("\\.augdat\\.", ".trad_compare.", tstsetup)
-    if (!tstsetup_trad %in% names(prjs)) next
+    if (!tstsetup_trad %in% names(args_prj)) next
 
     args_prj_i <- args_prj[[tstsetup]]
     args_prj_i_trad <- args_prj[[tstsetup_trad]]
@@ -306,12 +306,12 @@ test_that(paste(
   "`regul` for submodels fitted by fit_glm_ridge_callback())"
 ), {
   skip_if_not(run_prj)
-  tstsetups <- grep("\\.brnll\\..*\\.augdat\\.", names(pls), value = TRUE)
+  tstsetups <- grep("\\.brnll\\..*\\.augdat\\.", names(args_prj), value = TRUE)
   for (tstsetup in tstsetups) {
     tstsetup_trad <- sub("\\.augdat\\.", ".trad_compare.", tstsetup)
-    if (!tstsetup_trad %in% names(pls)) next
+    if (!tstsetup_trad %in% names(args_prj)) next
 
-    pl <- pls[[tstsetup]]
+    pl <- get_pl(tstsetup)
     expect_length(dim(pl$pred), 3)
     expect_identical(dim(pl$pred)[3], 1L)
     pl$pred <- structure(matrix(pl$pred,
@@ -320,7 +320,7 @@ test_that(paste(
                          wdraws_prj = attr(pl$pred, "wdraws_prj"))
     dimnames(pl$pred) <- list(NULL, as.character(seq_len(ncol(pl$pred))))
     dimnames(pl$lpd) <- list(NULL, as.character(seq_len(ncol(pl$lpd))))
-    pl_trad <- pls[[tstsetup_trad]]
+    pl_trad <- get_pl(tstsetup_trad)
 
     tol_lpreds <- ifelse(
       args_prj[[tstsetup]]$mod_nm == "glmm" &&

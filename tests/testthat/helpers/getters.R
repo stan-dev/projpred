@@ -83,9 +83,10 @@ get_dat <- function(tstsetup, dat_crr = dat, offs_ylat = offs_tst, ...) {
         grepl("\\.with_offs\\.", tstsetup)) {
       dat_crr$projpred_internal_offs_stanreg <- offs_ylat
     }
-    y_nm <- stdize_lhs(prjs[[tstsetup]]$refmodel$formula)$y_nm
-    dat_crr[[y_nm]] <- rowMeans(prjs[[tstsetup]]$refmodel$ref_predfun(
-      fit = prjs[[tstsetup]]$refmodel$fit, newdata = dat_crr, excl_offs = FALSE,
+    refmod_crr <- get_prj(tstsetup)$refmodel
+    y_nm <- stdize_lhs(refmod_crr$formula)$y_nm
+    dat_crr[[y_nm]] <- rowMeans(refmod_crr$ref_predfun(
+      fit = refmod_crr$fit, newdata = dat_crr, excl_offs = FALSE,
       mlvl_allrandom = getOption("projpred.mlvl_proj_ref_new", FALSE)
     ))
   }

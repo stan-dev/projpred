@@ -2452,11 +2452,14 @@ test_that(paste(
       nclusters_pred_crr <- args_vs[[tstsetup]]$nclusters_pred
     }
     nloo_crr <- nloo_tst[["subsmpl"]][["nloo"]]
+    # Get the objects outside of try(), which would also catch a failed
+    # build:
+    vs_crr <- get_vs(tstsetup)
     # Use suppressWarnings() because test_that() somehow redirects stderr() and
     # so throws warnings that projpred wants to capture internally:
     cvvs_eval <- try(
       suppressWarnings(cv_varsel(
-        get_vs(tstsetup), nloo = nloo_crr, nclusters_pred = nclusters_pred_crr,
+        vs_crr, nloo = nloo_crr, nclusters_pred = nclusters_pred_crr,
         verbose = FALSE, seed = seed2_tst
       )),
       silent = TRUE
@@ -2530,12 +2533,16 @@ test_that(paste(
     } else {
       nclusters_pred_crr <- args_vs[[tstsetup]]$nclusters_pred
     }
+    # Get the objects outside of try(), which would also catch a failed
+    # build:
+    vs_crr <- get_vs(tstsetup)
+    cvfits_crr <- get_cvfits(tstsetup_ref)
     # Use suppressWarnings() because test_that() somehow redirects stderr() and
     # so throws warnings that projpred wants to capture internally:
     cvvs_eval <- try(
       suppressWarnings(cv_varsel(
-        get_vs(tstsetup), cv_method = "kfold",
-        cvfits = get_cvfits(tstsetup_ref),
+        vs_crr, cv_method = "kfold",
+        cvfits = cvfits_crr,
         nclusters_pred = nclusters_pred_crr, verbose = FALSE, seed = seed2_tst
       )),
       silent = TRUE
@@ -2561,7 +2568,7 @@ test_that(paste(
       cvvs_eval,
       with_cv = TRUE,
       refmod_expected = get_ref(tstsetup_ref),
-      cvfits_expected = get_cvfits(tstsetup_ref),
+      cvfits_expected = cvfits_crr,
       prd_trms_len_expected = args_vs[[tstsetup]]$nterms_max,
       method_expected = meth_exp_crr,
       cv_method_expected = "kfold",
@@ -2596,23 +2603,26 @@ test_that(paste(
       next
     }
     nclusters_pred_crr <- args_cvvs[[tstsetup]]$nclusters_pred - 1L
+    # Get the objects outside of try(), which would also catch a failed
+    # build:
+    cvvs_crr <- get_cvvs(tstsetup)
     # Use suppressWarnings() because test_that() somehow redirects stderr() and
     # so throws warnings that projpred wants to capture internally:
     if (identical(args_cvvs[[tstsetup]]$cv_method, "kfold")) {
       nloo_crr <- nloo_tst[["subsmpl"]][["nloo"]]
       cvvs_eval <- try(
         suppressWarnings(cv_varsel(
-          get_cvvs(tstsetup), cv_method = "LOO", nloo = nloo_crr,
+          cvvs_crr, cv_method = "LOO", nloo = nloo_crr,
           validate_search = TRUE, nclusters_pred = nclusters_pred_crr,
           verbose = FALSE, seed = seed2_tst
         )),
         silent = TRUE
       )
     } else {
-      nloo_crr <- get_cvvs(tstsetup)[["nloo"]]
+      nloo_crr <- cvvs_crr[["nloo"]]
       cvvs_eval <- try(
         suppressWarnings(cv_varsel(
-          get_cvvs(tstsetup), validate_search = TRUE,
+          cvvs_crr, validate_search = TRUE,
           nclusters_pred = nclusters_pred_crr, verbose = FALSE, seed = seed2_tst
         )),
         silent = TRUE
@@ -2707,12 +2717,15 @@ test_that(paste(
     cvfits_crr <- if (tstsetup_ref %in% tstsetups_ref_kfold) {
       get_cvfits(tstsetup_ref)
     }
+    # Get the objects outside of try(), which would also catch a failed
+    # build:
+    cvvs_crr <- get_cvvs(tstsetup)
     # Use suppressWarnings() because test_that() somehow redirects stderr() and
     # so throws warnings that projpred wants to capture internally:
     if (identical(args_cvvs[[tstsetup]]$cv_method, "kfold")) {
       cvvs_eval <- try(
         suppressWarnings(cv_varsel(
-          get_cvvs(tstsetup), validate_search = TRUE,
+          cvvs_crr, validate_search = TRUE,
           nclusters_pred = nclusters_pred_crr, verbose = FALSE, seed = seed2_tst
         )),
         silent = TRUE
@@ -2720,7 +2733,7 @@ test_that(paste(
     } else {
       cvvs_eval <- try(
         suppressWarnings(cv_varsel(
-          get_cvvs(tstsetup), cv_method = "kfold", K = K_tst,
+          cvvs_crr, cv_method = "kfold", K = K_tst,
           cvfits = cvfits_crr, validate_search = TRUE,
           nclusters_pred = nclusters_pred_crr, verbose = FALSE, seed = seed2_tst
         )),

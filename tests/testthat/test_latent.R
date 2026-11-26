@@ -116,7 +116,7 @@ test_that(paste(
   "`<refmodel_object>$eta`"
 ), {
   skip_if_not(run_prj)
-  tstsetups <- grep("\\.latent\\.", names(prjs), value = TRUE)
+  tstsetups <- grep("\\.latent\\.", names(args_prj), value = TRUE)
   for (tstsetup in tstsetups) {
     args_prj_i <- args_prj[[tstsetup]]
     refmod_crr <- get_ref(args_prj_i$tstsetup_ref)
@@ -130,10 +130,10 @@ test_that(paste(
   "traditional projection"
 ), {
   skip_if_not(run_prj)
-  tstsetups <- grep("\\.brnll\\..*\\.latent\\.", names(prjs), value = TRUE)
+  tstsetups <- grep("\\.brnll\\..*\\.latent\\.", names(args_prj), value = TRUE)
   for (tstsetup in tstsetups) {
     tstsetup_trad <- sub("\\.latent\\.", ".trad_compare.", tstsetup)
-    if (!tstsetup_trad %in% names(prjs)) next
+    if (!tstsetup_trad %in% names(args_prj)) next
 
     args_prj_i <- args_prj[[tstsetup]]
     args_prj_i_trad <- args_prj[[tstsetup_trad]]
@@ -155,10 +155,10 @@ test_that(paste(
 ), {
   skip_if_not(run_prj)
   withr::local_preserve_seed()
-  tstsetups <- grep("\\.brnll\\..*\\.latent\\.", names(prjs), value = TRUE)
+  tstsetups <- grep("\\.brnll\\..*\\.latent\\.", names(args_prj), value = TRUE)
   for (tstsetup in tstsetups) {
     tstsetup_trad <- sub("\\.latent\\.", ".trad_compare.", tstsetup)
-    if (!tstsetup_trad %in% names(prjs)) next
+    if (!tstsetup_trad %in% names(args_prj)) next
 
     args_prj_i <- args_prj[[tstsetup]]
     args_prj_i_trad <- args_prj[[tstsetup_trad]]
@@ -214,7 +214,7 @@ test_that(paste(
   "traditional projection (when setting `dis` appropriately)"
 ), {
   skip_if_not(run_prj)
-  tstsetups <- grep("\\.gauss\\.", names(prjs), value = TRUE)
+  tstsetups <- grep("\\.gauss\\.", names(args_prj), value = TRUE)
   if (any(grepl("\\.without_wobs\\.", tstsetups))) {
     message("The test \"for the gaussian() family, the latent projection is ",
             "the same as the traditional projection (when setting `dis` ",
