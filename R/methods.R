@@ -3033,9 +3033,10 @@ predictor_terms.projection <- function(object, ...) {
 #'   * For the latent projection, the left-hand side is the latent response.
 #'
 #'   Observation weights and offsets are not part of the formula.
-#'   \pkg{projpred} fits the submodels without the offsets and adds the offsets
-#'   of the reference model to the predictions. If you fit the submodel in
-#'   another package, add the offsets there.
+#'   \pkg{projpred} fits the submodels with the offsets of the reference model
+#'   (as an argument of the submodel fitter) and adds the offsets to the
+#'   predictions. If you fit the submodel in another package, add the offsets
+#'   there.
 #'
 #'   The environment of the formula is that of the reference model formula.
 #'
