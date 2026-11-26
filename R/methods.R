@@ -2675,8 +2675,13 @@ as.matrix.projection <- function(x, nm_scheme = NULL,
   stopifnot(nm_scheme %in% c("rstanarm", "brms"))
   res <- do.call(rbind, lapply(x$outdmin, get_subparams, nm_scheme = nm_scheme))
   if (all(vapply(x$outdmin, inherits, logical(1), what = "gamm4"))) {
-    # The smooth terms of the `gam` parts (see get_subparams.gamm4()):
-    gam_fits <- lapply(x$outdmin, "[[", "gam")
+    # The smooth terms of the `gam` parts (see get_subparams.gamm4()).
+    # gamm4::gamm4() (0.3-0) sets the smoothing parameter of a variance
+    # component of 0 in the lme4 part to 1e10; attribute `projpred_sp_zero`
+    # tells smooth_sds() that such a smoothing parameter means an SD of 0:
+    gam_fits <- lapply(x$outdmin, function(fit_s) {
+      structure(fit_s$gam, projpred_sp_zero = 1e10)
+    })
   } else if (all(vapply(x$outdmin, inherits, logical(1), what = "gam"))) {
     gam_fits <- x$outdmin
   } else {
