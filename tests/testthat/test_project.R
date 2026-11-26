@@ -440,8 +440,7 @@ test_that("non-clustered projection does not require a seed", {
         # we cannot test the whole project() output, but need to restrict
         # ourselves to the output of as.matrix.projection().
         if (args_prj_i$mod_nm == "gamm") {
-          # Skipping GAMMs because of issue #131.
-          # TODO (GAMMs): Fix this.
+          # TODO (GAMMs): Compare the as.matrix() output for GAMMs too.
           next
         }
         prjmat_orig <- as.matrix(p_orig)

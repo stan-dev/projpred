@@ -2439,11 +2439,32 @@ get_subparams.projpred_mlvl_cumul <- function(x, ...) {
 #' @noRd
 #' @export
 get_subparams.gamm4 <- function(x, ...) {
-  # coef() of a gamm4 fit is `NULL`, so get_subparams.lm() would return no
-  # parameters:
-  stop("as.matrix.projection() and as_draws_matrix.projection() do not ",
-       "support submodels with smooth and group-level terms (GAMMs) yet.",
-       call. = FALSE)
+  # A gamm4 fit has two parts: `x$gam` (an mgcv `gam` object) holds the
+  # population-level and the smooth coefficients in the basis of mgcv, and
+  # `x$mer` (an lme4 fit) holds the group-level terms. The penalized parts of
+  # the smooth terms are also group-level terms of `x$mer` (named in element
+  # `lmer.name` of the smooths); these are left out here, as.matrix.projection()
+  # gives the smooth SDs.
+  population_effects <- get_subparams.lm(x$gam, ...)
+
+  group_vc_raw <- lme4::VarCorr(x$mer)
+  sm_nms <- unlist(lapply(x$gam$smooth, "[[", "lmer.name"))
+  is_grp <- !names(group_vc_raw) %in% sm_nms
+  group_vc_raw <- unclass(group_vc_raw)[is_grp]
+  coef_nms <- lapply(group_vc_raw, rownames)
+  group_vc <- proc_VarCorr(group_vc_raw, coef_nms = coef_nms, ...)
+
+  subparams <- c(population_effects, group_vc)
+
+  if (!getOption("projpred.mlvl_pred_new", FALSE)) {
+    group_ef_raw <- lme4::ranef(x$mer, condVar = FALSE)
+    group_ef_raw <- unclass(group_ef_raw)[names(group_ef_raw) %in%
+                                            names(group_vc_raw)]
+    group_ef <- proc_ranef(group_ef_raw, coef_nms = coef_nms, ...)
+    subparams <- c(subparams, group_ef)
+  }
+
+  return(subparams)
 }
 
 #' @noRd
@@ -2572,6 +2593,12 @@ get_subparams.mmblogit <- function(x, ...) {
 #'   projected draw. Otherwise, the columns of the smooth terms are the
 #'   coefficients in the basis of `gam()`.
 #'
+#'   For a submodel with smooth and group-level terms (fitted with
+#'   [gamm4::gamm4()]), the columns of the smooth terms are as for a `gam()`
+#'   submodel, and the group-level columns are as for a multilevel submodel.
+#'   The SD columns of the smooth terms are the SDs of the variance components
+#'   of the smooth terms in the \pkg{lme4} part of the `gamm4()` fit.
+#'
 #'   For the latent projection, column `sigma` contains the projected latent
 #'   dispersion. If `<refmodel>$dis` consists of only `NA`s (see argument `dis`
 #'   of [init_refmodel()]), there is no column `sigma`.
@@ -2647,10 +2674,16 @@ as.matrix.projection <- function(x, nm_scheme = NULL,
   }
   stopifnot(nm_scheme %in% c("rstanarm", "brms"))
   res <- do.call(rbind, lapply(x$outdmin, get_subparams, nm_scheme = nm_scheme))
-  if (all(vapply(x$outdmin, function(fit) {
-    inherits(fit, "gam") && !inherits(fit, "gamm4")
-  }, logical(1)))) {
-    res <- smooth_to_ref_basis(res, fits = x$outdmin, refmodel = x$refmodel,
+  if (all(vapply(x$outdmin, inherits, logical(1), what = "gamm4"))) {
+    # The smooth terms of the `gam` parts (see get_subparams.gamm4()):
+    gam_fits <- lapply(x$outdmin, "[[", "gam")
+  } else if (all(vapply(x$outdmin, inherits, logical(1), what = "gam"))) {
+    gam_fits <- x$outdmin
+  } else {
+    gam_fits <- NULL
+  }
+  if (!is.null(gam_fits)) {
+    res <- smooth_to_ref_basis(res, fits = gam_fits, refmodel = x$refmodel,
                                nm_scheme = nm_scheme,
                                warn_no_basis = nm_scheme_given)
   }

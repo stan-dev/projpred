@@ -176,6 +176,10 @@ smooth_to_ref_basis <- function(res, fits, refmodel, nm_scheme, warn_no_basis) {
     warn_mgcv_basis("The submodel fits of the projected draws differ.")
     return(res)
   }
+  # The data of some reference model fits (for example rstanarm::stan_gamm4()
+  # with argument `random`) is a model frame; predict.gam() would then require
+  # the response of the submodel fit in it:
+  attr(data, "terms") <- NULL
   setup <- gam_setup_for_basis(fit_1, data)
   lp_mat <- tryCatch(
     stats::predict(fit_1, newdata = data, type = "lpmatrix"),
@@ -374,7 +378,11 @@ smooth_sds <- function(setup, j, fits, qr_B1, tgt, tol) {
   }
   # The penalty of a block is negligible if kappa_b is below `tol_ident` times
   # the mean diagonal element of B_b' W B_b (W: the working weights of the
-  # fit). Then the SD is not identified. A scale of 0 gives no SD either.
+  # fit). Then the SD is not identified. A scale of 0 gives no SD either. (In
+  # the `gam` part of a gamm4 fit, `sp` and `sig2` have the scale of the lme4
+  # fit as a common factor; the SD does not depend on it, but this threshold
+  # does. With a non-Gaussian family, the scale can differ from 1, so the
+  # threshold moves by that factor.)
   tol_ident <- 1e-6
   B <- tgt$B
   info_fun <- function(w) {
