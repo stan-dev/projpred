@@ -15,6 +15,18 @@
 
 ### Minor changes
 
+- For submodels with smooth terms,
+  [`as.matrix()`](https://rdrr.io/r/base/matrix.html) and
+  [`as_draws_matrix()`](https://mc-stan.org/posterior/reference/draws_matrix.html)
+  give the smooth terms in the basis and with the parameter names of a
+  **brms** or
+  [`rstanarm::stan_gamm4()`](https://mc-stan.org/rstanarm/reference/stan_gamm4.html)
+  reference model fit, with the smooth SDs. They now also support GAMM
+  submodels. (GitHub:
+  [\#131](https://github.com/stan-dev/projpred/issues/131),
+  [\#151](https://github.com/stan-dev/projpred/issues/151),
+  [\#152](https://github.com/stan-dev/projpred/issues/152),
+  [\#676](https://github.com/stan-dev/projpred/issues/676))
 - New [`formula()`](https://rdrr.io/r/stats/formula.html) method for
   `projection` objects. It gives the formula of the submodel in the form
   that projpred fits, for example to set up the submodel in another

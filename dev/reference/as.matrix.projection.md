@@ -89,6 +89,13 @@ smooth term, so they are point estimates for each projected draw.
 Otherwise, the columns of the smooth terms are the coefficients in the
 basis of `gam()`.
 
+For a submodel with smooth and group-level terms (fitted with
+[`gamm4::gamm4()`](https://rdrr.io/pkg/gamm4/man/gamm4.html)), the
+columns of the smooth terms are as for a `gam()` submodel, and the
+group-level columns are as for a multilevel submodel. The SD columns of
+the smooth terms are the SDs of the variance components of the smooth
+terms in the lme4 part of the `gamm4()` fit.
+
 For the latent projection, column `sigma` contains the projected latent
 dispersion. If `<refmodel>$dis` consists of only `NA`s (see argument
 `dis` of

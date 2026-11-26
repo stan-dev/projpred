@@ -363,7 +363,7 @@ In general, we recommend K-fold CV in this case.</code></pre>
 <div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">time_lat</span><span class="op">)</span></span></code></pre></div>
 <pre><code>   user  system elapsed 
- 13.777   0.024   3.758 </code></pre>
+ 13.882   0.016   3.773 </code></pre>
 <p>The warnings about high Pareto <span class="math inline">\(\hat{k}\)</span> values concern only a few of the
 100 observations. With the short MCMC run of this vignette (1000
 posterior draws), the threshold for a reliable Pareto <span class="math inline">\(\hat{k}\)</span> is about 0.67 <span class="citation">(<a href="#ref-vehtari_pareto_2022">Vehtari et al.
@@ -445,7 +445,7 @@ are &gt; 0.67.</code></pre>
 <div class="sourceCode" id="cb23"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/cbind.html" class="external-link">rbind</a></span><span class="op">(</span>latent <span class="op">=</span> <span class="va">time_lat</span>, traditional <span class="op">=</span> <span class="va">time_trad</span><span class="op">)</span><span class="op">[</span>, <span class="st">"elapsed"</span><span class="op">]</span></span></code></pre></div>
 <pre><code>     latent traditional 
-      3.758      55.712 </code></pre>
+      3.773      55.122 </code></pre>
 <div class="sourceCode" id="cb25"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/suggest_size.html">suggest_size</a></span><span class="op">(</span><span class="va">cvvs_trad</span>, stat <span class="op">=</span> <span class="st">"gmpd"</span><span class="op">)</span></span></code></pre></div>
 <pre><code>[1] 5</code></pre>
@@ -882,30 +882,33 @@ functions”</a>.</p>
 <span>  verbose <span class="op">=</span> <span class="fl">0</span></span>
 <span><span class="op">)</span></span></code></pre></div>
 <pre><code>Cutting off the search at size 19. Use argument `nterms_max` to customize this.</code></pre>
-<pre><code>Warning: In the recalculation of the latent response values, some (3 / 500) expectation-specific Pareto k-values are &gt; 0.7.
+<pre><code>Warning: Some Pareto k diagnostic values are too high. See help('pareto-k-diagnostic') for details.</code></pre>
+<pre><code>Warning: Some (1 / 500) Pareto k's for the reference model's PSIS-LOO weights
+are &gt; 0.7.</code></pre>
+<pre><code>Warning: In the recalculation of the latent response values, some (2 / 500) expectation-specific Pareto k-values are &gt; 0.7.
 In general, we recommend K-fold CV in this case.</code></pre>
 <p>As in the Poisson example, warnings about high Pareto <span class="math inline">\(\hat{k}\)</span> values can come from the short
 MCMC run of this vignette. In a real analysis, we would run more MCMC
 iterations, check the Pareto <span class="math inline">\(\hat{k}\)</span> values again, and use <span class="math inline">\(K\)</span>-fold CV
 (<code>cv_method = "kfold"</code>) if many of them are high.</p>
 <p>Plot the results:</p>
-<div class="sourceCode" id="cb59"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb61"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">cvvs_weib</span>, stats <span class="op">=</span> <span class="st">"mlpd"</span>, deltas <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
 <p><img src="latent_files/figure-html/weibull_plot_cvvs-1.png" class="r-plt" alt="Plot of the MLPD difference between each submodel and the reference model, with uncertainty bars, for the Weibull model with right-censored observations. The top x-axis shows the submodel size and the bottom x-axis the predictor added at each size. The first 10 predictors are the 10 truly relevant ones. The difference increases with the size and then levels off close to zero (dashed line)." width="90%" style="display: block; margin: auto;">
 Hence, the truly relevant predictors are identified correctly.</p>
 <p>Based on this plot, we decide for a submodel size of 10:</p>
-<div class="sourceCode" id="cb60"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb62"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">size_decided_weib</span> <span class="op">&lt;-</span> <span class="fl">10</span></span></code></pre></div>
 <p>This is not the size that <code><a href="../reference/suggest_size.html">suggest_size()</a></code> would suggest,
 but as mentioned in the main vignette and in the documentation,
 <code><a href="../reference/suggest_size.html">suggest_size()</a></code> provides only a quite heuristic decision (so
 we stick with our manual decision here):</p>
-<div class="sourceCode" id="cb61"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb63"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/suggest_size.html">suggest_size</a></span><span class="op">(</span><span class="va">cvvs_weib</span>, stat <span class="op">=</span> <span class="st">"mlpd"</span><span class="op">)</span></span></code></pre></div>
 <pre><code>[1] 8</code></pre>
 <p>Project onto the submodel of this size and perform a
 “posterior-projection predictive check” (PPPC):</p>
-<div class="sourceCode" id="cb63"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb65"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">predictors_final_weib</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="fu"><a href="../reference/ranking.html">ranking</a></span><span class="op">(</span><span class="va">cvvs_weib</span><span class="op">)</span><span class="op">[[</span><span class="st">"fulldata"</span><span class="op">]</span><span class="op">]</span>,</span>
 <span>                              <span class="va">size_decided_weib</span><span class="op">)</span></span>
 <span><span class="va">prj_weib</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/project.html">project</a></span><span class="op">(</span><span class="va">refm_weib</span>, predictor_terms <span class="op">=</span> <span class="va">predictors_final_weib</span><span class="op">)</span></span>
@@ -913,7 +916,7 @@ we stick with our manual decision here):</p>
 <pre><code>Warning in proj$refmodel$family$latent_ppd_oscale(mu_oscale_resamp, dis_resamp
 = proj$dis[draw_inds], : The draws from this `latent_ppd_oscale` function are
 uncensored.</code></pre>
-<div class="sourceCode" id="cb65"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb67"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">bayesplot</span><span class="fu">::</span><span class="fu"><a href="https://mc-stan.org/bayesplot/reference/PPC-censoring.html" class="external-link">ppc_km_overlay</a></span><span class="op">(</span>y <span class="op">=</span> <span class="va">dat_sim_weib</span><span class="op">$</span><span class="va">yobs</span>, yrep <span class="op">=</span> <span class="va">prj_predict_weib</span>,</span>
 <span>                          status_y <span class="op">=</span> <span class="fl">1</span> <span class="op">-</span> <span class="va">dat_sim_weib</span><span class="op">$</span><span class="va">is_censored</span><span class="op">)</span></span></code></pre></div>
 <pre><code>Note: `extrapolation_factor` now defaults to 1.2 (20%).
@@ -929,7 +932,7 @@ observations<a class="anchor" aria-label="anchor" href="#lognormalcensex"></a>
 </h3>
 <p>For the log-normal model, we complete our data generation as
 follows:</p>
-<div class="sourceCode" id="cb67"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb69"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">sdlog_lnorm</span> <span class="op">&lt;-</span> <span class="fl">0.3</span></span>
 <span><span class="va">y_lnorm</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/Lognormal.html" class="external-link">rlnorm</a></span><span class="op">(</span><span class="va">N_surv</span>, meanlog <span class="op">=</span> <span class="va">linpreds_surv</span>, sdlog <span class="op">=</span> <span class="va">sdlog_lnorm</span><span class="op">)</span></span>
 <span><span class="va">is_event_lnorm</span> <span class="op">&lt;-</span> <span class="va">y_lnorm</span> <span class="op">&lt;</span> <span class="va">cens_surv</span></span>
@@ -939,7 +942,7 @@ follows:</p>
 <span>                            is_censored <span class="op">=</span> <span class="fl">1</span> <span class="op">-</span> <span class="va">is_event_lnorm</span>,</span>
 <span>                            <span class="va">dat_sim_surv</span><span class="op">)</span></span></code></pre></div>
 <p>Again, we fit a reference model in <strong>brms</strong>:</p>
-<div class="sourceCode" id="cb68"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb70"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">refm_fit_lnorm</span> <span class="op">&lt;-</span> <span class="fu">brms</span><span class="fu">::</span><span class="fu"><a href="https://paulbuerkner.com/brms/reference/brm.html" class="external-link">brm</a></span><span class="op">(</span></span>
 <span>  formula <span class="op">=</span> <span class="va">yobs</span> <span class="op">|</span> <span class="fu">cens</span><span class="op">(</span><span class="va">is_censored</span><span class="op">)</span> <span class="op">~</span> <span class="va">.</span>,</span>
 <span>  family <span class="op">=</span> <span class="fu">brms</span><span class="fu">::</span><span class="fu"><a href="https://paulbuerkner.com/brms/reference/brmsfamily.html" class="external-link">lognormal</a></span><span class="op">(</span><span class="op">)</span>,</span>
@@ -953,7 +956,7 @@ follows:</p>
 <span><span class="op">)</span></span></code></pre></div>
 <p>The following code prepares the <code><a href="../reference/cv_varsel.html">cv_varsel()</a></code> run and the
 downstream <strong>projpred</strong> steps:</p>
-<div class="sourceCode" id="cb69"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb71"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">latent_ll_oscale_lnorm</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/structure.html" class="external-link">structure</a></span><span class="op">(</span><span class="kw">function</span><span class="op">(</span></span>
 <span>    <span class="va">ilpreds</span>,</span>
 <span>    <span class="va">dis</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="cn">NA</span>, <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">ilpreds</span><span class="op">)</span><span class="op">)</span>,</span>
@@ -1022,7 +1025,7 @@ unchanged, because the two custom functions use them as
 section <a href="#kfold-custom">“K-fold CV with custom response-scale
 functions”</a>.</p>
 <p>Run <code><a href="../reference/cv_varsel.html">cv_varsel()</a></code>:</p>
-<div class="sourceCode" id="cb70"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb72"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">cvvs_lnorm</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/cv_varsel.html">cv_varsel</a></span><span class="op">(</span></span>
 <span>  <span class="va">refm_lnorm</span>,</span>
 <span>  <span class="co">### In interactive use, we recommend not to deactivate the verbose mode:</span></span>
@@ -1030,30 +1033,30 @@ functions”</a>.</p>
 <span><span class="op">)</span></span></code></pre></div>
 <pre><code>Cutting off the search at size 19. Use argument `nterms_max` to customize this.</code></pre>
 <pre><code>Warning: Some Pareto k diagnostic values are too high. See help('pareto-k-diagnostic') for details.</code></pre>
-<pre><code>Warning: Some (2 / 500) Pareto k's for the reference model's PSIS-LOO weights
+<pre><code>Warning: Some (3 / 500) Pareto k's for the reference model's PSIS-LOO weights
 are &gt; 0.7.</code></pre>
-<pre><code>Warning: In the recalculation of the latent response values, some (6 / 500) expectation-specific Pareto k-values are &gt; 0.7.
+<pre><code>Warning: In the recalculation of the latent response values, some (9 / 500) expectation-specific Pareto k-values are &gt; 0.7.
 In general, we recommend K-fold CV in this case.</code></pre>
 <p>As in the Poisson example, warnings about high Pareto <span class="math inline">\(\hat{k}\)</span> values can come from the short
 MCMC run of this vignette. In a real analysis, we would run more MCMC
 iterations, check the Pareto <span class="math inline">\(\hat{k}\)</span> values again, and use <span class="math inline">\(K\)</span>-fold CV
 (<code>cv_method = "kfold"</code>) if many of them are high.</p>
 <p>Plot the results:</p>
-<div class="sourceCode" id="cb75"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb77"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">cvvs_lnorm</span>, stats <span class="op">=</span> <span class="st">"mlpd"</span>, deltas <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
 <p><img src="latent_files/figure-html/lognormal_plot_cvvs-1.png" class="r-plt" alt="The same kind of plot for the log-normal model with right-censored observations. The first 10 predictors are the 10 truly relevant ones. The difference increases with the size and then levels off close to zero (dashed line)." width="90%" style="display: block; margin: auto;">
 Hence, the truly relevant predictors are identified correctly.</p>
 <p>Based on this plot, we decide for a submodel size of 10:</p>
-<div class="sourceCode" id="cb76"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb78"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">size_decided_lnorm</span> <span class="op">&lt;-</span> <span class="fl">10</span></span></code></pre></div>
 <p>This is also the size that <code><a href="../reference/suggest_size.html">suggest_size()</a></code> would
 suggest:</p>
-<div class="sourceCode" id="cb77"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb79"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/suggest_size.html">suggest_size</a></span><span class="op">(</span><span class="va">cvvs_lnorm</span>, stat <span class="op">=</span> <span class="st">"mlpd"</span><span class="op">)</span></span></code></pre></div>
 <pre><code>[1] 10</code></pre>
 <p>Project onto the submodel of this size and perform a
 “posterior-projection predictive check” (PPPC):</p>
-<div class="sourceCode" id="cb79"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb81"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">predictors_final_lnorm</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="fu"><a href="../reference/ranking.html">ranking</a></span><span class="op">(</span><span class="va">cvvs_lnorm</span><span class="op">)</span><span class="op">[[</span><span class="st">"fulldata"</span><span class="op">]</span><span class="op">]</span>,</span>
 <span>                               <span class="va">size_decided_lnorm</span><span class="op">)</span></span>
 <span><span class="va">prj_lnorm</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/project.html">project</a></span><span class="op">(</span><span class="va">refm_lnorm</span>, predictor_terms <span class="op">=</span> <span class="va">predictors_final_lnorm</span><span class="op">)</span></span>
@@ -1061,7 +1064,7 @@ suggest:</p>
 <pre><code>Warning in proj$refmodel$family$latent_ppd_oscale(mu_oscale_resamp, dis_resamp
 = proj$dis[draw_inds], : The draws from this `latent_ppd_oscale` function are
 uncensored.</code></pre>
-<div class="sourceCode" id="cb81"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb83"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">bayesplot</span><span class="fu">::</span><span class="fu"><a href="https://mc-stan.org/bayesplot/reference/PPC-censoring.html" class="external-link">ppc_km_overlay</a></span><span class="op">(</span>y <span class="op">=</span> <span class="va">dat_sim_lnorm</span><span class="op">$</span><span class="va">yobs</span>, yrep <span class="op">=</span> <span class="va">prj_predict_lnorm</span>,</span>
 <span>                          status_y <span class="op">=</span> <span class="fl">1</span> <span class="op">-</span> <span class="va">dat_sim_lnorm</span><span class="op">$</span><span class="va">is_censored</span><span class="op">)</span></span></code></pre></div>
 <pre><code>Note: `extrapolation_factor` now defaults to 1.2 (20%).
@@ -1112,7 +1115,7 @@ also passes its arguments <code>resp</code> and <code>brms_seed</code>.
 If you use these arguments, pass them in the custom
 <code>cvrefbuilder</code> too. For the negative binomial example, this
 can look as follows:</p>
-<div class="sourceCode" id="cb83"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb85"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">get_refmodel_nebin</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">fit</span>, <span class="va">...</span><span class="op">)</span> <span class="op">{</span></span>
 <span>  <span class="va">refm_prec</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">as.matrix</a></span><span class="op">(</span><span class="va">fit</span><span class="op">)</span><span class="op">[</span>, <span class="st">"reciprocal_dispersion"</span>, drop <span class="op">=</span> <span class="cn">FALSE</span><span class="op">]</span></span>
 <span>  <span class="va">latent_ll_oscale_nebin</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">ilpreds</span>,</span>

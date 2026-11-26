@@ -151,6 +151,11 @@ smoothing parameters with GCV, or with UBRE for a known scale), as in the
 mixed-model form of the smooth term, so they are point estimates for each
 projected draw. Otherwise, the columns of the smooth terms are the
 coefficients in the basis of <code>gam()</code>.</p>
+<p>For a submodel with smooth and group-level terms (fitted with
+<code><a href="https://rdrr.io/pkg/gamm4/man/gamm4.html" class="external-link">gamm4::gamm4()</a></code>), the columns of the smooth terms are as for a <code>gam()</code>
+submodel, and the group-level columns are as for a multilevel submodel.
+The SD columns of the smooth terms are the SDs of the variance components
+of the smooth terms in the <span class="pkg">lme4</span> part of the <code>gamm4()</code> fit.</p>
 <p>For the latent projection, column <code>sigma</code> contains the projected latent
 dispersion. If <code>&lt;refmodel&gt;$dis</code> consists of only <code>NA</code>s (see argument <code>dis</code>
 of <code><a href="refmodel-init-get.html">init_refmodel()</a></code>), there is no column <code>sigma</code>.</p>
