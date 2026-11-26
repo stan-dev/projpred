@@ -428,7 +428,10 @@ mo_full_signs <- function(p_ref, refmodel, args_divmin) {
       do.call(refmodel$div_minimizer, args_divmin)
     },
     error = function(e) {
-      if (grepl("^Internal error", conditionMessage(e))) {
+      # Internal errors and the stops for unsupported fitters with offsets (see
+      # check_offs_fitter()) are not failures of this projection:
+      if (grepl("^Internal error", conditionMessage(e)) ||
+          inherits(e, "projpred_offs_error")) {
         stop(e)
       }
       warning("The projection onto the full model (for the signs of the ",

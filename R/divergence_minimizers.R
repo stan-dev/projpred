@@ -345,25 +345,28 @@ dot_args_family <- function(dot_args, family) {
 # for new data ignore. `has_grp` and `has_add`: whether the submodel has
 # group-level and additive terms. stats::glm() adds its offsets again in its
 # predictions, MASS::glmmPQL() does not use argument `offset`, and
-# gamm4::gamm4() takes offsets only as a formula term.
+# gamm4::gamm4() takes offsets only as a formula term. The errors have class
+# "projpred_offs_error" (see mo_full_signs()).
 check_offs_fitter <- function(offset, has_grp, has_add) {
   if (!isTRUE(any(offset != 0))) {
     return(invisible(NULL))
   }
+  stop_offs <- function(...) {
+    stop(errorCondition(paste0(...), class = "projpred_offs_error"))
+  }
   if (!has_grp && !has_add &&
       !identical(getOption("projpred.glm_fitter", "fit_glm_ridge_callback"),
                  "fit_glm_ridge_callback")) {
-    stop("For a reference model with offsets, global option ",
-         "`projpred.glm_fitter` must be \"fit_glm_ridge_callback\".",
-         call. = FALSE)
+    stop_offs("For a reference model with offsets, global option ",
+              "`projpred.glm_fitter` must be \"fit_glm_ridge_callback\".")
   }
   if (has_grp && !has_add && getOption("projpred.PQL", FALSE)) {
-    stop("For a reference model with offsets, global option `projpred.PQL` ",
-         "must be `FALSE`.", call. = FALSE)
+    stop_offs("For a reference model with offsets, global option ",
+              "`projpred.PQL` must be `FALSE`.")
   }
   if (has_grp && has_add) {
-    stop("Currently, projpred does not support offsets for submodels with ",
-         "group-level and additive terms.", call. = FALSE)
+    stop_offs("Currently, projpred does not support offsets for submodels ",
+              "with group-level and additive terms.")
   }
   return(invisible(NULL))
 }
