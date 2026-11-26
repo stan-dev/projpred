@@ -6,8 +6,8 @@ If you read this from a place other than <https://mc-stan.org/projpred/news/inde
 
 ## Major changes
 
-* In `varsel()` and `cv_varsel()`, the submodel with all terms of the reference model gets the results of the reference model, not of a projection. This avoids the unstable full multilevel projection. Global option `projpred.full_size_ref` turns this off. (GitHub: #323, #441)
-* For the submodel with all terms of the reference model, `project()` on a `vsel` object returns thinned draws of the reference model, with a warning. `as.matrix()`, `as_draws_matrix()` and `mo_effects()` stop for these draws. (GitHub: #323, #441)
+* In `varsel()` and `cv_varsel()`, the submodel with all terms of the reference model gets the results of the reference model, not of a projection. This avoids the unstable full multilevel projection. Global option `projpred.full_size_ref` turns this off. (GitHub: #323, #441, #685)
+* For the submodel with all terms of the reference model, `project()` on a `vsel` object returns thinned draws of the reference model, with a warning. `as.matrix()`, `as_draws_matrix()` and `mo_effects()` stop for these draws. (GitHub: #323, #441, #685)
 * The traditional projection supports the negative binomial family (`rstanarm::neg_binomial_2()`, `brms::negbinomial()`, `MASS::negative.binomial()`) for submodels without group-level and additive terms. The shape parameter is projected, too. (GitHub: #361, #675)
 
 ## Minor changes
