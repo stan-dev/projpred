@@ -15,10 +15,14 @@ dat_sb <- data.frame(x = (sin(1.7 * idx_sb) + 1) / 2,
 eta_sb <- sin(2 * pi * dat_sb$x) + dat_sb$z * dat_sb$w + 0.5 * dat_sb$v
 dat_sb$y <- eta_sb + 0.3 * sin(5.1 * idx_sb)
 dat_sb$yb <- round(dat_sb$tr * plogis(eta_sb))
+dat_sb$g <- factor(paste0("g", idx_sb %% 6))
 ndr_sb <- 25L
 eta_draws_sb <- sapply(seq_len(ndr_sb), function(s) {
   eta_sb + 0.05 * sin(s * idx_sb + s)
 })
+# With group effects (for the GAMM submodels):
+eff_g_sb <- c(-0.6, -0.3, 0, 0.2, 0.4, 0.5)
+eta_draws_g_sb <- eta_draws_sb + eff_g_sb[as.integer(dat_sb$g)]
 
 # The warnings of init_refmodel() for these custom reference models:
 muffle_refmodel_warnings <- function(expr) {
@@ -129,6 +133,39 @@ expect_sds_reproduce_fit <- function(m, prj, X_par, X_sm, blocks, info) {
   }
 }
 
+# `prj` with the smoothing parameters `sp_idxs` of the first submodel fit (for
+# a gamm4 fit: of its `gam` part) set to `value`. If `sp_zero` is given, the
+# fit gets it as attribute `projpred_sp_zero` (as.matrix.projection() sets
+# this attribute itself only for gamm4 fits).
+prj_set_sp <- function(prj, sp_idxs, value = 1e10, sp_zero = NULL) {
+  set_sp <- function(fit) {
+    fit$sp[sp_idxs] <- value
+    if (!is.null(fit$full.sp)) {
+      fit$full.sp[sp_idxs] <- value
+    }
+    if (!is.null(sp_zero)) {
+      attr(fit, "projpred_sp_zero") <- sp_zero
+    }
+    fit
+  }
+  if (inherits(prj$outdmin[[1]], "gamm4")) {
+    prj$outdmin[[1]]$gam <- set_sp(prj$outdmin[[1]]$gam)
+  } else {
+    prj$outdmin[[1]] <- set_sp(prj$outdmin[[1]])
+  }
+  prj
+}
+
+# Checks `m` (from as.matrix() after prj_set_sp()) against `m_ref` (from
+# as.matrix() before it): the SD columns `zero_nms` of the first draw are
+# exactly 0, and the other values do not change (up to rounding).
+expect_sds_zero <- function(m, m_ref, zero_nms, info = NULL) {
+  expect_identical(unname(m[1, zero_nms]), rep(0, length(zero_nms)),
+                   info = info)
+  m_ref[1, zero_nms] <- 0
+  expect_equal(m, m_ref, tolerance = 1e-10, info = info)
+}
+
 test_that("as.matrix.projection() gives smooth terms in the brms basis", {
   skip_if_not_installed("brms")
   fml <- y ~ s(x) + t2(z, w) + v
@@ -168,6 +205,38 @@ test_that("as.matrix.projection() gives smooth terms in the brms basis", {
   expect_warning(m_r <- as.matrix(prj, nm_scheme = "rstanarm"),
                  "does not give the bases of the smooth terms")
   expect_all_true_tst(c("s(x).1", "t2(z,w).1") %in% colnames(m_r))
+})
+
+test_that(paste(
+  "a smoothing parameter at the value for a variance component of 0 gives an",
+  "SD of 0, only for its block"
+), {
+  skip_if_not_installed("brms")
+  fml <- y ~ s(x) + t2(z, w) + v
+  fit <- brmsfit_sb(fml)
+  prj <- prj_sb(fit, fml, c("s(x)", "t2(z, w)", "v"), ndraws = ndr_sb)
+  m <- as.matrix(prj)
+  sd_nms <- c("sds_sx_1", paste0("sds_t2zw_", 1:3))
+  expect_false(anyNA(m[1, sd_nms]))
+  expect_all_true_tst(m[1, sd_nms] > 0)
+  # Each penalty of the t2() term in turn (the smoothing parameters are set
+  # in the fit, so the result does not depend on the estimated ones):
+  sp_idxs <- with(prj$outdmin[[1]]$smooth[[2]], first.sp:last.sp)
+  zero_nms <- character()
+  for (k in sp_idxs) {
+    m_k <- as.matrix(prj_set_sp(prj, k, sp_zero = 1e10))
+    is_zero <- m_k[1, sd_nms] == 0
+    expect_identical(sum(is_zero), 1L, info = paste("penalty", k))
+    expect_sds_zero(m_k, m, sd_nms[is_zero], info = paste("penalty", k))
+    zero_nms <- c(zero_nms, sd_nms[is_zero])
+  }
+  expect_setequal(zero_nms, paste0("sds_t2zw_", 1:3))
+  # Not an SD of 0: the same value without the attribute, and a larger
+  # smoothing parameter than the value of the attribute:
+  m_no <- as.matrix(prj_set_sp(prj, sp_idxs[1]))
+  expect_all_true_tst(m_no[1, sd_nms] > 0)
+  m_gt <- as.matrix(prj_set_sp(prj, sp_idxs[1], value = 2e10, sp_zero = 1e10))
+  expect_all_true_tst(m_gt[1, sd_nms] > 0)
 })
 
 test_that(paste(
@@ -274,6 +343,167 @@ test_that(paste(
                    c(names(coef(prj$outdmin[[1]])), "sigma"))
   expect_warning(as.matrix(prj, nm_scheme = "brms"),
                  "does not give the bases of the smooth terms")
+})
+
+test_that(paste(
+  "as.matrix.projection() gives the smooth and the group-level terms of GAMM",
+  "submodels in the brms basis"
+), {
+  skip_if_not_installed("brms")
+  skip_if_not_installed("gamm4")
+  # The known warnings of the multilevel projections and of lme4:
+  prj_gamm <- function(...) {
+    withCallingHandlers(prj_sb(...), warning = function(w) {
+      if (grepl(paste("issue #323|can be near zero|might not have converged",
+                      "failed to converge", sep = "|"),
+                conditionMessage(w))) {
+        invokeRestart("muffleWarning")
+      }
+    })
+  }
+  # The SDs from as.matrix() agree with the SDs of the lme4 part, element by
+  # element: relatively for an SD above 1, absolutely below. An SD at the
+  # boundary is exactly 0 in both:
+  expect_sds_lme4 <- function(act, exp, info) {
+    expect_identical(length(act), length(exp), info = info)
+    expect_lt(max(abs(act - exp) / pmax(abs(exp), 1)), 1e-6, label = info)
+    expect_identical(act[exp == 0], exp[exp == 0], info = info)
+  }
+  fml <- y ~ s(x) + v + (1 | g)
+  fit <- brmsfit_sb(fml)
+  X_sm <- brms_basis_sb(fit)
+  r_nms <- paste0("r_g[", levels(dat_sb$g), ",Intercept]")
+  Z_g <- outer(as.integer(dat_sb$g), seq_len(nlevels(dat_sb$g)), "==") * 1
+  colnames(Z_g) <- r_nms
+  X_par <- cbind(b_Intercept = 1, b_v = dat_sb$v, Z_g)
+  for (fam_nm in c("gaussian", "binomial")) {
+    if (fam_nm == "gaussian") {
+      prj <- prj_gamm(fit, fml, c("s(x)", "v", "(1 | g)"),
+                    eta_draws = eta_draws_g_sb, ndraws = ndr_sb)
+    } else {
+      prj <- prj_gamm(fit, update(fml, yb ~ .), c("s(x)", "v", "(1 | g)"),
+                    family = binomial(), wcol = "tr",
+                    eta_draws = eta_draws_g_sb, ndraws = ndr_sb)
+    }
+    expect_s3_class(prj$outdmin[[1]], "gamm4")
+    expect_warning(m <- as.matrix(prj), NA, info = fam_nm)
+    expect_setequal(colnames(m),
+                    c("b_Intercept", "b_v", colnames(X_sm), "sds_sx_1",
+                      "sd_g__Intercept", r_nms,
+                      if (fam_nm == "gaussian") "sigma"))
+    expect_lp_rebuilt(m, prj, X_par, X_sm, info = fam_nm)
+    # The group SD and the smooth SD are those of the lme4 part of the fits
+    # (the smooth term is the variance component `Xr` there):
+    sds_mer <- t(vapply(prj$outdmin, function(fit_s) {
+      vc <- lme4::VarCorr(fit_s$mer)
+      c(attr(vc$g, "stddev"), attr(vc$Xr, "stddev"))
+    }, numeric(2)))
+    expect_equal(unname(m[, "sd_g__Intercept"]), unname(sds_mer[, 1]),
+                 tolerance = 1e-10, info = fam_nm)
+    expect_sds_lme4(unname(m[, "sds_sx_1"]), unname(sds_mer[, 2]),
+                    info = fam_nm)
+    # as_draws_matrix() gives the same draws:
+    expect_identical(unclass(posterior::as_draws_matrix(prj))[, colnames(m)],
+                     unclass(posterior::as_draws_matrix(m))[, colnames(m)],
+                     info = fam_nm)
+  }
+
+  # A t2() term (several variance components in the lme4 part):
+  fml_t2 <- y ~ s(x) + t2(z, w) + v + (1 | g)
+  fit_t2 <- brmsfit_sb(fml_t2)
+  prj_t2 <- prj_gamm(fit_t2, fml_t2, c("s(x)", "t2(z, w)", "v", "(1 | g)"),
+                   eta_draws = eta_draws_g_sb, ndraws = ndr_sb)
+  expect_warning(m_t2 <- as.matrix(prj_t2), NA)
+  X_sm_t2 <- brms_basis_sb(fit_t2)
+  expect_setequal(colnames(m_t2),
+                  c("b_Intercept", "b_v", colnames(X_sm_t2), "sds_sx_1",
+                    paste0("sds_t2zw_", 1:3), "sd_g__Intercept", r_nms,
+                    "sigma"))
+  expect_lp_rebuilt(m_t2, prj_t2, X_par, X_sm_t2, info = "t2")
+  # The SDs of each smooth term are those of its variance components in the
+  # lme4 part (`lmer.name`; compared as sets, because the order of the
+  # penalties of a t2() term can differ):
+  for (s in seq_along(prj_t2$outdmin)) {
+    fit_s <- prj_t2$outdmin[[s]]
+    vc <- lme4::VarCorr(fit_s$mer)
+    sm <- fit_s$gam$smooth
+    sd_lme4 <- lapply(sm, function(sm_j) {
+      vapply(sm_j$lmer.name, function(nm) attr(vc[[nm]], "stddev"),
+             numeric(1))
+    })
+    # A variance component of 0 (if lme4 gives one) has the smoothing
+    # parameter that as.matrix() takes as an SD of 0:
+    sp_at_zero <- unname(fit_s$gam$sp[unlist(sd_lme4) == 0])
+    expect_identical(sp_at_zero, rep(1e10, length(sp_at_zero)),
+                     info = paste("t2, draw", s))
+    expect_sds_lme4(unname(m_t2[s, "sds_sx_1"]), unname(sd_lme4[[1]]),
+                    info = paste("t2, draw", s))
+    expect_sds_lme4(sort(unname(m_t2[s, paste0("sds_t2zw_", 1:3)]),
+                         na.last = TRUE),
+                    sort(unname(sd_lme4[[2]]), na.last = TRUE),
+                    info = paste("t2, draw", s))
+  }
+  # gamm4::gamm4() sets the smoothing parameter of a variance component of 0
+  # to 1e10. as.matrix() gives an SD of exactly 0 for this value. Here, all
+  # smoothing parameters of the t2() term of the first fit get this value, so
+  # the zeros do not depend on the optimizer of lme4:
+  sp_idxs_t2 <- with(prj_t2$outdmin[[1]]$gam$smooth[[2]], first.sp:last.sp)
+  expect_sds_zero(as.matrix(prj_set_sp(prj_t2, sp_idxs_t2)), m_t2,
+                  paste0("sds_t2zw_", 1:3))
+
+  # rstanarm naming (a stan_gamm4() fit without Stan; the group-level term
+  # is only in the reference model formula of the projection):
+  fit_r <- stanreg_sb(y ~ s(x) + v)
+  prj_r <- prj_gamm(fit_r, fml, c("s(x)", "v", "(1 | g)"),
+                    eta_draws = eta_draws_g_sb, ndraws = ndr_sb)
+  expect_warning(m_r <- as.matrix(prj_r), NA)
+  b_nms <- paste0("b[(Intercept) g:", levels(dat_sb$g), "]")
+  expect_setequal(colnames(m_r),
+                  c(colnames(fit_r$x), "smooth_sd[s(x)1]",
+                    "Sigma[g:(Intercept),(Intercept)]", b_nms, "sigma"))
+  vc_r <- t(vapply(prj_r$outdmin, function(fit_s) {
+    vc <- lme4::VarCorr(fit_s$mer)
+    c(vc$g[1, 1], attr(vc$Xr, "stddev"))
+  }, numeric(2)))
+  # The variance (not the SD) of the group-level intercepts:
+  expect_equal(unname(m_r[, "Sigma[g:(Intercept),(Intercept)]"]),
+               unname(vc_r[, 1]), tolerance = 1e-10)
+  expect_sds_lme4(unname(m_r[, "smooth_sd[s(x)1]"]), unname(vc_r[, 2]),
+                  info = "rstanarm")
+  Z_g_r <- Z_g
+  colnames(Z_g_r) <- b_nms
+  X_r <- fit_r$x
+  expect_lp_rebuilt(m_r, prj_r, cbind(X_r[, c("(Intercept)", "v")], Z_g_r),
+                    X_r[, setdiff(colnames(X_r), c("(Intercept)", "v"))],
+                    info = "rstanarm")
+
+  # Without group-level effects in the predictions (only the group SDs):
+  opts_old <- options(projpred.mlvl_pred_new = TRUE)
+  on.exit(options(opts_old), add = TRUE)
+  m_new <- as.matrix(prj)
+  expect_false(any(grepl("^r_", colnames(m_new))))
+  expect_true("sd_g__Intercept" %in% colnames(m_new))
+  m_new_r <- as.matrix(prj_r)
+  expect_false(any(grepl("^b\\[", colnames(m_new_r))))
+  expect_true("Sigma[g:(Intercept),(Intercept)]" %in% colnames(m_new_r))
+})
+
+test_that(paste(
+  "as.matrix.projection() maps the smooth terms if the reference model data",
+  "is a model frame"
+), {
+  # (As the data of a rstanarm::stan_gamm4() fit with argument `random`.)
+  dat_mf <- model.frame(y ~ x + v, data = dat_sb)
+  fml <- y ~ s(x) + v
+  fit <- stanreg_sb(fml)
+  prj <- prj_sb(fit, fml, c("s(x)", "v"), data = dat_mf, ndraws = ndr_sb)
+  expect_false(is.null(attr(prj$refmodel$fetch_data(), "terms")))
+  expect_warning(m <- as.matrix(prj), NA)
+  expect_true("smooth_sd[s(x)1]" %in% colnames(m))
+  X <- fit$x
+  expect_lp_rebuilt(m, prj, X[, c("(Intercept)", "v")],
+                    X[, setdiff(colnames(X), c("(Intercept)", "v"))],
+                    info = "model frame")
 })
 
 test_that("brms_rename() renames as brms does", {
