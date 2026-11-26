@@ -85,6 +85,13 @@ pseudo_data <- function(f, y, family, offset = rep(0, NROW(f)),
     dis <- NULL
     loss <- 0.5 * sum(family$deviance(mu, y, weights, dis))
     grad <- -wobs * (z - f)
+  } else if (isTRUE(family$nb_fixed)) {
+    # Negative binomial with a fixed shape (see nb_fixed_family()). The
+    # deviance residuals of MASS::negative.binomial() are finite for a
+    # non-integer `y`:
+    wobs <- (weights * dmu_df^2) / family$variance(mu)
+    loss <- 0.5 * sum(family$dev.resids(y, mu, weights))
+    grad <- -wobs * (z - f)
   } else {
     stop("Don't know how to compute quadratic approximation and gradients",
          sprintf(" for family '%s'.", family$family))
@@ -266,6 +273,14 @@ glm_ridge <- function(x, y, family = gaussian(), lambda = 0, thresh = 1e-7,
   }
   if (is.null(beta0_init)) {
     beta0_init <- 0
+    if (isTRUE(family$nb_fixed) && intercept) {
+      # For the negative binomial family with the sqrt or the identity link,
+      # the start 0 gives the mean 0 and IRLS weights 0. The predictors are
+      # centered below, so the intercept starts at the link of the mean (minus
+      # the mean offset):
+      beta0_init <- family$linkfun(sum(weights * y) / sum(weights)) -
+        sum(weights * offset) / sum(weights)
+    }
   }
   if (is.null(beta_init)) {
     beta_init <- rep(0, NCOL(x))

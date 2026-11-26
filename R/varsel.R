@@ -727,9 +727,15 @@ parse_args_varsel <- function(refmodel, method, refit_prj, nterms_max,
 
   if (!has_group_features &&
       getOption("projpred.warn_instable_projections", TRUE) &&
-      method == "L1" && refmodel$family$family == "poisson") {
+      method == "L1" &&
+      refmodel$family$family %in% c("poisson", "negbinomial")) {
+    fam_nm <- if (refmodel$family$family == "poisson") {
+      "Poisson"
+    } else {
+      "negative binomial"
+    }
     warning(
-      "For non-multilevel Poisson models, an L1 search based on the ",
+      "For non-multilevel ", fam_nm, " models, an L1 search based on the ",
       "traditional projection may be instable. The latent projection may be a ",
       "remedy. See section \"Troubleshooting\" of the main vignette for more ",
       "information."

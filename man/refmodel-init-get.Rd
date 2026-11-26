@@ -88,7 +88,8 @@ variance is the same for all observations). May be \code{NULL} if the submodels
 have no dispersion parameter or if the submodels do have a dispersion
 parameter, but \code{object} is \code{NULL} (in which case \code{0} is used for \code{dis}).
 Note that for the \code{\link[=gaussian]{gaussian()}} \code{family}, \code{dis} is the standard deviation,
-not the variance.}
+not the variance. For the negative binomial family, \code{dis} holds the draws
+of the shape parameter.}
 
 \item{cvfun}{For \eqn{K}-fold CV only. A function that, given a fold indices
 vector, fits the reference model separately for each fold and returns the
