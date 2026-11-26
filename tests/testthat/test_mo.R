@@ -2058,6 +2058,89 @@ test_that(paste(
 })
 
 test_that(paste(
+  "monotonic projections with offsets take the signs from the projection",
+  "onto the full model with offsets"
+), {
+  opts_old <- options(projpred.mo_monotone = TRUE)
+  on.exit(options(opts_old), add = TRUE)
+  cols_x <- paste0("mo(x)", 1:4)
+  set.seed(6214)
+  n <- 100
+  S <- 12
+  dat <- data.frame(x = sample(rep_len(0:4, n)), z = rnorm(n))
+  # `w` decreases with `x`, so the effect of `x` in the submodel without `w`
+  # has the opposite sign of its effect in the full model (log link):
+  dat$w <- -0.5 * dat$x + rnorm(n, sd = 0.5)
+  # Offsets that increase with `x`: a fit to the means without the offsets
+  # gives the opposite sign of the effect of `x` in the full model:
+  dat$off <- 0.6 * dat$x + log(runif(n, 0.5, 2))
+  eff_x <- c(0, 0.4, -0.2, 0.3, 0.3)
+  b <- cbind(alpha = rnorm(S, 1, 0.05), bx = rnorm(S, 1, 0.1),
+             bz = rnorm(S, 0.3, 0.05))
+  # The linear predictor with the offsets (init_refmodel() subtracts them):
+  eta_fun <- function(nd) {
+    outer(eff_x[nd$x + 1], b[, "bx"]) + outer(nd$z, b[, "bz"]) + 0.5 * nd$w +
+      matrix(b[, "alpha"], nrow(nd), S, byrow = TRUE) + nd$off
+  }
+  dat$y <- rpois(n, exp(rowMeans(eta_fun(dat))))
+  fml <- y ~ mo(x) + z + w
+  environment(fml) <- list2env(list(mo = mo_brms_like),
+                               parent = environment(fml))
+  refm <- init_refmodel(
+    list(data = dat), data = dat, formula = fml, family = poisson(),
+    ref_predfun = function(fit, newdata = NULL) {
+      eta_fun(if (is.null(newdata)) fit$data else newdata)
+    },
+    extract_model_data = function(object, newdata = NULL, wrhs = NULL,
+                                  orhs = NULL, extract_y = TRUE) {
+      nd <- if (is.null(newdata)) dat else newdata
+      list(y = if (extract_y) nd$y, weights = rep(1, nrow(nd)),
+           offset = nd$off)
+    },
+    cvfun = function(folds) NULL, cvrefbuilder = function(cvfit) NULL
+  )
+  expect_equal(refm$offset, dat$off)
+  terms_sub <- c("mo(x)", "z")
+  expect_no_warning(prj <- project(refm, predictor_terms = terms_sub,
+                                   ndraws = S, thresh_conv = 1e-12,
+                                   verbose = FALSE))
+  b_x <- prj_coefs(prj)[, cols_x]
+  expect_true(all(is_mono(b_x)))
+  # Unconstrained projections (onto the submodel and onto the full model):
+  options(projpred.mo_monotone = FALSE)
+  prj_unc <- project(refm, predictor_terms = terms_sub, ndraws = S,
+                     thresh_conv = 1e-12, verbose = FALSE)
+  prj_full <- project(refm, predictor_terms = c(terms_sub, "w"), ndraws = S,
+                      verbose = FALSE)
+  options(projpred.mo_monotone = TRUE)
+  b_unc <- prj_coefs(prj_unc)
+  binding <- !is_mono(b_unc[, cols_x])
+  expect_gt(sum(binding), S / 2)
+  s_full <- ifelse(rowSums(prj_coefs(prj_full)[, cols_x]) >= 0, 1, -1)
+  s_sum <- ifelse(rowSums(b_unc[, cols_x]) >= 0, 1, -1)
+  # The signs of the full model differ from those of the submodel:
+  expect_true(all(s_full[binding] != s_sum[binding]))
+  expect_true(all(b_x[binding, ] * s_full[binding] >= 0))
+  expect_equal(prj_coefs(prj)[!binding, , drop = FALSE],
+               b_unc[!binding, , drop = FALSE], tolerance = 1e-8)
+  # Each draw is the glm_ridge() fit to the means with the offsets, with the
+  # signs of the full model for the binding draws:
+  x <- cbind(strip_attr(mo(dat$x)), z = dat$z)
+  for (s in seq_len(S)) {
+    args_cons <- if (binding[s]) {
+      list(cons_cols = 1:4, cons_signs = rep(s_full[s], 4))
+    }
+    fit_s <- do.call(glm_ridge, c(list(
+      x, refm$mu_offs[, s], family = refm$family, weights = refm$wobs,
+      offset = refm$offset, lambda = 1e-4, thresh = 1e-12
+    ), args_cons))
+    expect_equal(unname(c(prj$outdmin[[s]]$alpha, prj_coefs(prj)[s, ])),
+                 unname(c(fit_s$beta0, drop(fit_s$beta))), tolerance = 1e-5,
+                 info = paste("draw", s))
+  }
+})
+
+test_that(paste(
   "the negative binomial projection converges for draws close to the point",
   "where the sign constraint of mo() terms switches"
 ), {
