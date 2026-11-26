@@ -27,7 +27,9 @@
 #    null space of a jagam() smooth) gets no SD column. If kappa_b is
 #    negligible against the data information of the block (the fit does not
 #    penalize the block, for example if the submodel reproduces the reference
-#    model exactly), the SD is not identified and is `NA`.
+#    model exactly), the SD is not identified and is `NA`. A smoothing
+#    parameter equal to attribute `projpred_sp_zero` of the fit gives an SD of
+#    0 for each block that its penalty acts on.
 
 # brms's default renaming of special characters in parameter names. Copied over
 # from brms::rename() (brms 2.23.0) with the default `pattern` and
@@ -379,9 +381,6 @@ smooth_sds <- function(setup, j, fits, qr_B1, tgt, tol) {
   if (!any(has_pen)) {
     return(no_sds(pen_problem))
   }
-  # Numerical noise of a penalty on another block would count with a large
-  # smoothing parameter in kappa_b:
-  c_bk[!pen_bk] <- 0
   # The penalty of a block is negligible if kappa_b is below `tol_ident` times
   # the mean diagonal element of B_b' W B_b (W: the working weights of the
   # fit). Then the SD is not identified. A scale of 0 gives no SD either. (In
@@ -419,11 +418,11 @@ smooth_sds <- function(setup, j, fits, qr_B1, tgt, tol) {
     # A block with a smoothing parameter at the value that stands for a
     # variance component of 0 (attribute `projpred_sp_zero`, see
     # as.matrix.projection()) has an SD of 0. One such penalty on a block is
-    # sufficient: the precision of the block is then infinite. (`>=` also sets
-    # an SD of at most 1e-5 times the square root of the scale to 0.)
+    # sufficient: the precision of the block is then infinite. The comparison
+    # is exact, so that a small positive variance component keeps its SD.
     sp_zero <- attr(fit, "projpred_sp_zero")
     if (!is.null(sp_zero)) {
-      at_zero <- drop(pen_bk %*% (sp[sp_idxs] >= sp_zero)) > 0
+      at_zero <- drop(pen_bk %*% (sp[sp_idxs] == sp_zero)) > 0
       sd_b[at_zero & !is.na(sd_b)] <- 0
     }
     sd_b

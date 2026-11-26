@@ -133,6 +133,39 @@ expect_sds_reproduce_fit <- function(m, prj, X_par, X_sm, blocks, info) {
   }
 }
 
+# `prj` with the smoothing parameters `sp_idxs` of the first submodel fit (for
+# a gamm4 fit: of its `gam` part) set to `value`. If `sp_zero` is given, the
+# fit gets it as attribute `projpred_sp_zero` (as.matrix.projection() sets
+# this attribute itself only for gamm4 fits).
+prj_set_sp <- function(prj, sp_idxs, value = 1e10, sp_zero = NULL) {
+  set_sp <- function(fit) {
+    fit$sp[sp_idxs] <- value
+    if (!is.null(fit$full.sp)) {
+      fit$full.sp[sp_idxs] <- value
+    }
+    if (!is.null(sp_zero)) {
+      attr(fit, "projpred_sp_zero") <- sp_zero
+    }
+    fit
+  }
+  if (inherits(prj$outdmin[[1]], "gamm4")) {
+    prj$outdmin[[1]]$gam <- set_sp(prj$outdmin[[1]]$gam)
+  } else {
+    prj$outdmin[[1]] <- set_sp(prj$outdmin[[1]])
+  }
+  prj
+}
+
+# Checks `m` (from as.matrix() after prj_set_sp()) against `m_ref` (from
+# as.matrix() before it): the SD columns `zero_nms` of the first draw are
+# exactly 0, and the other values do not change (up to rounding).
+expect_sds_zero <- function(m, m_ref, zero_nms, info = NULL) {
+  expect_identical(unname(m[1, zero_nms]), rep(0, length(zero_nms)),
+                   info = info)
+  m_ref[1, zero_nms] <- 0
+  expect_equal(m, m_ref, tolerance = 1e-10, info = info)
+}
+
 test_that("as.matrix.projection() gives smooth terms in the brms basis", {
   skip_if_not_installed("brms")
   fml <- y ~ s(x) + t2(z, w) + v
@@ -172,6 +205,38 @@ test_that("as.matrix.projection() gives smooth terms in the brms basis", {
   expect_warning(m_r <- as.matrix(prj, nm_scheme = "rstanarm"),
                  "does not give the bases of the smooth terms")
   expect_all_true_tst(c("s(x).1", "t2(z,w).1") %in% colnames(m_r))
+})
+
+test_that(paste(
+  "a smoothing parameter at the value for a variance component of 0 gives an",
+  "SD of 0, only for its block"
+), {
+  skip_if_not_installed("brms")
+  fml <- y ~ s(x) + t2(z, w) + v
+  fit <- brmsfit_sb(fml)
+  prj <- prj_sb(fit, fml, c("s(x)", "t2(z, w)", "v"), ndraws = ndr_sb)
+  m <- as.matrix(prj)
+  sd_nms <- c("sds_sx_1", paste0("sds_t2zw_", 1:3))
+  expect_false(anyNA(m[1, sd_nms]))
+  expect_all_true_tst(m[1, sd_nms] > 0)
+  # Each penalty of the t2() term in turn (the smoothing parameters are set
+  # in the fit, so the result does not depend on the estimated ones):
+  sp_idxs <- with(prj$outdmin[[1]]$smooth[[2]], first.sp:last.sp)
+  zero_nms <- character()
+  for (k in sp_idxs) {
+    m_k <- as.matrix(prj_set_sp(prj, k, sp_zero = 1e10))
+    is_zero <- m_k[1, sd_nms] == 0
+    expect_identical(sum(is_zero), 1L, info = paste("penalty", k))
+    expect_sds_zero(m_k, m, sd_nms[is_zero], info = paste("penalty", k))
+    zero_nms <- c(zero_nms, sd_nms[is_zero])
+  }
+  expect_setequal(zero_nms, paste0("sds_t2zw_", 1:3))
+  # Not an SD of 0: the same value without the attribute, and a larger
+  # smoothing parameter than the value of the attribute:
+  m_no <- as.matrix(prj_set_sp(prj, sp_idxs[1]))
+  expect_all_true_tst(m_no[1, sd_nms] > 0)
+  m_gt <- as.matrix(prj_set_sp(prj, sp_idxs[1], value = 2e10, sp_zero = 1e10))
+  expect_all_true_tst(m_gt[1, sd_nms] > 0)
 })
 
 test_that(paste(
@@ -299,12 +364,10 @@ test_that(paste(
   # The SDs from as.matrix() agree with the SDs of the lme4 part, element by
   # element: relatively for an SD above 1, absolutely below. An SD at the
   # boundary is exactly 0 in both:
-  n_zero <- 0L
   expect_sds_lme4 <- function(act, exp, info) {
     expect_identical(length(act), length(exp), info = info)
     expect_lt(max(abs(act - exp) / pmax(abs(exp), 1)), 1e-6, label = info)
     expect_identical(act[exp == 0], exp[exp == 0], info = info)
-    n_zero <<- n_zero + sum(exp == 0)
   }
   fml <- y ~ s(x) + v + (1 | g)
   fit <- brmsfit_sb(fml)
@@ -368,16 +431,25 @@ test_that(paste(
       vapply(sm_j$lmer.name, function(nm) attr(vc[[nm]], "stddev"),
              numeric(1))
     })
+    # A variance component of 0 (if lme4 gives one) has the smoothing
+    # parameter that as.matrix() takes as an SD of 0:
+    sp_at_zero <- unname(fit_s$gam$sp[unlist(sd_lme4) == 0])
+    expect_identical(sp_at_zero, rep(1e10, length(sp_at_zero)),
+                     info = paste("t2, draw", s))
     expect_sds_lme4(unname(m_t2[s, "sds_sx_1"]), unname(sd_lme4[[1]]),
                     info = paste("t2, draw", s))
     expect_sds_lme4(sort(unname(m_t2[s, paste0("sds_t2zw_", 1:3)]),
                          na.last = TRUE),
-                    sort(unname(sd_lme4[[2]])), info = paste("t2, draw", s))
+                    sort(unname(sd_lme4[[2]]), na.last = TRUE),
+                    info = paste("t2, draw", s))
   }
-  # Some of the compared variance components are at the boundary (SD 0). (For
-  # these data, lme4 2.1-0 and gamm4 0.3-0; other versions might not give
-  # such a case.)
-  expect_gt(n_zero, 0)
+  # gamm4::gamm4() sets the smoothing parameter of a variance component of 0
+  # to 1e10. as.matrix() gives an SD of exactly 0 for this value. Here, all
+  # smoothing parameters of the t2() term of the first fit get this value, so
+  # the zeros do not depend on the optimizer of lme4:
+  sp_idxs_t2 <- with(prj_t2$outdmin[[1]]$gam$smooth[[2]], first.sp:last.sp)
+  expect_sds_zero(as.matrix(prj_set_sp(prj_t2, sp_idxs_t2)), m_t2,
+                  paste0("sds_t2zw_", 1:3))
 
   # rstanarm naming (a stan_gamm4() fit without Stan; the group-level term
   # is only in the reference model formula of the projection):
