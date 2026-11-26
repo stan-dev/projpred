@@ -384,10 +384,8 @@
 #' [lme4::lmer()]). Currently, this is an experimental feature.
 #' * `projpred.PQL`: A single logical value indicating whether to use
 #' [MASS::glmmPQL()] as the submodel fitter for multilevel (non-additive)
-#' projections (see GitHub issue
-#' [#207](https://github.com/stan-dev/projpred/issues/207) and GitHub pull
-#' request [#353](https://github.com/stan-dev/projpred/pull/353)). Currently,
-#' this is an experimental feature. For a reference model with offsets,
+#' projections. Currently, this is an experimental feature. For a reference
+#' model with offsets,
 #' \pkg{projpred} accepts only `FALSE` (with the same exceptions as for
 #' `projpred.glm_fitter`).
 #' * `projpred.search_gauss_crossprod`: A single logical value indicating

@@ -37,10 +37,8 @@ with multilevel terms (because \pkg{lme4} offers both \code{\link[lme4:glmer]{lm
 \code{\link[lme4:lmer]{lme4::lmer()}}). Currently, this is an experimental feature.
 \item \code{projpred.PQL}: A single logical value indicating whether to use
 \code{\link[MASS:glmmPQL]{MASS::glmmPQL()}} as the submodel fitter for multilevel (non-additive)
-projections (see GitHub issue
-\href{https://github.com/stan-dev/projpred/issues/207}{#207} and GitHub pull
-request \href{https://github.com/stan-dev/projpred/pull/353}{#353}). Currently,
-this is an experimental feature. For a reference model with offsets,
+projections. Currently, this is an experimental feature. For a reference
+model with offsets,
 \pkg{projpred} accepts only \code{FALSE} (with the same exceptions as for
 \code{projpred.glm_fitter}).
 \item \code{projpred.search_gauss_crossprod}: A single logical value indicating
