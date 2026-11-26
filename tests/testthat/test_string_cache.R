@@ -1,5 +1,3 @@
-context("cache of results that depend only on strings")
-
 test_that("cached_by_strings() returns the cached value and empties the cache", {
   n_calls <- 0
   compute <- function() {

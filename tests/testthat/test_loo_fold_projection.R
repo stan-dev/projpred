@@ -501,7 +501,7 @@ test_that(paste(
       expect_s3_class(cvvs, "vsel")
       expect_gt(zero_calls$n, 0L, label = info)
       lppd <- sapply(cvvs$summaries$sub, `[[`, "lppd")
-      expect_true(all(is.finite(lppd)), info = info)
+      expect_all_true_tst(is.finite(lppd), info = info)
     }
   }
 })

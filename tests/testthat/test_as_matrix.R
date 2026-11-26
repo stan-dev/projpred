@@ -295,14 +295,12 @@ test_that("as.matrix.projection() works", {
                    tolerance = 1e-10, info = tstsetup)
     }
     if (run_snaps) {
-      if (testthat_ed_max2) local_edition(3)
       withr::with_options(list(width = 145), {
         expect_snapshot({
           print(tstsetup)
           print(rlang::hash(m)) # message(m)
         })
       })
-      if (testthat_ed_max2) local_edition(2)
     }
   }
 })
@@ -385,8 +383,6 @@ test_that(paste(
 })
 
 if (run_snaps) {
-  if (testthat_ed_max2) local_edition(3)
-
   test_that(paste(
     "as.matrix.projection() works for projections based on varsel() output"
   ), {
@@ -460,8 +456,6 @@ if (run_snaps) {
       })
     }
   })
-
-  if (testthat_ed_max2) local_edition(2)
 }
 
 test_that("replace_population_names() works for zero and more effects", {
