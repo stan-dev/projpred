@@ -81,9 +81,6 @@ if (run_snaps && !requireNamespace("vdiffr", quietly = TRUE)) {
           "found. Deactivating snapshot testing now.")
   run_snaps <- FALSE
 }
-if (run_snaps) {
-  testthat_ed_max2 <- edition_get() <= 2
-}
 # Run the tests that need parallel workers (see test_parallel.R)?:
 # Notes:
 #   * We don't run these tests on CRAN or continuous integration (CI) systems

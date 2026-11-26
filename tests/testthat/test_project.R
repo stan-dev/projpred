@@ -101,7 +101,7 @@ test_that("`object` of class `stanreg` or `brmsfit` works", {
       excl_nonargs(args_prj_i),
       excl_nonargs(args_ref[[args_prj_i$tstsetup_ref]])
     ))
-    expect_identical(p_fit, prjs[[tstsetup]], ignore.environment = TRUE,
+    expect_identical(p_fit, prjs[[tstsetup]], ignore_function_env = TRUE,
                      info = tstsetup)
   }
 })
@@ -152,7 +152,7 @@ test_that(paste(
         if (identical(prjs_vs[[tstsetup]]$predictor_terms,
                       prjs[[tstsetup_match_prj]]$predictor_terms)) {
           expect_identical(prjs_vs[[tstsetup]], prjs[[tstsetup_match_prj]],
-                           ignore.environment = TRUE, info = tstsetup)
+                           ignore_function_env = TRUE, info = tstsetup)
         } else {
           expect_setequal(prjs_vs[[tstsetup]]$predictor_terms,
                           prjs[[tstsetup_match_prj]]$predictor_terms)
@@ -247,7 +247,7 @@ test_that(paste(
         if (identical(prjs_cvvs[[tstsetup]]$predictor_terms,
                       prjs[[tstsetup_match_prj]]$predictor_terms)) {
           expect_identical(prjs_cvvs[[tstsetup]], prjs[[tstsetup_match_prj]],
-                           ignore.environment = TRUE, info = tstsetup)
+                           ignore_function_env = TRUE, info = tstsetup)
         } else {
           expect_setequal(prjs_cvvs[[tstsetup]]$predictor_terms,
                           prjs[[tstsetup_match_prj]]$predictor_terms)
@@ -468,7 +468,8 @@ test_that("non-clustered projection does not require a seed", {
         }
       }
     }
-    expect_equal(p_new, p_orig, info = tstsetup)
+    expect_equal(drop_mer_ptrs(p_new), drop_mer_ptrs(p_orig),
+                 info = tstsetup)
   }
 })
 

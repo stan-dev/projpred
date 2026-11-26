@@ -189,14 +189,12 @@ test_that("`x` of class `vselsummary` (based on varsel()) works", {
     )
     expect_identical(print_obj, smmrys_vs[[tstsetup]], info = tstsetup)
     if (run_snaps) {
-      if (testthat_ed_max2) local_edition(3)
       withr::with_options(list(width = 145), {
         expect_snapshot({
           print(tstsetup)
           print(smmrys_vs[[tstsetup]], digits = 6)
         })
       })
-      if (testthat_ed_max2) local_edition(2)
     }
   }
 })
@@ -212,14 +210,12 @@ test_that("`x` of class `vselsummary` (based on cv_varsel())  works", {
     )
     expect_identical(print_obj, smmrys_cvvs[[tstsetup]], info = tstsetup)
     if (run_snaps) {
-      if (testthat_ed_max2) local_edition(3)
       withr::with_options(list(width = 145), {
         expect_snapshot({
           print(tstsetup)
           print(smmrys_cvvs[[tstsetup]], digits = 6)
         })
       })
-      if (testthat_ed_max2) local_edition(2)
     }
   }
 })
@@ -703,9 +699,10 @@ test_that("ranking proportions are computed correctly", {
   # With `cumulate = FALSE`:
   cv_proportions_tester(pr_cF, nterms_max_expected = ntrms,
                         cnms_expected = rk_fdata, info_str = "cumulate = FALSE")
-  expect_true(all(abs(pr_cF - 1 / ntrms) < tol_abs), info = "cumulate = FALSE")
-  expect_true(all(abs(rowSums(pr_cF) - 1) < tol_abs), info = "cumulate = FALSE")
-  expect_true(all(abs(colSums(pr_cF) - 1) < tol_abs), info = "cumulate = FALSE")
+  expect_equal(as.vector(pr_cF), rep(1 / ntrms, ntrms^2),
+               info = "cumulate = FALSE")
+  expect_equal(unname(rowSums(pr_cF)), rep(1, ntrms), info = "cumulate = FALSE")
+  expect_equal(unname(colSums(pr_cF)), rep(1, ntrms), info = "cumulate = FALSE")
 
   # With `cumulate = TRUE`:
   cv_proportions_tester(pr_cT, cumulate_expected = TRUE,
@@ -713,12 +710,12 @@ test_that("ranking proportions are computed correctly", {
                         info_str = "cumulate = TRUE")
   pr_cT_expected <- matrix(1:ntrms / ntrms, nrow = ntrms, ncol = ntrms)
   class(pr_cT_expected) <- c("cv_proportions_cumul", "cv_proportions")
-  expect_equal(pr_cT, pr_cT_expected, check.attributes = FALSE,
+  expect_equal(pr_cT, pr_cT_expected, ignore_attr = TRUE,
                tolerance = .Machine$double.eps, info = "cumulate = TRUE")
-  has_1_colwise <- all(apply(pr_cT, 2, function(x_col) {
+  # Each column has an element equal to 1:
+  expect_all_true_tst(apply(pr_cT, 2, function(x_col) {
     any(abs(x_col - 1) < tol_abs)
-  }))
-  expect_true(has_1_colwise, info = "cumulate = TRUE")
+  }), info = "cumulate = TRUE")
 })
 
 # plot.cv_proportions() ---------------------------------------------------
@@ -837,7 +834,7 @@ test_that("\"acc\" has a logit-normal interval without a baseline", {
   # `NA` predictions (as for a `datafit`):
   res <- get_stat(list(mu = rep(NA, n), lppd = rep(NA, n)),
                   y_wobs_test = y_wobs_test, stat = "acc", alpha = alpha)
-  expect_true(all(is.na(c(res$value, res$lq, res$uq))))
+  expect_all_true_tst(is.na(c(res$value, res$lq, res$uq)))
 
   # Subsampled LOO-CV with an estimate above 1 uses the normal approximation:
   loo_inds <- seq(1, 19, by = 2)

@@ -585,9 +585,9 @@ test_that(paste(
       any(abs(r$w - round(r$w)) > 1e-8)
     }, logical(1))
     expect_true(any(w_nonint), info = fam_nm)
-    expect_true(all(vapply(rec[w_nonint], function(r) {
+    expect_all_true_tst(vapply(rec[w_nonint], function(r) {
       inherits(r$fit, "projpred_mlvl")
-    }, logical(1))), info = fam_nm)
-    expect_true(all(is.finite(summary(cvvs)$perf_sub$elpd)), info = fam_nm)
+    }, logical(1)), info = fam_nm)
+    expect_all_true_tst(is.finite(summary(cvvs)$perf_sub$elpd), info = fam_nm)
   }
 })

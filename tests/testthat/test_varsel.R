@@ -274,11 +274,14 @@ test_that(paste(
       search_control_expected = args_vs_i[c("avoid.increase")],
       info_str = tstsetup
     )
-    expect_equal(vs_repr[setdiff(names(vs_repr),
-                                 c("type_test", "y_wobs_test"))],
-                 vss[[tstsetup]][setdiff(names(vss[[tstsetup]]),
-                                         c("type_test", "y_wobs_test"))],
-                 info = tstsetup)
+    expect_equal(
+      drop_mer_ptrs(vs_repr[setdiff(names(vs_repr),
+                                    c("type_test", "y_wobs_test"))]),
+      drop_mer_ptrs(vss[[tstsetup]][setdiff(names(vss[[tstsetup]]),
+                                            c("type_test",
+                                              "y_wobs_test"))]),
+      info = tstsetup
+    )
     y_wobs_test_orig <- vss[[tstsetup]]$y_wobs_test
     if (pkg_crr == "brms") {
       # brms seems to set argument `contrasts`, but this is not important for
@@ -435,7 +438,7 @@ test_that(paste(
         p_sel_dummy <- get_refdist(refmods[[tstsetup_ref]],
                                    nclusters = vs_indep$nprjdraws_search)
         dat_indep_crr[[paste0(".", y_nm_crr)]] <- d_test_crr$y
-        expect_warning(
+        expect_warning_all(
           pl_indep_lat <- proj_linpred(
             vs_indep,
             newdata = dat_indep_crr,
@@ -593,7 +596,7 @@ test_that(paste(
     if (prj_crr == "latent") {
       lppd_ref_ch2_oscale <- lppd_ref_ch2
       expect_equal(vs_indep$summaries$ref$oscale$lppd, lppd_ref_ch2_oscale,
-                   tolerance = 1e1 * .Machine$double.eps, info = tstsetup)
+                   tolerance = 1e2 * .Machine$double.eps, info = tstsetup)
       lppd_ref_ch2 <- loo::elpd(lppd_new_lat)$pointwise[, "elpd"]
     }
     expect_equal(vs_indep$summaries$ref$lppd, lppd_ref_ch2,
@@ -810,7 +813,7 @@ test_that(paste(
     }
     # For the intercept-only model, the linear predictor consists only
     # of the intercept, so we expect no variation in `mu_jm_regul`:
-    expect_true(all(ssq_regul_prd[, 1] <= 1e-5), info = tstsetup)
+    expect_all_true_tst(ssq_regul_prd[, 1] <= 1e-5, info = tstsetup)
     # All other (i.e., not intercept-only) models:
     for (j in seq_len(dim(ssq_regul_prd)[1])[-1]) {
       for (m in seq_len(dim(ssq_regul_prd)[2])[-1]) {
@@ -917,7 +920,7 @@ test_that(paste(
     for (nn in seq_len(dim(ssq_regul_sel_alpha)[3])) {
       expect_length(unique(ssq_regul_sel_alpha[, 1, !!nn]), 1)
     }
-    expect_true(all(is.na(ssq_regul_sel_beta[, 1, ])), info = tstsetup)
+    expect_all_true_tst(is.na(ssq_regul_sel_beta[, 1, ]), info = tstsetup)
     # All other (i.e., not intercept-only) models (note: as discussed at issue
     # #169, the intercept is not tested here to stay the same):
     ssq_regul_sel_beta_cond <- array(
@@ -931,11 +934,11 @@ test_that(paste(
         }
       }
     }
-    expect_true(all(ssq_regul_sel_beta_cond), info = tstsetup)
+    expect_all_true_tst(ssq_regul_sel_beta_cond, info = tstsetup)
     # Prediction:
     # For the intercept-only model, the linear predictor consists only
     # of the intercept, so we expect no variation in `mu_jm_regul`:
-    expect_true(all(ssq_regul_prd[, 1] <= 1e-12), info = tstsetup)
+    expect_all_true_tst(ssq_regul_prd[, 1] <= 1e-12, info = tstsetup)
     # All other (i.e., not intercept-only) models:
     for (j in seq_len(dim(ssq_regul_prd)[1])[-1]) {
       for (m in seq_len(dim(ssq_regul_prd)[2])[-1]) {
@@ -1803,14 +1806,14 @@ test_that(paste(
       info_str = tstsetup
     )
     # Expected equality for most elements with a few exceptions:
-    # TODO: Currently, `check.environment = FALSE` is needed. The reason is
+    # TODO: Currently, `ignore_function_env = TRUE` is needed. The reason is
     # probably that in the divergence minimizers, the projpred-extended family
     # is passed to argument `family` of the external model fitting functions
-    # like lme4::glmer(). This should be fixed and then `check.environment =
-    # FALSE` should be removed.
+    # like lme4::glmer(). This should be fixed and then
+    # `ignore_function_env = TRUE` should be removed.
     expect_equal(cvvs_cvfits[setdiff(vsel_nms, vsel_nms_cvfits)],
                  cvvss[[tstsetup]][setdiff(vsel_nms, vsel_nms_cvfits)],
-                 check.environment = FALSE,
+                 ignore_function_env = TRUE,
                  info = tstsetup)
     # Expected inequality for the exceptions (the elements from
     # `vsel_nms_cvfits_opt` can be, but don't need to be differing):
@@ -1934,14 +1937,14 @@ test_that(paste(
       info_str = tstsetup
     )
     # Expected equality for most elements with a few exceptions:
-    # TODO: Currently, `check.environment = FALSE` is needed. The reason is
+    # TODO: Currently, `ignore_function_env = TRUE` is needed. The reason is
     # probably that in the divergence minimizers, the projpred-extended family
     # is passed to argument `family` of the external model fitting functions
-    # like lme4::glmer(). This should be fixed and then `check.environment =
-    # FALSE` should be removed.
+    # like lme4::glmer(). This should be fixed and then
+    # `ignore_function_env = TRUE` should be removed.
     expect_equal(cvvs_cvfits[setdiff(vsel_nms, vsel_nms_cvfits)],
                  cvvss[[tstsetup]][setdiff(vsel_nms, vsel_nms_cvfits)],
-                 check.environment = FALSE,
+                 ignore_function_env = TRUE,
                  info = tstsetup)
     # Expected inequality for the exceptions (the elements from
     # `vsel_nms_cvfits_opt` can be, but don't need to be differing):

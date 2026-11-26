@@ -1,5 +1,3 @@
-context("mer_predict")
-
 if (exists(".Random.seed", envir = .GlobalEnv)) {
   rng_old <- get(".Random.seed", envir = .GlobalEnv)
 }

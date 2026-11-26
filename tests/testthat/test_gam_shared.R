@@ -1,5 +1,3 @@
-context("gam_shared")
-
 n_gs <- 120L
 idx_gs <- seq_len(n_gs)
 dat_gs <- data.frame(x1 = sin(idx_gs), x2 = cos(1.3 * idx_gs),
