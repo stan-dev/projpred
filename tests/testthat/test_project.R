@@ -9,7 +9,7 @@ test_that(paste(
     args_prj_i <- args_prj[[tstsetup]]
     ndr_ncl <- ndr_ncl_dtls(args_prj_i)
     projection_tester(prjs[[tstsetup]],
-                      refmod_expected = refmods[[args_prj_i$tstsetup_ref]],
+                      refmod_expected = get_ref(args_prj_i$tstsetup_ref),
                       prd_trms_expected = args_prj_i$predictor_terms,
                       nprjdraws_expected = ndr_ncl$nprjdraws,
                       with_clusters = ndr_ncl$clust_used,
@@ -28,7 +28,7 @@ test_that("invalid `predictor_terms` warns or fails", {
     # Non-`vsel` object combined with `predictor_terms = NULL`:
     expect_error(
       do.call(project, c(
-        list(object = refmods[[args_prj_i$tstsetup_ref]],
+        list(object = get_ref(args_prj_i$tstsetup_ref),
              predictor_terms = NULL),
         excl_nonargs(args_prj_i, nms_excl_add = "predictor_terms")
       )),
@@ -39,7 +39,7 @@ test_that("invalid `predictor_terms` warns or fails", {
 
     # Repeating `predictor_terms`:
     p_long <- do.call(project, c(
-      list(object = refmods[[args_prj_i$tstsetup_ref]],
+      list(object = get_ref(args_prj_i$tstsetup_ref),
            predictor_terms = rep_len(args_prj_i$predictor_terms,
                                      length.out = 1e4)),
       excl_nonargs(args_prj_i, nms_excl_add = "predictor_terms")
@@ -52,7 +52,7 @@ test_that("invalid `predictor_terms` warns or fails", {
                             sep = "__")
       expect_error(
         do.call(project, c(
-          list(object = refmods[[args_prj_i$tstsetup_ref]],
+          list(object = get_ref(args_prj_i$tstsetup_ref),
                predictor_terms = prd_trms_crr),
           excl_nonargs(args_prj_i, nms_excl_add = "predictor_terms")
         )),
@@ -72,7 +72,7 @@ test_that("invalid `predictor_terms` warns or fails", {
                             sep = "__")
       expect_warning(
         p <- do.call(project, c(
-          list(object = refmods[[args_prj_i$tstsetup_ref]],
+          list(object = get_ref(args_prj_i$tstsetup_ref),
                predictor_terms = prd_trms_crr),
           excl_nonargs(args_prj_i, nms_excl_add = "predictor_terms")
         )),
@@ -81,7 +81,7 @@ test_that("invalid `predictor_terms` warns or fails", {
         info = tstsetup_crr
       )
       projection_tester(p,
-                        refmod_expected = refmods[[args_prj_i$tstsetup_ref]],
+                        refmod_expected = get_ref(args_prj_i$tstsetup_ref),
                         prd_trms_expected = character(),
                         nprjdraws_expected = nclusters_pred_tst,
                         with_clusters = TRUE,
@@ -118,15 +118,15 @@ test_that(paste(
     fam_crr <- args_vs[[tstsetup_vs]]$fam_nm
     nterms_crr <- args_prj_vs[[tstsetup]]$nterms
     if (is.null(nterms_crr)) {
-      nterms_crr <- suggest_size(vss[[tstsetup_vs]], warnings = FALSE)
+      nterms_crr <- suggest_size(get_vs(tstsetup_vs), warnings = FALSE)
     }
     if (length(nterms_crr) == 1) {
-      prd_trms_expected_crr <- vss[[tstsetup_vs]]$predictor_ranking[
+      prd_trms_expected_crr <- get_vs(tstsetup_vs)$predictor_ranking[
         seq_len(nterms_crr)
       ]
       projection_tester(
         prjs_vs[[tstsetup]],
-        refmod_expected = refmods[[args_prj_vs[[tstsetup]]$tstsetup_ref]],
+        refmod_expected = get_ref(args_prj_vs[[tstsetup]]$tstsetup_ref),
         prd_trms_expected = prd_trms_expected_crr,
         nprjdraws_expected = args_prj_vs[[tstsetup]]$nclusters,
         with_clusters = TRUE,
@@ -192,7 +192,7 @@ test_that(paste(
         len_expected = length(nterms_crr),
         is_seq = all(diff(nterms_crr) == 1),
         info_str = tstsetup,
-        refmod_expected = refmods[[args_prj_vs[[tstsetup]]$tstsetup_ref]],
+        refmod_expected = get_ref(args_prj_vs[[tstsetup]]$tstsetup_ref),
         nprjdraws_expected = args_prj_vs[[tstsetup]]$nclusters,
         with_clusters = TRUE,
         prjdraw_weights_expected = prjs_vs[[tstsetup]][[1]]$wdraws_prj
@@ -213,15 +213,15 @@ test_that(paste(
     fam_crr <- args_cvvs[[tstsetup_cvvs]]$fam_nm
     nterms_crr <- args_prj_cvvs[[tstsetup]]$nterms
     if (is.null(nterms_crr)) {
-      nterms_crr <- suggest_size(cvvss[[tstsetup_cvvs]], warnings = FALSE)
+      nterms_crr <- suggest_size(get_cvvs(tstsetup_cvvs), warnings = FALSE)
     }
     if (length(nterms_crr) == 1) {
-      prd_trms_expected_crr <- cvvss[[tstsetup_cvvs]]$predictor_ranking[
+      prd_trms_expected_crr <- get_cvvs(tstsetup_cvvs)$predictor_ranking[
         seq_len(nterms_crr)
       ]
       projection_tester(
         prjs_cvvs[[tstsetup]],
-        refmod_expected = refmods[[args_prj_cvvs[[tstsetup]]$tstsetup_ref]],
+        refmod_expected = get_ref(args_prj_cvvs[[tstsetup]]$tstsetup_ref),
         prd_trms_expected = prd_trms_expected_crr,
         nprjdraws_expected = args_prj_cvvs[[tstsetup]]$nclusters,
         with_clusters = TRUE,
@@ -287,7 +287,7 @@ test_that(paste(
         len_expected = length(nterms_crr),
         is_seq = all(diff(nterms_crr) == 1),
         info_str = tstsetup,
-        refmod_expected = refmods[[args_prj_cvvs[[tstsetup]]$tstsetup_ref]],
+        refmod_expected = get_ref(args_prj_cvvs[[tstsetup]]$tstsetup_ref),
         nprjdraws_expected = args_prj_cvvs[[tstsetup]]$nclusters,
         with_clusters = TRUE,
         prjdraw_weights_expected = prjs_cvvs[[tstsetup]][[1]]$wdraws_prj
@@ -304,7 +304,7 @@ test_that("`object` not of class `vsel` and missing `predictor_terms` fails", {
           "`predictor_terms`\\.$")
   )
   expect_error(
-    project(refmods[[1]]),
+    project(get_ref(names(args_ref)[1])),
     paste("^Please provide an `object` of class `vsel` or use argument",
           "`predictor_terms`\\.$")
   )
@@ -314,15 +314,15 @@ test_that("`object` not of class `vsel` and missing `predictor_terms` fails", {
 
 test_that("invalid `nterms` fails", {
   skip_if_not(run_vs)
-  tstsetups <- head(grep("\\.glm\\.gauss", names(vss), value = TRUE), 1)
+  tstsetups <- head(grep("\\.glm\\.gauss", names(args_vs), value = TRUE), 1)
   for (tstsetup in tstsetups) {
     for (nterms_crr in nterms_unavail) {
-      expect_error(project(vss[[!!tstsetup]], nterms = !!nterms_crr),
+      expect_error(project(get_vs(!!tstsetup), nterms = !!nterms_crr),
                    paste("Cannot perform the projection with", max(nterms_crr),
                          "variables"))
     }
     for (nterms_crr in list(neg = -1, char = "a", dafr = dat)) {
-      expect_error(project(vss[[!!tstsetup]], nterms = !!nterms_crr),
+      expect_error(project(get_vs(!!tstsetup), nterms = !!nterms_crr),
                    "must contain non-negative values")
     }
   }
@@ -336,13 +336,13 @@ test_that(paste(
   "a linear term next to a smooth term of the same variable is dropped, with",
   "a message"
 ), {
-  skip_if_no_setups(refmods)
+  skip_if_no_setups(args_ref)
   skip_if_not(run_additive)
   withr::local_options(projpred.mssg_smooth_linear = TRUE)
-  tstsetups <- grep("^rstanarm\\.gam\\..*\\.trad$", names(refmods),
+  tstsetups <- grep("^rstanarm\\.gam\\..*\\.trad$", names(args_ref),
                     value = TRUE)
   expect_gt(length(tstsetups), 0)
-  refmod <- refmods[[tstsetups[1]]]
+  refmod <- get_ref(tstsetups[1])
   expect_message(
     prj_dup <- project(refmod, predictor_terms = c("s.1", "s(s.1)"),
                        ndraws = 3, seed = seed_tst, verbose = 0),
@@ -426,7 +426,7 @@ test_that("non-clustered projection does not require a seed", {
     # Use suppressWarnings() because test_that() somehow redirects stderr() and
     # so throws warnings that projpred wants to capture internally:
     p_new <- suppressWarnings(do.call(project, c(
-      list(object = refmods[[args_prj_i$tstsetup_ref]]),
+      list(object = get_ref(args_prj_i$tstsetup_ref)),
       excl_nonargs(args_prj_i, nms_excl_add = "seed")
     )))
     if (args_prj_i$mod_nm %in% c("glmm", "gamm") &&
@@ -483,7 +483,7 @@ test_that("`seed` works (and restores the RNG state afterwards)", {
     rand_orig <- runif(1) # Just to advance `.Random.seed[2]`.
     .Random.seed_new1 <- .Random.seed
     p_new <- do.call(project, c(
-      list(object = refmods[[args_prj_i$tstsetup_ref]],
+      list(object = get_ref(args_prj_i$tstsetup_ref),
            seed = args_prj_i$seed + 10L),
       excl_nonargs(args_prj_i, nms_excl_add = "seed")
     ))
@@ -491,7 +491,7 @@ test_that("`seed` works (and restores the RNG state afterwards)", {
     rand_new <- runif(1) # Just to advance `.Random.seed[2]`.
     .Random.seed_repr1 <- .Random.seed
     p_repr <- do.call(project, c(
-      list(object = refmods[[args_prj_i$tstsetup_ref]]),
+      list(object = get_ref(args_prj_i$tstsetup_ref)),
       excl_nonargs(args_prj_i)
     ))
     .Random.seed_repr2 <- .Random.seed
@@ -529,13 +529,13 @@ test_that("for GLMs, `regul` has an expected effect", {
         prj_regul <- prjs[[tstsetup]]
       } else {
         prj_regul <- do.call(project, c(
-          list(object = refmods[[args_prj_i$tstsetup_ref]],
+          list(object = get_ref(args_prj_i$tstsetup_ref),
                regul = regul_tst[j]),
           excl_nonargs(args_prj_i)
         ))
         projection_tester(
           prj_regul,
-          refmod_expected = refmods[[args_prj_i$tstsetup_ref]],
+          refmod_expected = get_ref(args_prj_i$tstsetup_ref),
           prd_trms_expected = args_prj_i$predictor_terms,
           nprjdraws_expected = ndr_ncl$nprjdraws,
           with_clusters = ndr_ncl$clust_used,

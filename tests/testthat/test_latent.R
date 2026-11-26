@@ -119,7 +119,7 @@ test_that(paste(
   tstsetups <- grep("\\.latent\\.", names(prjs), value = TRUE)
   for (tstsetup in tstsetups) {
     args_prj_i <- args_prj[[tstsetup]]
-    refmod_crr <- refmods[[args_prj_i$tstsetup_ref]]
+    refmod_crr <- get_ref(args_prj_i$tstsetup_ref)
     expect_identical(refmod_crr$mu, refmod_crr$eta, info = tstsetup)
   }
 })
@@ -137,8 +137,8 @@ test_that(paste(
 
     args_prj_i <- args_prj[[tstsetup]]
     args_prj_i_trad <- args_prj[[tstsetup_trad]]
-    refmod_crr <- refmods[[args_prj_i$tstsetup_ref]]
-    refmod_crr_trad <- refmods[[args_prj_i_trad$tstsetup_ref]]
+    refmod_crr <- get_ref(args_prj_i$tstsetup_ref)
+    refmod_crr_trad <- get_ref(args_prj_i_trad$tstsetup_ref)
 
     expect_identical(refmod_crr$eta, refmod_crr_trad$eta, info = tstsetup)
   }
@@ -162,8 +162,8 @@ test_that(paste(
 
     args_prj_i <- args_prj[[tstsetup]]
     args_prj_i_trad <- args_prj[[tstsetup_trad]]
-    refmod_crr <- refmods[[args_prj_i$tstsetup_ref]]
-    refmod_crr_trad <- refmods[[args_prj_i_trad$tstsetup_ref]]
+    refmod_crr <- get_ref(args_prj_i$tstsetup_ref)
+    refmod_crr_trad <- get_ref(args_prj_i_trad$tstsetup_ref)
     set.seed(args_prj_i$seed)
     pref_lat <- get_refdist(refmod_crr,
                             ndraws = args_prj_i$ndraws,
@@ -287,12 +287,12 @@ test_that(paste(
 test_that(paste0(
   "it is possible to handle censored observations in `latent_ll_oscale`"
 ), {
-  tstsetups <- names(refmods[vapply(refmods, function(refmod_i) {
-    refmod_i$family$for_latent
-  }, FUN.VALUE = logical(1))])
+  tstsetups <- Filter(function(tstsetup) {
+    isTRUE(args_ref[[tstsetup]]$latent)
+  }, names(args_ref))
   tstsetups <- head(tstsetups, 1)
   for (tstsetup in tstsetups) {
-    refmod_i <- refmods[[tstsetup]]
+    refmod_i <- get_ref(tstsetup)
     refmod_i$family$latent_ll_oscale <- structure(
       function(ilpreds,
                dis = rep(NA, nrow(ilpreds)),

@@ -11,7 +11,7 @@ test_that("as.matrix.projection() works", {
                        allow_nonconst_wdraws_prj = allow_nonconst),
         NA, info = tstsetup
       )
-      fit_ref <- refmods[[args_prj[[tstsetup]]$tstsetup_ref]]$fit
+      fit_ref <- get_ref(args_prj[[tstsetup]]$tstsetup_ref)$fit
       if (args_prj[[tstsetup]]$pkg_nm == "brms") {
         par_nms <- brms::variables(fit_ref)
         sm_rgx <- "^(bs|sds|s)_"
@@ -213,14 +213,14 @@ test_that("as.matrix.projection() works", {
                  sub("^s\\(", "",
                      grep("^s\\(.*\\)$", prd_trms, value = TRUE)))
     if (length(s_nms)) {
-      stopifnot(inherits(refmods[[tstsetup_ref]]$fit, "stanreg"))
+      stopifnot(inherits(get_ref(tstsetup_ref)$fit, "stanreg"))
       # Get the number of basis coefficients:
-      s_info <- refmods[[tstsetup_ref]]$fit$jam$smooth
+      s_info <- get_ref(tstsetup_ref)$fit$jam$smooth
       s_terms <- sapply(s_info, "[[", "term")
       s_dfs <- setNames(sapply(s_info, "[[", "df"), s_terms)
       ### Alternative:
       # par_nms_orig <- colnames(
-      #   as.matrix(refmods[[tstsetup_ref]]$fit)
+      #   as.matrix(get_ref(tstsetup_ref)$fit)
       # )
       # s_dfs <- sapply(s_nms, function(s_nm) {
       #   sum(grepl(paste0("^s\\(", s_nm, "\\)"), par_nms_orig))

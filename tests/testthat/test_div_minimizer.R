@@ -105,7 +105,7 @@ test_that("divmin_augdat() works", {
     mod_crr <- args_fit_i$mod_nm
     fam_crr <- args_fit_i$fam_nm
     y_nm <- as.character(args_fit_i$formula)[2]
-    y_unqs <- refmods[[tstsetup]]$family$cats
+    y_unqs <- get_ref(tstsetup)$family$cats
     ncats_crr <- length(y_unqs)
 
     # Augmented-data weights, here indicating the observed response category
@@ -138,7 +138,7 @@ test_that("divmin_augdat() works", {
     } else if (fam_crr == "cumul" && pkg_crr == "rstanarm") {
       args_fit_i$family <- structure(
         list(family = "cumulative_rstanarm",
-             link = refmods[[tstsetup]]$family$link,
+             link = get_ref(tstsetup)$family$link,
              cats = y_unqs),
         class = "family"
       )

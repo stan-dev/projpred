@@ -7,7 +7,7 @@ test_that("pl: `object` of class `projection` works", {
   for (tstsetup in names(prjs)) {
     if (args_prj[[tstsetup]]$prj_nm == "augdat") {
       ncats_nlats_expected_crr <- length(
-        refmods[[args_prj[[tstsetup]]$tstsetup_ref]]$family$cats
+        get_ref(args_prj[[tstsetup]]$tstsetup_ref)$family$cats
       ) - 1L
     } else {
       ncats_nlats_expected_crr <- integer()
@@ -42,11 +42,11 @@ test_that(paste(
     tstsetup_vs <- args_prj_vs[[tstsetup]]$tstsetup_vsel
     nterms_crr <- args_prj_vs[[tstsetup]]$nterms
     if (is.null(nterms_crr)) {
-      nterms_crr <- suggest_size(vss[[tstsetup_vs]], warnings = FALSE)
+      nterms_crr <- suggest_size(get_vs(tstsetup_vs), warnings = FALSE)
     }
     if (args_prj_vs[[tstsetup]]$prj_nm == "augdat") {
       ncats_nlats_expected_crr <- length(
-        refmods[[args_prj_vs[[tstsetup]]$tstsetup_ref]]$family$cats
+        get_ref(args_prj_vs[[tstsetup]]$tstsetup_ref)$family$cats
       ) - 1L
     } else {
       ncats_nlats_expected_crr <- integer()
@@ -89,11 +89,11 @@ test_that(paste(
     tstsetup_cvvs <- args_prj_cvvs[[tstsetup]]$tstsetup_vsel
     nterms_crr <- args_prj_cvvs[[tstsetup]]$nterms
     if (is.null(nterms_crr)) {
-      nterms_crr <- suggest_size(cvvss[[tstsetup_cvvs]], warnings = FALSE)
+      nterms_crr <- suggest_size(get_cvvs(tstsetup_cvvs), warnings = FALSE)
     }
     if (args_prj_cvvs[[tstsetup]]$prj_nm == "augdat") {
       ncats_nlats_expected_crr <- length(
-        refmods[[args_prj_cvvs[[tstsetup]]$tstsetup_ref]]$family$cats
+        get_ref(args_prj_cvvs[[tstsetup]]$tstsetup_ref)$family$cats
       ) - 1L
     } else {
       ncats_nlats_expected_crr <- integer()
@@ -165,7 +165,7 @@ test_that(paste(
   for (tstsetup in tstsetups) {
     args_prj_i <- args_prj[[tstsetup]]
     pl_from_refmod <- do.call(proj_linpred, c(
-      list(object = refmods[[args_prj_i$tstsetup_ref]],
+      list(object = get_ref(args_prj_i$tstsetup_ref),
            allow_nonconst_wdraws_prj = TRUE, .seed = seed2_tst),
       excl_nonargs(args_prj_i)
     ))
@@ -207,7 +207,7 @@ test_that(paste(
   for (tstsetup in tstsetups) {
     args_prj_vs_i <- args_prj_vs[[tstsetup]]
     pl_from_vsel <- do.call(proj_linpred, c(
-      list(object = vss[[args_prj_vs_i$tstsetup_vsel]],
+      list(object = get_vs(args_prj_vs_i$tstsetup_vsel),
            allow_nonconst_wdraws_prj = TRUE, .seed = seed2_tst),
       excl_nonargs(args_prj_vs_i)
     ))
@@ -238,7 +238,7 @@ test_that(paste(
   for (tstsetup in tstsetups) {
     args_prj_cvvs_i <- args_prj_cvvs[[tstsetup]]
     pl_from_vsel <- do.call(proj_linpred, c(
-      list(object = cvvss[[args_prj_cvvs_i$tstsetup_vsel]],
+      list(object = get_cvvs(args_prj_cvvs_i$tstsetup_vsel),
            allow_nonconst_wdraws_prj = TRUE, .seed = seed2_tst),
       excl_nonargs(args_prj_cvvs_i)
     ))
@@ -260,7 +260,7 @@ test_that("`object` not of class `vsel` and missing `predictor_terms` fails", {
             "`predictor_terms`\\.$")
     )
     expect_error(
-      proj_linpred(refmods[[1]], .seed = seed2_tst),
+      proj_linpred(get_ref(names(args_ref)[1]), .seed = seed2_tst),
       paste("^Please provide an `object` of class `vsel` or use argument",
             "`predictor_terms`\\.$")
     )
@@ -307,7 +307,7 @@ test_that("`newdata` and `integrated` work (even in edge cases)", {
     for (nobsv_crr in nobsv_tst) {
       if (args_prj[[tstsetup]]$prj_nm == "augdat") {
         ncats_nlats_expected_crr <- length(
-          refmods[[args_prj[[tstsetup]]$tstsetup_ref]]$family$cats
+          get_ref(args_prj[[tstsetup]]$tstsetup_ref)$family$cats
         ) - 1L
       } else {
         ncats_nlats_expected_crr <- integer()
@@ -463,7 +463,7 @@ test_that(paste(
     )
     if (args_prj[[tstsetup]]$prj_nm == "augdat") {
       ncats_nlats_expected_crr <- length(
-        refmods[[args_prj[[tstsetup]]$tstsetup_ref]]$family$cats
+        get_ref(args_prj[[tstsetup]]$tstsetup_ref)$family$cats
       ) - 1L
     } else {
       ncats_nlats_expected_crr <- integer()
@@ -497,7 +497,7 @@ test_that("`weightsnew` works", {
     }
     if (args_prj[[tstsetup]]$prj_nm == "augdat") {
       ncats_nlats_expected_crr <- length(
-        refmods[[args_prj[[tstsetup]]$tstsetup_ref]]$family$cats
+        get_ref(args_prj[[tstsetup]]$tstsetup_ref)$family$cats
       ) - 1L
     } else {
       ncats_nlats_expected_crr <- integer()
@@ -607,7 +607,7 @@ test_that("`offsetnew` works", {
     }
     if (args_prj[[tstsetup]]$prj_nm == "augdat") {
       ncats_nlats_expected_crr <- length(
-        refmods[[args_prj[[tstsetup]]$tstsetup_ref]]$family$cats
+        get_ref(args_prj[[tstsetup]]$tstsetup_ref)$family$cats
       ) - 1L
     } else {
       ncats_nlats_expected_crr <- integer()
@@ -754,9 +754,9 @@ test_that("`transform` works", {
     } else {
       wdr_crr <- NULL
     }
-    if (!is.null(refmods[[args_prj[[tstsetup]]$tstsetup_ref]]$family$cats)) {
+    if (!is.null(get_ref(args_prj[[tstsetup]]$tstsetup_ref)$family$cats)) {
       ncats_nlats_expected_crr <- length(
-        refmods[[args_prj[[tstsetup]]$tstsetup_ref]]$family$cats
+        get_ref(args_prj[[tstsetup]]$tstsetup_ref)$family$cats
       )
     } else {
       ncats_nlats_expected_crr <- integer()
@@ -814,14 +814,14 @@ test_that("`regul` works", {
     args_prj_i <- args_prj[[tstsetup]]
     if (args_prj_i$prj_nm == "augdat") {
       ncats_nlats_expected_crr <- length(
-        refmods[[args_prj_i$tstsetup_ref]]$family$cats
+        get_ref(args_prj_i$tstsetup_ref)$family$cats
       ) - 1L
     } else {
       ncats_nlats_expected_crr <- integer()
     }
     norms <- sapply(regul_tst, function(regul_crr) {
       pl <- do.call(proj_linpred, c(
-        list(object = refmods[[args_prj_i$tstsetup_ref]],
+        list(object = get_ref(args_prj_i$tstsetup_ref),
              integrated = TRUE,
              .seed = seed2_tst,
              regul = regul_crr),
@@ -883,7 +883,7 @@ test_that(paste(
     }
     if (args_prj_vs[[tstsetup]]$prj_nm == "augdat") {
       ncats_nlats_expected_crr <- length(
-        refmods[[args_prj_vs[[tstsetup]]$tstsetup_ref]]$family$cats
+        get_ref(args_prj_vs[[tstsetup]]$tstsetup_ref)$family$cats
       ) - 1L
     } else {
       ncats_nlats_expected_crr <- integer()
@@ -951,12 +951,12 @@ test_that(paste(
     }
     if (args_prj[[tstsetup]]$prj_nm == "augdat") {
       ncats_nlats_expected_crr <- length(
-        refmods[[args_prj[[tstsetup]]$tstsetup_ref]]$family$cats
+        get_ref(args_prj[[tstsetup]]$tstsetup_ref)$family$cats
       ) - 1L
     } else {
       ncats_nlats_expected_crr <- integer()
     }
-    pl_args <- list(refmods[[args_prj[[tstsetup]]$tstsetup_ref]],
+    pl_args <- list(get_ref(args_prj[[tstsetup]]$tstsetup_ref),
                     newdata = head(get_dat(tstsetup), 1),
                     weightsnew = wobs_crr,
                     offsetnew = offs_crr,
@@ -1019,7 +1019,7 @@ test_that(paste(
         )
         if (args_prj[[tstsetup]]$prj_nm == "augdat" ||
             (args_prj[[tstsetup]]$prj_nm == "latent" && !is.null(
-              refmods[[args_prj[[tstsetup]]$tstsetup_ref]]$family$cats
+              get_ref(args_prj[[tstsetup]]$tstsetup_ref)$family$cats
             ) && transf_crr)) {
           pl_orig_pred <- do.call(rbind, apply(pl_orig$pred, 1, as.vector,
                                                simplify = FALSE))
@@ -1089,7 +1089,7 @@ test_that("pp: `object` of class `projection` works", {
               nprjdraws_out_expected = ndr_pp_out(args_prj[[tstsetup]],
                                                   prj_out = prjs[[tstsetup]]),
               cats_expected =
-                list(refmods[[args_prj[[tstsetup]]$tstsetup_ref]]$family$cats),
+                list(get_ref(args_prj[[tstsetup]]$tstsetup_ref)$family$cats),
               info_str = tstsetup)
     if (run_snaps) {
       withr::with_options(list(width = 145), {
@@ -1110,7 +1110,7 @@ test_that(paste(
     tstsetup_vs <- args_prj_vs[[tstsetup]]$tstsetup_vsel
     nterms_crr <- args_prj_vs[[tstsetup]]$nterms
     if (is.null(nterms_crr)) {
-      nterms_crr <- suggest_size(vss[[tstsetup_vs]], warnings = FALSE)
+      nterms_crr <- suggest_size(get_vs(tstsetup_vs), warnings = FALSE)
     }
     pp_tester(pps_vs[[tstsetup]],
               len_expected = length(nterms_crr),
@@ -1119,7 +1119,7 @@ test_that(paste(
               ),
               cats_expected = replicate(
                 length(nterms_crr),
-                refmods[[args_prj_vs[[tstsetup]]$tstsetup_ref]]$family$cats,
+                get_ref(args_prj_vs[[tstsetup]]$tstsetup_ref)$family$cats,
                 simplify = FALSE
               ),
               info_str = tstsetup)
@@ -1142,7 +1142,7 @@ test_that(paste(
     tstsetup_cvvs <- args_prj_cvvs[[tstsetup]]$tstsetup_vsel
     nterms_crr <- args_prj_cvvs[[tstsetup]]$nterms
     if (is.null(nterms_crr)) {
-      nterms_crr <- suggest_size(cvvss[[tstsetup_cvvs]], warnings = FALSE)
+      nterms_crr <- suggest_size(get_cvvs(tstsetup_cvvs), warnings = FALSE)
     }
     pp_tester(pps_cvvs[[tstsetup]],
               len_expected = length(nterms_crr),
@@ -1151,7 +1151,7 @@ test_that(paste(
               ),
               cats_expected = replicate(
                 length(nterms_crr),
-                refmods[[args_prj_cvvs[[tstsetup]]$tstsetup_ref]]$family$cats,
+                get_ref(args_prj_cvvs[[tstsetup]]$tstsetup_ref)$family$cats,
                 simplify = FALSE
               ),
               info_str = tstsetup)
@@ -1176,9 +1176,10 @@ test_that(paste(
   pp_tester(pp,
             len_expected = length(tstsetups),
             cats_expected = lapply(
-              refmods[sapply(args_prj[tstsetups], "[[", "tstsetup_ref")],
-              function(refmod_crr) {
-                refmod_crr$family$cats
+              setNames(nm = unname(sapply(args_prj[tstsetups], "[[",
+                                          "tstsetup_ref"))),
+              function(tstsetup_ref) {
+                get_ref(tstsetup_ref)$family$cats
               }
             ),
             info_str = paste(tstsetups, collapse = ","))
@@ -1193,7 +1194,7 @@ test_that(paste(
   for (tstsetup in tstsetups) {
     args_prj_i <- args_prj[[tstsetup]]
     pp_from_refmod <- do.call(proj_predict, c(
-      list(object = refmods[[args_prj_i$tstsetup_ref]],
+      list(object = get_ref(args_prj_i$tstsetup_ref),
            .seed = seed2_tst),
       excl_nonargs(args_prj_i)
     ))
@@ -1235,7 +1236,7 @@ test_that(paste(
   for (tstsetup in tstsetups) {
     args_prj_vs_i <- args_prj_vs[[tstsetup]]
     pp_from_vsel <- do.call(proj_predict, c(
-      list(object = vss[[args_prj_vs_i$tstsetup_vsel]],
+      list(object = get_vs(args_prj_vs_i$tstsetup_vsel),
            .seed = seed2_tst),
       excl_nonargs(args_prj_vs_i)
     ))
@@ -1266,7 +1267,7 @@ test_that(paste(
   for (tstsetup in tstsetups) {
     args_prj_cvvs_i <- args_prj_cvvs[[tstsetup]]
     pp_from_vsel <- do.call(proj_predict, c(
-      list(object = cvvss[[args_prj_cvvs_i$tstsetup_vsel]],
+      list(object = get_cvvs(args_prj_cvvs_i$tstsetup_vsel),
            .seed = seed2_tst),
       excl_nonargs(args_prj_cvvs_i)
     ))
@@ -1288,7 +1289,7 @@ test_that("`object` not of class `vsel` and missing `predictor_terms` fails", {
             "`predictor_terms`\\.$")
     )
     expect_error(
-      proj_predict(refmods[[1]], .seed = seed2_tst),
+      proj_predict(get_ref(names(args_ref)[1]), .seed = seed2_tst),
       paste("^Please provide an `object` of class `vsel` or use argument",
             "`predictor_terms`\\.$")
     )
@@ -1357,7 +1358,7 @@ test_that("`newdata` and `nresample_clusters` work (even in edge cases)", {
                   ),
                   nobsv_expected = nobsv_crr,
                   cats_expected = list(
-                    refmods[[args_prj[[tstsetup]]$tstsetup_ref]]$family$cats
+                    get_ref(args_prj[[tstsetup]]$tstsetup_ref)$family$cats
                   ),
                   info_str = paste(tstsetup, nobsv_crr, nresample_clusters_crr,
                                    sep = "__"))
@@ -1454,7 +1455,7 @@ test_that("`weightsnew` works", {
     pp_tester(pp_ones,
               nprjdraws_out_expected = nprjdraws_out_crr,
               cats_expected = list(
-                refmods[[args_prj[[tstsetup]]$tstsetup_ref]]$family$cats
+                get_ref(args_prj[[tstsetup]]$tstsetup_ref)$family$cats
               ),
               info_str = tstsetup)
     if (!args_prj[[tstsetup]]$prj_nm %in% c("latent", "augdat")) {
@@ -1472,7 +1473,7 @@ test_that("`weightsnew` works", {
       pp_tester(pp,
                 nprjdraws_out_expected = nprjdraws_out_crr,
                 cats_expected = list(
-                  refmods[[args_prj[[tstsetup]]$tstsetup_ref]]$family$cats
+                  get_ref(args_prj[[tstsetup]]$tstsetup_ref)$family$cats
                 ),
                 info_str = tstsetup)
       expect_warning_all(
@@ -1492,7 +1493,7 @@ test_that("`weightsnew` works", {
       pp_tester(ppw,
                 nprjdraws_out_expected = nprjdraws_out_crr,
                 cats_expected = list(
-                  refmods[[args_prj[[tstsetup]]$tstsetup_ref]]$family$cats
+                  get_ref(args_prj[[tstsetup]]$tstsetup_ref)$family$cats
                 ),
                 info_str = tstsetup)
     }
@@ -1557,7 +1558,7 @@ test_that("`offsetnew` works", {
     pp_tester(pp_zeros,
               nprjdraws_out_expected = nprjdraws_out_crr,
               cats_expected = list(
-                refmods[[args_prj[[tstsetup]]$tstsetup_ref]]$family$cats
+                get_ref(args_prj[[tstsetup]]$tstsetup_ref)$family$cats
               ),
               info_str = tstsetup)
     expect_warning_all(
@@ -1573,7 +1574,7 @@ test_that("`offsetnew` works", {
     pp_tester(pp,
               nprjdraws_out_expected = nprjdraws_out_crr,
               cats_expected = list(
-                refmods[[args_prj[[tstsetup]]$tstsetup_ref]]$family$cats
+                get_ref(args_prj[[tstsetup]]$tstsetup_ref)$family$cats
               ),
               info_str = tstsetup)
     expect_warning_all(
@@ -1594,7 +1595,7 @@ test_that("`offsetnew` works", {
     pp_tester(ppo,
               nprjdraws_out_expected = nprjdraws_out_crr,
               cats_expected = list(
-                refmods[[args_prj[[tstsetup]]$tstsetup_ref]]$family$cats
+                get_ref(args_prj[[tstsetup]]$tstsetup_ref)$family$cats
               ),
               info_str = tstsetup)
     if (grepl("\\.with_offs", tstsetup)) {
@@ -1688,7 +1689,7 @@ test_that(paste(
                 len_expected = nhits_nterms,
                 cats_expected = replicate(
                   nhits_nterms,
-                  refmods[[args_prj_vs[[tstsetup]]$tstsetup_ref]]$family$cats,
+                  get_ref(args_prj_vs[[tstsetup]]$tstsetup_ref)$family$cats,
                   simplify = FALSE
                 ),
                 info_str = paste(tstsetup,
@@ -1721,7 +1722,7 @@ test_that(paste(
     } else {
       offs_crr <- NULL
     }
-    pp_args <- list(refmods[[args_prj[[tstsetup]]$tstsetup_ref]],
+    pp_args <- list(get_ref(args_prj[[tstsetup]]$tstsetup_ref),
                     newdata = head(get_dat(tstsetup), 1),
                     weightsnew = wobs_crr,
                     offsetnew = offs_crr,
@@ -1741,7 +1742,7 @@ test_that(paste(
               nprjdraws_out_expected = 1L,
               nobsv_expected = 1L,
               cats_expected = list(
-                refmods[[args_prj[[tstsetup]]$tstsetup_ref]]$family$cats
+                get_ref(args_prj[[tstsetup]]$tstsetup_ref)$family$cats
               ),
               info_str = tstsetup)
   }

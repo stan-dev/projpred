@@ -46,8 +46,13 @@ expect_acc_interval <- function(value, se, lower, upper, alpha, info) {
 # All `vsel` objects from the setup:
 vsel_objs_all <- function() {
   objs <- list()
-  if (run_vs) objs <- c(objs, vss)
-  if (run_cvvs) objs <- c(objs, cvvss)
+  if (run_vs) {
+    objs <- c(objs, lapply(setNames(nm = names(args_vs)), get_vs))
+  }
+  if (run_cvvs) {
+    objs <- c(objs,
+              lapply(setNames(nm = names(args_cvvs)), get_cvvs))
+  }
   return(objs)
 }
 # The `vsel` objects for which the custom statistics are available (with the

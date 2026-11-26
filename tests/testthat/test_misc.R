@@ -6,12 +6,12 @@ test_that(paste(
   "get_refdist(): `ndraws = NULL` and `nclusters = NULL` leads to",
   "`ndraws = S` (and `nclusters = NULL`)"
 ), {
-  skip_if_no_setups(refmods)
+  skip_if_no_setups(args_ref)
   withr::local_seed(seed2_tst)
-  for (tstsetup in names(refmods)) {
-    refdist <- get_refdist(refmods[[tstsetup]])
+  for (tstsetup in names(args_ref)) {
+    refdist <- get_refdist(get_ref(tstsetup))
     if (args_ref[[tstsetup]]$prj_nm == "augdat") {
-      nobsv_fac <- length(refmods[[tstsetup]]$family$cats)
+      nobsv_fac <- length(get_ref(tstsetup)$family$cats)
     } else {
       nobsv_fac <- 1L
     }
@@ -23,7 +23,7 @@ test_that(paste(
       nobsv_expected = nobsv * nobsv_fac,
       nprjdraws_expected = nrefdraws,
       clust_expected = FALSE,
-      fam_expected = refmods[[tstsetup]]$family$family,
+      fam_expected = get_ref(tstsetup)$family$family,
       info_str = tstsetup
     )
   }
@@ -33,16 +33,16 @@ test_that(paste(
   "`ndraws` and/or `nclusters` too big causes them to be cut off at the number",
   "of posterior draws in the reference model"
 ), {
-  skip_if_no_setups(refmods)
+  skip_if_no_setups(args_ref)
   withr::local_seed(seed2_tst)
-  for (tstsetup in names(refmods)) {
+  for (tstsetup in names(args_ref)) {
     for (ndraws_crr in list(nrefdraws + 1L)) {
       for (nclusters_crr in list(NULL, nrefdraws + 1L)) {
-        refdist <- get_refdist(refmods[[tstsetup]],
+        refdist <- get_refdist(get_ref(tstsetup),
                                ndraws = ndraws_crr,
                                nclusters = nclusters_crr)
         if (args_ref[[tstsetup]]$prj_nm == "augdat") {
-          nobsv_fac <- length(refmods[[tstsetup]]$family$cats)
+          nobsv_fac <- length(get_ref(tstsetup)$family$cats)
         } else {
           nobsv_fac <- 1L
         }
@@ -51,7 +51,7 @@ test_that(paste(
           nobsv_expected = nobsv * nobsv_fac,
           nprjdraws_expected = nrefdraws,
           clust_expected = FALSE,
-          fam_expected = refmods[[tstsetup]]$family$family,
+          fam_expected = get_ref(tstsetup)$family$family,
           info_str = paste(tstsetup, ndraws_crr, nclusters_crr, sep = "__")
         )
       }

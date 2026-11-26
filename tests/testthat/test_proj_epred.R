@@ -5,9 +5,9 @@
 test_that("pe: `object` of class `projection` works", {
   skip_if_not(run_prj)
   for (tstsetup in names(prjs)) {
-    if (!is.null(refmods[[args_prj[[tstsetup]]$tstsetup_ref]]$family$cats)) {
+    if (!is.null(get_ref(args_prj[[tstsetup]]$tstsetup_ref)$family$cats)) {
       ncats_nlats_expected_crr <- length(
-        refmods[[args_prj[[tstsetup]]$tstsetup_ref]]$family$cats
+        get_ref(args_prj[[tstsetup]]$tstsetup_ref)$family$cats
       )
     } else {
       ncats_nlats_expected_crr <- integer()
@@ -34,13 +34,13 @@ test_that(paste(
     tstsetup_vs <- args_prj_vs[[tstsetup]]$tstsetup_vsel
     nterms_crr <- args_prj_vs[[tstsetup]]$nterms
     if (is.null(nterms_crr)) {
-      nterms_crr <- suggest_size(vss[[tstsetup_vs]], warnings = FALSE)
+      nterms_crr <- suggest_size(get_vs(tstsetup_vs), warnings = FALSE)
     }
     if (!is.null(
-      refmods[[args_prj_vs[[tstsetup]]$tstsetup_ref]]$family$cats
+      get_ref(args_prj_vs[[tstsetup]]$tstsetup_ref)$family$cats
     )) {
       ncats_nlats_expected_crr <- length(
-        refmods[[args_prj_vs[[tstsetup]]$tstsetup_ref]]$family$cats
+        get_ref(args_prj_vs[[tstsetup]]$tstsetup_ref)$family$cats
       )
     } else {
       ncats_nlats_expected_crr <- integer()
@@ -75,13 +75,13 @@ test_that(paste(
     tstsetup_cvvs <- args_prj_cvvs[[tstsetup]]$tstsetup_vsel
     nterms_crr <- args_prj_cvvs[[tstsetup]]$nterms
     if (is.null(nterms_crr)) {
-      nterms_crr <- suggest_size(cvvss[[tstsetup_cvvs]], warnings = FALSE)
+      nterms_crr <- suggest_size(get_cvvs(tstsetup_cvvs), warnings = FALSE)
     }
     if (!is.null(
-      refmods[[args_prj_cvvs[[tstsetup]]$tstsetup_ref]]$family$cats
+      get_ref(args_prj_cvvs[[tstsetup]]$tstsetup_ref)$family$cats
     )) {
       ncats_nlats_expected_crr <- length(
-        refmods[[args_prj_cvvs[[tstsetup]]$tstsetup_ref]]$family$cats
+        get_ref(args_prj_cvvs[[tstsetup]]$tstsetup_ref)$family$cats
       )
     } else {
       ncats_nlats_expected_crr <- integer()
@@ -138,10 +138,10 @@ test_that("pe: `newdata` works", {
     dat_crr <- get_dat(tstsetup)
     for (nobsv_crr in nobsv_tst) {
       if (!is.null(
-        refmods[[args_prj[[tstsetup]]$tstsetup_ref]]$family$cats
+        get_ref(args_prj[[tstsetup]]$tstsetup_ref)$family$cats
       )) {
         ncats_nlats_expected_crr <- length(
-          refmods[[args_prj[[tstsetup]]$tstsetup_ref]]$family$cats
+          get_ref(args_prj[[tstsetup]]$tstsetup_ref)$family$cats
         )
       } else {
         ncats_nlats_expected_crr <- integer()
@@ -186,10 +186,10 @@ test_that("pe: `integrated` works", {
   for (tstsetup in names(prjs)) {
     ndr_ncl <- ndr_ncl_dtls(args_prj[[tstsetup]])
     if (!is.null(
-      refmods[[args_prj[[tstsetup]]$tstsetup_ref]]$family$cats
+      get_ref(args_prj[[tstsetup]]$tstsetup_ref)$family$cats
     )) {
       ncats_nlats_expected_crr <- length(
-        refmods[[args_prj[[tstsetup]]$tstsetup_ref]]$family$cats
+        get_ref(args_prj[[tstsetup]]$tstsetup_ref)$family$cats
       )
     } else {
       ncats_nlats_expected_crr <- integer()
@@ -217,7 +217,7 @@ test_that(paste(
                         .seed = seed2_tst)
     if (args_prj[[tstsetup]]$prj_nm == "augdat" ||
         (args_prj[[tstsetup]]$prj_nm == "latent" && !is.null(
-          refmods[[args_prj[[tstsetup]]$tstsetup_ref]]$family$cats
+          get_ref(args_prj[[tstsetup]]$tstsetup_ref)$family$cats
         ))) {
       pe_orig_flat <- do.call(rbind, apply(pe_orig, 1, as.vector,
                                            simplify = FALSE))

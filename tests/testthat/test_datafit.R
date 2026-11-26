@@ -34,7 +34,7 @@
 # model fit, it doesn't make a difference if rstanarm or brms is used as the
 # basis here for retrieving the formula, data, and family):
 args_datafit <- lapply(setNames(
-  nm = grep("^brms\\.", names(refmods), value = TRUE, invert = TRUE)
+  nm = grep("^brms\\.", names(args_ref), value = TRUE, invert = TRUE)
 ), function(tstsetup_ref) {
   tstsetup_fit <- args_ref[[tstsetup_ref]]$tstsetup_fit
   c(nlist(tstsetup_fit), only_nonargs(args_fit[[tstsetup_fit]]))

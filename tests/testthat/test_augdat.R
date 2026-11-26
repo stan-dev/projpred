@@ -221,8 +221,8 @@ test_that(paste(
 
     args_prj_i <- args_prj[[tstsetup]]
     args_prj_i_trad <- args_prj[[tstsetup_trad]]
-    refmod_crr <- refmods[[args_prj_i$tstsetup_ref]]
-    refmod_crr_trad <- refmods[[args_prj_i_trad$tstsetup_ref]]
+    refmod_crr <- get_ref(args_prj_i$tstsetup_ref)
+    refmod_crr_trad <- get_ref(args_prj_i_trad$tstsetup_ref)
     set.seed(args_prj_i$seed)
     pref_aug <- get_refdist(refmod_crr,
                             ndraws = args_prj_i$ndraws,
@@ -282,11 +282,11 @@ test_that(paste(
     args_prj_i <- args_prj[[tstsetup]]
     args_prj_i_trad <- args_prj[[tstsetup_trad]]
     prj <- do.call(project, c(
-      list(object = refmods[[args_prj_i$tstsetup_ref]], regul = 0),
+      list(object = get_ref(args_prj_i$tstsetup_ref), regul = 0),
       excl_nonargs(args_prj_i)
     ))
     prj_trad <- do.call(project, c(
-      list(object = refmods[[args_prj_i_trad$tstsetup_ref]], regul = 0),
+      list(object = get_ref(args_prj_i_trad$tstsetup_ref), regul = 0),
       excl_nonargs(args_prj_i_trad)
     ))
     cl_used_gt1 <- ndr_ncl_dtls(args_prj_i)$clust_used_gt1
@@ -339,13 +339,13 @@ test_that(paste(
   "submodels fitted by fit_glm_ridge_callback())"
 ), {
   skip_if_not(run_vs)
-  tstsetups <- grep("\\.brnll\\..*\\.augdat\\.", names(vss), value = TRUE)
+  tstsetups <- grep("\\.brnll\\..*\\.augdat\\.", names(args_vs), value = TRUE)
   for (tstsetup in tstsetups) {
     tstsetup_trad <- sub("\\.augdat\\.", ".trad_compare.", tstsetup)
-    if (!tstsetup_trad %in% names(vss)) next
+    if (!tstsetup_trad %in% names(args_vs)) next
 
-    vs <- vss[[tstsetup]]
-    vs_trad <- vss[[tstsetup_trad]]
+    vs <- get_vs(tstsetup)
+    vs_trad <- get_vs(tstsetup_trad)
 
     summs_sub <- vs$summaries$sub
     summs_sub_mu <- do.call(cbind, lapply(summs_sub, "[[", "mu"))[
@@ -457,13 +457,13 @@ test_that(paste(
   "`regul` for submodels fitted by fit_glm_ridge_callback())"
 ), {
   skip_if_not(run_cvvs)
-  tstsetups <- grep("\\.brnll\\..*\\.augdat\\.", names(cvvss), value = TRUE)
+  tstsetups <- grep("\\.brnll\\..*\\.augdat\\.", names(args_cvvs), value = TRUE)
   for (tstsetup in tstsetups) {
     tstsetup_trad <- sub("\\.augdat\\.", ".trad_compare.", tstsetup)
-    if (!tstsetup_trad %in% names(cvvss)) next
+    if (!tstsetup_trad %in% names(args_cvvs)) next
 
-    cvvs <- cvvss[[tstsetup]]
-    cvvs_trad <- cvvss[[tstsetup_trad]]
+    cvvs <- get_cvvs(tstsetup)
+    cvvs_trad <- get_cvvs(tstsetup_trad)
 
     is_kfold <- identical(args_cvvs[[tstsetup]]$cv_method, "kfold")
 
