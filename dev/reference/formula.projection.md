@@ -101,5 +101,5 @@ prj <- project(fit, predictor_terms = c("X1", "X3", "X5"), nclusters = 10,
                seed = 9182)
 print(formula(prj)) # gives `y ~ X1 + X3 + X5`
 #> y ~ X1 + X3 + X5
-#> <environment: 0x5b5d5e972680>
+#> <environment: 0x61de000cf2e0>
 ```

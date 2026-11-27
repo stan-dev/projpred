@@ -363,7 +363,7 @@ In general, we recommend K-fold CV in this case.</code></pre>
 <div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">time_lat</span><span class="op">)</span></span></code></pre></div>
 <pre><code>   user  system elapsed 
- 18.589   0.016   5.002 </code></pre>
+ 13.605   0.010   3.699 </code></pre>
 <p>The warnings about high Pareto <span class="math inline">\(\hat{k}\)</span> values concern only a few of the
 100 observations. With the short MCMC run of this vignette (1000
 posterior draws), the threshold for a reliable Pareto <span class="math inline">\(\hat{k}\)</span> is about 0.67 <span class="citation">(<a href="#ref-vehtari_pareto_2022">Vehtari et al.
@@ -445,7 +445,7 @@ are &gt; 0.67.</code></pre>
 <div class="sourceCode" id="cb23"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/cbind.html" class="external-link">rbind</a></span><span class="op">(</span>latent <span class="op">=</span> <span class="va">time_lat</span>, traditional <span class="op">=</span> <span class="va">time_trad</span><span class="op">)</span><span class="op">[</span>, <span class="st">"elapsed"</span><span class="op">]</span></span></code></pre></div>
 <pre><code>     latent traditional 
-      5.002      66.109 </code></pre>
+      3.699      54.755 </code></pre>
 <div class="sourceCode" id="cb25"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/suggest_size.html">suggest_size</a></span><span class="op">(</span><span class="va">cvvs_trad</span>, stat <span class="op">=</span> <span class="st">"gmpd"</span><span class="op">)</span></span></code></pre></div>
 <pre><code>[1] 5</code></pre>
@@ -714,7 +714,7 @@ draws (it gives the weighted mean of <span class="math inline">\(\nu\)</span> in
 <span>  <span class="co">###</span></span>
 <span><span class="op">)</span></span></code></pre></div>
 <pre><code>Cutting off the search at size 19. Use argument `nterms_max` to customize this.</code></pre>
-<pre><code>Warning: In the recalculation of the latent response values, some (3 / 100) expectation-specific Pareto k-values are &gt; 0.7.
+<pre><code>Warning: In the recalculation of the latent response values, some (2 / 100) expectation-specific Pareto k-values are &gt; 0.7.
 In general, we recommend K-fold CV in this case.</code></pre>
 <p>The functions above use the draws of <span class="math inline">\(\sigma\)</span> and <span class="math inline">\(\nu\)</span> from the full-data fit. This is
 correct for <code><a href="../reference/varsel.html">varsel()</a></code> and for the LOO CV that we use here.
@@ -882,7 +882,7 @@ functions”</a>.</p>
 <span>  verbose <span class="op">=</span> <span class="fl">0</span></span>
 <span><span class="op">)</span></span></code></pre></div>
 <pre><code>Cutting off the search at size 19. Use argument `nterms_max` to customize this.</code></pre>
-<pre><code>Warning: In the recalculation of the latent response values, some (3 / 500) expectation-specific Pareto k-values are &gt; 0.7.
+<pre><code>Warning: In the recalculation of the latent response values, some (2 / 500) expectation-specific Pareto k-values are &gt; 0.7.
 In general, we recommend K-fold CV in this case.</code></pre>
 <p>As in the Poisson example, warnings about high Pareto <span class="math inline">\(\hat{k}\)</span> values can come from the short
 MCMC run of this vignette. In a real analysis, we would run more MCMC
@@ -1030,9 +1030,9 @@ functions”</a>.</p>
 <span><span class="op">)</span></span></code></pre></div>
 <pre><code>Cutting off the search at size 19. Use argument `nterms_max` to customize this.</code></pre>
 <pre><code>Warning: Some Pareto k diagnostic values are too high. See help('pareto-k-diagnostic') for details.</code></pre>
-<pre><code>Warning: Some (3 / 500) Pareto k's for the reference model's PSIS-LOO weights
+<pre><code>Warning: Some (2 / 500) Pareto k's for the reference model's PSIS-LOO weights
 are &gt; 0.7.</code></pre>
-<pre><code>Warning: In the recalculation of the latent response values, some (9 / 500) expectation-specific Pareto k-values are &gt; 0.7.
+<pre><code>Warning: In the recalculation of the latent response values, some (8 / 500) expectation-specific Pareto k-values are &gt; 0.7.
 In general, we recommend K-fold CV in this case.</code></pre>
 <p>As in the Poisson example, warnings about high Pareto <span class="math inline">\(\hat{k}\)</span> values can come from the short
 MCMC run of this vignette. In a real analysis, we would run more MCMC
