@@ -4,7 +4,7 @@
 
 test_that("pe: `object` of class `projection` works", {
   skip_if_not(run_prj)
-  for (tstsetup in names(args_prj)) {
+  for (tstsetup in kept_tst("pe", names(args_prj))) {
     if (!is.null(get_ref(args_prj[[tstsetup]]$tstsetup_ref)$family$cats)) {
       ncats_nlats_expected_crr <- length(
         get_ref(args_prj[[tstsetup]]$tstsetup_ref)$family$cats
@@ -30,7 +30,7 @@ test_that(paste(
   "pe: `object` of (informal) class `proj_list` (based on varsel()) works"
 ), {
   skip_if_not(run_vs)
-  for (tstsetup in names(args_prj_vs)) {
+  for (tstsetup in kept_tst("pe_vs", names(args_prj_vs))) {
     tstsetup_vs <- args_prj_vs[[tstsetup]]$tstsetup_vsel
     nterms_crr <- args_prj_vs[[tstsetup]]$nterms
     if (is.null(nterms_crr)) {
@@ -71,7 +71,7 @@ test_that(paste(
   "pe: `object` of (informal) class `proj_list` (based on cv_varsel()) works"
 ), {
   skip_if_not(run_cvvs)
-  for (tstsetup in names(args_prj_cvvs)) {
+  for (tstsetup in kept_tst("pe_cvvs", names(args_prj_cvvs))) {
     tstsetup_cvvs <- args_prj_cvvs[[tstsetup]]$tstsetup_vsel
     nterms_crr <- args_prj_cvvs[[tstsetup]]$nterms
     if (is.null(nterms_crr)) {
@@ -112,7 +112,7 @@ test_that(paste(
 
 test_that("pe: equivalent to proj_linpred(transform = TRUE)$pred", {
   skip_if_not(run_prj)
-  for (tstsetup in names(args_prj)) {
+  for (tstsetup in kept_tst("prj", names(args_prj))) {
     ndr_ncl <- ndr_ncl_dtls(args_prj[[tstsetup]])
     pl_true <- proj_linpred(get_prj(tstsetup), transform = TRUE,
                             allow_nonconst_wdraws_prj = ndr_ncl$clust_used_gt1,
@@ -128,7 +128,7 @@ test_that("pe: equivalent to proj_linpred(transform = TRUE)$pred", {
 
 test_that("pe: `newdata` works", {
   skip_if_not(run_prj)
-  for (tstsetup in names(args_prj)) {
+  for (tstsetup in kept_tst("prj", names(args_prj))) {
     ndr_ncl <- ndr_ncl_dtls(args_prj[[tstsetup]])
     if (!has_const_wdr_prj(get_prj(tstsetup))) {
       wdr_crr <- get_prj(tstsetup)[["wdraws_prj"]]
@@ -183,7 +183,7 @@ test_that("pe: `newdata` works", {
 
 test_that("pe: `integrated` works", {
   skip_if_not(run_prj)
-  for (tstsetup in names(args_prj)) {
+  for (tstsetup in kept_tst("prj", names(args_prj))) {
     ndr_ncl <- ndr_ncl_dtls(args_prj[[tstsetup]])
     if (!is.null(
       get_ref(args_prj[[tstsetup]]$tstsetup_ref)$family$cats
@@ -209,7 +209,7 @@ test_that(paste(
   "pe: `return_draws_matrix` causes a conversion of the output type"
 ), {
   skip_if_not(run_prj)
-  for (tstsetup in names(args_prj)) {
+  for (tstsetup in kept_tst("pe", names(args_prj))) {
     ndr_ncl <- ndr_ncl_dtls(args_prj[[tstsetup]])
     pe_orig <- get_pe(tstsetup)
     pe_dr <- proj_epred(get_prj(tstsetup),

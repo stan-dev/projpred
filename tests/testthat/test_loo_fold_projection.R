@@ -102,7 +102,7 @@ test_that(paste(
   tstsetups <- names(args_ref)[!duplicated(keys)]
   tstsetups <- Filter(is_projectable, tstsetups)
   expect_gt(length(tstsetups), 5)
-  for (tstsetup in tstsetups) {
+  for (tstsetup in kept_tst("ref", tstsetups)) {
     refm <- get_ref(tstsetup)
     trms <- terms_case(refm)
     p_ref <- get_refdist(refm, ndraws = 3)

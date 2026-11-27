@@ -447,7 +447,7 @@ test_that("project() in parallel gives the same results as sequentially", {
   for (backend in par_backends_tst) {
     local({
       local_par_workers(backend)
-      for (tstsetup in tstsetups) {
+      for (tstsetup in kept_tst("prj", tstsetups)) {
         args_prj_i <- args_prj[[tstsetup]]
         n_par <<- 0L
         # Use suppressWarnings() because of convergence warnings of the
@@ -490,7 +490,7 @@ test_that("varsel() in parallel gives the same results as sequentially", {
   for (backend in par_backends_tst) {
     local({
       local_par_workers(backend)
-      for (tstsetup in tstsetups) {
+      for (tstsetup in kept_tst("vs", tstsetups)) {
         args_vs_i <- args_vs[[tstsetup]]
         vs_repr <- do.call(varsel, c(
           list(object = get_ref(args_vs_i$tstsetup_ref)),
@@ -515,7 +515,7 @@ test_that("cv_varsel() in parallel gives the same results as sequentially", {
   for (backend in par_backends_tst) {
     local({
       local_par_workers(backend)
-      for (tstsetup in tstsetups) {
+      for (tstsetup in kept_tst("cvvs", tstsetups)) {
         args_cvvs_i <- args_cvvs[[tstsetup]]
         # Use suppressWarnings() because test_that() somehow redirects
         # stderr() and so throws warnings that projpred wants to capture
@@ -942,7 +942,7 @@ test_that(paste(
   }
   fit_cls <- c("stanreg", "brmsfit", "stanfit")
   pkgs_copied <- character()
-  for (tstsetup in names(args_ref)) {
+  for (tstsetup in kept_tst("ref", names(args_ref))) {
     refm <- get_ref(tstsetup)
     refm_f <- projpred:::refmodel_for_folds(refm)
     # The copy has no copies of `mu` (also on the path for the latent and the

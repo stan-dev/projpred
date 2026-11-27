@@ -5,7 +5,7 @@ test_that(paste(
   "(or `nclusters`) work"
 ), {
   skip_if_not(run_prj)
-  for (tstsetup in names(args_prj)) {
+  for (tstsetup in kept_tst("prj", names(args_prj))) {
     args_prj_i <- args_prj[[tstsetup]]
     ndr_ncl <- ndr_ncl_dtls(args_prj_i)
     projection_tester(get_prj(tstsetup),
@@ -22,7 +22,7 @@ test_that("invalid `predictor_terms` warns or fails", {
   skip_if_not(run_prj)
   tstsetups <- grep("\\.glm\\.gauss.*\\.prd_trms_x\\.clust$", names(args_prj),
                     value = TRUE)
-  for (tstsetup in tstsetups) {
+  for (tstsetup in kept_tst("prj", tstsetups)) {
     args_prj_i <- args_prj[[tstsetup]]
 
     # Non-`vsel` object combined with `predictor_terms = NULL`:
@@ -94,7 +94,7 @@ test_that("`object` of class `stanreg` or `brmsfit` works", {
   skip_if_not(run_prj)
   tstsetups <- grep("\\.brnll\\..*\\.prd_trms_x\\.clust$", names(args_prj),
                     value = TRUE)
-  for (tstsetup in tstsetups) {
+  for (tstsetup in kept_tst("prj", tstsetups)) {
     args_prj_i <- args_prj[[tstsetup]]
     p_fit <- do.call(project, c(
       list(object = get_fit(args_prj_i$tstsetup_fit)),
@@ -111,7 +111,7 @@ test_that(paste(
   "and `nterms` work"
 ), {
   skip_if_not(run_vs)
-  for (tstsetup in names(args_prj_vs)) {
+  for (tstsetup in kept_tst("prj_vs", names(args_prj_vs))) {
     tstsetup_vs <- args_prj_vs[[tstsetup]]$tstsetup_vsel
     stopifnot(length(tstsetup_vs) > 0)
     mod_crr <- args_vs[[tstsetup_vs]]$mod_nm
@@ -135,19 +135,19 @@ test_that(paste(
       # Check that projecting from the `vsel` object onto a single submodel
       # gives the same output as projecting the reference model onto that
       # submodel directly:
-      tstsetup_tries <- grep(
+      tstsetup_tries <- kept_tst("prj", grep(
         paste0("^",
                gsub("\\.", "\\\\.",
                     sub("(with_offs|without_offs).*", "\\1", tstsetup)),
                ".*\\.clust$"),
         names(args_prj),
         value = TRUE
-      )
-      match_prj <- sapply(tstsetup_tries, function(tstsetup_try) {
+      ))
+      match_prj <- vapply(tstsetup_tries, function(tstsetup_try) {
         setequal(prd_trms_expected_crr,
                  get_prj(tstsetup_try)$predictor_terms) &&
           args_prj_vs[[tstsetup]]$prj_nm == args_prj[[tstsetup_try]]$prj_nm
-      })
+      }, logical(1))
       tstsetup_match_prj <- tstsetup_tries[match_prj]
       if (length(tstsetup_match_prj) == 1) {
         prj_match <- get_prj(tstsetup_match_prj)
@@ -208,7 +208,7 @@ test_that(paste(
   "`nclusters` and `nterms` work"
 ), {
   skip_if_not(run_cvvs)
-  for (tstsetup in names(args_prj_cvvs)) {
+  for (tstsetup in kept_tst("prj_cvvs", names(args_prj_cvvs))) {
     tstsetup_cvvs <- args_prj_cvvs[[tstsetup]]$tstsetup_vsel
     stopifnot(length(tstsetup_cvvs) > 0)
     mod_crr <- args_cvvs[[tstsetup_cvvs]]$mod_nm
@@ -232,19 +232,19 @@ test_that(paste(
       # Check that projecting from the `vsel` object onto a single submodel
       # gives the same output as projecting the reference model onto that
       # submodel directly:
-      tstsetup_tries <- grep(
+      tstsetup_tries <- kept_tst("prj", grep(
         paste0("^",
                gsub("\\.", "\\\\.",
                     sub("(with_offs|without_offs).*", "\\1", tstsetup)),
                ".*\\.clust$"),
         names(args_prj),
         value = TRUE
-      )
-      match_prj <- sapply(tstsetup_tries, function(tstsetup_try) {
+      ))
+      match_prj <- vapply(tstsetup_tries, function(tstsetup_try) {
         setequal(prd_trms_expected_crr,
                  get_prj(tstsetup_try)$predictor_terms) &&
           args_prj_cvvs[[tstsetup]]$prj_nm == args_prj[[tstsetup_try]]$prj_nm
-      })
+      }, logical(1))
       tstsetup_match_prj <- tstsetup_tries[match_prj]
       if (length(tstsetup_match_prj) == 1) {
         prj_match <- get_prj(tstsetup_match_prj)
@@ -318,7 +318,9 @@ test_that("`object` not of class `vsel` and missing `predictor_terms` fails", {
 
 test_that("invalid `nterms` fails", {
   skip_if_not(run_vs)
-  tstsetups <- head(grep("\\.glm\\.gauss", names(args_vs), value = TRUE), 1)
+  tstsetups <- kept_tst(
+    "vs", grep("\\.glm\\.gauss", names(args_vs), value = TRUE), 1
+  )
   for (tstsetup in tstsetups) {
     for (nterms_crr in nterms_unavail) {
       expect_error(project(get_vs(!!tstsetup), nterms = !!nterms_crr),
@@ -423,7 +425,7 @@ test_that("non-clustered projection does not require a seed", {
   # don't expect it to be necessary.
   tstsetups <- grep("\\.noclust$|\\.default_ndr_ncl$", names(args_prj),
                     value = TRUE)
-  for (tstsetup in tstsetups) {
+  for (tstsetup in kept_tst("prj", tstsetups)) {
     args_prj_i <- args_prj[[tstsetup]]
     p_orig <- get_prj(tstsetup)
     rand_new1 <- runif(1) # Just to advance `.Random.seed[2]`.
@@ -480,7 +482,7 @@ test_that("`seed` works (and restores the RNG state afterwards)", {
   skip_if_not(run_prj)
   tstsetups <- grep("\\.glm\\.gauss.*\\.prd_trms_x\\.clust$", names(args_prj),
                     value = TRUE)
-  for (tstsetup in tstsetups) {
+  for (tstsetup in kept_tst("prj", tstsetups)) {
     args_prj_i <- args_prj[[tstsetup]]
     p_orig <- get_prj(tstsetup)
     rand_orig <- runif(1) # Just to advance `.Random.seed[2]`.
@@ -519,7 +521,7 @@ test_that("for GLMs, `regul` has an expected effect", {
   stopifnot(all(diff(regul_tst) > 0))
   tstsetups <- grep("\\.glm\\..*\\.clust$", names(args_prj), value = TRUE)
   tstsetups <- grep(fam_nms_aug_regex, tstsetups, value = TRUE, invert = TRUE)
-  for (tstsetup in tstsetups) {
+  for (tstsetup in kept_tst("prj", tstsetups)) {
     args_prj_i <- args_prj[[tstsetup]]
     ndr_ncl <- ndr_ncl_dtls(args_prj_i)
 
@@ -600,7 +602,7 @@ test_that("formula() of a `projection` merges and drops terms as projpred", {
 
 test_that("formula() of a `projection` gives the formula of the submodel fits", {
   skip_if_not(run_prj)
-  for (tstsetup in names(args_prj)) {
+  for (tstsetup in kept_tst("prj", names(args_prj))) {
     prj <- get_prj(tstsetup)
     fml <- formula(prj)
     expect_s3_class(fml, "formula")

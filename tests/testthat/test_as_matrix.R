@@ -1,6 +1,6 @@
 test_that("as.matrix.projection() works", {
   skip_if_not(run_prj)
-  for (tstsetup in names(args_prj)) {
+  for (tstsetup in kept_tst("prj", names(args_prj))) {
     is_gamm4 <- inherits(get_prj(tstsetup)$outdmin[[1]], "gamm4")
     if (args_prj[[tstsetup]]$mod_nm == "gam" ||
         (args_prj[[tstsetup]]$mod_nm == "gamm" &&
@@ -317,7 +317,8 @@ test_that("as.matrix.projection() works", {
 
 test_that("`allow_nonconst_wdraws_prj = FALSE` causes an error", {
   skip_if_not(run_prj)
-  for (tstsetup in grep("\\.clust", names(args_prj), value = TRUE)) {
+  for (tstsetup in kept_tst("prj",
+                            grep("\\.clust", names(args_prj), value = TRUE))) {
     if (grepl("\\.clust1", tstsetup)) {
       err_expected <- NA
     } else {
@@ -333,7 +334,7 @@ test_that(paste(
   "posterior::weight_draws()"
 ), {
   skip_if_not(run_prj)
-  for (tstsetup in names(args_prj)) {
+  for (tstsetup in kept_tst("prj", names(args_prj))) {
     if (args_prj[[tstsetup]]$mod_nm == "gamm" &&
         !inherits(get_prj(tstsetup)$outdmin[[1]], c("gamm4", "gam"))) {
       # The GLM and GLMM submodels of GAMM reference models stay skipped.
@@ -359,7 +360,9 @@ test_that(paste(
   "as.matrix.projection()"
 ), {
   skip_if_not(run_prj)
-  for (tstsetup in grep("rstanarm\\.glm\\.", names(args_prj), value = TRUE)) {
+  for (tstsetup in kept_tst(
+    "prj", grep("rstanarm\\.glm\\.", names(args_prj), value = TRUE)
+  )) {
     m <- as.matrix(get_prj(tstsetup), nm_scheme = "brms",
                    allow_nonconst_wdraws_prj = ndr_ncl_dtls(
                      args_prj[[tstsetup]]
@@ -378,7 +381,9 @@ test_that(paste(
   "as_draws.projection() is a wrapper for as_draws_matrix.projection()"
 ), {
   skip_if_not(run_prj)
-  for (tstsetup in grep("rstanarm\\.glm\\.", names(args_prj), value = TRUE)) {
+  for (tstsetup in kept_tst(
+    "prj", grep("rstanarm\\.glm\\.", names(args_prj), value = TRUE)
+  )) {
     m_dr <- posterior::as_draws_matrix(get_prj(tstsetup), nm_scheme = "brms")
     m_dr_unspec <- posterior::as_draws(get_prj(tstsetup), nm_scheme = "brms")
     expect_identical(m_dr, m_dr_unspec, info = tstsetup)
@@ -391,12 +396,12 @@ if (run_snaps) {
   ), {
     withr::local_options(list(width = 145))
     skip_if_not(run_vs)
-    for (tstsetup in names(args_prj_vs)) {
-      if (args_prj_vs[[tstsetup]]$mod_nm %in% c("gam", "gamm")) {
-        # No snapshots for GAMs and GAMMs. The first test of this file and
-        # `test_smooth_basis.R` check the columns of the smooth terms.
-        next
-      }
+    # No snapshots for GAMs and GAMMs. The first test of this file and
+    # `test_smooth_basis.R` check the columns of the smooth terms.
+    tstsetups <- Filter(function(tstsetup) {
+      !args_prj_vs[[tstsetup]]$mod_nm %in% c("gam", "gamm")
+    }, names(args_prj_vs))
+    for (tstsetup in kept_tst("prj_vs", tstsetups)) {
       nterms_crr <- args_prj_vs[[tstsetup]]$nterms
 
       prjs_vs_l <- get_prj_vs(tstsetup)
@@ -423,12 +428,12 @@ if (run_snaps) {
   ), {
     withr::local_options(list(width = 145))
     skip_if_not(run_cvvs)
-    for (tstsetup in names(args_prj_cvvs)) {
-      if (args_prj_cvvs[[tstsetup]]$mod_nm %in% c("gam", "gamm")) {
-        # No snapshots for GAMs and GAMMs. The first test of this file and
-        # `test_smooth_basis.R` check the columns of the smooth terms.
-        next
-      }
+    # No snapshots for GAMs and GAMMs. The first test of this file and
+    # `test_smooth_basis.R` check the columns of the smooth terms.
+    tstsetups <- Filter(function(tstsetup) {
+      !args_prj_cvvs[[tstsetup]]$mod_nm %in% c("gam", "gamm")
+    }, names(args_prj_cvvs))
+    for (tstsetup in kept_tst("prj_cvvs", tstsetups)) {
       nterms_crr <- args_prj_cvvs[[tstsetup]]$nterms
 
       prjs_cvvs_l <- get_prj_cvvs(tstsetup)

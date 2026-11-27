@@ -4,7 +4,7 @@
 
 test_that("pl: `object` of class `projection` works", {
   skip_if_not(run_prj)
-  for (tstsetup in names(args_prj)) {
+  for (tstsetup in kept_tst("pl", names(args_prj))) {
     if (args_prj[[tstsetup]]$prj_nm == "augdat") {
       ncats_nlats_expected_crr <- length(
         get_ref(args_prj[[tstsetup]]$tstsetup_ref)$family$cats
@@ -38,7 +38,7 @@ test_that(paste(
   "pl: `object` of (informal) class `proj_list` (based on varsel()) works"
 ), {
   skip_if_not(run_vs)
-  for (tstsetup in names(args_prj_vs)) {
+  for (tstsetup in kept_tst("pl_vs", names(args_prj_vs))) {
     tstsetup_vs <- args_prj_vs[[tstsetup]]$tstsetup_vsel
     nterms_crr <- args_prj_vs[[tstsetup]]$nterms
     if (is.null(nterms_crr)) {
@@ -85,7 +85,7 @@ test_that(paste(
   "pl: `object` of (informal) class `proj_list` (based on cv_varsel()) works"
 ), {
   skip_if_not(run_cvvs)
-  for (tstsetup in names(args_prj_cvvs)) {
+  for (tstsetup in kept_tst("pl_cvvs", names(args_prj_cvvs))) {
     tstsetup_cvvs <- args_prj_cvvs[[tstsetup]]$tstsetup_vsel
     nterms_crr <- args_prj_cvvs[[tstsetup]]$nterms
     if (is.null(nterms_crr)) {
@@ -163,7 +163,7 @@ test_that(paste(
   skip_if_not(run_prj)
   tstsetups <- grep("\\.brnll\\..*\\.prd_trms_x\\.clust$", names(args_prj),
                     value = TRUE)
-  for (tstsetup in tstsetups) {
+  for (tstsetup in kept_tst("pl", tstsetups)) {
     args_prj_i <- args_prj[[tstsetup]]
     pl_from_refmod <- do.call(proj_linpred, c(
       list(object = get_ref(args_prj_i$tstsetup_ref),
@@ -182,7 +182,7 @@ test_that(paste(
   skip_if_not(run_prj)
   tstsetups <- grep("\\.brnll\\..*\\.prd_trms_x\\.clust$", names(args_prj),
                     value = TRUE)
-  for (tstsetup in tstsetups) {
+  for (tstsetup in kept_tst("pl", tstsetups)) {
     args_prj_i <- args_prj[[tstsetup]]
     pl_from_fit <- do.call(proj_linpred, c(
       list(object = get_fit(args_prj_i$tstsetup_fit),
@@ -205,7 +205,7 @@ test_that(paste(
     tstsetups <- grep("\\.L1\\.", tstsetups, value = TRUE)
   }
   stopifnot(length(tstsetups) > 0)
-  for (tstsetup in tstsetups) {
+  for (tstsetup in kept_tst("pl_vs", tstsetups)) {
     args_prj_vs_i <- args_prj_vs[[tstsetup]]
     pl_from_vsel <- do.call(proj_linpred, c(
       list(object = get_vs(args_prj_vs_i$tstsetup_vsel),
@@ -233,10 +233,10 @@ test_that(paste(
     if (any(grepl("\\.L1\\.", tstsetups))) {
       tstsetups <- grep("\\.L1\\.", tstsetups, value = TRUE)
     }
-    tstsetups <- head(tstsetups, 1)
+    tstsetups <- kept_tst("pl_cvvs", tstsetups, 1)
   }
   stopifnot(length(tstsetups) > 0)
-  for (tstsetup in tstsetups) {
+  for (tstsetup in kept_tst("pl_cvvs", tstsetups)) {
     args_prj_cvvs_i <- args_prj_cvvs[[tstsetup]]
     pl_from_vsel <- do.call(proj_linpred, c(
       list(object = get_cvvs(args_prj_cvvs_i$tstsetup_vsel),
@@ -290,8 +290,8 @@ test_that("invalid `newdata` fails", {
     "must be a data\\.frame or a matrix"
   )
   stopifnot(length(prd_trms_x) > 1)
-  prj_crr <- get_prj(head(grep("\\.glm\\.gauss.*\\.prd_trms_x",
-                                names(args_prj), value = TRUE), 1))
+  prj_crr <- get_prj(kept_tst("prj", grep("\\.glm\\.gauss.*\\.prd_trms_x",
+                                          names(args_prj), value = TRUE), 1))
   expect_error(
     proj_linpred(prj_crr,
                  newdata = dat[, head(prd_trms_x, -1), drop = FALSE],
@@ -304,7 +304,7 @@ test_that("invalid `newdata` fails", {
 
 test_that("`newdata` and `integrated` work (even in edge cases)", {
   skip_if_not(run_prj)
-  for (tstsetup in names(args_prj)) {
+  for (tstsetup in kept_tst("prj", names(args_prj))) {
     ndr_ncl <- ndr_ncl_dtls(args_prj[[tstsetup]])
     if (!has_const_wdr_prj(get_prj(tstsetup))) {
       wdr_crr <- get_prj(tstsetup)[["wdraws_prj"]]
@@ -381,7 +381,7 @@ test_that("`newdata` and `integrated` work (even in edge cases)", {
 
 test_that("`newdata` set to the original dataset doesn't change results", {
   skip_if_not(run_prj)
-  for (tstsetup in names(args_prj)) {
+  for (tstsetup in kept_tst("pl", names(args_prj))) {
     ndr_ncl <- ndr_ncl_dtls(args_prj[[tstsetup]])
     dat_crr <- get_dat(tstsetup)
     if (grepl("\\.with_wobs|\\.binom", tstsetup)) {
@@ -433,10 +433,10 @@ test_that(paste(
   "change results otherwise"
 ), {
   skip_if_not(run_prj)
-  for (tstsetup in names(args_prj)) {
-    if (args_prj[[tstsetup]]$pkg_nm == "brms") {
-      next
-    }
+  tstsetups <- Filter(function(tstsetup) {
+    args_prj[[tstsetup]]$pkg_nm != "brms"
+  }, names(args_prj))
+  for (tstsetup in kept_tst("pl", tstsetups)) {
     ndr_ncl <- ndr_ncl_dtls(args_prj[[tstsetup]])
     if (!has_const_wdr_prj(get_prj(tstsetup))) {
       wdr_crr <- get_prj(tstsetup)[["wdraws_prj"]]
@@ -491,7 +491,7 @@ test_that(paste(
 
 test_that("`weightsnew` works", {
   skip_if_not(run_prj)
-  for (tstsetup in names(args_prj)) {
+  for (tstsetup in kept_tst("pl", names(args_prj))) {
     ndr_ncl <- ndr_ncl_dtls(args_prj[[tstsetup]])
     if (!has_const_wdr_prj(get_prj(tstsetup))) {
       wdr_crr <- get_prj(tstsetup)[["wdraws_prj"]]
@@ -601,7 +601,7 @@ test_that("`weightsnew` works", {
 
 test_that("`offsetnew` works", {
   skip_if_not(run_prj)
-  for (tstsetup in names(args_prj)) {
+  for (tstsetup in kept_tst("pl", names(args_prj))) {
     ndr_ncl <- ndr_ncl_dtls(args_prj[[tstsetup]])
     if (!has_const_wdr_prj(get_prj(tstsetup))) {
       wdr_crr <- get_prj(tstsetup)[["wdraws_prj"]]
@@ -755,7 +755,7 @@ test_that("`offsetnew` works", {
 
 test_that("`transform` works", {
   skip_if_not(run_prj)
-  for (tstsetup in names(args_prj)) {
+  for (tstsetup in kept_tst("pl", names(args_prj))) {
     ndr_ncl <- ndr_ncl_dtls(args_prj[[tstsetup]])
     if (!has_const_wdr_prj(get_prj(tstsetup))) {
       wdr_crr <- get_prj(tstsetup)[["wdraws_prj"]]
@@ -853,7 +853,7 @@ test_that("`filter_nterms` works (for an `object` of class `projection`)", {
   skip_if_not(run_prj)
   tstsetups <- grep("\\.brnll\\..*\\.prd_trms_x\\.clust$", names(args_prj),
                     value = TRUE)
-  for (tstsetup in tstsetups) {
+  for (tstsetup in kept_tst("pl", tstsetups)) {
     nterms_avail_crr <- length(args_prj[[tstsetup]]$predictor_terms)
     nterms_unavail_crr <- c(0L, nterms_avail_crr + 130L)
     stopifnot(!nterms_avail_crr %in% nterms_unavail_crr)
@@ -882,7 +882,7 @@ test_that(paste(
   if (any(grepl("\\.L1\\.", tstsetups))) {
     tstsetups <- grep("\\.L1\\.", tstsetups, value = TRUE)
   }
-  for (tstsetup in tstsetups) {
+  for (tstsetup in kept_tst("pl_vs", tstsetups)) {
     ndr_ncl <- ndr_ncl_dtls(args_prj_vs[[tstsetup]])
     if (!has_const_wdr_prj(get_prj_vs(tstsetup))) {
       wdr_crr <- get_prj_vs(tstsetup)[[1]][["wdraws_prj"]]
@@ -991,7 +991,8 @@ test_that(paste(
 
 test_that("`allow_nonconst_wdraws_prj = FALSE` causes an error", {
   skip_if_not(run_prj)
-  for (tstsetup in grep("\\.clust", names(args_prj), value = TRUE)) {
+  for (tstsetup in kept_tst("prj",
+                            grep("\\.clust", names(args_prj), value = TRUE))) {
     if (grepl("\\.clust1", tstsetup)) {
       err_expected <- NA
     } else {
@@ -1008,7 +1009,7 @@ test_that(paste(
   "posterior::weight_draws()"
 ), {
   skip_if_not(run_prj)
-  for (tstsetup in names(args_prj)) {
+  for (tstsetup in kept_tst("pl", names(args_prj))) {
     ndr_ncl <- ndr_ncl_dtls(args_prj[[tstsetup]])
     for (transf_crr in c(FALSE, TRUE)) {
       for (intgr_crr in c(FALSE, TRUE)) {
@@ -1059,7 +1060,7 @@ test_that(paste(
 
 test_that("`.seed` works (and restores the RNG state afterwards)", {
   skip_if_not(run_prj)
-  for (tstsetup in names(args_prj)) {
+  for (tstsetup in kept_tst("pp", names(args_prj))) {
     pp_orig <- get_pp(tstsetup)
     rand_orig <- runif(1) # Just to advance `.Random.seed[2]`.
     .Random.seed_new1 <- .Random.seed
@@ -1092,7 +1093,7 @@ test_that("`.seed` works (and restores the RNG state afterwards)", {
 
 test_that("pp: `object` of class `projection` works", {
   skip_if_not(run_prj)
-  for (tstsetup in names(args_prj)) {
+  for (tstsetup in kept_tst("pp", names(args_prj))) {
     pp_tester(get_pp(tstsetup),
               nprjdraws_out_expected = ndr_pp_out(args_prj[[tstsetup]],
                                                   prj_out = get_prj(tstsetup)),
@@ -1114,7 +1115,7 @@ test_that(paste(
   "pp: `object` of (informal) class `proj_list` (based on varsel()) works"
 ), {
   skip_if_not(run_vs)
-  for (tstsetup in names(args_prj_vs)) {
+  for (tstsetup in kept_tst("pp_vs", names(args_prj_vs))) {
     tstsetup_vs <- args_prj_vs[[tstsetup]]$tstsetup_vsel
     nterms_crr <- args_prj_vs[[tstsetup]]$nterms
     if (is.null(nterms_crr)) {
@@ -1146,7 +1147,7 @@ test_that(paste(
   "pp: `object` of (informal) class `proj_list` (based on cv_varsel()) works"
 ), {
   skip_if_not(run_cvvs)
-  for (tstsetup in names(args_prj_cvvs)) {
+  for (tstsetup in kept_tst("pp_cvvs", names(args_prj_cvvs))) {
     tstsetup_cvvs <- args_prj_cvvs[[tstsetup]]$tstsetup_vsel
     nterms_crr <- args_prj_cvvs[[tstsetup]]$nterms
     if (is.null(nterms_crr)) {
@@ -1200,7 +1201,7 @@ test_that(paste(
   skip_if_not(run_prj)
   tstsetups <- grep("\\.brnll\\..*\\.prd_trms_x\\.clust$", names(args_prj),
                     value = TRUE)
-  for (tstsetup in tstsetups) {
+  for (tstsetup in kept_tst("pp", tstsetups)) {
     args_prj_i <- args_prj[[tstsetup]]
     pp_from_refmod <- do.call(proj_predict, c(
       list(object = get_ref(args_prj_i$tstsetup_ref),
@@ -1219,7 +1220,7 @@ test_that(paste(
   skip_if_not(run_prj)
   tstsetups <- grep("\\.brnll\\..*\\.prd_trms_x\\.clust$", names(args_prj),
                     value = TRUE)
-  for (tstsetup in tstsetups) {
+  for (tstsetup in kept_tst("pp", tstsetups)) {
     args_prj_i <- args_prj[[tstsetup]]
     pp_from_fit <- do.call(proj_predict, c(
       list(object = get_fit(args_prj_i$tstsetup_fit),
@@ -1242,7 +1243,7 @@ test_that(paste(
     tstsetups <- grep("\\.L1\\.", tstsetups, value = TRUE)
   }
   stopifnot(length(tstsetups) > 0)
-  for (tstsetup in tstsetups) {
+  for (tstsetup in kept_tst("pp_vs", tstsetups)) {
     args_prj_vs_i <- args_prj_vs[[tstsetup]]
     pp_from_vsel <- do.call(proj_predict, c(
       list(object = get_vs(args_prj_vs_i$tstsetup_vsel),
@@ -1270,10 +1271,10 @@ test_that(paste(
     if (any(grepl("\\.L1\\.", tstsetups))) {
       tstsetups <- grep("\\.L1\\.", tstsetups, value = TRUE)
     }
-    tstsetups <- head(tstsetups, 1)
+    tstsetups <- kept_tst("pp_cvvs", tstsetups, 1)
   }
   stopifnot(length(tstsetups) > 0)
-  for (tstsetup in tstsetups) {
+  for (tstsetup in kept_tst("pp_cvvs", tstsetups)) {
     args_prj_cvvs_i <- args_prj_cvvs[[tstsetup]]
     pp_from_vsel <- do.call(proj_predict, c(
       list(object = get_cvvs(args_prj_cvvs_i$tstsetup_vsel),
@@ -1327,8 +1328,8 @@ test_that("invalid `newdata` fails", {
     "must be a data\\.frame or a matrix"
   )
   stopifnot(length(prd_trms_x) > 1)
-  prj_crr <- get_prj(head(grep("\\.glm\\.gauss.*\\.prd_trms_x",
-                                names(args_prj), value = TRUE), 1))
+  prj_crr <- get_prj(kept_tst("prj", grep("\\.glm\\.gauss.*\\.prd_trms_x",
+                                          names(args_prj), value = TRUE), 1))
   expect_error(
     proj_predict(prj_crr,
                  newdata = dat[, head(prd_trms_x, -1), drop = FALSE],
@@ -1342,7 +1343,7 @@ test_that("invalid `newdata` fails", {
 
 test_that("`newdata` and `nresample_clusters` work (even in edge cases)", {
   skip_if_not(run_prj)
-  for (tstsetup in names(args_prj)) {
+  for (tstsetup in kept_tst("prj", names(args_prj))) {
     for (nobsv_crr in nobsv_tst) {
       if (grepl("\\.with_wobs|\\.binom", tstsetup)) {
         wobs_crr <- head(get_prj(tstsetup)$refmodel$wobs, nobsv_crr)
@@ -1384,7 +1385,7 @@ test_that("`newdata` and `nresample_clusters` work (even in edge cases)", {
 
 test_that("`newdata` set to the original dataset doesn't change results", {
   skip_if_not(run_prj)
-  for (tstsetup in names(args_prj)) {
+  for (tstsetup in kept_tst("pp", names(args_prj))) {
     if (grepl("\\.with_wobs|\\.binom", tstsetup)) {
       wobs_crr <- wobs_tst
     } else {
@@ -1415,10 +1416,10 @@ test_that(paste(
   "reference models) doesn't change results"
 ), {
   skip_if_not(run_prj)
-  for (tstsetup in names(args_prj)) {
-    if (args_prj[[tstsetup]]$pkg_nm == "brms") {
-      next
-    }
+  tstsetups <- Filter(function(tstsetup) {
+    args_prj[[tstsetup]]$pkg_nm != "brms"
+  }, names(args_prj))
+  for (tstsetup in kept_tst("pp", tstsetups)) {
     if (grepl("\\.with_wobs|\\.binom", tstsetup)) {
       wobs_crr <- wobs_tst
     } else {
@@ -1447,7 +1448,7 @@ test_that(paste(
 
 test_that("`weightsnew` works", {
   skip_if_not(run_prj)
-  for (tstsetup in names(args_prj)) {
+  for (tstsetup in kept_tst("pp", names(args_prj))) {
     nprjdraws_out_crr <- ndr_pp_out(args_prj[[tstsetup]],
                                     prj_out = get_prj(tstsetup))
     if (grepl("\\.with_offs", tstsetup)) {
@@ -1546,7 +1547,7 @@ test_that("`weightsnew` works", {
 
 test_that("`offsetnew` works", {
   skip_if_not(run_prj)
-  for (tstsetup in names(args_prj)) {
+  for (tstsetup in kept_tst("pp", names(args_prj))) {
     nprjdraws_out_crr <- ndr_pp_out(args_prj[[tstsetup]],
                                     prj_out = get_prj(tstsetup))
     if (grepl("\\.with_wobs|\\.binom", tstsetup)) {
@@ -1651,7 +1652,7 @@ test_that("`filter_nterms` works (for an `object` of class `projection`)", {
   skip_if_not(run_prj)
   tstsetups <- grep("\\.brnll\\..*\\.prd_trms_x\\.clust$", names(args_prj),
                     value = TRUE)
-  for (tstsetup in tstsetups) {
+  for (tstsetup in kept_tst("pp", tstsetups)) {
     nterms_avail_crr <- length(args_prj[[tstsetup]]$predictor_terms)
     nterms_unavail_crr <- c(0L, nterms_avail_crr + 130L)
     stopifnot(!nterms_avail_crr %in% nterms_unavail_crr)
@@ -1678,7 +1679,7 @@ test_that(paste(
   if (any(grepl("\\.L1\\.", tstsetups))) {
     tstsetups <- grep("\\.L1\\.", tstsetups, value = TRUE)
   }
-  for (tstsetup in tstsetups) {
+  for (tstsetup in kept_tst("pp_vs", tstsetups)) {
     # Unavailable number(s) of terms:
     for (filter_nterms_crr in nterms_unavail) {
       expect_error(proj_predict(get_prj_vs(tstsetup),
@@ -1767,7 +1768,7 @@ test_that(paste(
 
 test_that("`return_draws_matrix` causes a conversion of the output type", {
   skip_if_not(run_prj)
-  for (tstsetup in names(args_prj)) {
+  for (tstsetup in kept_tst("pp", names(args_prj))) {
     for (r_oscale_crr in c(FALSE, TRUE)) {
       if (!r_oscale_crr && args_prj[[tstsetup]]$prj_nm != "latent") next
       if (r_oscale_crr) {

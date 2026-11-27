@@ -5,7 +5,7 @@ test_that(paste(
   "`nclusters`, and `nclusters_pred` work"
 ), {
   skip_if_not(run_vs)
-  for (tstsetup in names(args_vs)) {
+  for (tstsetup in kept_tst("vs", names(args_vs))) {
     tstsetup_ref <- args_vs[[tstsetup]]$tstsetup_ref
     mod_crr <- args_vs[[tstsetup]]$mod_nm
     fam_crr <- args_vs[[tstsetup]]$fam_nm
@@ -33,7 +33,7 @@ test_that("invalid `object` fails", {
 
 test_that("invalid `method` fails", {
   skip_if_no_setups(args_ref)
-  for (tstsetup in names(args_ref)) {
+  for (tstsetup in kept_tst("ref", names(args_ref))) {
     expect_error(varsel(get_ref(tstsetup), method = "k-fold"),
                  "^Unexpected value for argument `method`\\.$",
                  info = tstsetup)
@@ -64,7 +64,7 @@ test_that("the projection cache does not change the results", {
   }
   tstsetups <- names(args_vs)[vapply(args_vs, is_glm_multi, logical(1))]
   expect_gt(length(tstsetups), 0)
-  for (tstsetup in tstsetups) {
+  for (tstsetup in kept_tst("vs", tstsetups)) {
     args_vs_i <- args_vs[[tstsetup]]
     vs_nocache <- withr::with_options(
       list(projpred.proj_cache = FALSE),
@@ -174,7 +174,7 @@ test_that("`seed` works (and restores the RNG state afterwards)", {
   skip_if_not(run_vs)
   # To save time:
   tstsetups <- grep("\\.glm\\.gauss\\.", names(args_vs), value = TRUE)
-  for (tstsetup in tstsetups) {
+  for (tstsetup in kept_tst("vs", tstsetups)) {
     args_vs_i <- args_vs[[tstsetup]]
     vs_orig <- get_vs(tstsetup)
     rand_orig <- runif(1) # Just to advance `.Random.seed[2]`.
@@ -200,7 +200,7 @@ test_that(paste(
 ), {
   skip_if_not(run_vs)
   tstsetups <- names(args_vs)
-  for (tstsetup in tstsetups) {
+  for (tstsetup in kept_tst("vs", tstsetups)) {
     args_vs_i <- args_vs[[tstsetup]]
     tstsetup_ref <- args_vs_i$tstsetup_ref
     pkg_crr <- args_vs_i$pkg_nm
@@ -761,7 +761,7 @@ test_that(paste(
   vsel_nms_regul_opt <- character()
   # The setups that should be tested:
   tstsetups <- grep("\\.glm\\..*\\.L1\\.", names(args_vs), value = TRUE)
-  for (tstsetup in tstsetups) {
+  for (tstsetup in kept_tst("vs", tstsetups)) {
     args_vs_i <- args_vs[[tstsetup]]
     m_max <- args_vs_i$nterms_max + 1L
     ssq_regul_prd <- array(dim = c(length(regul_tst), m_max))
@@ -838,7 +838,7 @@ test_that(paste(
     grep("\\.glm\\..*\\.L1\\.", names(args_vs), value = TRUE)
   )
   tstsetups <- grep(fam_nms_aug_regex, tstsetups, value = TRUE, invert = TRUE)
-  for (tstsetup in tstsetups) {
+  for (tstsetup in kept_tst("vs", tstsetups)) {
     args_vs_i <- args_vs[[tstsetup]]
     m_max <- args_vs_i$nterms_max + 1L
     if (length(args_vs_i$search_terms) &&
@@ -987,9 +987,9 @@ test_that("for forward search, `penalty` has no effect", {
   tstsetups <- grep("\\.L1\\.", names(args_vs), value = TRUE, invert = TRUE)
   # To save time:
   if (!run_more) {
-    tstsetups <- head(tstsetups, 1)
+    tstsetups <- kept_tst("vs", tstsetups, 1)
   }
-  for (tstsetup in tstsetups) {
+  for (tstsetup in kept_tst("vs", tstsetups)) {
     args_vs_i <- args_vs[[tstsetup]]
     # Use suppressWarnings() because test_that() somehow redirects stderr() and
     # so throws warnings that projpred wants to capture internally:
@@ -1141,9 +1141,10 @@ test_that(paste(
 ), {
   skip_if_not(run_vs)
   tstsetups <- grep("\\.alltrms", names(args_vs), value = TRUE)
-  for (tstsetup in tstsetups) {
+  for (tstsetup in kept_tst("vs", tstsetups)) {
     tstsetup_default <- sub("\\.alltrms", "\\.default_search_trms", tstsetup)
-    if (!tstsetup_default %in% names(args_vs)) next
+    if (!tstsetup_default %in% names(args_vs) ||
+        is_dropped_tst("vs", tstsetup_default)) next
     vs_search_terms <- get_vs(tstsetup)
     vs_search_terms$args_search["search_terms"] <- list(NULL)
     expect_identical(vs_search_terms, get_vs(tstsetup_default), info = tstsetup)
@@ -1156,7 +1157,7 @@ test_that(paste(
 ), {
   skip_if_not(run_vs)
   tstsetups <- grep("\\.fixed", names(args_vs), value = TRUE)
-  for (tstsetup in tstsetups) {
+  for (tstsetup in kept_tst("vs", tstsetups)) {
     # In principle, `search_trms_tst$fixed$search_terms[1]` could be used
     # instead of `"xco.1"`, but that would seem like the forced term always has
     # to come first in `search_terms` (which is not the case):
@@ -1171,7 +1172,7 @@ test_that(paste(
 ), {
   skip_if_not(run_vs)
   tstsetups <- grep("\\.excluded", names(args_vs), value = TRUE)
-  for (tstsetup in tstsetups) {
+  for (tstsetup in kept_tst("vs", tstsetups)) {
     expect_false("xco.1" %in% get_vs(tstsetup)$predictor_ranking,
                  info = tstsetup)
   }
@@ -1182,7 +1183,7 @@ test_that(paste(
 ), {
   skip_if_not(run_vs)
   tstsetups <- grep("\\.empty_size", names(args_vs), value = TRUE)
-  for (tstsetup in tstsetups) {
+  for (tstsetup in kept_tst("vs", tstsetups)) {
     rk_fulldata_out <- get_vs(tstsetup)$predictor_ranking
     expect_true(grepl("\\+", rk_fulldata_out[1]) &&
                   !any(grepl("\\+", rk_fulldata_out[-1])),
@@ -1196,9 +1197,9 @@ test_that("varsel.vsel() works for `vsel` objects from varsel()", {
   skip_if_not(run_vs)
   tstsetups <- names(args_vs)
   if (!run_more) {
-    tstsetups <- head(tstsetups, 1)
+    tstsetups <- kept_tst("vs", tstsetups, 1)
   }
-  for (tstsetup in tstsetups) {
+  for (tstsetup in kept_tst("vs", tstsetups)) {
     vs_eval <- varsel(get_vs(tstsetup), refit_prj = FALSE, verbose = FALSE,
                       seed = seed2_tst)
     tstsetup_ref <- args_vs[[tstsetup]]$tstsetup_ref
@@ -1233,7 +1234,7 @@ test_that("varsel.vsel() works for `vsel` objects from cv_varsel()", {
   skip_if_not(run_vs)
   skip_if_not(run_cvvs)
   tstsetup_counter <- 0L
-  for (tstsetup in names(args_cvvs)) {
+  for (tstsetup in kept_tst("cvvs", names(args_cvvs))) {
     if (!run_more && tstsetup_counter > 0L) {
       next
     } else if (run_more && tstsetup_counter > 0L) {
@@ -1284,7 +1285,7 @@ test_that(paste(
   "`nterms_max`, `nclusters`, and `nclusters_pred` work"
 ), {
   skip_if_not(run_cvvs)
-  for (tstsetup in names(args_cvvs)) {
+  for (tstsetup in kept_tst("cvvs", names(args_cvvs))) {
     mod_crr <- args_cvvs[[tstsetup]]$mod_nm
     fam_crr <- args_cvvs[[tstsetup]]$fam_nm
     prj_crr <- args_cvvs[[tstsetup]]$prj_nm
@@ -1321,7 +1322,7 @@ test_that("invalid `object` fails", {
 
 test_that("invalid `method` fails", {
   skip_if_no_setups(args_ref)
-  for (tstsetup in names(args_ref)) {
+  for (tstsetup in kept_tst("ref", names(args_ref))) {
     expect_error(cv_varsel(get_ref(tstsetup), method = "k-fold"),
                  "^Unexpected value for argument `method`\\.$",
                  info = tstsetup)
@@ -1344,7 +1345,7 @@ test_that("invalid `method` fails", {
 
 test_that("invalid `cv_method` fails", {
   skip_if_no_setups(args_ref)
-  for (tstsetup in names(args_ref)) {
+  for (tstsetup in kept_tst("ref", names(args_ref))) {
     expect_error(cv_varsel(get_ref(tstsetup), cv_method = "k-fold"),
                  "^Unknown `cv_method`\\.$",
                  info = tstsetup)
@@ -1362,7 +1363,7 @@ test_that("`seed` works (and restores the RNG state afterwards)", {
     # least one group):
     grep("^brms\\.(glmm|gamm)\\..*\\.kfold", names(args_cvvs), value = TRUE)
   )
-  for (tstsetup in tstsetups) {
+  for (tstsetup in kept_tst("cvvs", tstsetups)) {
     args_cvvs_i <- args_cvvs[[tstsetup]]
     cvvs_orig <- get_cvvs(tstsetup)
     rand_orig <- runif(1) # Just to advance `.Random.seed[2]`.
@@ -1403,6 +1404,11 @@ test_that("`refit_prj` works", {
         isFALSE(args_cvvs_i$validate_search)) {
       # K-fold CV with `validate_search = FALSE` does not allow to specify
       # `refit_prj = FALSE`:
+      next
+    }
+    if (identical(args_cvvs_i$cv_method, "kfold") &&
+        is_dropped_tst("cvfits", args_cvvs_i$tstsetup_ref)) {
+      # The K-fold fits of this reference model are dropped:
       next
     }
     args_cvvs_i$refit_prj <- FALSE
@@ -1528,7 +1534,7 @@ test_that(paste(
   valsearch_arg <- lapply(args_cvvs[tstsetups], "[[", "validate_search")
   tstsetups <- tstsetups[!sapply(valsearch_arg, isFALSE)]
   skip_if(length(tstsetups) == 0)
-  for (tstsetup in tstsetups) {
+  for (tstsetup in kept_tst("cvvs", tstsetups)) {
     args_cvvs_i <- args_cvvs[[tstsetup]]
     # Use suppressWarnings() because test_that() somehow redirects stderr() and
     # so throws warnings that projpred wants to capture internally:
@@ -1559,7 +1565,7 @@ test_that("setting `nloo` smaller than the number of observations works", {
   valsearch_arg <- lapply(args_cvvs[tstsetups], "[[", "validate_search")
   tstsetups <- tstsetups[!sapply(valsearch_arg, isFALSE)]
   skip_if(length(tstsetups) == 0)
-  for (tstsetup in tstsetups) {
+  for (tstsetup in kept_tst("cvvs", tstsetups)) {
     args_cvvs_i <- args_cvvs[[tstsetup]]
     tstsetup_nloo <- sub("\\.default_nloo", "\\.subsmpl", tstsetup)
     stopifnot(tstsetup_nloo %in% names(args_cvvs))
@@ -1600,7 +1606,7 @@ test_that("`validate_search` works", {
     tstsetups <- tstsetups[has_valsearch_true]
   }
   suggsize_cond <- setNames(rep(NA, length(tstsetups)), nm = tstsetups)
-  for (tstsetup in tstsetups) {
+  for (tstsetup in kept_tst("cvvs", tstsetups)) {
     args_cvvs_i <- args_cvvs[[tstsetup]]
     stopifnot(is.null(args_cvvs_i$validate_search) ||
                 isTRUE(args_cvvs_i$validate_search))
@@ -1729,16 +1735,17 @@ test_that(paste(
   skip_if_not(run_cvvs)
   tstsetups <- grep("^rstanarm\\..*\\.kfold", names(args_cvvs), value = TRUE)
   if (!run_cvfits_all) {
-    tstsetups_tmp <- head(grep("\\.glmm\\.", tstsetups, value = TRUE), 1)
+    tstsetups_tmp <- kept_tst("cvvs",
+                              grep("\\.glmm\\.", tstsetups, value = TRUE), 1)
     if (length(tstsetups_tmp) == 0) {
-      tstsetups_tmp <- head(tstsetups, 1)
+      tstsetups_tmp <- kept_tst("cvvs", tstsetups, 1)
     }
     tstsetups <- tstsetups_tmp
   }
   # Test setups for which rstanarm::kfold() fails (the skip at the end of this
   # test lists them):
   kfold_failed <- character()
-  for (tstsetup in tstsetups) {
+  for (tstsetup in kept_tst("cvvs", tstsetups)) {
     args_cvvs_i <- args_cvvs[[tstsetup]]
     tstsetup_fit <- args_cvvs_i$tstsetup_fit
     mod_crr <- args_cvvs_i$mod_nm
@@ -1846,13 +1853,14 @@ test_that(paste(
   skip_if_not(packageVersion("brms") >= "2.16.4")
   tstsetups <- grep("^brms\\..*\\.kfold", names(args_cvvs), value = TRUE)
   if (!run_cvfits_all) {
-    tstsetups_tmp <- head(grep("\\.glmm\\.", tstsetups, value = TRUE), 1)
+    tstsetups_tmp <- kept_tst("cvvs",
+                              grep("\\.glmm\\.", tstsetups, value = TRUE), 1)
     if (length(tstsetups_tmp) == 0) {
-      tstsetups_tmp <- head(tstsetups, 1)
+      tstsetups_tmp <- kept_tst("cvvs", tstsetups, 1)
     }
     tstsetups <- tstsetups_tmp
   }
-  for (tstsetup in tstsetups) {
+  for (tstsetup in kept_tst("cvvs", tstsetups)) {
     args_cvvs_i <- args_cvvs[[tstsetup]]
     tstsetup_fit <- args_cvvs_i$tstsetup_fit
     mod_crr <- args_cvvs_i$mod_nm
@@ -1970,8 +1978,10 @@ test_that(paste(
 test_that("`cvfun` included in the `refmodel` object works", {
   skip_if_not(run_cvvs)
   tstsetups <- c(
-    head(grep("^rstanarm\\..*\\.kfold", names(args_cvvs), value = TRUE), 1),
-    head(grep("^brms\\..*\\.kfold", names(args_cvvs), value = TRUE), 1)
+    kept_tst("cvvs",
+             grep("^rstanarm\\..*\\.kfold", names(args_cvvs), value = TRUE), 1),
+    kept_tst("cvvs",
+             grep("^brms\\..*\\.kfold", names(args_cvvs), value = TRUE), 1)
   )
   for (tstsetup in tstsetups) {
     cvvs_cvfun <- do.call(cv_varsel, c(
@@ -2006,9 +2016,9 @@ test_that(paste(
   skip_if_not(run_cvvs)
   tstsetups <- names(args_cvvs)
   if (!run_more) {
-    tstsetups <- head(tstsetups, 2)
+    tstsetups <- kept_tst("cvvs", tstsetups, 2)
   }
-  for (tstsetup in tstsetups) {
+  for (tstsetup in kept_tst("cvvs", tstsetups)) {
     refit_prj_crr <- !identical(args_cvvs[[tstsetup]]$validate_search, FALSE) ||
       identical(args_cvvs[[tstsetup]]$cv_method, "kfold")
     nclusters_pred_crr <- nclusters_pred_tst - if (refit_prj_crr) 1L else 0L
@@ -2061,7 +2071,7 @@ test_that(paste(
   skip_if_not(run_vs)
   skip_if_not(run_cvvs)
   tstsetup_counter <- 0L
-  for (tstsetup in names(args_vs)) {
+  for (tstsetup in kept_tst("vs", names(args_vs))) {
     if (!run_more && tstsetup_counter > 0L) {
       next
     } else if (run_more && tstsetup_counter > 0L) {
@@ -2113,7 +2123,7 @@ test_that(paste(
   skip_if_not(run_vs)
   skip_if_not(run_cvvs)
   tstsetup_counter <- 0L
-  for (tstsetup in names(args_vs)) {
+  for (tstsetup in kept_tst("vs", names(args_vs))) {
     tstsetup_ref <- args_vs[[tstsetup]]$tstsetup_ref
     if (grepl("\\.with_wobs", tstsetup_ref) &&
         args_vs[[tstsetup]]$pkg_nm == "rstanarm") {
@@ -2135,6 +2145,10 @@ test_that(paste(
       nclusters_pred_crr <- args_vs[[tstsetup]]$nclusters_pred - 1L
     } else {
       nclusters_pred_crr <- args_vs[[tstsetup]]$nclusters_pred
+    }
+    if (is_dropped_tst("cvfits", tstsetup_ref)) {
+      # The K-fold fits of this reference model are dropped:
+      next
     }
     # Use suppressWarnings() because test_that() somehow redirects stderr() and
     # so throws warnings that projpred wants to capture internally:
@@ -2173,9 +2187,9 @@ test_that(paste(
   skip_if_not(run_cvvs)
   tstsetups <- names(args_cvvs)
   if (!run_more) {
-    tstsetups <- head(tstsetups, 1)
+    tstsetups <- kept_tst("cvvs", tstsetups, 1)
   }
-  for (tstsetup in tstsetups) {
+  for (tstsetup in kept_tst("cvvs", tstsetups)) {
     if (isFALSE(args_cvvs[[tstsetup]]$validate_search)) {
       next
     }
@@ -2241,9 +2255,9 @@ test_that(paste(
   skip_if_not(run_cvvs)
   tstsetups <- names(args_cvvs)
   if (!run_more) {
-    tstsetups <- head(tstsetups, 11)
+    tstsetups <- kept_tst("cvvs", tstsetups, 11)
   }
-  for (tstsetup in tstsetups) {
+  for (tstsetup in kept_tst("cvvs", tstsetups)) {
     tstsetup_ref <- args_cvvs[[tstsetup]]$tstsetup_ref
     if (isFALSE(args_cvvs[[tstsetup]]$validate_search)) {
       next
@@ -2259,6 +2273,11 @@ test_that(paste(
       next
     }
     nclusters_pred_crr <- args_cvvs[[tstsetup]]$nclusters_pred - 1L
+    if (tstsetup_ref %in% tstsetups_ref_kfold &&
+        is_dropped_tst("cvfits", tstsetup_ref)) {
+      # The K-fold fits of this reference model are dropped:
+      next
+    }
     # `NULL` (cv_varsel() then runs the K-fold refits itself) if the setup
     # has no K-fold fits for this reference model:
     cvfits_crr <- if (tstsetup_ref %in% tstsetups_ref_kfold) {
@@ -2306,9 +2325,9 @@ test_that(paste(
   skip_if_not(run_cvvs)
   tstsetups <- names(args_cvvs)
   if (!run_more) {
-    tstsetups <- head(tstsetups, 3)
+    tstsetups <- kept_tst("cvvs", tstsetups, 3)
   }
-  for (tstsetup in tstsetups) {
+  for (tstsetup in kept_tst("cvvs", tstsetups)) {
     tstsetup_ref <- args_cvvs[[tstsetup]]$tstsetup_ref
     if (!isFALSE(args_cvvs[[tstsetup]]$validate_search)) {
       next
@@ -2324,6 +2343,11 @@ test_that(paste(
       next
     }
     nclusters_pred_crr <- args_cvvs[[tstsetup]]$nclusters_pred - 1L
+    if (tstsetup_ref %in% tstsetups_ref_kfold &&
+        is_dropped_tst("cvfits", tstsetup_ref)) {
+      # The K-fold fits of this reference model are dropped:
+      next
+    }
     # `NULL` (cv_varsel() then runs the K-fold refits itself) if the setup
     # has no K-fold fits for this reference model:
     cvfits_crr <- if (tstsetup_ref %in% tstsetups_ref_kfold) {
@@ -2374,9 +2398,9 @@ test_that(paste(
   skip_if_not(run_cvvs)
   tstsetups <- names(args_cvvs)
   if (!run_more) {
-    tstsetups <- head(tstsetups, 11)
+    tstsetups <- kept_tst("cvvs", tstsetups, 11)
   }
-  for (tstsetup in tstsetups) {
+  for (tstsetup in kept_tst("cvvs", tstsetups)) {
     tstsetup_ref <- args_cvvs[[tstsetup]]$tstsetup_ref
     if (isFALSE(args_cvvs[[tstsetup]]$validate_search)) {
       next
@@ -2392,6 +2416,11 @@ test_that(paste(
       next
     }
     nclusters_pred_crr <- args_cvvs[[tstsetup]]$nclusters_pred - 1L
+    if (tstsetup_ref %in% tstsetups_ref_kfold &&
+        is_dropped_tst("cvfits", tstsetup_ref)) {
+      # The K-fold fits of this reference model are dropped:
+      next
+    }
     # `NULL` (cv_varsel() then runs the K-fold refits itself) if the setup
     # has no K-fold fits for this reference model:
     cvfits_crr <- if (tstsetup_ref %in% tstsetups_ref_kfold) {
@@ -2445,7 +2474,7 @@ test_that(paste(
   skip_if_not(run_vs)
   skip_if_not(run_cvvs)
   tstsetup_counter <- 0L
-  for (tstsetup in names(args_vs)) {
+  for (tstsetup in kept_tst("vs", names(args_vs))) {
     if ((!run_more && tstsetup_counter > 0L) ||
         (run_more && !args_vs[[tstsetup]]$mod_nm %in% c("glm", "gam"))) {
       next
@@ -2513,7 +2542,7 @@ test_that(paste(
   skip_if_not(run_vs)
   skip_if_not(run_cvvs)
   tstsetup_counter <- 0L
-  for (tstsetup in names(args_vs)) {
+  for (tstsetup in kept_tst("vs", names(args_vs))) {
     tstsetup_ref <- args_vs[[tstsetup]]$tstsetup_ref
     if (grepl("\\.with_wobs", tstsetup_ref) &&
         args_vs[[tstsetup]]$pkg_nm == "rstanarm") {
@@ -2535,6 +2564,10 @@ test_that(paste(
       nclusters_pred_crr <- args_vs[[tstsetup]]$nclusters_pred - 1L
     } else {
       nclusters_pred_crr <- args_vs[[tstsetup]]$nclusters_pred
+    }
+    if (is_dropped_tst("cvfits", tstsetup_ref)) {
+      # The K-fold fits of this reference model are dropped:
+      next
     }
     # Get the objects outside of try(), which would also catch a failed
     # build:
@@ -2595,9 +2628,9 @@ test_that(paste(
   skip_if_not(run_cvvs)
   tstsetups <- names(args_cvvs)
   if (!run_more) {
-    tstsetups <- head(tstsetups, 3)
+    tstsetups <- kept_tst("cvvs", tstsetups, 3)
   }
-  for (tstsetup in tstsetups) {
+  for (tstsetup in kept_tst("cvvs", tstsetups)) {
     if (run_more && !args_cvvs[[tstsetup]]$mod_nm %in% c("glm", "gam")) {
       # Save some time:
       next
@@ -2697,9 +2730,9 @@ test_that(paste(
   skip_if_not(run_cvvs)
   tstsetups <- names(args_cvvs)
   if (!run_more) {
-    tstsetups <- head(tstsetups, 3)
+    tstsetups <- kept_tst("cvvs", tstsetups, 3)
   }
-  for (tstsetup in tstsetups) {
+  for (tstsetup in kept_tst("cvvs", tstsetups)) {
     tstsetup_ref <- args_cvvs[[tstsetup]]$tstsetup_ref
     if (!isFALSE(args_cvvs[[tstsetup]]$validate_search)) {
       next
@@ -2715,6 +2748,11 @@ test_that(paste(
       next
     }
     nclusters_pred_crr <- args_cvvs[[tstsetup]]$nclusters_pred - 1L
+    if (tstsetup_ref %in% tstsetups_ref_kfold &&
+        is_dropped_tst("cvfits", tstsetup_ref)) {
+      # The K-fold fits of this reference model are dropped:
+      next
+    }
     # `NULL` (cv_varsel() then runs the K-fold refits itself) if the setup
     # has no K-fold fits for this reference model:
     cvfits_crr <- if (tstsetup_ref %in% tstsetups_ref_kfold) {
@@ -2786,10 +2824,10 @@ test_that("argument `folds` of run_cvfun() works", {
   skip_if_not(run_cvvs)
   tstsetups <- tstsetups_ref_kfold
   if (!run_more) {
-    tstsetups <- head(tstsetups, 1)
+    tstsetups <- kept_tst("cvfits", tstsetups, 1)
   }
   withr::local_preserve_seed()
-  for (tstsetup in tstsetups) {
+  for (tstsetup in kept_tst("cvfits", tstsetups)) {
     set.seed(seed3_tst)
     folds_sep <- cv_folds(nobsv, K = K_tst)
     cvfits_sep <- run_cvfun(object = get_ref(tstsetup), folds = folds_sep)

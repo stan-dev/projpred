@@ -98,7 +98,7 @@ test_that("divmin_augdat() works", {
   tstsetups_ref <- names(args_ref[sapply(args_ref, "[[", "prj_nm") == "augdat"])
   tstsetups_ref <- grep(fam_nms_unsupp_regex, tstsetups_ref, value = TRUE,
                         invert = TRUE)
-  for (tstsetup in tstsetups_ref) {
+  for (tstsetup in kept_tst("ref", tstsetups_ref)) {
     args_ref_i <- args_ref[[tstsetup]]
     args_fit_i <- args_fit[[args_ref_i$tstsetup_fit]]
     pkg_crr <- args_fit_i$pkg_nm

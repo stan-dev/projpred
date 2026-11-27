@@ -142,7 +142,12 @@ dropped_tst <- function(type, tstsetups) {
 }
 
 # The first `n` test setups among `tstsetups` of object type `type` that are
-# not dropped. The builds stop after `n` of them:
+# not dropped. The builds stop after `n` of them. A loop over the test setups
+# uses this, so that a dropped test setup does not skip the rest of the test
+# (test_setup.R reports the dropped test setups). An object type that is made
+# from another one (for example "pl" from "prj") is dropped when that one is
+# dropped, so a loop gives the last type of that chain that it uses ("pl", not
+# "prj"):
 kept_tst <- function(type, tstsetups, n = Inf) {
   out <- character()
   for (tstsetup in tstsetups) {

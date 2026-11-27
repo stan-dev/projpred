@@ -41,7 +41,8 @@ test_that("invalid `object` fails", {
 
 test_that("invalid `stats` fails", {
   skip_if_not(run_vs)
-  tstsetup <- head(grep("\\.gauss\\.", names(args_vs), value = TRUE), 1)
+  tstsetup <- kept_tst("vs", grep("\\.gauss\\.", names(args_vs), value = TRUE),
+                       1)
   stats_invalid <- nlist(NULL, NA, "zzz", "acc", "auc")
   err_expected <- as.list(c(
     "specified as NULL",
@@ -65,7 +66,7 @@ test_that("invalid `stats` fails", {
 
 test_that("invalid `baseline` fails", {
   skip_if_not(run_vs)
-  for (tstsetup in head(names(args_vs), 1)) {
+  for (tstsetup in kept_tst("vs", names(args_vs), 1)) {
     expect_error(summary(get_vs(tstsetup), baseline = "zzz"),
                  "^Argument 'baseline' must be either 'ref' or 'best'\\.$",
                  info = tstsetup)
@@ -77,7 +78,7 @@ test_that(paste(
   "`stats`, and `type` work"
 ), {
   skip_if_not(run_vs)
-  for (tstsetup in names(args_smmry_vs)) {
+  for (tstsetup in kept_tst("smmry_vs", names(args_smmry_vs))) {
     tstsetup_vs <- args_smmry_vs[[tstsetup]]$tstsetup_vsel
     smmry_tester(
       get_smmry_vs(tstsetup),
@@ -101,7 +102,7 @@ test_that(paste(
   "`nterms_max`, `stats`, and `type` work"
 ), {
   skip_if_not(run_cvvs)
-  for (tstsetup in names(args_smmry_cvvs)) {
+  for (tstsetup in kept_tst("smmry_cvvs", names(args_smmry_cvvs))) {
     tstsetup_cvvs <- args_smmry_cvvs[[tstsetup]]$tstsetup_vsel
     smmry_tester(
       get_smmry_cvvs(tstsetup),
@@ -126,7 +127,7 @@ test_that(paste(
 
 test_that("`object` of class `vsel` (created by varsel()) works", {
   skip_if_not(run_vs)
-  for (tstsetup in names(args_perf_vs)) {
+  for (tstsetup in kept_tst("perf_vs", names(args_perf_vs))) {
     tstsetup_smmry_vs <- args_perf_vs[[tstsetup]]$tstsetup_smmry_vsel
     performances_tester(
       get_perf_vs(tstsetup),
@@ -138,7 +139,7 @@ test_that("`object` of class `vsel` (created by varsel()) works", {
 
 test_that("`object` of class `vsel` (created by cv_varsel()) works", {
   skip_if_not(run_cvvs)
-  for (tstsetup in names(args_perf_cvvs)) {
+  for (tstsetup in kept_tst("perf_cvvs", names(args_perf_cvvs))) {
     tstsetup_smmry_cvvs <- args_perf_cvvs[[tstsetup]]$tstsetup_smmry_vsel
     performances_tester(
       get_perf_cvvs(tstsetup),
@@ -151,7 +152,7 @@ test_that("`object` of class `vsel` (created by cv_varsel()) works", {
 test_that("performances.vsel() is a shortcut", {
   skip_if_not(run_vs)
   skip_if_not(run_cvvs)
-  for (tstsetup in names(args_smmry_vs)) {
+  for (tstsetup in kept_tst("perf_vs", names(args_smmry_vs))) {
     args_smmry_i <- args_smmry_vs[[tstsetup]]
     if (any(c("auc") %in% args_smmry_i$stats)) {
       smmry_seed <- list(seed = seed3_tst)
@@ -165,7 +166,7 @@ test_that("performances.vsel() is a shortcut", {
     ))
     expect_identical(perf_from_vsel, get_perf_vs(tstsetup), info = tstsetup)
   }
-  for (tstsetup in names(args_smmry_cvvs)) {
+  for (tstsetup in kept_tst("perf_cvvs", names(args_smmry_cvvs))) {
     args_smmry_i <- args_smmry_cvvs[[tstsetup]]
     if (any(c("auc") %in% args_smmry_i$stats)) {
       smmry_seed <- list(seed = seed3_tst)
@@ -185,7 +186,7 @@ test_that("performances.vsel() is a shortcut", {
 
 test_that("`x` of class `vselsummary` (based on varsel()) works", {
   skip_if_not(run_vs)
-  for (tstsetup in names(args_smmry_vs)) {
+  for (tstsetup in kept_tst("smmry_vs", names(args_smmry_vs))) {
     expect_output(
       print_obj <- print(get_smmry_vs(tstsetup)),
       "Family:.*Link function:.*Formula:.*Observations:",
@@ -205,7 +206,7 @@ test_that("`x` of class `vselsummary` (based on varsel()) works", {
 
 test_that("`x` of class `vselsummary` (based on cv_varsel())  works", {
   skip_if_not(run_cvvs)
-  for (tstsetup in names(args_smmry_cvvs)) {
+  for (tstsetup in kept_tst("smmry_cvvs", names(args_smmry_cvvs))) {
     args_crr <- args_cvvs[[args_smmry_cvvs[[tstsetup]]$tstsetup_vsel]]
     expect_output(
       print_obj <- print(get_smmry_cvvs(tstsetup)),
@@ -229,7 +230,7 @@ test_that(paste(
   "summary.vsel() works"
 ), {
   skip_if_not(run_vs)
-  for (tstsetup in head(names(args_smmry_vs), 1)) {
+  for (tstsetup in kept_tst("smmry_vs", names(args_smmry_vs), 1)) {
     args_smmry_vs_i <- args_smmry_vs[[tstsetup]]
     if (any(c("auc") %in% args_smmry_vs_i$stats)) {
       smmry_seed <- list(seed = seed3_tst)
@@ -254,7 +255,7 @@ test_that(paste(
   "summary.vsel() works"
 ), {
   skip_if_not(run_cvvs)
-  for (tstsetup in head(names(args_smmry_cvvs), 1)) {
+  for (tstsetup in kept_tst("smmry_cvvs", names(args_smmry_cvvs), 1)) {
     args_smmry_cvvs_i <- args_smmry_cvvs[[tstsetup]]
     if (any(c("auc") %in% args_smmry_cvvs_i$stats)) {
       smmry_seed <- list(seed = seed3_tst)
@@ -292,7 +293,7 @@ args_common_for_rk_max_cvvs <- c(
 
 test_that("`x` of class `vsel` (created by varsel()) works", {
   skip_if_not(run_vs)
-  for (tstsetup in names(args_plot_vs)) {
+  for (tstsetup in kept_tst("plot_vs", names(args_plot_vs))) {
     args_plot_i <- args_plot_vs[[tstsetup]]
     if (identical(args_plot_i$ranking_nterms_max, NA)) {
       matches_tstsetup <- sapply(
@@ -374,7 +375,7 @@ test_that("`x` of class `vsel` (created by varsel()) works", {
 
 test_that("`x` of class `vsel` (created by cv_varsel()) works", {
   skip_if_not(run_cvvs)
-  for (tstsetup in names(args_plot_cvvs)) {
+  for (tstsetup in kept_tst("plot_cvvs", names(args_plot_cvvs))) {
     args_plot_i <- args_plot_cvvs[[tstsetup]]
     if (identical(args_plot_i$ranking_nterms_max, NA)) {
       matches_tstsetup <- sapply(
@@ -438,7 +439,7 @@ test_that("`x` of class `vsel` (created by cv_varsel()) works", {
 
 test_that("invalid `baseline` fails", {
   skip_if_not(run_vs)
-  for (tstsetup in head(names(args_vs), 1)) {
+  for (tstsetup in kept_tst("vs", names(args_vs), 1)) {
     expect_error(
       plot(get_vs(tstsetup), baseline = "zzz"),
       "^Argument 'baseline' must be either 'ref' or 'best'\\.$",
@@ -449,7 +450,7 @@ test_that("invalid `baseline` fails", {
 
 test_that("invalid `nterms_max` fails", {
   skip_if_not(run_vs)
-  for (tstsetup in head(names(args_vs), 1)) {
+  for (tstsetup in kept_tst("vs", names(args_vs), 1)) {
     expect_error(
       plot(get_vs(tstsetup), nterms_max = 0),
       "^nterms_max must be at least 1$",
@@ -466,7 +467,7 @@ test_that(paste(
                           "\\.default_abbv", "\\.default_repel", "\\.colFALSE",
                           "\\.cuFALSE", "\\.default_angle", sep = ".*"),
                     names(args_plot_vs), value = TRUE)
-  for (tstsetup in tstsetups) {
+  for (tstsetup in kept_tst("plot_vs", tstsetups)) {
     args_plot_i <- args_plot_vs[[tstsetup]]
     nterms_max_crr <- args_vs[[args_plot_i$tstsetup_vsel]]$nterms_max + 1L
     deltas_crr <- args_plot_i$deltas %||% FALSE
@@ -500,7 +501,7 @@ test_that(paste(
                           "\\.default_abbv", "\\.default_repel", "\\.colFALSE",
                           "\\.cuFALSE", "\\.default_angle", sep = ".*"),
                     names(args_plot_cvvs), value = TRUE)
-  for (tstsetup in tstsetups) {
+  for (tstsetup in kept_tst("plot_cvvs", tstsetups)) {
     args_plot_i <- args_plot_cvvs[[tstsetup]]
     nterms_max_crr <- args_cvvs[[args_plot_i$tstsetup_vsel]]$nterms_max + 1L
     deltas_crr <- args_plot_i$deltas %||% FALSE
@@ -531,7 +532,7 @@ test_that(paste(
 test_that("`stat` of invalid length fails", {
   stopifnot(length(stats_common) > 1)
   skip_if_not(run_vs)
-  for (tstsetup in head(names(args_vs), 1)) {
+  for (tstsetup in kept_tst("vs", names(args_vs), 1)) {
     expect_error(
       suggest_size(get_vs(tstsetup), stat = stats_common),
       "^Only one statistic can be specified to suggest_size$",
@@ -544,14 +545,15 @@ test_that("`stat` works", {
   skip_if_not(run_vs)
   tstsetups <- unname(unlist(lapply(mod_nms, function(mod_nm) {
     unlist(lapply(fam_nms, function(fam_nm) {
-      head(grep(paste0("\\.", mod_nm, "\\.", fam_nm), names(args_smmry_vs),
-                value = TRUE), 1)
+      kept_tst("smmry_vs",
+               grep(paste0("\\.", mod_nm, "\\.", fam_nm), names(args_smmry_vs),
+                    value = TRUE), 1)
     }))
   })))
   tstsetups <- union(tstsetups,
                      grep("\\.augdat\\..*\\.default_stats\\.",
                           names(args_smmry_vs), value = TRUE))
-  for (tstsetup in tstsetups) {
+  for (tstsetup in kept_tst("smmry_vs", tstsetups)) {
     tstsetup_vs <- args_smmry_vs[[tstsetup]]$tstsetup_vsel
     fam_crr <- args_vs[[tstsetup_vs]]$fam_nm
     prj_crr <- args_vs[[tstsetup_vs]]$prj_nm
@@ -587,7 +589,7 @@ test_that("`stat` works", {
 
 test_that("returns nterms_max when no criterion is met", {
   skip_if_not(run_vs)
-  tstsetup <- head(names(args_vs), 1)
+  tstsetup <- kept_tst("vs", names(args_vs), 1)
   suggsize <- suppressWarnings(
     suggest_size(get_vs(tstsetup), stat = "elpd", pct = -1.0)
   )
@@ -599,7 +601,7 @@ test_that("returns nterms_max when no criterion is met", {
 
 test_that("`object` of class `vsel` (created by varsel()) works", {
   skip_if_not(run_vs)
-  for (tstsetup in names(args_rk_vs)) {
+  for (tstsetup in kept_tst("rk_vs", names(args_rk_vs))) {
     tstsetup_vs <- args_rk_vs[[tstsetup]]$tstsetup_vsel
     nterms_max_expected_crr <- args_rk_vs[[tstsetup]][["nterms_max"]]
     ranking_tester(
@@ -614,7 +616,7 @@ test_that("`object` of class `vsel` (created by varsel()) works", {
 
 test_that("`object` of class `vsel` (created by cv_varsel()) works", {
   skip_if_not(run_cvvs)
-  for (tstsetup in names(args_rk_cvvs)) {
+  for (tstsetup in kept_tst("rk_cvvs", names(args_rk_cvvs))) {
     tstsetup_cvvs <- args_rk_cvvs[[tstsetup]]$tstsetup_vsel
     nterms_max_expected_crr <- args_rk_cvvs[[tstsetup]][["nterms_max"]]
     ranking_tester(
@@ -633,6 +635,7 @@ test_that("`object` of class `ranking` (based on varsel() output) fails", {
   skip_if_not(run_vs)
   for (tstsetup in names(args_pr_vs)) {
     args_pr_vs_i <- args_pr_vs[[tstsetup]]
+    if (is_dropped_tst("rk_vs", args_pr_vs_i$tstsetup_rk)) next
     rk_crr <- get_rk_vs(args_pr_vs_i$tstsetup_rk)
     expect_error(
       do.call(cv_proportions, c(
@@ -652,6 +655,7 @@ test_that(paste(
   skip_if_not(run_cvvs)
   for (tstsetup in names(args_pr_cvvs_err)) {
     args_pr_cvvs_i <- args_pr_cvvs_err[[tstsetup]]
+    if (is_dropped_tst("rk_cvvs", args_pr_cvvs_i$tstsetup_rk)) next
     rk_crr <- get_rk_cvvs(args_pr_cvvs_i$tstsetup_rk)
     expect_error(
       do.call(cv_proportions, c(
@@ -669,7 +673,7 @@ test_that(paste(
   "appropriate)"
 ), {
   skip_if_not(run_cvvs)
-  for (tstsetup in names(args_pr_cvvs)) {
+  for (tstsetup in kept_tst("pr_cvvs", names(args_pr_cvvs))) {
     tstsetup_cvvs <- args_pr_cvvs[[tstsetup]]$tstsetup_vsel
     tstsetup_rk <- args_pr_cvvs[[tstsetup]]$tstsetup_rk
     nterms_max_expected_crr <- args_rk_cvvs[[tstsetup_rk]][["nterms_max"]]
@@ -694,7 +698,7 @@ test_that(paste(
 
 test_that("cv_proportions.vsel() is a shortcut", {
   skip_if_not(run_cvvs)
-  for (tstsetup in names(args_pr_cvvs)) {
+  for (tstsetup in kept_tst("pr_cvvs", names(args_pr_cvvs))) {
     args_pr_cvvs_i <- args_pr_cvvs[[tstsetup]]
     args_rk_cvvs_i <- args_rk_cvvs[[args_pr_cvvs_i$tstsetup_rk]]
     pr_from_vsel <- do.call(cv_proportions, c(
@@ -756,7 +760,7 @@ test_that("ranking proportions are computed correctly", {
 
 test_that("`x` of class `cv_proportions` works", {
   skip_if_not(run_cvvs)
-  for (tstsetup in names(args_plotpr)) {
+  for (tstsetup in kept_tst("plotpr", names(args_plotpr))) {
     expect_s3_class(get_plotpr(tstsetup), c("gg", "ggplot"))
     if (run_snaps) {
       expect_doppelganger_cust(tstsetup, get_plotpr(tstsetup))
@@ -766,7 +770,7 @@ test_that("`x` of class `cv_proportions` works", {
 
 test_that("plot.ranking() is a shortcut", {
   skip_if_not(run_cvvs)
-  for (tstsetup in names(args_plotpr)) {
+  for (tstsetup in kept_tst("plotpr", names(args_plotpr))) {
     args_plotpr_i <- args_plotpr[[tstsetup]]
     plotpr_from_rk <- do.call(plot, c(
       list(x = get_rk_cvvs(args_plotpr_i$tstsetup_rk)),
@@ -992,7 +996,7 @@ test_that("plot.vsel() names the logit-normal interval of \"acc\"", {
   tstsetups <- Filter(function(tstsetup) {
     fam <- get_vs(tstsetup)$refmodel$family
     identical(fam$family, "binomial") && !fam$for_latent
-  }, names(args_vs))
+  }, kept_tst("vs", names(args_vs)))
   skip_if(length(tstsetups) == 0, "no binomial `vsel` object in the setup")
   vs <- get_vs(tstsetups[1])
   pp <- suppressMessages(plot(vs, stats = "acc", deltas = FALSE))

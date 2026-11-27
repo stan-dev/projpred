@@ -290,7 +290,7 @@ test_that(paste0(
   tstsetups <- Filter(function(tstsetup) {
     isTRUE(args_ref[[tstsetup]]$latent)
   }, names(args_ref))
-  tstsetups <- head(tstsetups, 1)
+  tstsetups <- kept_tst("ref", tstsetups, 1)
   for (tstsetup in tstsetups) {
     refmod_i <- get_ref(tstsetup)
     refmod_i$family$latent_ll_oscale <- structure(

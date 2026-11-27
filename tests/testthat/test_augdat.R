@@ -248,9 +248,10 @@ test_that(paste(
 ), {
   skip_if_not(run_prj)
   tstsetups <- grep("\\.brnll\\..*\\.augdat\\.", names(args_prj), value = TRUE)
-  for (tstsetup in tstsetups) {
+  for (tstsetup in kept_tst("prj", tstsetups)) {
     tstsetup_trad <- sub("\\.augdat\\.", ".trad_compare.", tstsetup)
-    if (!tstsetup_trad %in% names(args_prj)) next
+    if (!tstsetup_trad %in% names(args_prj) ||
+        is_dropped_tst("prj", tstsetup_trad)) next
 
     cl_used_gt1 <- ndr_ncl_dtls(args_prj[[tstsetup]])$clust_used_gt1
     prjmat <- as.matrix(get_prj(tstsetup),
@@ -307,9 +308,10 @@ test_that(paste(
 ), {
   skip_if_not(run_prj)
   tstsetups <- grep("\\.brnll\\..*\\.augdat\\.", names(args_prj), value = TRUE)
-  for (tstsetup in tstsetups) {
+  for (tstsetup in kept_tst("pl", tstsetups)) {
     tstsetup_trad <- sub("\\.augdat\\.", ".trad_compare.", tstsetup)
-    if (!tstsetup_trad %in% names(args_prj)) next
+    if (!tstsetup_trad %in% names(args_prj) ||
+        is_dropped_tst("pl", tstsetup_trad)) next
 
     pl <- get_pl(tstsetup)
     expect_length(dim(pl$pred), 3)
@@ -340,9 +342,10 @@ test_that(paste(
 ), {
   skip_if_not(run_vs)
   tstsetups <- grep("\\.brnll\\..*\\.augdat\\.", names(args_vs), value = TRUE)
-  for (tstsetup in tstsetups) {
+  for (tstsetup in kept_tst("vs", tstsetups)) {
     tstsetup_trad <- sub("\\.augdat\\.", ".trad_compare.", tstsetup)
-    if (!tstsetup_trad %in% names(args_vs)) next
+    if (!tstsetup_trad %in% names(args_vs) ||
+        is_dropped_tst("vs", tstsetup_trad)) next
 
     vs <- get_vs(tstsetup)
     vs_trad <- get_vs(tstsetup_trad)
@@ -384,9 +387,10 @@ test_that(paste(
   skip_if_not(run_vs)
   tstsetups <- grep("\\.brnll\\..*\\.augdat\\.", names(args_smmry_vs),
                     value = TRUE)
-  for (tstsetup in tstsetups) {
+  for (tstsetup in kept_tst("smmry_vs", tstsetups)) {
     tstsetup_trad <- sub("\\.augdat\\.", ".trad_compare.", tstsetup)
-    if (!tstsetup_trad %in% names(args_smmry_vs)) next
+    if (!tstsetup_trad %in% names(args_smmry_vs) ||
+        is_dropped_tst("smmry_vs", tstsetup_trad)) next
 
     smmry_vs <- get_smmry_vs(tstsetup)
     smmry_vs_trad <- get_smmry_vs(tstsetup_trad)
@@ -417,10 +421,11 @@ test_that(paste(
   skip_if_not(run_vs)
   tstsetups <- grep("\\.brnll\\..*\\.augdat_stats\\.", names(args_smmry_vs),
                     value = TRUE)
-  for (tstsetup in tstsetups) {
+  for (tstsetup in kept_tst("smmry_vs", tstsetups)) {
     tstsetup_trad <- sub("\\.augdat\\.", ".trad_compare.", tstsetup)
     tstsetup_trad <- sub("\\.augdat_stats\\.", ".binom_stats.", tstsetup_trad)
-    if (!tstsetup_trad %in% names(args_smmry_vs)) next
+    if (!tstsetup_trad %in% names(args_smmry_vs) ||
+        is_dropped_tst("smmry_vs", tstsetup_trad)) next
 
     smmry_vs <- get_smmry_vs(tstsetup)
     smmry_vs_trad <- get_smmry_vs(tstsetup_trad)
@@ -459,9 +464,10 @@ test_that(paste(
 ), {
   skip_if_not(run_cvvs)
   tstsetups <- grep("\\.brnll\\..*\\.augdat\\.", names(args_cvvs), value = TRUE)
-  for (tstsetup in tstsetups) {
+  for (tstsetup in kept_tst("cvvs", tstsetups)) {
     tstsetup_trad <- sub("\\.augdat\\.", ".trad_compare.", tstsetup)
-    if (!tstsetup_trad %in% names(args_cvvs)) next
+    if (!tstsetup_trad %in% names(args_cvvs) ||
+        is_dropped_tst("cvvs", tstsetup_trad)) next
 
     cvvs <- get_cvvs(tstsetup)
     cvvs_trad <- get_cvvs(tstsetup_trad)
@@ -521,9 +527,10 @@ test_that(paste(
   skip_if_not(run_cvvs)
   tstsetups <- grep("\\.brnll\\..*\\.augdat\\.", names(args_smmry_cvvs),
                     value = TRUE)
-  for (tstsetup in tstsetups) {
+  for (tstsetup in kept_tst("smmry_cvvs", tstsetups)) {
     tstsetup_trad <- sub("\\.augdat\\.", ".trad_compare.", tstsetup)
-    if (!tstsetup_trad %in% names(args_smmry_cvvs)) next
+    if (!tstsetup_trad %in% names(args_smmry_cvvs) ||
+        is_dropped_tst("smmry_cvvs", tstsetup_trad)) next
 
     smmry_cvvs <- get_smmry_cvvs(tstsetup)
     smmry_cvvs_trad <- get_smmry_cvvs(tstsetup_trad)
@@ -598,10 +605,11 @@ test_that(paste(
   skip_if_not(run_cvvs)
   tstsetups <- grep("\\.brnll\\..*\\.augdat_stats\\.", names(args_smmry_cvvs),
                     value = TRUE)
-  for (tstsetup in tstsetups) {
+  for (tstsetup in kept_tst("smmry_cvvs", tstsetups)) {
     tstsetup_trad <- sub("\\.augdat\\.", ".trad_compare.", tstsetup)
     tstsetup_trad <- sub("\\.augdat_stats\\.", ".binom_stats.", tstsetup_trad)
-    if (!tstsetup_trad %in% names(args_smmry_cvvs)) next
+    if (!tstsetup_trad %in% names(args_smmry_cvvs) ||
+        is_dropped_tst("smmry_cvvs", tstsetup_trad)) next
 
     smmry_cvvs <- get_smmry_cvvs(tstsetup)
     smmry_cvvs_trad <- get_smmry_cvvs(tstsetup_trad)

@@ -2,7 +2,7 @@
 
 test_that("`object` of class `stanreg` or `brmsfit` works", {
   skip_if_no_setups(args_ref)
-  for (tstsetup in names(args_ref)) {
+  for (tstsetup in kept_tst("ref", names(args_ref))) {
     tstsetup_fit <- args_ref[[tstsetup]]$tstsetup_fit
     with_spclformul_crr <- grepl("\\.spclformul", tstsetup)
     if (args_ref[[tstsetup]]$fam_nm == "binom" ||
@@ -366,7 +366,7 @@ test_that(paste(
   skip_if_not(run_additive)
   tstsetups <- grep("^rstanarm\\.gam{1,2}\\.", names(args_ref), value = TRUE)
   expect_true(any(grepl("^rstanarm\\.gamm\\.", tstsetups)))
-  for (tstsetup in tstsetups) {
+  for (tstsetup in kept_tst("ref", tstsetups)) {
     fml <- get_ref(tstsetup)$formula
     expect_identical(smooth_covered_terms(fml), character(0), info = tstsetup)
     expect_true(formula_contains_additive_terms(fml), info = tstsetup)
@@ -378,7 +378,7 @@ test_that(paste(
 
 test_that("get_refmodel() is idempotent", {
   skip_if_no_setups(args_ref)
-  for (tstsetup in names(args_ref)) {
+  for (tstsetup in kept_tst("ref", names(args_ref))) {
     expect_identical(get_refmodel(get_ref(tstsetup)),
                      get_ref(tstsetup),
                      info = tstsetup)
@@ -506,7 +506,7 @@ test_that(paste(
   "work"
 ), {
   skip_if_no_setups(args_ref)
-  for (tstsetup in names(args_ref)) {
+  for (tstsetup in kept_tst("ref", names(args_ref))) {
     pkg_crr <- args_ref[[tstsetup]]$pkg_nm
     mod_crr <- args_ref[[tstsetup]]$mod_nm
     fam_crr <- args_ref[[tstsetup]]$fam_nm

@@ -8,7 +8,7 @@ test_that(paste(
 ), {
   skip_if_no_setups(args_ref)
   withr::local_seed(seed2_tst)
-  for (tstsetup in names(args_ref)) {
+  for (tstsetup in kept_tst("ref", names(args_ref))) {
     refdist <- get_refdist(get_ref(tstsetup))
     if (args_ref[[tstsetup]]$prj_nm == "augdat") {
       nobsv_fac <- length(get_ref(tstsetup)$family$cats)
@@ -35,7 +35,7 @@ test_that(paste(
 ), {
   skip_if_no_setups(args_ref)
   withr::local_seed(seed2_tst)
-  for (tstsetup in names(args_ref)) {
+  for (tstsetup in kept_tst("ref", names(args_ref))) {
     for (ndraws_crr in list(nrefdraws + 1L)) {
       for (nclusters_crr in list(NULL, nrefdraws + 1L)) {
         refdist <- get_refdist(get_ref(tstsetup),
