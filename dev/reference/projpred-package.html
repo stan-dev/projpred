@@ -342,6 +342,31 @@ model, and setting <code>projpred.mlvl_proj_ref_new</code> to <code>TRUE</code> 
 the group-level effects should be integrated out completely.</p>
     </div>
     <div class="section level2">
+    <h2 id="submodel-with-all-terms-of-the-reference-model">Submodel with all terms of the reference model<a class="anchor" aria-label="anchor" href="#submodel-with-all-terms-of-the-reference-model"></a></h2>
+    <p>If the submodel has all terms of the reference model, the projection
+is replaced with the reference model results: Its
+predictive performance is that of the reference model, and its value <code>ce</code>
+is the cross-entropy of the projected reference draws with themselves. In
+<code><a href="summary.vsel.html">summary.vsel()</a></code>, a line below the table names this size, and in
+<code><a href="plot.vsel.html">plot.vsel()</a></code>, its point is open. For this size of a <code><a href="varsel.html">varsel()</a></code> or
+<code><a href="cv_varsel.html">cv_varsel()</a></code> output, <code><a href="project.html">project()</a></code> returns thinned draws of the reference
+model, not a projection, and gives a warning. <code><a href="pred-projection.html">proj_linpred()</a></code>,
+<code><a href="pred-projection.html">proj_predict()</a></code> and <code><a href="pred-projection.html">proj_epred()</a></code> then give the predictions of these
+draws. <code><a href="as.matrix.projection.html">as.matrix.projection()</a></code>, <code><a href="as_draws_matrix.projection.html">as_draws_matrix.projection()</a></code> and
+<code><a href="mo_effects.html">mo_effects()</a></code> stop for this output: use the parameter draws of the
+reference model fit. <code><a href="project.html">project()</a></code> with argument <code>predictor_terms</code> always
+projects.</p>
+<p>This does not apply to a reference model of class <code>datafit</code>, to custom
+<code>search_terms</code> that do not give all terms of the reference model, and with
+global option <code>projpred.mlvl_proj_ref_new</code> set to <code>TRUE</code> (for a multilevel
+reference model). For a custom reference model (see <code><a href="refmodel-init-get.html">init_refmodel()</a></code>),
+<span class="pkg">projpred</span> cannot check whether the reference model predictions come
+from the terms of the reference model formula. In that case, or to get the
+projection onto the submodel with all search terms, set global option
+<code>projpred.full_size_ref</code> to <code>FALSE</code> (default <code>TRUE</code>) before <code><a href="varsel.html">varsel()</a></code> or
+<code><a href="cv_varsel.html">cv_varsel()</a></code>. The <code>vsel</code> object keeps the setting.</p>
+    </div>
+    <div class="section level2">
     <h2 id="memory-usage">Memory usage<a class="anchor" aria-label="anchor" href="#memory-usage"></a></h2>
     <p>By setting the global option <code>projpred.run_gc</code> to <code>TRUE</code>, <span class="pkg">projpred</span> will
 call <code><a href="https://rdrr.io/r/base/gc.html" class="external-link">gc()</a></code> at some places (e.g., after each size that the forward search

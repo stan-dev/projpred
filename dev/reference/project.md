@@ -128,7 +128,9 @@ If the projection is performed onto a single submodel (i.e.,
 
 - `dis`:
 
-  Projected draws for the dispersion parameter.
+  Projected draws for the dispersion parameter (for the reference model
+  draws of section "Details": the dispersion draws of the reference
+  model).
 
 - `ce`:
 
@@ -156,7 +158,9 @@ If the projection is performed onto a single submodel (i.e.,
   except if `project()` was used with an `object` of class `vsel` based
   on an L1 search as well as with `refit_prj = FALSE`, in which case
   this is the output from an internal *L1-penalized* divergence
-  minimizer.
+  minimizer. For the reference model draws of section "Details", this is
+  an object of class `projpred_ref_draws` with the indices of these
+  draws.
 
 - `cl_ref`:
 
@@ -213,6 +217,16 @@ posterior draws (by default,
 [`cv_varsel()`](https://mc-stan.org/projpred/dev/reference/cv_varsel.md)
 use `nclusters = 20`). Consequently, `project()` with
 `refit_prj = FALSE` then inherits this coarse clustering or thinning.
+
+If `object` is of class `vsel` and its results for the submodel with all
+search terms are those of the reference model (see section "Submodel
+with all terms of the reference model" in
+[projpred-package](https://mc-stan.org/projpred/dev/reference/projpred-package.md)),
+`project()` returns `ndraws` thinned draws of the reference model for
+this submodel size, not a projection, and gives a warning. With
+`nclusters`, the number of these thinned draws is `nclusters`.
+`refit_prj` has no effect for this size. To project onto this submodel,
+use argument `predictor_terms`.
 
 ## Examples
 

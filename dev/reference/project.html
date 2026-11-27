@@ -185,7 +185,9 @@ minimizer (if <code>refit_prj</code> is <code>TRUE</code>).</p></dd>
     <p>If the projection is performed onto a single submodel (i.e.,
 <code>length(nterms) == 1 || !is.null(predictor_terms)</code>), an object of class
 <code>projection</code> which is a <code>list</code> containing the following elements:</p><dl><dt><code>dis</code></dt>
-<dd><p>Projected draws for the dispersion parameter.</p></dd>
+<dd><p>Projected draws for the dispersion parameter (for the
+reference model draws of section "Details": the dispersion draws of the
+reference model).</p></dd>
 
 <dt><code>ce</code></dt>
 <dd><p>The cross-entropy part of the Kullback-Leibler (KL)
@@ -208,7 +210,9 @@ projected draw). This is the same as the return value of the
 <code>div_minimizer</code> function (see <code><a href="refmodel-init-get.html">init_refmodel()</a></code>), except if <code>project()</code>
 was used with an <code>object</code> of class <code>vsel</code> based on an L1 search as well
 as with <code>refit_prj = FALSE</code>, in which case this is the output from an
-internal <em>L1-penalized</em> divergence minimizer.</p></dd>
+internal <em>L1-penalized</em> divergence minimizer. For the reference model
+draws of section "Details", this is an object of class
+<code>projpred_ref_draws</code> with the indices of these draws.</p></dd>
 
 <dt><code>cl_ref</code></dt>
 <dd><p>A numeric vector of length equal to the number of
@@ -254,6 +258,13 @@ coarse clustering or thinning of the reference model's posterior draws (by
 default, <code><a href="varsel.html">varsel()</a></code> and <code><a href="cv_varsel.html">cv_varsel()</a></code> use <code>nclusters = 20</code>). Consequently,
 <code>project()</code> with <code>refit_prj = FALSE</code> then inherits this coarse clustering
 or thinning.</p>
+<p>If <code>object</code> is of class <code>vsel</code> and its results for the submodel with all
+search terms are those of the reference model (see section "Submodel with
+all terms of the reference model" in <a href="projpred-package.html">projpred-package</a>), <code>project()</code>
+returns <code>ndraws</code> thinned draws of the reference model for this submodel
+size, not a projection, and gives a warning. With <code>nclusters</code>, the number
+of these thinned draws is <code>nclusters</code>. <code>refit_prj</code> has no effect for this
+size. To project onto this submodel, use argument <code>predictor_terms</code>.</p>
     </div>
 
     <div class="section level2">

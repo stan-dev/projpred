@@ -4,6 +4,27 @@
 
 ### Major changes
 
+- In [`varsel()`](https://mc-stan.org/projpred/dev/reference/varsel.md)
+  and
+  [`cv_varsel()`](https://mc-stan.org/projpred/dev/reference/cv_varsel.md),
+  the submodel with all terms of the reference model gets the results of
+  the reference model, not of a projection. This avoids the unstable
+  full multilevel projection. Global option `projpred.full_size_ref`
+  turns this off. (GitHub:
+  [\#323](https://github.com/stan-dev/projpred/issues/323),
+  [\#441](https://github.com/stan-dev/projpred/issues/441),
+  [\#685](https://github.com/stan-dev/projpred/issues/685))
+- For the submodel with all terms of the reference model,
+  [`project()`](https://mc-stan.org/projpred/dev/reference/project.md)
+  on a `vsel` object returns thinned draws of the reference model, with
+  a warning. [`as.matrix()`](https://rdrr.io/r/base/matrix.html),
+  [`as_draws_matrix()`](https://mc-stan.org/posterior/reference/draws_matrix.html)
+  and
+  [`mo_effects()`](https://mc-stan.org/projpred/dev/reference/mo_effects.md)
+  stop for these draws. (GitHub:
+  [\#323](https://github.com/stan-dev/projpred/issues/323),
+  [\#441](https://github.com/stan-dev/projpred/issues/441),
+  [\#685](https://github.com/stan-dev/projpred/issues/685))
 - The traditional projection supports the negative binomial family
   ([`rstanarm::neg_binomial_2()`](https://mc-stan.org/rstanarm/reference/neg_binomial_2.html),
   [`brms::negbinomial()`](https://paulbuerkner.com/brms/reference/brmsfamily.html),

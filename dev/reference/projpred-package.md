@@ -361,6 +361,49 @@ from the reference model, and setting `projpred.mlvl_proj_ref_new` to
 `TRUE` would make sense if the group-level effects should be integrated
 out completely.
 
+## Submodel with all terms of the reference model
+
+If the submodel has all terms of the reference model, the projection is
+replaced with the reference model results: Its predictive performance is
+that of the reference model, and its value `ce` is the cross-entropy of
+the projected reference draws with themselves. In
+[`summary.vsel()`](https://mc-stan.org/projpred/dev/reference/summary.vsel.md),
+a line below the table names this size, and in
+[`plot.vsel()`](https://mc-stan.org/projpred/dev/reference/plot.vsel.md),
+its point is open. For this size of a
+[`varsel()`](https://mc-stan.org/projpred/dev/reference/varsel.md) or
+[`cv_varsel()`](https://mc-stan.org/projpred/dev/reference/cv_varsel.md)
+output,
+[`project()`](https://mc-stan.org/projpred/dev/reference/project.md)
+returns thinned draws of the reference model, not a projection, and
+gives a warning.
+[`proj_linpred()`](https://mc-stan.org/projpred/dev/reference/pred-projection.md),
+[`proj_predict()`](https://mc-stan.org/projpred/dev/reference/pred-projection.md)
+and
+[`proj_epred()`](https://mc-stan.org/projpred/dev/reference/pred-projection.md)
+then give the predictions of these draws.
+[`as.matrix.projection()`](https://mc-stan.org/projpred/dev/reference/as.matrix.projection.md),
+[`as_draws_matrix.projection()`](https://mc-stan.org/projpred/dev/reference/as_draws_matrix.projection.md)
+and
+[`mo_effects()`](https://mc-stan.org/projpred/dev/reference/mo_effects.md)
+stop for this output: use the parameter draws of the reference model
+fit.
+[`project()`](https://mc-stan.org/projpred/dev/reference/project.md)
+with argument `predictor_terms` always projects.
+
+This does not apply to a reference model of class `datafit`, to custom
+`search_terms` that do not give all terms of the reference model, and
+with global option `projpred.mlvl_proj_ref_new` set to `TRUE` (for a
+multilevel reference model). For a custom reference model (see
+[`init_refmodel()`](https://mc-stan.org/projpred/dev/reference/refmodel-init-get.md)),
+projpred cannot check whether the reference model predictions come from
+the terms of the reference model formula. In that case, or to get the
+projection onto the submodel with all search terms, set global option
+`projpred.full_size_ref` to `FALSE` (default `TRUE`) before
+[`varsel()`](https://mc-stan.org/projpred/dev/reference/varsel.md) or
+[`cv_varsel()`](https://mc-stan.org/projpred/dev/reference/cv_varsel.md).
+The `vsel` object keeps the setting.
+
 ## Memory usage
 
 By setting the global option `projpred.run_gc` to `TRUE`, projpred will
