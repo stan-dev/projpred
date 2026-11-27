@@ -496,9 +496,9 @@ if (run_brms) {
   # For storing `brmsfit`s locally. With the environment variable
   # `PROJPRED_TESTS_BFITS` (an absolute path), they go to that directory
   # (GitHub CI keeps it between runs, so that most runs do not compile the
-  # brms models). For a stored fit, brms compares only the data and the Stan
-  # code, so delete the stored fits after a change of the seed or of the
-  # number of chains or iterations:
+  # brms models). For a stored fit, brms compares the data, the Stan code and
+  # the algorithm, so delete the stored fits after a change of the seed or of
+  # the number of chains or iterations:
   file_pth <- Sys.getenv("PROJPRED_TESTS_BFITS")
   if (!nzchar(file_pth)) file_pth <- testthat::test_path("bfits")
   if (!dir.exists(file_pth)) dir.create(file_pth, recursive = TRUE)
