@@ -146,8 +146,9 @@ the log link, if all group-level terms are random intercepts
 inherits from class <code>projpred_mlvl</code>). This fit minimizes the Laplace
 approximation of <code><a href="https://rdrr.io/pkg/lme4/man/glmer.html" class="external-link">lme4::glmer()</a></code> (with <code>nAGQ = 1</code>), without rounding
 non-integer responses. <span class="pkg">projpred</span> uses <code><a href="https://rdrr.io/pkg/lme4/man/glmer.html" class="external-link">lme4::glmer()</a></code> instead if
-the fit does not converge, if the submodel has an offset, a
-rank-deficient model matrix or more than 500 group levels in total, if
+the fit does not converge, if the submodel formula has an offset term,
+if the submodel has a rank-deficient model matrix or more than 500
+group levels in total, if
 <code>...</code> contains arguments of
 <code><a href="https://rdrr.io/pkg/lme4/man/glmer.html" class="external-link">lme4::glmer()</a></code> (for example <code>control</code> or <code>nAGQ</code>), or if global option
 <code>projpred.mlvl_laplace</code> is <code>FALSE</code>. After a fit that does not converge,
@@ -178,7 +179,8 @@ This fit minimizes the Laplace approximation that <code><a href="https://rdrr.io
 uses, for the links of <code><a href="https://paulbuerkner.com/brms/reference/brmsfamily.html" class="external-link">brms::cumulative()</a></code> (<code>logit</code>, <code>probit</code>,
 <code>probit_approx</code>, <code>cloglog</code>, <code>cauchit</code>). <span class="pkg">projpred</span> uses
 <code><a href="https://rdrr.io/pkg/ordinal/man/clmm.html" class="external-link">ordinal::clmm()</a></code> instead if the fit does not converge, if the submodel
-has an offset or a rank-deficient model matrix, if <code>...</code> contains
+formula has an offset term, if the submodel has a rank-deficient model
+matrix, if <code>...</code> contains
 arguments of <code><a href="https://rdrr.io/pkg/ordinal/man/clmm.html" class="external-link">ordinal::clmm()</a></code> or of its optimizers (for example
 <code>method</code> or <code>control</code>), or if global option <code>projpred.mlvl_laplace</code> is
 <code>FALSE</code>. After a fit that does not converge, the <code><a href="https://rdrr.io/pkg/ordinal/man/clmm.html" class="external-link">ordinal::clmm()</a></code> fit
@@ -206,6 +208,13 @@ can come from <code>...</code> or (<span class="pkg">mgcv</span> &gt;= 1.9-5) fr
 <span class="pkg">projpred</span>, the returned object inherits from class <code>gamm4</code>). For the
 <code><a href="https://rdrr.io/r/stats/family.html" class="external-link">binomial()</a></code> and the <code><a href="https://rdrr.io/r/stats/family.html" class="external-link">poisson()</a></code> family, <span class="pkg">projpred</span> passes the same
 family as to <code><a href="https://rdrr.io/pkg/lme4/man/glmer.html" class="external-link">lme4::glmer()</a></code> (see above).</p></li>
+<li><p>Offsets: the submodels are fitted with the offsets of the reference model
+to its predicted means with offsets (for the augmented-data projection, to
+its predicted probabilities with offsets). This minimizes the
+Kullback-Leibler divergence from the reference model. For the
+<code><a href="https://rdrr.io/r/stats/family.html" class="external-link">gaussian()</a></code> family with the identity link and for the latent projection,
+the fit without offsets gives the same coefficients, so <span class="pkg">projpred</span> omits
+the offsets there. All offsets must be finite.</p></li>
 </ul></div>
     <div class="section level2">
     <h2 id="verbosity-messages-warnings-errors">Verbosity, messages, warnings, errors<a class="anchor" aria-label="anchor" href="#verbosity-messages-warnings-errors"></a></h2>

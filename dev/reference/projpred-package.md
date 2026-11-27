@@ -100,9 +100,9 @@ by projpred's internal default `div_minimizer` functions, see
     [`lme4::glmer()`](https://rdrr.io/pkg/lme4/man/glmer.html) (with
     `nAGQ = 1`), without rounding non-integer responses. projpred uses
     [`lme4::glmer()`](https://rdrr.io/pkg/lme4/man/glmer.html) instead
-    if the fit does not converge, if the submodel has an offset, a
-    rank-deficient model matrix or more than 500 group levels in total,
-    if `...` contains arguments of
+    if the fit does not converge, if the submodel formula has an offset
+    term, if the submodel has a rank-deficient model matrix or more than
+    500 group levels in total, if `...` contains arguments of
     [`lme4::glmer()`](https://rdrr.io/pkg/lme4/man/glmer.html) (for
     example `control` or `nAGQ`), or if global option
     `projpred.mlvl_laplace` is `FALSE`. After a fit that does not
@@ -149,8 +149,9 @@ by projpred's internal default `div_minimizer` functions, see
     [`brms::cumulative()`](https://paulbuerkner.com/brms/reference/brmsfamily.html)
     (`logit`, `probit`, `probit_approx`, `cloglog`, `cauchit`). projpred
     uses [`ordinal::clmm()`](https://rdrr.io/pkg/ordinal/man/clmm.html)
-    instead if the fit does not converge, if the submodel has an offset
-    or a rank-deficient model matrix, if `...` contains arguments of
+    instead if the fit does not converge, if the submodel formula has an
+    offset term, if the submodel has a rank-deficient model matrix, if
+    `...` contains arguments of
     [`ordinal::clmm()`](https://rdrr.io/pkg/ordinal/man/clmm.html) or of
     its optimizers (for example `method` or `control`), or if global
     option `projpred.mlvl_laplace` is `FALSE`. After a fit that does not
@@ -194,6 +195,15 @@ by projpred's internal default `div_minimizer` functions, see
   passes the same family as to
   [`lme4::glmer()`](https://rdrr.io/pkg/lme4/man/glmer.html) (see
   above).
+
+- Offsets: the submodels are fitted with the offsets of the reference
+  model to its predicted means with offsets (for the augmented-data
+  projection, to its predicted probabilities with offsets). This
+  minimizes the Kullback-Leibler divergence from the reference model.
+  For the [`gaussian()`](https://rdrr.io/r/stats/family.html) family
+  with the identity link and for the latent projection, the fit without
+  offsets gives the same coefficients, so projpred omits the offsets
+  there. All offsets must be finite.
 
 ## Verbosity, messages, warnings, errors
 

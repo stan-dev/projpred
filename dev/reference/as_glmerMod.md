@@ -12,7 +12,7 @@ objective of [`lme4::glmer()`](https://rdrr.io/pkg/lme4/man/glmer.html)
 ## Usage
 
 ``` r
-as_glmerMod(object, data, weights = NULL)
+as_glmerMod(object, data, weights = NULL, offset = NULL)
 ```
 
 ## Arguments
@@ -40,6 +40,15 @@ as_glmerMod(object, data, weights = NULL)
   A numeric vector of the observation weights that `object` was fitted
   with, or `NULL` for weights of 1. Rows of `data` with weight 0 are
   removed, as projpred does before it fits a multilevel submodel.
+
+- offset:
+
+  A numeric vector of the offsets that `object` was fitted with (element
+  `offset` of the reference model object, see
+  [refmodel-init-get](https://mc-stan.org/projpred/dev/reference/refmodel-init-get.md)),
+  or `NULL` for offsets of 0. For a reference model with offsets,
+  projpred fits the submodels with the offsets, and the response is the
+  vector of the reference model's predicted means with offsets.
 
 ## Value
 

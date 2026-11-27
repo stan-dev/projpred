@@ -12,6 +12,14 @@
   parameter is projected, too. (GitHub:
   [\#361](https://github.com/stan-dev/projpred/issues/361),
   [\#675](https://github.com/stan-dev/projpred/issues/675))
+- With offsets, the submodels are fitted with the offsets to the
+  reference model’s means with offsets (the KL projection). This changes
+  the results except for the Gaussian family with the identity link and
+  the latent projection. Non-finite offsets, and offsets with `gamm4`
+  submodels or the
+  [`brms::categorical()`](https://paulbuerkner.com/brms/reference/brmsfamily.html)
+  family, now give an error. See `?projpred-package`. (GitHub:
+  [\#680](https://github.com/stan-dev/projpred/issues/680))
 
 ### Minor changes
 
@@ -21,8 +29,8 @@
   give the smooth terms in the basis and with the parameter names of a
   **brms** or
   [`rstanarm::stan_gamm4()`](https://mc-stan.org/rstanarm/reference/stan_gamm4.html)
-  reference model fit, with the smooth SDs. They now also support GAMM
-  submodels. (GitHub:
+  reference model fit, with the SDs of the penalized parts of the smooth
+  terms. They now also support GAMM submodels. (GitHub:
   [\#131](https://github.com/stan-dev/projpred/issues/131),
   [\#151](https://github.com/stan-dev/projpred/issues/151),
   [\#152](https://github.com/stan-dev/projpred/issues/152),
@@ -41,17 +49,6 @@
   now show the failing positions. (GitHub:
   [\#565](https://github.com/stan-dev/projpred/issues/565),
   [\#682](https://github.com/stan-dev/projpred/issues/682))
-- For projections onto submodels with smooth terms,
-  [`as.matrix()`](https://rdrr.io/r/base/matrix.html) and
-  [`as_draws_matrix()`](https://mc-stan.org/posterior/reference/draws_matrix.html)
-  give the smooth terms in the basis and with the parameter names of a
-  **brms** or
-  [`rstanarm::stan_gamm4()`](https://mc-stan.org/rstanarm/reference/stan_gamm4.html)
-  reference model fit, with the SDs of the penalized parts of the smooth
-  terms. (GitHub:
-  [\#151](https://github.com/stan-dev/projpred/issues/151),
-  [\#152](https://github.com/stan-dev/projpred/issues/152),
-  [\#676](https://github.com/stan-dev/projpred/issues/676))
 - [`Student_t()`](https://mc-stan.org/projpred/dev/reference/extra-families.md)
   is deprecated. Its projection has stopped with an error since projpred
   2.1.0. For a Student-t reference model, use the latent projection; the

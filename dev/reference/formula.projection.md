@@ -67,9 +67,10 @@ side of the reference model fit:
 - For the latent projection, the left-hand side is the latent response.
 
 Observation weights and offsets are not part of the formula. projpred
-fits the submodels without the offsets and adds the offsets of the
-reference model to the predictions. If you fit the submodel in another
-package, add the offsets there.
+fits the submodels with the offsets of the reference model (as an
+argument of the submodel fitter) and adds the offsets to the
+predictions. If you fit the submodel in another package, add the offsets
+there.
 
 The environment of the formula is that of the reference model formula.
 
@@ -100,5 +101,5 @@ prj <- project(fit, predictor_terms = c("X1", "X3", "X5"), nclusters = 10,
                seed = 9182)
 print(formula(prj)) # gives `y ~ X1 + X3 + X5`
 #> y ~ X1 + X3 + X5
-#> <environment: 0x595b77919618>
+#> <environment: 0x59aa8a509d98>
 ```

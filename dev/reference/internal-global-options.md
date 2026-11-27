@@ -21,10 +21,12 @@ The following global options are for internal use:
 
 - `projpred.glm_fitter`: A character string naming the function to be
   used as the submodel fitter for non-multilevel, non-additive
-  projections. Currently, this is an experimental feature and allowed
-  values are `"fit_glm_ridge_callback"` (the default) and
-  `"fit_glm_callback"`. For the negative binomial family with offsets,
-  projpred accepts only `"fit_glm_ridge_callback"`.
+  projections. Allowed values are `"fit_glm_ridge_callback"` (the
+  default) and `"fit_glm_callback"`. For a reference model with offsets,
+  projpred accepts only `"fit_glm_ridge_callback"` (except for the
+  Gaussian family with the identity link, the latent projection and a
+  custom `div_minimizer` in
+  [`init_refmodel()`](https://mc-stan.org/projpred/dev/reference/refmodel-init-get.md)).
 
 - `projpred.gaussian_not_as_generalized`: A single logical value
   indicating whether to treat the
@@ -37,16 +39,13 @@ The following global options are for internal use:
   model fitting function outside of projpred). This also holds for
   models with multilevel terms (because lme4 offers both
   [`lme4::glmer()`](https://rdrr.io/pkg/lme4/man/glmer.html) and
-  [`lme4::lmer()`](https://rdrr.io/pkg/lme4/man/lmer.html)). Currently,
-  this is an experimental feature.
+  [`lme4::lmer()`](https://rdrr.io/pkg/lme4/man/lmer.html)).
 
 - `projpred.PQL`: A single logical value indicating whether to use
   [`MASS::glmmPQL()`](https://rdrr.io/pkg/MASS/man/glmmPQL.html) as the
-  submodel fitter for multilevel (non-additive) projections (see GitHub
-  issue [\#207](https://github.com/stan-dev/projpred/issues/207) and
-  GitHub pull request
-  [\#353](https://github.com/stan-dev/projpred/pull/353)). Currently,
-  this is an experimental feature.
+  submodel fitter for multilevel (non-additive) projections. For a
+  reference model with offsets, projpred accepts only `FALSE` (with the
+  same exceptions as for `projpred.glm_fitter`).
 
 - `projpred.search_gauss_crossprod`: A single logical value indicating
   whether to compute the forward search and the evaluation in the LOO CV

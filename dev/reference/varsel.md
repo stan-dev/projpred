@@ -227,9 +227,8 @@ varsel(
     submodel, which approximates the reduction of the KL divergence. The
     model matrix of the search terms must be possible to build (for
     example, no missing values and no zero-variance columns). With
-    offsets, the score statistic approximates the reduction of the
-    objective that the submodels are fitted to, which has no offsets;
-    the exact projections still choose the term. We recommend m = 3.
+    offsets, the score statistic uses the reference and submodel means
+    with offsets. We recommend m = 3.
 
   - Augmented-data projection with the
     [`brms::cumulative()`](https://paulbuerkner.com/brms/reference/brmsfamily.html)

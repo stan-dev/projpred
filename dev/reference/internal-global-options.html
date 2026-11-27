@@ -15,11 +15,12 @@ run some additional checks that are not necessary to be run when users call
 the corresponding projpred functions. Currently, these checks are
 activated during the unit tests.
 projpred.glm_fitter: A character string naming the function to be used as
-the submodel fitter for non-multilevel, non-additive projections. Currently,
-this is an experimental feature and allowed values are
-&quot;fit_glm_ridge_callback&quot; (the default) and &quot;fit_glm_callback&quot;. For the
-negative binomial family with offsets, projpred accepts only
-&quot;fit_glm_ridge_callback&quot;.
+the submodel fitter for non-multilevel, non-additive projections. Allowed
+values are &quot;fit_glm_ridge_callback&quot; (the default) and
+&quot;fit_glm_callback&quot;. For a reference model with offsets, projpred
+accepts only &quot;fit_glm_ridge_callback&quot; (except for the Gaussian family with
+the identity link, the latent projection and a custom div_minimizer in
+init_refmodel()).
 projpred.gaussian_not_as_generalized: A single logical value indicating
 whether to treat the gaussian() family not as a family for a generalized
 linear model (i.e., for which glm() would typically be used as a model
@@ -27,13 +28,11 @@ fitting function outside of projpred), but as the family for an
 explicit linear model (i.e., for which lm() would typically be used as a
 model fitting function outside of projpred). This also holds for models
 with multilevel terms (because lme4 offers both lme4::glmer() and
-lme4::lmer()). Currently, this is an experimental feature.
+lme4::lmer()).
 projpred.PQL: A single logical value indicating whether to use
 MASS::glmmPQL() as the submodel fitter for multilevel (non-additive)
-projections (see GitHub issue
-#207 and GitHub pull
-request #353). Currently,
-this is an experimental feature.
+projections. For a reference model with offsets, projpred accepts only
+FALSE (with the same exceptions as for projpred.glm_fitter).
 projpred.search_gauss_crossprod: A single logical value indicating
 whether to compute the forward search and the evaluation in the LOO CV with
 validated search for Gaussian submodels with the identity link (including
@@ -67,11 +66,12 @@ run some additional checks that are not necessary to be run when users call
 the corresponding projpred functions. Currently, these checks are
 activated during the unit tests.
 projpred.glm_fitter: A character string naming the function to be used as
-the submodel fitter for non-multilevel, non-additive projections. Currently,
-this is an experimental feature and allowed values are
-&quot;fit_glm_ridge_callback&quot; (the default) and &quot;fit_glm_callback&quot;. For the
-negative binomial family with offsets, projpred accepts only
-&quot;fit_glm_ridge_callback&quot;.
+the submodel fitter for non-multilevel, non-additive projections. Allowed
+values are &quot;fit_glm_ridge_callback&quot; (the default) and
+&quot;fit_glm_callback&quot;. For a reference model with offsets, projpred
+accepts only &quot;fit_glm_ridge_callback&quot; (except for the Gaussian family with
+the identity link, the latent projection and a custom div_minimizer in
+init_refmodel()).
 projpred.gaussian_not_as_generalized: A single logical value indicating
 whether to treat the gaussian() family not as a family for a generalized
 linear model (i.e., for which glm() would typically be used as a model
@@ -79,13 +79,11 @@ fitting function outside of projpred), but as the family for an
 explicit linear model (i.e., for which lm() would typically be used as a
 model fitting function outside of projpred). This also holds for models
 with multilevel terms (because lme4 offers both lme4::glmer() and
-lme4::lmer()). Currently, this is an experimental feature.
+lme4::lmer()).
 projpred.PQL: A single logical value indicating whether to use
 MASS::glmmPQL() as the submodel fitter for multilevel (non-additive)
-projections (see GitHub issue
-#207 and GitHub pull
-request #353). Currently,
-this is an experimental feature.
+projections. For a reference model with offsets, projpred accepts only
+FALSE (with the same exceptions as for projpred.glm_fitter).
 projpred.search_gauss_crossprod: A single logical value indicating
 whether to compute the forward search and the evaluation in the LOO CV with
 validated search for Gaussian submodels with the identity link (including
@@ -183,11 +181,12 @@ run some additional checks that are not necessary to be run when users call
 the corresponding <span class="pkg">projpred</span> functions. Currently, these checks are
 activated during the unit tests.</p></li>
 <li><p><code>projpred.glm_fitter</code>: A character string naming the function to be used as
-the submodel fitter for non-multilevel, non-additive projections. Currently,
-this is an experimental feature and allowed values are
-<code>"fit_glm_ridge_callback"</code> (the default) and <code>"fit_glm_callback"</code>. For the
-negative binomial family with offsets, <span class="pkg">projpred</span> accepts only
-<code>"fit_glm_ridge_callback"</code>.</p></li>
+the submodel fitter for non-multilevel, non-additive projections. Allowed
+values are <code>"fit_glm_ridge_callback"</code> (the default) and
+<code>"fit_glm_callback"</code>. For a reference model with offsets, <span class="pkg">projpred</span>
+accepts only <code>"fit_glm_ridge_callback"</code> (except for the Gaussian family with
+the identity link, the latent projection and a custom <code>div_minimizer</code> in
+<code><a href="refmodel-init-get.html">init_refmodel()</a></code>).</p></li>
 <li><p><code>projpred.gaussian_not_as_generalized</code>: A single logical value indicating
 whether to treat the <code><a href="https://rdrr.io/r/stats/family.html" class="external-link">gaussian()</a></code> family not as a family for a <em>generalized
 linear</em> model (i.e., for which <code><a href="https://rdrr.io/r/stats/glm.html" class="external-link">glm()</a></code> would typically be used as a model
@@ -195,13 +194,11 @@ fitting function outside of <span class="pkg">projpred</span>), but as the famil
 explicit <em>linear</em> model (i.e., for which <code><a href="https://rdrr.io/r/stats/lm.html" class="external-link">lm()</a></code> would typically be used as a
 model fitting function outside of <span class="pkg">projpred</span>). This also holds for models
 with multilevel terms (because <span class="pkg">lme4</span> offers both <code><a href="https://rdrr.io/pkg/lme4/man/glmer.html" class="external-link">lme4::glmer()</a></code> and
-<code><a href="https://rdrr.io/pkg/lme4/man/lmer.html" class="external-link">lme4::lmer()</a></code>). Currently, this is an experimental feature.</p></li>
+<code><a href="https://rdrr.io/pkg/lme4/man/lmer.html" class="external-link">lme4::lmer()</a></code>).</p></li>
 <li><p><code>projpred.PQL</code>: A single logical value indicating whether to use
 <code><a href="https://rdrr.io/pkg/MASS/man/glmmPQL.html" class="external-link">MASS::glmmPQL()</a></code> as the submodel fitter for multilevel (non-additive)
-projections (see GitHub issue
-<a href="https://github.com/stan-dev/projpred/issues/207" class="external-link">#207</a> and GitHub pull
-request <a href="https://github.com/stan-dev/projpred/pull/353" class="external-link">#353</a>). Currently,
-this is an experimental feature.</p></li>
+projections. For a reference model with offsets, <span class="pkg">projpred</span> accepts only
+<code>FALSE</code> (with the same exceptions as for <code>projpred.glm_fitter</code>).</p></li>
 <li><p><code>projpred.search_gauss_crossprod</code>: A single logical value indicating
 whether to compute the forward search and the evaluation in the LOO CV with
 validated search for Gaussian submodels with the identity link (including
