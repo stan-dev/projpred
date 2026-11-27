@@ -403,12 +403,14 @@ mo_full_signs <- function(p_ref, refmodel, args_divmin) {
   data <- refmodel$fetch_data()
   terms_full <- setdiff(split_formula(refmodel$formula, data = data,
                                       add_lower_terms = FALSE), "1")
-  # The negative binomial projection alternates with the projection of the
-  # shapes and fits the means with offsets (as in proj_to_submodl()):
+  # As in proj_to_submodl(): the negative binomial projection alternates with
+  # the projection of the shapes, and with offsets (see proj_offs_fit()), the
+  # fits get the offsets in `args_divmin` and fit the means with offsets:
   nb_alt <- nb_alternates(refmodel)
+  y_fit <- if (proj_offs_fit(refmodel)) p_ref$mu_offs else p_ref$mu
   subset <- subset_formula_and_data(formula = refmodel$formula,
                                     terms_ = terms_full, data = data,
-                                    y = if (nb_alt) p_ref$mu_offs else p_ref$mu)
+                                    y = y_fit)
   # The contrasts of the reference model, as in the submodel fits (the
   # columns of a sign group and their names depend on the contrasts):
   subset$data <- set_contrasts(subset$data, refmodel$contrasts)
@@ -426,7 +428,10 @@ mo_full_signs <- function(p_ref, refmodel, args_divmin) {
       do.call(refmodel$div_minimizer, args_divmin)
     },
     error = function(e) {
-      if (grepl("^Internal error", conditionMessage(e))) {
+      # Internal errors and the stops for unsupported fitters with offsets (see
+      # check_offs_fitter()) are not failures of this projection:
+      if (grepl("^Internal error", conditionMessage(e)) ||
+          inherits(e, "projpred_offs_error")) {
         stop(e)
       }
       warning("The projection onto the full model (for the signs of the ",
@@ -643,7 +648,7 @@ check_mo_monotone <- function(refmodel, terms_, method = NULL) {
   }, logical(1)))
   why <- if (refmodel$family$for_augdat) {
     "the augmented-data projection (the latent projection is supported)"
-  } else if (!identical(refmodel$div_minimizer, divmin)) {
+  } else if (!uses_divmin(refmodel)) {
     "custom divergence minimizers"
   } else if (formula_contains_additive_terms(refmodel$formula)) {
     "reference models with smooth terms"

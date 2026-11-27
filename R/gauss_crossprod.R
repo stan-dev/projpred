@@ -30,7 +30,7 @@ gauss_crossprod_regul <- function(refmodel, divmin_args) {
   glm_fitter <- getOption("projpred.glm_fitter", "fit_glm_ridge_callback")
   if (fam$family != "gaussian" || fam$link != "identity" ||
       isTRUE(fam$for_augdat) ||
-      !identical(refmodel$div_minimizer, divmin) ||
+      !uses_divmin(refmodel) ||
       !identical(glm_fitter, "fit_glm_ridge_callback") ||
       any(refmodel$offset != 0)) {
     return(NULL)

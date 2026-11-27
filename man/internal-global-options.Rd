@@ -20,11 +20,12 @@ run some additional checks that are not necessary to be run when users call
 the corresponding \pkg{projpred} functions. Currently, these checks are
 activated during the unit tests.
 \item \code{projpred.glm_fitter}: A character string naming the function to be used as
-the submodel fitter for non-multilevel, non-additive projections. Currently,
-this is an experimental feature and allowed values are
-\code{"fit_glm_ridge_callback"} (the default) and \code{"fit_glm_callback"}. For the
-negative binomial family with offsets, \pkg{projpred} accepts only
-\code{"fit_glm_ridge_callback"}.
+the submodel fitter for non-multilevel, non-additive projections. Allowed
+values are \code{"fit_glm_ridge_callback"} (the default) and
+\code{"fit_glm_callback"}. For a reference model with offsets, \pkg{projpred}
+accepts only \code{"fit_glm_ridge_callback"} (except for the Gaussian family with
+the identity link, the latent projection and a custom \code{div_minimizer} in
+\code{\link[=init_refmodel]{init_refmodel()}}).
 \item \code{projpred.gaussian_not_as_generalized}: A single logical value indicating
 whether to treat the \code{\link[=gaussian]{gaussian()}} family not as a family for a \emph{generalized
 linear} model (i.e., for which \code{\link[=glm]{glm()}} would typically be used as a model
@@ -32,13 +33,11 @@ fitting function outside of \pkg{projpred}), but as the family for an
 explicit \emph{linear} model (i.e., for which \code{\link[=lm]{lm()}} would typically be used as a
 model fitting function outside of \pkg{projpred}). This also holds for models
 with multilevel terms (because \pkg{lme4} offers both \code{\link[lme4:glmer]{lme4::glmer()}} and
-\code{\link[lme4:lmer]{lme4::lmer()}}). Currently, this is an experimental feature.
+\code{\link[lme4:lmer]{lme4::lmer()}}).
 \item \code{projpred.PQL}: A single logical value indicating whether to use
 \code{\link[MASS:glmmPQL]{MASS::glmmPQL()}} as the submodel fitter for multilevel (non-additive)
-projections (see GitHub issue
-\href{https://github.com/stan-dev/projpred/issues/207}{#207} and GitHub pull
-request \href{https://github.com/stan-dev/projpred/pull/353}{#353}). Currently,
-this is an experimental feature.
+projections. For a reference model with offsets, \pkg{projpred} accepts only
+\code{FALSE} (with the same exceptions as for \code{projpred.glm_fitter}).
 \item \code{projpred.search_gauss_crossprod}: A single logical value indicating
 whether to compute the forward search and the evaluation in the LOO CV with
 validated search for Gaussian submodels with the identity link (including

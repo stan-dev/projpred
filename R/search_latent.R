@@ -64,7 +64,7 @@ search_forward_latent_cum <- function(p_ref, refmodel, nterms_max, verbose,
   fam <- refmodel$family
   if (!isTRUE(fam$for_augdat) || !identical(fam$family, "cumulative") ||
       !isTRUE(fam$link %in% c("logit", "probit")) ||
-      !identical(refmodel$div_minimizer, divmin_augdat) ||
+      !uses_divmin(refmodel, "divmin_augdat") ||
       any(refmodel$offset != 0) || anyNA(p_ref$mu) ||
       !isTRUE(screen_m >= 1L)) {
     return(NULL)
@@ -205,7 +205,7 @@ search_forward_latent_mlvl <- function(p_ref, refmodel, nterms_max, verbose,
                                        search_terms, screen_m, ...) {
   fam <- refmodel$family
   if (!isTRUE(fam$for_latent) || isTRUE(fam$for_augdat) ||
-      !identical(refmodel$div_minimizer, divmin) ||
+      !uses_divmin(refmodel) ||
       any(refmodel$offset != 0) || anyNA(p_ref$mu) ||
       !isTRUE(screen_m >= 1L) ||
       !formula_contains_group_terms(refmodel$formula) ||

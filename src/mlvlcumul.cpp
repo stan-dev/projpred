@@ -130,25 +130,28 @@ static inline McParts mc_parts(int link, double z1, double z2, double w) {
 
 // Objective L and (for `want_grad`) its gradient with respect to (alpha, beta,
 // tau), at the conditional modes u_hat found from the start `u`. `grp` holds
-// 0-based level codes, `y` 1-based category codes. Rows with weight 0 are
-// ignored. L is `Inf` if the thresholds do not increase, or if a category
-// probability with positive weight is not positive or so small that the
-// derivatives are not finite. `gmax` is the largest absolute element of the
-// gradient with respect to u at the returned `u` (0 at the conditional
-// modes).
+// 0-based level codes, `y` 1-based category codes. The offsets `offset` add to
+// x' beta. Rows with weight 0 are ignored. L is `Inf` if the thresholds do not
+// increase, or if a category probability with positive weight is not positive
+// or so small that the derivatives are not finite. `gmax` is the largest
+// absolute element of the gradient with respect to u at the returned `u` (0 at
+// the conditional modes).
 // [[Rcpp::export]]
 List mlvl_cumul_c(const arma::vec& alpha, const arma::vec& beta, double tau,
                   const arma::mat& x, const IntegerVector& grp, int nlev,
-                  const IntegerVector& y, const arma::vec& w, arma::vec u,
-                  int link, bool want_grad, double tol = 1e-10,
-                  int maxit = 50) {
+                  const IntegerVector& y, const arma::vec& w,
+                  const arma::vec& offset, arma::vec u, int link,
+                  bool want_grad, double tol = 1e-10, int maxit = 50) {
   const uword n = x.n_rows;
   const int ncat = alpha.n_elem + 1;
   List out_inf = List::create(Named("L") = R_PosInf, Named("u") = u);
+  if (offset.n_elem != n) {
+    Rcpp::stop("`offset` must have one element per row.");
+  }
   for (uword j = 1; j < alpha.n_elem; j++) {
     if (!(alpha[j] > alpha[j - 1])) return out_inf;
   }
-  vec xb = (beta.n_elem > 0) ? vec(x * beta) : vec(n, fill::zeros);
+  vec xb = (beta.n_elem > 0) ? vec(x * beta + offset) : offset;
   if (!xb.is_finite() || !std::isfinite(tau)) return out_inf;
   vec e1(n), e2(n);
   for (uword i = 0; i < n; i++) {

@@ -743,6 +743,7 @@ outdmin_tester_trad <- function(
     wobs_expected = wobs_tst,
     prd_trms_vsel_L1_search = NULL,
     with_offs = FALSE,
+    offs_arg = NULL,
     augdat_cats = NULL,
     allow_w_zero = FALSE,
     check_y_from_resp = TRUE,
@@ -988,7 +989,8 @@ outdmin_tester_trad <- function(
         }
         fit_g <- suppressWarnings(suppressMessages(lme4::glmer(
           sub_formul[[j1]], data = dat_j1, family = get(sub_fam)(),
-          weights = .w_tst, control = lme4::glmerControl(optimizer = "bobyqa")
+          weights = .w_tst, offset = offs_arg,
+          control = lme4::glmerControl(optimizer = "bobyqa")
         )))
         expect_equal(outdmin_totest[[j1]]$coefficients, lme4::fixef(fit_g),
                      tolerance = 1e-2, info = info_str)
@@ -1008,10 +1010,12 @@ outdmin_tester_trad <- function(
                    ignore_formula_env = TRUE, info = info_str)
 
       # resp
-      if (!with_offs) {
-        offs_expected <- numeric(nobsv)
-      } else {
+      if (with_offs) {
         offs_expected <- offs_tst
+      } else if (!is.null(offs_arg)) {
+        offs_expected <- offs_arg
+      } else {
+        offs_expected <- numeric(nobsv)
       }
       expect_identical(outdmin_totest[[!!j]]@resp$offset,
                        offs_expected,
@@ -1073,7 +1077,12 @@ outdmin_tester_trad <- function(
                      offs_expected,
                      info = info_str)
       }
-      frame_nms <- grep("y_|ybinprop|^\\(weights\\)$|^offset\\(.*\\)$",
+      if (!is.null(offs_arg)) {
+        expect_equal(outdmin_totest[[!!j]]@frame$`(offset)`, offs_arg,
+                     info = info_str)
+      }
+      frame_nms <- grep(
+        "y_|ybinprop|^\\(weights\\)$|^offset\\(.*\\)$|^\\(offset\\)$",
                         names(outdmin_totest[[j]]@frame),
                         value = TRUE,
                         invert = TRUE)
@@ -1142,6 +1151,7 @@ outdmin_tester_aug <- function(
     has_add = formula_contains_additive_terms(sub_formul[[1]]),
     wobs_expected = wobs_tst,
     with_offs = FALSE,
+    offs_arg = NULL,
     augdat_cats = NULL,
     allow_w_zero = FALSE,
     check_y_from_resp = TRUE,
@@ -1341,10 +1351,15 @@ outdmin_tester_aug <- function(
         grp_trms <- grep("\\|", sub_trms, value = TRUE)
         grp_trms_flat <- flatten_group_terms(grp_trms)
         offs_trms <- if (with_offs) "offset(offs_col)" else NULL
+        # Offsets as an argument (see fit_cumul_mlvl()) come first:
+        offs_first <- if (!is.null(offs_arg)) {
+          "offset(projpred_internal_offs_aug) +"
+        }
         expect_identical(
           formula_crr,
           # Add the intercept explicitly and use the same environment:
-          as.formula(paste(as.character(sub_formul[[2]]), "~ 1 +",
+          as.formula(paste(as.character(sub_formul[[2]]), "~", offs_first,
+                           "1 +",
                            paste(c(nongrp_trms, offs_trms, grp_trms_flat),
                                  collapse = " + ")),
                      env = environment(formula_crr)),
@@ -1508,6 +1523,9 @@ outdmin_tester_aug <- function(
 #   ranking. Otherwise, use `NULL`.
 # @param with_offs A single logical value indicating whether `outdmin_totest` is
 #   expected to include offsets (`TRUE`) or not (`FALSE`).
+# @param offs_arg The offsets that the submodel fitters get as an argument (see
+#   proj_offs_fit(); for the augmented-data projection, repeated for the
+#   response categories), or `NULL`.
 # @param augdat_cats A character vector of response levels in case of the
 #   augmented-data projection. Needs to be `NULL` for the traditional and the
 #   latent projection.
@@ -1533,6 +1551,7 @@ outdmin_tester <- function(
     wobs_expected = wobs_tst,
     prd_trms_vsel_L1_search = NULL,
     with_offs = FALSE,
+    offs_arg = NULL,
     augdat_cats = NULL,
     allow_w_zero = FALSE,
     check_y_from_resp = TRUE,
@@ -1565,6 +1584,7 @@ outdmin_tester <- function(
       has_add = has_add,
       wobs_expected = wobs_expected,
       with_offs = with_offs,
+      offs_arg = offs_arg,
       augdat_cats = augdat_cats,
       allow_w_zero = allow_w_zero,
       check_y_from_resp = check_y_from_resp,
@@ -1584,6 +1604,7 @@ outdmin_tester <- function(
       wobs_expected = wobs_expected,
       prd_trms_vsel_L1_search = prd_trms_vsel_L1_search,
       with_offs = with_offs,
+      offs_arg = offs_arg,
       augdat_cats = augdat_cats,
       allow_w_zero = allow_w_zero,
       check_y_from_resp = check_y_from_resp,
@@ -1818,6 +1839,19 @@ projection_tester <- function(p,
   } else {
     clust_ref <- get_refdist(p$refmodel, ndraws = nprjdraws_expected)
   }
+  # With offsets, the fits use the offsets and the means with offsets, except
+  # for the latent projection, the Gaussian family with the identity link and
+  # a custom divergence minimizer:
+  fam_crr <- p$refmodel$family
+  if (any(p$refmodel$offset != 0) && !fam_crr$for_latent &&
+      !is.null(attr(p$refmodel$div_minimizer, "projpred_default")) &&
+      !(fam_crr$family == "gaussian" && fam_crr$link == "identity")) {
+    offs_arg_crr <- rep(p$refmodel$offset,
+                        length(p$refmodel$family$cats %||% 1))
+  } else {
+    offs_arg_crr <- NULL
+  }
+  mu_fit_crr <- if (is.null(offs_arg_crr)) clust_ref$mu else clust_ref$mu_offs
   if (p$refmodel$family$for_augdat) {
     # Create the augmented dataset:
     y_unqs <- p$refmodel$family$cats
@@ -1829,11 +1863,11 @@ projection_tester <- function(p,
     sub_data_crr[[y_nms]] <- factor(sub_data_crr[[y_nms]], levels = y_unqs)
   } else {
     for (i in seq_len(nprjdraws_expected)) {
-      sub_data_crr[[y_nms[i]]] <- clust_ref$mu[, i]
+      sub_data_crr[[y_nms[i]]] <- mu_fit_crr[, i]
     }
   }
   if (p$refmodel$family$for_augdat) {
-    wobs_expected_crr <- unclass(clust_ref$mu)
+    wobs_expected_crr <- unclass(mu_fit_crr)
   } else {
     wobs_expected_crr <- p$refmodel$wobs
   }
@@ -1852,6 +1886,7 @@ projection_tester <- function(p,
                  prd_trms_vsel_L1_search = prd_trms_vsel_L1_search_crr,
                  augdat_cats = augdat_cats_crr,
                  uses_nagq = uses_nagq,
+                 offs_arg = offs_arg_crr,
                  info_str = info_str)
 
   # dis
@@ -2244,6 +2279,19 @@ vsel_tester <- function(
     y_nms <- paste0(y_nms, ".", seq_len(nprjdraws_search_expected))
   }
   sub_data_crr <- vs$refmodel$fetch_data()
+  # With offsets, the fits use the offsets and the means with offsets, except
+  # for the latent projection, the Gaussian family with the identity link and
+  # a custom divergence minimizer:
+  fam_crr <- vs$refmodel$family
+  if (any(vs$refmodel$offset != 0) && !fam_crr$for_latent &&
+      !is.null(attr(vs$refmodel$div_minimizer, "projpred_default")) &&
+      !(fam_crr$family == "gaussian" && fam_crr$link == "identity")) {
+    offs_arg_crr <- rep(vs$refmodel$offset,
+                        length(vs$refmodel$family$cats %||% 1))
+  } else {
+    offs_arg_crr <- NULL
+  }
+  mu_fit_crr <- if (is.null(offs_arg_crr)) clust_ref$mu else clust_ref$mu_offs
   if (vs$refmodel$family$for_augdat) {
     # Create the augmented dataset:
     y_unqs <- vs$refmodel$family$cats
@@ -2255,11 +2303,11 @@ vsel_tester <- function(
     sub_data_crr[[y_nms]] <- factor(sub_data_crr[[y_nms]], levels = y_unqs)
   } else {
     for (i in seq_len(nprjdraws_search_expected)) {
-      sub_data_crr[[y_nms[i]]] <- clust_ref$mu[, i]
+      sub_data_crr[[y_nms[i]]] <- mu_fit_crr[, i]
     }
   }
   if (vs$refmodel$family$for_augdat) {
-    wobs_expected_crr <- unclass(clust_ref$mu)
+    wobs_expected_crr <- unclass(mu_fit_crr)
   } else {
     wobs_expected_crr <- vs$refmodel$wobs
   }
@@ -2294,6 +2342,7 @@ vsel_tester <- function(
       wobs_expected = wobs_expected_crr,
       prd_trms_vsel_L1_search = prd_trms_vsel_L1_search_crr,
       augdat_cats = augdat_cats_crr,
+      offs_arg = offs_arg_crr,
       info_str = paste(info_str, i, sep = "__")
     )
   }
