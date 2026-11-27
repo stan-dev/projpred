@@ -126,6 +126,9 @@ test_that("GLM submodels with offsets give the KL projection", {
 
 test_that("the forward search passes the offsets to the cache path", {
   withr::local_seed(6762)
+  # The default option `projpred.full_size_ref` avoids the projection onto
+  # the full model (see test_full_size_ref.R):
+  withr::local_options(projpred.full_size_ref = FALSE)
   off <- log(runif(80, 0.2, 5))
   ref <- refm_offs(poisson(), off = off)
   # The fits of the cache path of proj_to_submodl() call divmin_multi() with
