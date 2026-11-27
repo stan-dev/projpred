@@ -24,6 +24,9 @@ test_that(paste(
   "left-out observation in the projections of its fold"
 ), {
   skip_on_cran()
+  # The default option `projpred.full_size_ref` avoids the projection onto
+  # the full model (see test_full_size_ref.R):
+  withr::local_options(projpred.full_size_ref = FALSE)
   r <- cre_ref_interp()
   cvvs <- suppressWarnings(cv_varsel(
     r$ref, cv_method = "LOO", validate_search = TRUE, method = "forward",
