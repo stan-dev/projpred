@@ -54,6 +54,27 @@ jobs:
               any::StanHeaders
           needs: check
 
+      # Keep the brms fits of the tests (see `PROJPRED_TESTS_BFITS` in
+      # tests/testthat/setup.R) between the runs, so that most runs do not
+      # compile the brms models. For a stored fit, brms compares only the data
+      # and the Stan code (`file_refit = "on_change"`), not, e.g., the seed,
+      # and the stored fit holds the compiled model. So the key has all that
+      # the fits depend on: the runner image, the versions of R and of the
+      # packages, and the files that define the fits. There are no
+      # `restore-keys`: a new key gives new fits.
+      - name: Set the directory and the cache key of the brms fits
+        id: bfits
+        shell: bash
+        run: |
+          echo "PROJPRED_TESTS_BFITS=$RUNNER_TEMP/bfits" >> "$GITHUB_ENV"
+          pkgs=$(Rscript -e 'p <- c("brms", "rstan", "StanHeaders", "RcppParallel", "mgcv"); cat(paste0(c("R", p), "-", c(as.character(getRversion()), sapply(p, function(x) as.character(packageVersion(x)))), collapse = "_"))')
+          echo "key=bfits-${ImageOS:-$RUNNER_OS}-$RUNNER_ARCH-$pkgs" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/cache@v6
+        with:
+          path: ${{ runner.temp }}/bfits
+          key: ${{ steps.bfits.outputs.key }}-${{ hashFiles('tests/testthat/setup.R', 'tests/testthat/helpers/*.R') }}
+
       - uses: r-lib/actions/check-r-package@v2
         with:
           upload-snapshots: true

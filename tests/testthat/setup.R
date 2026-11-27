@@ -493,9 +493,15 @@ if (run_brms && !requireNamespace("brms", quietly = TRUE)) {
 }
 if (run_brms) {
   pkg_nms <- c(pkg_nms, "brms")
-  # For storing `brmsfit`s locally:
-  file_pth <- testthat::test_path("bfits")
-  if (!dir.exists(file_pth)) dir.create(file_pth)
+  # For storing `brmsfit`s locally. With the environment variable
+  # `PROJPRED_TESTS_BFITS` (an absolute path), they go to that directory
+  # (GitHub CI keeps it between runs, so that most runs do not compile the
+  # brms models). For a stored fit, brms compares only the data and the Stan
+  # code, so delete the stored fits after a change of the seed or of the
+  # number of chains or iterations:
+  file_pth <- Sys.getenv("PROJPRED_TESTS_BFITS")
+  if (!nzchar(file_pth)) file_pth <- testthat::test_path("bfits")
+  if (!dir.exists(file_pth)) dir.create(file_pth, recursive = TRUE)
   # Backend:
   if (identical(Sys.getenv("TESTS_BRMS_BACKEND"), "cmdstanr") &&
       requireNamespace("cmdstanr", quietly = TRUE) &&
