@@ -81,8 +81,9 @@ the log link, if all group-level terms are random intercepts
 inherits from class \code{projpred_mlvl}). This fit minimizes the Laplace
 approximation of \code{\link[lme4:glmer]{lme4::glmer()}} (with \code{nAGQ = 1}), without rounding
 non-integer responses. \pkg{projpred} uses \code{\link[lme4:glmer]{lme4::glmer()}} instead if
-the fit does not converge, if the submodel has an offset, a
-rank-deficient model matrix or more than 500 group levels in total, if
+the fit does not converge, if the submodel formula has an offset term,
+if the submodel has a rank-deficient model matrix or more than 500
+group levels in total, if
 \code{...} contains arguments of
 \code{\link[lme4:glmer]{lme4::glmer()}} (for example \code{control} or \code{nAGQ}), or if global option
 \code{projpred.mlvl_laplace} is \code{FALSE}. After a fit that does not converge,
@@ -113,7 +114,8 @@ This fit minimizes the Laplace approximation that \code{\link[ordinal:clmm]{ordi
 uses, for the links of \code{\link[brms:cumulative]{brms::cumulative()}} (\code{logit}, \code{probit},
 \code{probit_approx}, \code{cloglog}, \code{cauchit}). \pkg{projpred} uses
 \code{\link[ordinal:clmm]{ordinal::clmm()}} instead if the fit does not converge, if the submodel
-has an offset or a rank-deficient model matrix, if \code{...} contains
+formula has an offset term, if the submodel has a rank-deficient model
+matrix, if \code{...} contains
 arguments of \code{\link[ordinal:clmm]{ordinal::clmm()}} or of its optimizers (for example
 \code{method} or \code{control}), or if global option \code{projpred.mlvl_laplace} is
 \code{FALSE}. After a fit that does not converge, the \code{\link[ordinal:clmm]{ordinal::clmm()}} fit
@@ -141,6 +143,13 @@ can come from \code{...} or (\pkg{mgcv} >= 1.9-5) from global option
 \pkg{projpred}, the returned object inherits from class \code{gamm4}). For the
 \code{\link[=binomial]{binomial()}} and the \code{\link[=poisson]{poisson()}} family, \pkg{projpred} passes the same
 family as to \code{\link[lme4:glmer]{lme4::glmer()}} (see above).
+\item Offsets: the submodels are fitted with the offsets of the reference model
+to its predicted means with offsets (for the augmented-data projection, to
+its predicted probabilities with offsets). This minimizes the
+Kullback-Leibler divergence from the reference model. For the
+\code{\link[=gaussian]{gaussian()}} family with the identity link and for the latent projection,
+the fit without offsets gives the same coefficients, so \pkg{projpred} omits
+the offsets there. All offsets must be finite.
 }
 }
 

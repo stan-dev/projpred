@@ -1938,23 +1938,18 @@ test_that(paste(
                q_direct[out$fixed], tolerance = 1e-10)
 })
 
-test_that(paste(
-  "monotonic projections onto negative binomial submodels take the signs",
-  "from the negative binomial projection onto the full model"
-), {
-  skip_if_not_installed("MASS")
-  opts_old <- options(projpred.mo_monotone = TRUE)
-  on.exit(options(opts_old), add = TRUE)
-  cols_x <- paste0("mo(x)", 1:4)
-  set.seed(6213)
-  n <- 100
-  S <- 12
+# A reference model `y ~ mo(x) + z + w` with `S` draws for the monotonic
+# projection with offsets. The offsets increase with `x`, so a fit to the means
+# without the offsets gives the opposite sign of the effect of `x` in the full
+# model. `w` decreases with `x`, so the effect of `x` in the submodel without
+# `w` has the opposite sign of its effect in the full model (log link).
+# `y_fun(mu)` draws the response from the means `mu`. `dis` is evaluated in
+# init_refmodel(), after the response is drawn. Returns a list with the
+# reference model `refm` and the data `dat`.
+mo_offs_refm <- function(seed, family, y_fun, dis = NULL, n = 100, S = 12) {
+  set.seed(seed)
   dat <- data.frame(x = sample(rep_len(0:4, n)), z = rnorm(n))
-  # `w` decreases with `x`, so the effect of `x` in the submodel without `w`
-  # has the opposite sign of its effect in the full model (log link):
   dat$w <- -0.5 * dat$x + rnorm(n, sd = 0.5)
-  # Offsets that increase with `x`: a fit to the means without the offsets
-  # gives the opposite sign of the effect of `x` in the full model:
   dat$off <- 0.6 * dat$x + log(runif(n, 0.5, 2))
   eff_x <- c(0, 0.4, -0.2, 0.3, 0.3)
   b <- cbind(alpha = rnorm(S, 1, 0.05), bx = rnorm(S, 1, 0.1),
@@ -1964,13 +1959,12 @@ test_that(paste(
     outer(eff_x[nd$x + 1], b[, "bx"]) + outer(nd$z, b[, "bz"]) + 0.5 * nd$w +
       matrix(b[, "alpha"], nrow(nd), S, byrow = TRUE) + nd$off
   }
-  dat$y <- rnbinom(n, size = 4, mu = exp(rowMeans(eta_fun(dat))))
+  dat$y <- y_fun(exp(rowMeans(eta_fun(dat))))
   fml <- y ~ mo(x) + z + w
   environment(fml) <- list2env(list(mo = mo_brms_like),
                                parent = environment(fml))
-  refm <- suppressWarnings(init_refmodel(
-    list(data = dat), data = dat, formula = fml,
-    family = MASS::negative.binomial(theta = 4),
+  refm <- init_refmodel(
+    list(data = dat), data = dat, formula = fml, family = family,
     ref_predfun = function(fit, newdata = NULL) {
       eta_fun(if (is.null(newdata)) fit$data else newdata)
     },
@@ -1980,12 +1974,27 @@ test_that(paste(
       list(y = if (extract_y) nd$y, weights = rep(1, nrow(nd)),
            offset = nd$off)
     },
-    dis = 4 * exp(rnorm(S, sd = 0.2)), cvfun = function(folds) NULL,
+    dis = dis, cvfun = function(folds) NULL,
     cvrefbuilder = function(cvfit) NULL
-  ))
-  expect_identical(refm$family$family, "negbinomial")
-  expect_equal(refm$offset, dat$off)
+  )
+  return(list(refm = refm, dat = dat))
+}
+
+# Checks of the monotonic projection of `ref` (output of mo_offs_refm()) onto
+# `mo(x) + z` (with global option `projpred.mo_monotone = TRUE`): the projected
+# effects of `x` are monotonic, the binding draws have the signs of the
+# unconstrained projection onto the full model (these differ from the signs of
+# the submodel), the other draws keep the unconstrained fit (tolerance
+# `tol_unc`), and each draw is the glm_ridge() fit to the means with the
+# offsets (family `fam_s(prj, s)` for draw `s`, tolerance `tol_glm`). Returns a
+# list with the projection `prj`, the unconstrained projection `prj_unc` and
+# the logical vector `binding`.
+check_mo_offs <- function(ref, fam_s, tol_unc, tol_glm) {
+  refm <- ref$refm
+  S <- ncol(refm$mu)
+  cols_x <- paste0("mo(x)", 1:4)
   terms_sub <- c("mo(x)", "z")
+  expect_equal(refm$offset, ref$dat$off)
   # (With a small convergence threshold for the comparison with glm_ridge()
   # below.)
   expect_no_warning(prj <- project(refm, predictor_terms = terms_sub,
@@ -1994,12 +2003,12 @@ test_that(paste(
   b_x <- prj_coefs(prj)[, cols_x]
   expect_true(all(is_mono(b_x)))
   # Unconstrained projections (onto the submodel and onto the full model):
-  options(projpred.mo_monotone = FALSE)
-  prj_unc <- project(refm, predictor_terms = terms_sub, ndraws = S,
-                     thresh_conv = 1e-12, verbose = FALSE)
-  prj_full <- project(refm, predictor_terms = c(terms_sub, "w"), ndraws = S,
-                      verbose = FALSE)
-  options(projpred.mo_monotone = TRUE)
+  withr::with_options(list(projpred.mo_monotone = FALSE), {
+    prj_unc <- project(refm, predictor_terms = terms_sub, ndraws = S,
+                       thresh_conv = 1e-12, verbose = FALSE)
+    prj_full <- project(refm, predictor_terms = c(terms_sub, "w"), ndraws = S,
+                        verbose = FALSE)
+  })
   b_unc <- prj_coefs(prj_unc)
   binding <- !is_mono(b_unc[, cols_x])
   expect_gt(sum(binding), S / 2)
@@ -2008,34 +2017,58 @@ test_that(paste(
   # The signs of the full model differ from those of the submodel:
   expect_true(all(s_full[binding] != s_sum[binding]))
   expect_true(all(b_x[binding, ] * s_full[binding] >= 0))
-  # Draws without a binding constraint keep the unconstrained fit and shape
-  # (up to the stopping rule of nb_alternate(), which depends on all draws):
   expect_equal(prj_coefs(prj)[!binding, , drop = FALSE],
-               b_unc[!binding, , drop = FALSE], tolerance = 1e-4)
-  expect_equal(prj$dis[!binding], prj_unc$dis[!binding], tolerance = 1e-4)
-  # Each draw is the glm_ridge() fit to the means with the offsets, with its
-  # projected shape fixed (the fixed point of nb_alternate()), and with the
+               b_unc[!binding, , drop = FALSE], tolerance = tol_unc)
+  # Each draw is the glm_ridge() fit to the means with the offsets, with the
   # signs of the full model for the binding draws:
-  x <- cbind(strip_attr(mo(dat$x)), z = dat$z)
+  x <- cbind(strip_attr(mo(ref$dat$x)), z = ref$dat$z)
   for (s in seq_len(S)) {
     args_cons <- if (binding[s]) {
       list(cons_cols = 1:4, cons_signs = rep(s_full[s], 4))
     }
     fit_s <- do.call(glm_ridge, c(list(
-      x, refm$mu_offs[, s], family = refm$family$fixed_dis_family(prj$dis[s]),
-      weights = refm$wobs, offset = refm$offset, lambda = 1e-4,
-      thresh = 1e-12
+      x, refm$mu_offs[, s], family = fam_s(prj, s), weights = refm$wobs,
+      offset = refm$offset, lambda = 1e-4, thresh = 1e-12
     ), args_cons))
     expect_equal(unname(c(prj$outdmin[[s]]$alpha, prj_coefs(prj)[s, ])),
-                 unname(c(fit_s$beta0, drop(fit_s$beta))), tolerance = 1e-4,
-                 info = paste("draw", s))
+                 unname(c(fit_s$beta0, drop(fit_s$beta))),
+                 tolerance = tol_glm, info = paste("draw", s))
   }
+  return(list(prj = prj, prj_unc = prj_unc, binding = binding))
+}
+
+test_that(paste(
+  "monotonic projections onto negative binomial submodels take the signs",
+  "from the negative binomial projection onto the full model"
+), {
+  skip_if_not_installed("MASS")
+  opts_old <- options(projpred.mo_monotone = TRUE)
+  on.exit(options(opts_old), add = TRUE)
+  S <- 12
+  ref <- suppressWarnings(mo_offs_refm(
+    6213, family = MASS::negative.binomial(theta = 4),
+    y_fun = function(mu) rnbinom(length(mu), size = 4, mu = mu),
+    dis = 4 * exp(rnorm(S, sd = 0.2)), S = S
+  ))
+  refm <- ref$refm
+  expect_identical(refm$family$family, "negbinomial")
+  # Each draw has its projected shape fixed (the fixed point of
+  # nb_alternate()). Draws without a binding constraint keep the
+  # unconstrained fit and shape up to the stopping rule of nb_alternate(),
+  # which depends on all draws:
+  out <- check_mo_offs(
+    ref, fam_s = function(prj, s) refm$family$fixed_dis_family(prj$dis[s]),
+    tol_unc = 1e-4, tol_glm = 1e-4
+  )
+  prj <- out$prj
+  expect_equal(prj$dis[!out$binding], out$prj_unc$dis[!out$binding],
+               tolerance = 1e-4)
   # The parallel path of divmin() (the mo() signs and the family of each
   # draw):
   opts_par <- options(projpred.parallel_proj_trigger = 1)
   n_par <- 0
   prj_par <- with_mocked_bindings(
-    project(refm, predictor_terms = terms_sub, ndraws = S,
+    project(refm, predictor_terms = c("mo(x)", "z"), ndraws = S,
             thresh_conv = 1e-12, verbose = FALSE),
     par_backend = function(...) "future",
     par_lapply = function(.X, .FUN, ..., .backend, .rng = FALSE,
@@ -2055,6 +2088,109 @@ test_that(paste(
                verbose = FALSE)
   expect_setequal(ranking(vs)$fulldata, c("mo(x)", "z", "w"))
   expect_true(all(is.finite(summary(vs)$perf_sub$elpd)))
+})
+
+test_that(paste(
+  "monotonic projections with offsets take the signs from the projection",
+  "onto the full model with offsets"
+), {
+  opts_old <- options(projpred.mo_monotone = TRUE)
+  on.exit(options(opts_old), add = TRUE)
+  ref <- mo_offs_refm(6214, family = poisson(),
+                      y_fun = function(mu) rpois(length(mu), mu))
+  check_mo_offs(ref, fam_s = function(prj, s) ref$refm$family,
+                tol_unc = 1e-8, tol_glm = 1e-5)
+  # Forward search with monotonic projections:
+  vs <- varsel(ref$refm, method = "forward", ndraws = 4, nclusters_pred = 4,
+               verbose = FALSE)
+  expect_setequal(ranking(vs)$fulldata, c("mo(x)", "z", "w"))
+  expect_true(all(is.finite(summary(vs)$perf_sub$elpd)))
+})
+
+test_that(paste(
+  "the projection onto the full model for the signs of mo() terms throws the",
+  "error for an unsupported submodel fitter with offsets"
+), {
+  opts_old <- options(projpred.mo_monotone = TRUE, projpred.PQL = TRUE)
+  on.exit(options(opts_old), add = TRUE)
+  set.seed(6215)
+  n <- 60
+  S <- 4
+  dat <- data.frame(x = sample(rep_len(0:3, n)), z = rnorm(n),
+                    g = gl(6, 10), off = log(runif(n, 0.5, 2)))
+  eta_fun <- function(nd) {
+    matrix(0.2 * nd$x + 0.3 * nd$z + nd$off, nrow(nd), S)
+  }
+  dat$y <- rpois(n, exp(rowMeans(eta_fun(dat))))
+  fml <- y ~ mo(x) + z + (1 | g)
+  environment(fml) <- list2env(list(mo = mo_brms_like),
+                               parent = environment(fml))
+  refm <- init_refmodel(
+    list(data = dat), data = dat, formula = fml, family = poisson(),
+    ref_predfun = function(fit, newdata = NULL) {
+      eta_fun(if (is.null(newdata)) fit$data else newdata)
+    },
+    extract_model_data = function(object, newdata = NULL, wrhs = NULL,
+                                  orhs = NULL, extract_y = TRUE) {
+      nd <- if (is.null(newdata)) dat else newdata
+      list(y = if (extract_y) nd$y, weights = rep(1, nrow(nd)),
+           offset = nd$off)
+    },
+    cvfun = function(folds) NULL, cvrefbuilder = function(cvfit) NULL
+  )
+  # Only the projection onto the full model has a group-level term, so only
+  # it reaches the check of `projpred.PQL`:
+  expect_error(
+    project(refm, predictor_terms = c("mo(x)", "z"), ndraws = S,
+            verbose = FALSE),
+    "`projpred.PQL` must be `FALSE`", class = "projpred_offs_error"
+  )
+})
+
+test_that(paste(
+  "monotonic projections take the signs from the submodel with a warning if",
+  "the projection onto the full model fails"
+), {
+  skip_if_not_installed("MASS")
+  opts_old <- options(projpred.mo_monotone = TRUE)
+  on.exit(options(opts_old), add = TRUE)
+  set.seed(6216)
+  n <- 60
+  S <- 4
+  dat <- data.frame(x = sample(rep_len(0:3, n)), z = rnorm(n), g = gl(6, 10))
+  alpha <- rnorm(S, sd = 0.05)
+  eta_fun <- function(nd) {
+    matrix(0.2 * nd$x + 0.3 * nd$z, nrow(nd), S) +
+      matrix(alpha, nrow(nd), S, byrow = TRUE)
+  }
+  dat$y <- rnbinom(n, size = 4, mu = exp(rowMeans(eta_fun(dat))))
+  fml <- y ~ mo(x) + z + (1 | g)
+  environment(fml) <- list2env(list(mo = mo_brms_like),
+                               parent = environment(fml))
+  refm <- suppressWarnings(init_refmodel(
+    list(data = dat), data = dat, formula = fml,
+    family = MASS::negative.binomial(theta = 4),
+    ref_predfun = function(fit, newdata = NULL) {
+      eta_fun(if (is.null(newdata)) fit$data else newdata)
+    },
+    extract_model_data = function(object, newdata = NULL, wrhs = NULL,
+                                  orhs = NULL, extract_y = TRUE) {
+      nd <- if (is.null(newdata)) dat else newdata
+      list(y = if (extract_y) nd$y, weights = rep(1, nrow(nd)),
+           offset = rep(0, nrow(nd)))
+    },
+    dis = rep(4, S), cvfun = function(folds) NULL,
+    cvrefbuilder = function(cvfit) NULL
+  ))
+  # The negative binomial projection does not support group-level terms, so
+  # the projection onto the full model fails, but the submodel without the
+  # group-level term works:
+  expect_warning(
+    prj <- project(refm, predictor_terms = c("mo(x)", "z"), ndraws = S,
+                   verbose = FALSE),
+    "The projection onto the full model"
+  )
+  expect_true(all(is_mono(prj_coefs(prj)[, paste0("mo(x)", 1:3)])))
 })
 
 test_that(paste(

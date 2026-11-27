@@ -559,8 +559,9 @@ test_that(paste(
   mlvl_laplace_orig <- mlvl_laplace
   rec <- list()
   local_mocked_bindings(mlvl_laplace = function(formula, data, family,
-                                                weights = NULL) {
-    fit <- mlvl_laplace_orig(formula, data, family, weights)
+                                                weights = NULL,
+                                                offset = NULL) {
+    fit <- mlvl_laplace_orig(formula, data, family, weights, offset)
     rec[[length(rec) + 1L]] <<- list(w = weights, fit = fit)
     fit
   })

@@ -37,14 +37,15 @@ mlvl_cumul_quantile <- function(p, name) {
 }
 
 # Design of mlvl_laplace_cumul(): the model matrix without the intercept, the
-# category codes of the response, the weights and the level codes of the
-# grouping variable. The rows are those of `data` (in the augmented-data
-# projection: one row per observation and response category, with the
-# probability of the category as the weight). Returns `NULL` for cases that the
-# fit does not handle: group-level terms other than one `(1 | <group>)`, a
-# response that is not a factor, missing values, offsets, a rank-deficient
+# category codes of the response, the weights, the offsets (argument `offset`,
+# `NULL` for zeros) and the level codes of the grouping variable. The rows are
+# those of `data` (in the augmented-data projection: one row per observation
+# and response category, with the probability of the category as the weight).
+# Returns `NULL` for cases that the fit does not handle: group-level terms
+# other than one `(1 | <group>)`, a response that is not a factor, missing
+# values, offset terms in the formula, non-finite offsets, a rank-deficient
 # model matrix, a response category without weight.
-mlvl_cumul_design <- function(formula, data, weights) {
+mlvl_cumul_design <- function(formula, data, weights, offset = NULL) {
   bars <- reformulas::findbars(formula)
   if (length(bars) != 1 || !identical(bars[[1]][[2]], 1) ||
       !is.name(bars[[1]][[3]])) {
@@ -74,6 +75,8 @@ mlvl_cumul_design <- function(formula, data, weights) {
   if (length(weights) != n || !all(is.finite(weights)) || any(weights < 0)) {
     return(NULL)
   }
+  if (is.null(offset)) offset <- rep(0, n)
+  if (length(offset) != n || !all(is.finite(offset))) return(NULL)
   w_cat <- vapply(seq_len(nlevels(y)), function(j) {
     sum(weights[as.integer(y) == j])
   }, numeric(1))
@@ -82,18 +85,25 @@ mlvl_cumul_design <- function(formula, data, weights) {
   if (anyNA(fac)) return(NULL)
   return(list(
     x = unname(x), x_nms = colnames(x), y = as.integer(y), lev = levels(y),
-    w = as.vector(weights), w_cat = w_cat, grp = as.integer(fac) - 1L,
+    w = as.vector(weights), offset = as.numeric(offset), w_cat = w_cat,
+    grp = as.integer(fac) - 1L,
     nlev = nlevels(fac), lvls = levels(fac), grp_nm = grp_nm,
     terms = delete.response(trms), xlevels = .getXlevels(trms, mf),
     contrasts = cons
   ))
 }
 
+# The offsets of the design `des` (zeros for a design without them):
+mlvl_cumul_offset <- function(des) {
+  return(des$offset %||% rep(0, nrow(des$x)))
+}
+
 # Objective of the design `des` at (alpha, beta, tau), with the conditional
 # modes found from u = 0:
 mlvl_cumul_obj <- function(des, link_code, alpha, beta, tau) {
   return(mlvl_cumul_c(alpha, beta, tau, des$x, des$grp, des$nlev, des$y,
-                      des$w, rep(0, des$nlev), link_code, FALSE)$L)
+                      des$w, mlvl_cumul_offset(des), rep(0, des$nlev),
+                      link_code, FALSE)$L)
 }
 
 # Minimize the objective over (alpha, beta, tau) with nlminb(). Start: the
@@ -112,13 +122,16 @@ mlvl_cumul_optim <- function(des, link, rel_tol = 1e-10, small_tau = 1e-3,
   idx_beta <- n_thres + seq_len(p)
   idx_tau <- n_thres + p + 1L
   cum_prop <- cumsum(des$w_cat) / sum(des$w_cat)
-  alpha0 <- mlvl_cumul_quantile(cum_prop[idx_alpha], link$name)
+  offs <- mlvl_cumul_offset(des)
+  # The thresholds of the start shifted by the weighted mean offset:
+  alpha0 <- mlvl_cumul_quantile(cum_prop[idx_alpha], link$name) +
+    sum(des$w * offs) / sum(des$w)
   cache <- new.env(parent = emptyenv())
   cache$u <- rep(0, des$nlev)
   run <- function(par) {
     ev <- mlvl_cumul_c(par[idx_alpha], par[idx_beta], par[idx_tau], des$x,
-                       des$grp, des$nlev, des$y, des$w, cache$u, link$code,
-                       TRUE)
+                       des$grp, des$nlev, des$y, des$w, offs, cache$u,
+                       link$code, TRUE)
     if (is.finite(ev$L)) cache$u <- ev$u
     cache$par <- par
     cache$ev <- ev
@@ -151,7 +164,7 @@ mlvl_cumul_optim <- function(des, link, rel_tol = 1e-10, small_tau = 1e-3,
   beta <- opt$par[idx_beta]
   tau <- opt$par[idx_tau]
   ev <- mlvl_cumul_c(alpha, beta, tau, des$x, des$grp, des$nlev, des$y, des$w,
-                     cache$u, link$code, FALSE)
+                     offs, cache$u, link$code, FALSE)
   convergence <- opt$convergence
   message <- opt$message
   if (convergence == 0 && !is.finite(ev$L)) {
@@ -195,11 +208,13 @@ new_projpred_mlvl_cumul <- function(formula, link, des, alpha, coefficients,
 # The Laplace fit. Returns `NULL` if the link or the design does not apply (see
 # mlvl_cumul_design()), and an object with `convergence != 0` if nlminb()
 # failed or did not converge (then `optinfo$message` says why). The design is
-# in attribute "des" of an object with `convergence != 0`.
-mlvl_laplace_cumul <- function(formula, data, family, weights = NULL) {
+# in attribute "des" of an object with `convergence != 0`. The fit uses the
+# offsets `offset` (`NULL` for zeros); its predictions do not.
+mlvl_laplace_cumul <- function(formula, data, family, weights = NULL,
+                               offset = NULL) {
   link <- mlvl_cumul_link(family$link)
   if (is.null(link)) return(NULL)
-  des <- mlvl_cumul_design(formula, data, weights)
+  des <- mlvl_cumul_design(formula, data, weights, offset = offset)
   if (is.null(des)) return(NULL)
   opt <- tryCatch(mlvl_cumul_optim(des, link), error = function(e) e)
   if (inherits(opt, "error")) {

@@ -44,6 +44,8 @@ divmin <- function(
          "submodels without group-level and without additive terms.",
          call. = FALSE)
   }
+  check_offs_fitter(list(...)[["offset"]], has_grp = has_grp,
+                    has_add = has_add)
   projpred_formulas_no_random <- NA
   projpred_random <- NA
   # Define sdivmin(), the divergence minimizer for each draw s = 1, ..., S (and
@@ -238,6 +240,10 @@ divmin <- function(
     lost_lvls <- rm_w0$lost_lvls
     dot_args$data <- rm_w0$data
     dot_args$weights <- dot_args$weights[keep]
+    if (!is.null(dot_args[["offset"]])) {
+      stopifnot(length(dot_args[["offset"]]) == length(keep))
+      dot_args[["offset"]] <- dot_args[["offset"]][keep]
+    }
     projpred_var <- projpred_var[keep, , drop = FALSE]
   }
 
@@ -332,6 +338,44 @@ dot_args_family <- function(dot_args, family) {
     dot_args$family <- family
   }
   dot_args
+}
+
+# Stop if the submodel fitter of divmin() or divmin_augdat() cannot take the
+# offsets `offset` (see proj_to_submodl()) as an argument that its predictions
+# for new data ignore. `has_grp` and `has_add`: whether the submodel has
+# group-level and additive terms. stats::glm() adds its offsets again in its
+# predictions, MASS::glmmPQL() does not use argument `offset`, and
+# gamm4::gamm4() takes offsets only as a formula term. The errors have class
+# "projpred_offs_error" (see mo_full_signs()).
+check_offs_fitter <- function(offset, has_grp, has_add) {
+  if (!isTRUE(any(offset != 0))) {
+    return(invisible(NULL))
+  }
+  stop_offs <- function(...) {
+    stop(errorCondition(paste0(...), class = "projpred_offs_error"))
+  }
+  if (!has_grp && !has_add &&
+      !identical(getOption("projpred.glm_fitter", "fit_glm_ridge_callback"),
+                 "fit_glm_ridge_callback")) {
+    stop_offs("For a reference model with offsets, global option ",
+              "`projpred.glm_fitter` must be \"fit_glm_ridge_callback\".")
+  }
+  if (has_grp && !has_add && getOption("projpred.PQL", FALSE)) {
+    stop_offs("For a reference model with offsets, global option ",
+              "`projpred.PQL` must be `FALSE`.")
+  }
+  if (has_grp && has_add) {
+    stop_offs("Currently, projpred does not support offsets for submodels ",
+              "with group-level and additive terms.")
+  }
+  return(invisible(NULL))
+}
+
+# The name of the data column with the offsets for the fitters that take
+# offsets only as a formula term (MASS::polr() and ordinal::clmm(); see
+# fit_cumul() and fit_cumul_mlvl()):
+offs_aug_nm <- function() {
+  return("projpred_internal_offs_aug")
 }
 
 # The data for the multilevel and additive submodel fitters of divmin(): `data`
@@ -1371,8 +1415,8 @@ glm_ridge_native_multi <- function(formulas, shared_x, dot_args, y = NULL) {
   # fit_glm_ridge_callback() passes only the formal arguments of glm_ridge() on.
   # Of these, the following are reproduced here:
   args_glm_ridge <- intersect(names(dot_args), methods::formalArgs(glm_ridge))
-  if (!all(args_glm_ridge %in% c("family", "weights", "qa_updates_max",
-                                 "ls_iter_max"))) {
+  if (!all(args_glm_ridge %in% c("family", "weights", "offset",
+                                 "qa_updates_max", "ls_iter_max"))) {
     return(NULL)
   }
   x <- shared_x$x
@@ -1382,6 +1426,10 @@ glm_ridge_native_multi <- function(formulas, shared_x, dot_args, y = NULL) {
   data <- dot_args$data
   weights <- dot_args$weights %||% rep(1.0, nrow(x))
   if (length(weights) != nrow(x) || anyNA(weights)) {
+    return(NULL)
+  }
+  offset <- dot_args[["offset"]] %||% rep(0.0, nrow(x))
+  if (length(offset) != nrow(x) || anyNA(offset)) {
     return(NULL)
   }
   regul <- dot_args$regul %||% 1e-4
@@ -1406,7 +1454,7 @@ glm_ridge_native_multi <- function(formulas, shared_x, dot_args, y = NULL) {
   transf$scale[transf$scale == 0] <- 1
   x_std <- t((t(x) - transf$shift) / transf$scale)
   out <- glm_ridge_native_multi_c(
-    x_std, y, as.numeric(weights), rep(0.0, nrow(x)), codes[1], codes[2],
+    x_std, y, as.numeric(weights), as.numeric(offset), codes[1], codes[2],
     regul, TRUE, penalty, rep(0, ncol(x) + 1), weights, thresh,
     qa_updates_max, ls_iter_max
   )
@@ -1640,7 +1688,8 @@ fit_glmer_callback <- function(formula, projpred_formula_no_random,
       mlvl_laplace_use(formula, family, list(...), use = mlvl_laplace)) {
     ml_args <- list(...)
     fit <- mlvl_laplace(formula, data = ml_args$data, family = family,
-                        weights = ml_args$weights)
+                        weights = ml_args$weights,
+                        offset = ml_args[["offset"]])
     if (!is.null(fit)) {
       if (fit$convergence == 0) return(fit)
       fit_glmer <- fit_glmer_callback(
@@ -2196,6 +2245,28 @@ divmin_augdat <- function(
     stop("Family `", family$family, "` is not supported by divmin_augdat().")
   }
 
+  # Offsets (see proj_to_submodl()): one per observation, so they are repeated
+  # for the augmented rows. The fitters get them as argument `offset`:
+  dot_args <- list(...)
+  offset <- dot_args[["offset"]]
+  dot_args[["offset"]] <- NULL
+  if (isTRUE(any(offset != 0))) {
+    if (family$family == "categorical") {
+      stop("Currently, offsets are not supported in case of the ",
+           "brms::categorical() family.", call. = FALSE)
+    }
+    if (family$family == "binomial") {
+      check_offs_fitter(offset, has_grp = has_grp, has_add = FALSE)
+    }
+    if (!is.data.frame(data) || nrow(data) %% length(offset) != 0) {
+      stop("The number of augmented rows is not a multiple of the number of ",
+           "offsets.")
+    }
+    offset <- rep(offset, times = nrow(data) / length(offset))
+  } else {
+    offset <- NULL
+  }
+
   # Coerce augmented-data matrices to ordinary matrices and augmented-length
   # vectors to ordinary vectors so that external packages may subset as usual:
   projpred_ws_aug <- unclass(projpred_ws_aug)
@@ -2216,14 +2287,18 @@ divmin_augdat <- function(
     lost_lvls <- lost_levels(data, keep = keep, formula = formula)
     data <- drop_lost_levels(data[keep, , drop = FALSE], lost_lvls)
     projpred_ws_aug <- projpred_ws_aug[keep, , drop = FALSE]
+    if (!is.null(offset)) {
+      offset <- offset[keep]
+    }
   }
+  dot_args[["offset"]] <- offset
 
   # Cumulative-link submodels without group-level terms: all draws in one C++
   # call (see cumul_native_multi()):
   if (identical(sdivmin, fit_cumul)) {
     outdmin <- cumul_native_multi(formula, data = data, family = family,
                                   ws_aug = projpred_ws_aug,
-                                  dot_args = list(...))
+                                  dot_args = dot_args)
     if (!is.null(outdmin)) {
       check_conv(outdmin, rep(0L, length(outdmin)), do_check = do_check_conv)
       attr(outdmin, "projpred_lost_lvls") <- lost_lvls
@@ -2236,7 +2311,7 @@ divmin_augdat <- function(
   if (identical(sdivmin, fit_categ)) {
     outdmin <- categ_native_multi(formula, data = data, family = family,
                                   ws_aug = projpred_ws_aug,
-                                  dot_args = list(...))
+                                  dot_args = dot_args)
     if (!is.null(outdmin)) {
       check_conv(outdmin, rep(0L, length(outdmin)), do_check = do_check_conv)
       attr(outdmin, "projpred_lost_lvls") <- lost_lvls
@@ -2260,7 +2335,15 @@ divmin_augdat <- function(
     par_backend(warn_once = TRUE)
   }
   if (is.null(backend)) {
-    # Sequential case.
+    # Sequential case. sdivmin() with the offsets of the augmented rows instead
+    # of the offsets in `...` (a call with the arguments evaluated, as from
+    # do.call(), would give long calls in the captured warnings):
+    sdivmin_offs <- function(..., offset) {
+      if (is.null(dot_args[["offset"]])) {
+        return(sdivmin(...))
+      }
+      return(sdivmin(..., offset = dot_args[["offset"]]))
+    }
     if (verbose_divmin) {
       pb <- utils::txtProgressBar(min = 0, max = ncol(projpred_ws_aug),
                                   style = 3, initial = 0, file = stderr())
@@ -2271,7 +2354,7 @@ divmin_augdat <- function(
         on.exit(utils::setTxtProgressBar(pb, s))
       }
       mssgs_warns_capt <- capt_mssgs_warns(
-        soutdmin <- sdivmin(
+        soutdmin <- sdivmin_offs(
           formula = formula,
           data = data,
           family = family,
@@ -2286,8 +2369,7 @@ divmin_augdat <- function(
   } else {
     # Parallel case. The projection of one draw, in an environment with only
     # the objects that it uses (see fun_with_objs()) and the projpred
-    # namespace as parent:
-    dot_args <- list(...)
+    # namespace as parent.
     # The option of the Laplace fit (see mlvl_laplace() and
     # mlvl_laplace_cumul()), read in this R process:
     if (identical(sdivmin, fit_glmer_callback) ||
@@ -2342,8 +2424,10 @@ divmin_augdat <- function(
   return(outdmin)
 }
 
-# Use MASS::polr() to fit submodels for the brms::cumulative() family:
-fit_cumul <- function(formula, data, family, weights, ...) {
+# Use MASS::polr() to fit submodels for the brms::cumulative() family. The
+# offsets `offset` (`NULL` for none) enter the fit as an offset term of the
+# formula; the predictions of the fit do not use them (see below).
+fit_cumul <- function(formula, data, family, weights, offset = NULL, ...) {
   # Argument `weights` of MASS::polr() expects a column name (as a symbol):
   if ("projpred_internal_w_aug" %in% names(data)) {
     stop("Need to write to column `projpred_internal_w_aug` of `data`, but ",
@@ -2352,6 +2436,18 @@ fit_cumul <- function(formula, data, family, weights, ...) {
   }
   stopifnot(length(weights) == nrow(data))
   data$projpred_internal_w_aug <- weights
+  formula_fit <- formula
+  if (!is.null(offset)) {
+    if (offs_aug_nm() %in% names(data)) {
+      stop("Need to write to column `", offs_aug_nm(), "` of `data`, but ",
+           "that column already exists. Please rename this column in `data` ",
+           "and try again.")
+    }
+    stopifnot(length(offset) == nrow(data))
+    data[[offs_aug_nm()]] <- offset
+    formula_fit[[3]] <- call("+", formula[[3]],
+                             call("offset", as.name(offs_aug_nm())))
+  }
   # Exclude arguments from `...` which cannot be passed to MASS::polr():
   dot_args <- list(...)
   dot_args <- dot_args[intersect(
@@ -2368,7 +2464,7 @@ fit_cumul <- function(formula, data, family, weights, ...) {
   }
   # Call the submodel fitter:
   fitobj <- try(do.call(MASS::polr, c(
-    list(formula = formula,
+    list(formula = formula_fit,
          data = data,
          weights = quote(projpred_internal_w_aug),
          model = FALSE,
@@ -2391,10 +2487,13 @@ fit_cumul <- function(formula, data, family, weights, ...) {
     ncats <- length(unique(eval_lhs(formula = formula, data = data)))
     nthres <- ncats - 1L
     # Start with thresholds which imply equal probabilities for the response
-    # categories:
+    # categories (shifted by the weighted mean offset):
     start_thres <- linkfun_raw(seq_len(nthres) / ncats, link_nm = link_nm)
+    if (!is.null(offset)) {
+      start_thres <- start_thres + sum(weights * offset) / sum(weights)
+    }
     fitobj <- do.call(MASS::polr, c(
-      list(formula = formula,
+      list(formula = formula_fit,
            data = data,
            weights = quote(projpred_internal_w_aug),
            model = FALSE,
@@ -2404,6 +2503,11 @@ fit_cumul <- function(formula, data, family, weights, ...) {
     ))
   } else if (inherits(fitobj, "try-error")) {
     stop(attr(fitobj, "condition")$message)
+  }
+  if (!is.null(offset)) {
+    # predict.polr() does not add the offsets, but it needs their column in new
+    # data. The terms without the offset term do not:
+    fitobj$terms <- attr(model.frame(formula, data = data), "terms")
   }
   return(fitobj)
 }
@@ -2477,10 +2581,22 @@ cumul_native_multi <- function(formula, data, family, ws_aug, dot_args) {
        !isTRUE(all(x == x1[rep(seq_len(n), ncat), , drop = FALSE])))) {
     return(NULL)
   }
+  # The offsets (see divmin_augdat()) have to be the same in all response
+  # categories. The predictions of the fits do not use them:
+  offset_aug <- dot_args[["offset"]]
+  if (is.null(offset_aug)) {
+    offset_1 <- rep(0, n)
+  } else {
+    offset_1 <- offset_aug[seq_len(n)]
+    if (length(offset_aug) != nrow(x) || !all(is.finite(offset_aug)) ||
+        !isTRUE(all(offset_aug == rep(offset_1, ncat)))) {
+      return(NULL)
+    }
+  }
   nprj <- ncol(ws_aug)
   out <- cumul_fit_multi_c(
-    unname(x1), matrix(ws_aug, nrow = n), ncat, rep(0, n), link_code,
-    thresh = 1e-12, maxit = 100L
+    unname(x1), matrix(ws_aug, nrow = n), ncat, as.numeric(offset_1),
+    link_code, thresh = 1e-12, maxit = 100L
   )
   xlvls <- .getXlevels(trms, mfr)
   zeta_nms <- paste(lev[-ncat], lev[-1L], sep = "|")
@@ -2505,8 +2621,10 @@ cumul_native_multi <- function(formula, data, family, ws_aug, dot_args) {
 }
 
 # Fit multilevel submodels for the brms::cumulative() family: projpred's own
-# Laplace fit for a single group-level intercept term, else ordinal::clmm():
-fit_cumul_mlvl <- function(formula, data, family, weights,
+# Laplace fit for a single group-level intercept term, else ordinal::clmm().
+# The fits use the offsets `offset` (`NULL` for none); their predictions do not
+# (see subprd_augdat()).
+fit_cumul_mlvl <- function(formula, data, family, weights, offset = NULL,
                            mlvl_laplace = getOption("projpred.mlvl_laplace",
                                                     TRUE),
                            ...) {
@@ -2537,11 +2655,12 @@ fit_cumul_mlvl <- function(formula, data, family, weights,
   # is converted to the same class):
   if (isTRUE(mlvl_laplace) && !length(dot_args)) {
     fit <- mlvl_laplace_cumul(formula, data = data, family = family,
-                              weights = weights)
+                              weights = weights, offset = offset)
     if (!is.null(fit)) {
       if (fit$convergence == 0) return(fit)
       fit_clmm <- fit_cumul_mlvl(formula, data = data, family = family,
-                                 weights = weights, mlvl_laplace = FALSE, ...)
+                                 weights = weights, offset = offset,
+                                 mlvl_laplace = FALSE, ...)
       return(mlvl_cumul_from_clmm(fit_clmm, formula, failed = fit))
     }
   }
@@ -2559,7 +2678,25 @@ fit_cumul_mlvl <- function(formula, data, family, weights,
   # an intercept, add it here (note that this is a quite "hacky" solution;
   # perhaps reformulate() could be used instead):
   stopifnot(attr(terms(formula), "intercept") == 1)
-  formula[[3]] <- str2lang(paste0("1 + ", as.character(formula)[[3]]))
+  # The offsets: an offset term of the formula (ordinal::clmm() has no argument
+  # for them). clmm() gives the model frame of the full formula the terms of
+  # the fixed-effects formula, so the offset term must come before the
+  # group-level terms (ordinal 2026.7.26); it comes first.
+  # ordinal:::predict.clm() adds the offsets of new data, so subprd_augdat()
+  # sets this column to 0 there:
+  offs_term <- ""
+  if (!is.null(offset)) {
+    if (offs_aug_nm() %in% names(data)) {
+      stop("Need to write to column `", offs_aug_nm(), "` of `data`, but ",
+           "that column already exists. Please rename this column in `data` ",
+           "and try again.")
+    }
+    stopifnot(length(offset) == nrow(data))
+    data[[offs_aug_nm()]] <- offset
+    offs_term <- paste0("offset(", offs_aug_nm(), ") + ")
+  }
+  formula[[3]] <- str2lang(paste0(offs_term, "1 + ",
+                                  as.character(formula)[[3]]))
   # Adapt `link`:
   link_nm <- family$link
   if (link_nm == "probit_approx") {
@@ -3289,11 +3426,13 @@ subprd_augdat <- function(fits, newdata) {
       # Note: There is also `type = "linear.predictor"`, but that returns the
       # predictions for each j and j - 1 (with j = 1, ..., C_cat indexing the
       # response categories), so performs redundant calculations.
+      # Remove the response so ordinal:::predict.clm() returns predictions for
+      # *all* response categories. The offsets of the fit (see
+      # fit_cumul_mlvl()) do not enter the predictions:
+      newdata_clm <- within(newdata, assign(y_nm, NULL))
+      newdata_clm[[offs_aug_nm()]] <- rep(0, nrow(newdata_clm))
       prbs <- predict(structure(fit, class = c(oldClass(fit), "clm")),
-                      # Remove the response so ordinal:::predict.clm() returns
-                      # predictions for *all* response categories:
-                      newdata = within(newdata, assign(y_nm, NULL)),
-                      type = "prob")$fit
+                      newdata = newdata_clm, type = "prob")$fit
       link_nm <- fit$link
     } else if (inherits(fit, "multinom")) {
       prbs <- predict(fit, newdata = newdata, type = "probs")

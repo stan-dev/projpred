@@ -47,20 +47,26 @@ test_that(paste(
 ), {
   skip_if_not(run_prj)
   # Changes the reference target of observation `i` in a way that changes the
-  # projection if the observation has a positive weight:
+  # projection if the observation has a positive weight. The target is
+  # `p_ref$mu` or, if the fits use the offsets (see proj_offs_fit()),
+  # `p_ref$mu_offs`; both are changed:
   change_target <- function(p_ref, refm, i) {
     fam <- refm$family
-    if (fam$for_augdat) {
-      # Reverse the order of the category probabilities of observation `i`:
-      n <- refm$nobs
-      idx <- i + n * (seq_len(nrow(p_ref$mu) / n) - 1L)
-      p_ref$mu[idx, ] <- p_ref$mu[rev(idx), ]
-    } else if (fam$for_latent || fam$family %in% c("gaussian", "Student_t")) {
-      p_ref$mu[i, ] <- p_ref$mu[i, ] + 5
-    } else if (fam$family == "binomial") {
-      p_ref$mu[i, ] <- 1 - p_ref$mu[i, ]
-    } else {
-      p_ref$mu[i, ] <- 3 * p_ref$mu[i, ] + 1
+    for (el in c("mu", "mu_offs")) {
+      mu <- p_ref[[el]]
+      if (fam$for_augdat) {
+        # Reverse the order of the category probabilities of observation `i`:
+        n <- refm$nobs
+        idx <- i + n * (seq_len(nrow(mu) / n) - 1L)
+        mu[idx, ] <- mu[rev(idx), ]
+      } else if (fam$for_latent || fam$family %in% c("gaussian", "Student_t")) {
+        mu[i, ] <- mu[i, ] + 5
+      } else if (fam$family == "binomial") {
+        mu[i, ] <- 1 - mu[i, ]
+      } else {
+        mu[i, ] <- 3 * mu[i, ] + 1
+      }
+      p_ref[[el]] <- mu
     }
     p_ref
   }
