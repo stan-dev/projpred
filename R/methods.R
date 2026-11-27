@@ -346,8 +346,8 @@ proj_linpred_aux <- function(proj, newdata, offsetnew, weightsnew,
                                            extract_y = extract_y_ind)
   weights <- mdat$weights
   offset <- mdat$offset
-  pred_sub <- proj$refmodel$mu_fun(proj$outdmin, newdata = newdata,
-                                   offset = offset, transform = transform)
+  pred_sub <- proj_mu(proj, newdata = newdata, offset = offset,
+                      transform = transform)
   if (proj$refmodel$family$for_latent && transform) {
     pred_sub <- proj$refmodel$family$latent_ilink(
       t(pred_sub), cl_ref = proj$cl_ref, wdraws_ref = proj$wdraws_ref
@@ -576,7 +576,7 @@ proj_predict_aux <- function(proj, newdata, offsetnew, weightsnew,
                                            extract_y = FALSE)
   weights <- mdat$weights
   offset <- mdat$offset
-  mu <- proj$refmodel$mu_fun(proj$outdmin, newdata = newdata, offset = offset)
+  mu <- proj_mu(proj, newdata = newdata, offset = offset)
   if (!proj[["const_wdraws_prj"]]) {
     # In this case, the posterior draws have nonconstant weights.
     draw_inds <- sample(x = seq_along(proj$wdraws_prj),
@@ -1157,12 +1157,21 @@ plot.vsel <- function(
   } else {
     tick_labs_x <- waiver()
   }
-  # The submodel-specific graphical elements:
+  # The submodel-specific graphical elements. The point of the size whose
+  # results are those of the reference model (see full_ref_size()) is open:
+  size_full <- full_ref_size(object)
+  is_full_pt <- !is.null(size_full) & data_gg[["size"]] %in% size_full
   pp <- pp +
     geom_linerange(aes_linerg_pt, alpha = alpha_linerg,
                    linewidth = bar_thickness) +
     geom_line() +
-    geom_point(aes_linerg_pt, size = point_size)
+    geom_point(aes_linerg_pt, data = data_gg[!is_full_pt, , drop = FALSE],
+               size = point_size)
+  if (any(is_full_pt)) {
+    pp <- pp +
+      geom_point(aes_linerg_pt, data = data_gg[is_full_pt, , drop = FALSE],
+                 size = point_size, shape = 1, stroke = 1)
+  }
   if (identical(size_position, "primary_x_top")) {
     x_color_txt <- calc_element("axis.text.x.bottom", theme_get())[["colour"]]
     if (!is.character(x_color_txt) || length(x_color_txt) != 1) {
@@ -1232,6 +1241,11 @@ plot.vsel <- function(
     }
     interval_description <- paste0(interval_description, diff_pretty, " vs. ",
                                    baseline_pretty)
+  }
+  if (any(is_full_pt)) {
+    interval_description <- paste0(
+      interval_description, "\nOpen point: reference model (all search terms)"
+    )
   }
   if (identical(size_position, "secondary_x")) {
     tick_labs_x_sec <- as.character(rk_dfr[
@@ -1579,12 +1593,29 @@ summary.vsel <- function(
   }
   out$nterms <- nterms_max
   out$perf_sub <- subset(perf_sub, perf_sub$size <= nterms_max)
+  # The size whose results are those of the reference model (see global option
+  # `projpred.full_size_ref`), if it is in the table:
+  out$full_ref_size <- full_ref_size(object)
+  if (isTRUE(out$full_ref_size > nterms_max)) {
+    out$full_ref_size <- NULL
+  }
   stopifnot(nrow(perf_ref) == 1)
   out$perf_ref <- as.matrix(perf_ref)[1, ]
   out$resp_oscale <- resp_oscale
   out$deltas <- deltas
   out$cumulate <- cumulate
   return(out)
+}
+
+# The submodel size of the `vsel` object `object` whose results are those of the
+# reference model (the submodel with all search terms, see full_size_ref_ok()),
+# or `NULL`. Objects from projpred versions without element `full_ref` give
+# `NULL`.
+full_ref_size <- function(object) {
+  if (!isTRUE(object$full_ref)) {
+    return(NULL)
+  }
+  return(length(object$predictor_ranking))
 }
 
 # Helper function for renaming columns of the two main output tables of
@@ -1710,6 +1741,11 @@ print.vselsummary <- function(x, digits = getOption("projpred.digits", 2),
       "`deltas = ", x$deltas, "` and `cumulate = ", x$cumulate, "`:\n",
       sep = "")
   print(x$perf_sub, row.names = FALSE, digits = digits, ...)
+  if (!is.null(x$full_ref_size)) {
+    cat("Size ", x$full_ref_size, " (all search terms) shows the results of ",
+        "the reference model, not of a projection (see global option ",
+        "`projpred.full_size_ref`).\n", sep = "")
+  }
   cat("\n")
   cat("Reference model performance evaluation summary", scale_string, " with ",
       "`deltas = ", x$deltas, "`:\n", sep = "")
@@ -2652,6 +2688,7 @@ as.matrix.projection <- function(x, nm_scheme = NULL,
     stop("as.matrix.projection() does not work for objects based on ",
          "`datafit`s.")
   }
+  stop_ref_draws(x, "as.matrix() and as_draws_matrix()")
   if (!x[["const_wdraws_prj"]] && !allow_nonconst_wdraws_prj) {
     stop("The projected draws have different (i.e., nonconstant) weights, so ",
          "please use either `allow_nonconst_wdraws_prj = TRUE` (and then ",

@@ -470,7 +470,9 @@ test_that(paste(
   "is not positive definite"
 ), {
   # With `x5 = x1 + x2` and a negative `regul`, the matrix of the columns x1,
-  # x2 and x5 is not positive definite:
+  # x2 and x5 is not positive definite. The evaluation below has this matrix
+  # only if it projects onto the submodel with all terms:
+  withr::local_options(projpred.full_size_ref = FALSE)
   refm <- refm_search_gauss(y ~ x1 + x2 + x3 + x5, n = 40)
   p_ref <- get_refdist(refm, nclusters = 3)
   calls <- new.env()

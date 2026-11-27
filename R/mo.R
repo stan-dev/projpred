@@ -724,6 +724,7 @@ mo_effects <- function(object, ...) {
   if (!inherits(object, "projection")) {
     stop("`object` must be of class `projection` (or a list of such objects).")
   }
+  stop_ref_draws(object, "mo_effects()")
   refm <- object$refmodel
   if (refm$family$for_augdat) {
     stop("mo_effects() does not support the augmented-data projection.")

@@ -659,7 +659,10 @@ if (run_more) {
     "the warning for full Gaussian multilevel models is thrown correctly"
   ), {
     skip_if_not(run_vs)
-    withr::local_options(list(projpred.warn_instable_projections = NULL))
+    # The default option `projpred.full_size_ref` avoids the projection onto
+    # the full model (see test_full_size_ref.R):
+    withr::local_options(list(projpred.warn_instable_projections = NULL,
+                              projpred.full_size_ref = FALSE))
     tstsetups <- names(vss)
     pick_these <- sapply(tstsetups, function(tstsetup) {
       refmod_i <- refmods[[args_vs[[tstsetup]]$tstsetup_ref]]

@@ -476,3 +476,20 @@ test_that(paste(
   expect_identical(res_col1$ok, 1L)
   expect_length(ranking(res_col1$value)$fulldata, 4)
 })
+
+test_that(paste(
+  "the score-screened search does not project onto the submodel with all",
+  "terms of the reference model"
+), {
+  withr::local_options(projpred.full_size_ref = NULL)
+  refm <- refm_screen(fml = y ~ x1 + x2 + x3 + x4)
+  res <- with_call_count(vs_screen(refm, 1, nterms_max = NULL))
+  expect_identical(res$ok, 1L)
+  vs <- res$value
+  expect_length(vs$predictor_ranking, 4)
+  expect_true(vs$full_ref)
+  # The last step of the screen added the last term without a projection:
+  expect_null(vs$search_path$outdmins[[5]])
+  expect_false(is.null(vs$search_path$outdmins[[4]]))
+  expect_identical(vs$summaries$sub[[5]], vs$summaries$ref)
+})

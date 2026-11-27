@@ -321,6 +321,13 @@ uses_divmin <- function(refmodel, which = "divmin") {
 # the predictor ranking, it first fetches the init_submodl() output (of class
 # `submodl`) and then calculates the submodel "summary" (precursor quantities)
 # for the actual performance evaluation performed by summary.vsel() later.
+# `full_ref = TRUE` means that the last element of the predictor ranking gives
+# the submodel with all search terms and that this submodel gets the results of
+# the reference model (see full_size_ref_ok()). Then this size is not projected:
+# its elements `sub_summary`, `mu_j`, `lppd_j` and `dis_sub` are `NULL` (the
+# caller sets the results of the reference model), and its `ce` is that of the
+# projected reference draws (see ce_ref_self()), or `NA` with `ce_full = FALSE`
+# (for the CV folds, which do not use `ce`).
 perf_eval <- function(search_path,
                       nterms = c(0, seq_along(search_path$predictor_ranking)),
                       refmodel, refit_prj = FALSE, ndraws, nclusters,
@@ -333,7 +340,12 @@ perf_eval <- function(search_path,
                       y_test = refmodel_fulldata$y[indices_test],
                       y_oscale_test = refmodel_fulldata$y_oscale[indices_test],
                       verbose = FALSE, verbose_line_length = 5,
-                      verbose_txt_add = "", ...) {
+                      verbose_txt_add = "", full_ref = FALSE, ce_full = TRUE,
+                      ...) {
+  stopifnot(!(full_ref && return_submodls))
+  is_full <- full_ref & nterms == length(search_path$predictor_ranking)
+  nterms_in <- nterms
+  nterms <- nterms[!is_full]
   # Whether to try perf_eval_gauss() (see below):
   use_gauss_crossprod <- refit_prj && !is.null(reweighting_args) &&
     !return_submodls && !return_preds &&
@@ -343,12 +355,21 @@ perf_eval <- function(search_path,
     # In this case, simply fetch the already computed projections, so don't
     # project again.
     fetch_submodl <- function(size_j, ...) {
+      prd_trms_j <- utils::head(search_path$predictor_ranking, size_j)
+      outdmin_j <- search_path$outdmins[[size_j + 1]]
+      if (is.null(outdmin_j)) {
+        # The search did not project onto the submodel with all search terms
+        # (argument `skip_full` of .select()), so project now (with the
+        # arguments `...` of the evaluation, as for `refit_prj = TRUE`):
+        return(proj_to_submodl(predictor_terms = prd_trms_j, p_ref = p_ref,
+                               refmodel = refmodel, verbose = verbose, ...))
+      }
       return(init_submodl(
         # Re-use the submodel fits from the search:
-        outdmin = search_path$outdmins[[size_j + 1]],
+        outdmin = outdmin_j,
         p_ref = p_ref,
         refmodel = refmodel,
-        predictor_terms = utils::head(search_path$predictor_ranking, size_j),
+        predictor_terms = prd_trms_j,
         wobs = refmodel$wobs
       ))
     }
@@ -461,6 +482,20 @@ perf_eval <- function(search_path,
     }
     return(out_j)
   })
+  if (any(is_full)) {
+    # The submodel with all search terms is not projected (see above). A
+    # `p_ref` without the draw matrices (see perf_eval_gauss()) gives no `ce`;
+    # that case (LOO CV with validated search) does not use `ce`:
+    out_full <- list(ce = if (!ce_full || isTRUE(p_ref$moments_only)) {
+      NA_real_
+    } else {
+      ce_ref_self(p_ref, refmodel)
+    })
+    out_all <- vector("list", length(nterms_in))
+    out_all[!is_full] <- out_by_size
+    out_all[is_full] <- list(out_full)
+    out_by_size <- out_all
+  }
   verb_out(rep("-", verbose_line_length), verbose = verbose && !return_submodls)
   if (return_submodls) {
     # Currently only called in project().

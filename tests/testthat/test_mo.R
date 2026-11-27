@@ -631,7 +631,9 @@ test_that(paste(
                verbose = FALSE)
   rk <- ranking(vs)$fulldata
   expect_setequal(rk, c("mo(x)", "z", "w"))
-  prj <- project(vs, nterms = 3, refit_prj = FALSE, verbose = FALSE)
+  # The L1 submodel with all terms (`nterms = 3` would give the reference
+  # model draws, see test_full_size_ref.R):
+  prj <- project(vs, predictor_terms = rk, refit_prj = FALSE, verbose = FALSE)
   pred_train <- proj_linpred(prj)$pred
   pred_new <- proj_linpred(prj, newdata = nd)$pred
   expect_equal(unname(drop(pred_new)), unname(drop(pred_train)[rows_of(nd)]),
@@ -1035,7 +1037,10 @@ test_that(paste(
     nclusters_pred = 6, seed = 3906, verbose = FALSE
   ), "Some Pareto k diagnostic values are too high"), "Not enough tail samples")
   expect_all_true_tst(is.finite(summary(cv_loo)$perf_sub$elpd))
-  prj <- project(cv_loo, nterms = 3, ndraws = 20, verbose = FALSE)
+  # The projection onto the submodel with all terms (`nterms = 3` would give
+  # the reference model draws, see test_full_size_ref.R):
+  prj <- project(cv_loo, predictor_terms = cv_loo$predictor_ranking,
+                 ndraws = 20, verbose = FALSE)
   expect_all_true_tst(is_mono(prj_coefs(prj)[, cols_x]))
   # Latent projection:
   refm_lat <- suppressMessages(mo_nonmono_refm(binomial(), latent = TRUE))

@@ -714,3 +714,33 @@ test_that(paste(
                  info = info)
   }
 })
+
+test_that(paste(
+  "the latent screens do not project onto the submodel with all terms of the",
+  "reference model"
+), {
+  skip_if_not_installed("lme4")
+  withr::local_options(projpred.full_size_ref = NULL)
+  cases <- list(
+    cum = list(refm = refm_latcum(fml = y ~ x6 + x7 + x8),
+               fun = "search_forward_latent_cum"),
+    mlvl = list(refm = refm_latml(fml = y ~ x6 + x7 + (1 | g)),
+                fun = "search_forward_latent_mlvl")
+  )
+  for (nm in names(cases)) {
+    res <- count_calls_lat(muffle_lat(varsel(
+      cases[[nm]]$refm, search_screen = 1, nclusters = 3, ndraws_pred = 10,
+      seed = 3318, verbose = FALSE
+    )), fun = cases[[nm]]$fun)
+    expect_identical(res$ok, 1L, info = nm)
+    vs <- res$value
+    expect_length(vs$predictor_ranking, 3)
+    expect_true(vs$full_ref, info = nm)
+    # The last step of the screen added the last term without a projection:
+    expect_null(vs$search_path$outdmins[[4]], info = nm)
+    expect_false(is.null(vs$search_path$outdmins[[3]]), info = nm)
+    # Also the response-scale summaries of the latent projection:
+    expect_identical(vs$summaries$sub[[4]], vs$summaries$ref, info = nm)
+  }
+  expect_false(is.null(vs$summaries$ref$oscale))
+})

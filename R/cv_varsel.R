@@ -414,6 +414,7 @@ cv_varsel.refmodel <- function(
   search_screen <- args$search_screen
   nterms_all <- args$nterms_all
   verbose <- args$verbose
+  full_ref <- args$full_ref
   # Parse arguments specific to cv_varsel():
   args <- parse_args_cv_varsel(
     refmodel = refmodel, cv_method = cv_method, nloo = nloo, K = K,
@@ -455,9 +456,11 @@ cv_varsel.refmodel <- function(
       verbose_txt_add = if (validate_search) "using the full dataset " else "",
       search_control = search_control, search_terms = search_terms,
       search_terms_was_null = search_terms_was_null,
-      search_screen = search_screen, ...
+      search_screen = search_screen, skip_full = full_ref, ...
     )
   }
+  full_ref <- full_ref &&
+    ranking_is_full(search_path_fulldata$predictor_ranking, nterms_all)
 
   if (!is.null(search_out) && validate_search) {
     # Extract the fold-wise predictor rankings (to avoid passing the large
@@ -492,7 +495,7 @@ cv_varsel.refmodel <- function(
       search_terms = search_terms,
       search_terms_was_null = search_terms_was_null,
       search_out_rks = search_out_rks, parallel = parallel,
-      search_screen = search_screen, ...
+      search_screen = search_screen, full_ref = full_ref, ...
     )
     if (validate_search && nloo < refmodel$nobs) {
       # Run fast LOO-CV to be used in subsampling difference estimator
@@ -510,7 +513,7 @@ cv_varsel.refmodel <- function(
         search_terms = search_terms,
         search_terms_was_null = search_terms_was_null,
         search_out_rks = search_out_rks, parallel = parallel,
-        search_screen = search_screen, ...
+        search_screen = search_screen, full_ref = full_ref, ...
       )[["summaries"]]
     }
   } else if (cv_method == "kfold") {
@@ -530,7 +533,8 @@ cv_varsel.refmodel <- function(
         search_path_fulldata["predictor_ranking"]
       },
       search_terms = search_terms, search_out_rks = search_out_rks,
-      parallel = parallel, search_screen = search_screen, ...
+      parallel = parallel, search_screen = search_screen, full_ref = full_ref,
+      ...
     )
   }
 
@@ -568,6 +572,7 @@ cv_varsel.refmodel <- function(
               summaries_fast,
               nterms_all,
               nterms_max,
+              full_ref,
               method,
               cv_method,
               nloo,
@@ -693,7 +698,8 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
                        penalty, verbose, search_control, nloo, validate_search,
                        search_path_fulldata, search_terms,
                        search_terms_was_null, search_out_rks, parallel,
-                       loo_perturb_alpha, search_screen = NULL, ...) {
+                       loo_perturb_alpha, search_screen = NULL,
+                       full_ref = FALSE, ...) {
   ## Pre-processing ---------------------------------------------------------
 
   has_grp <- formula_contains_group_terms(refmodel$formula)
@@ -902,7 +908,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
       search_path = search_path_fulldata, refmodel = refmodel,
       refit_prj = refit_prj, ndraws = ndraws_pred, nclusters = nclusters_pred,
       return_preds = TRUE, return_p_ref = TRUE, return_dis_sub = TRUE,
-      indices_test = inds, verbose = verbose, ...
+      indices_test = inds, verbose = verbose, full_ref = full_ref, ...
     )
     clust_used_eval <- perf_eval_out[["clust_used"]]
     nprjdraws_eval <- perf_eval_out[["nprjdraws"]]
@@ -1026,6 +1032,11 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
     for (k in seq_len(1 + length(search_path_fulldata$predictor_ranking))) {
       # TODO: For consistency, replace `k` in this `for` loop by `j`.
       mu_k <- perf_eval_out[["mu_by_size"]][[k]]
+      if (is.null(mu_k)) {
+        # The submodel with all search terms gets the results of the reference
+        # model below (see perf_eval()):
+        next
+      }
       log_lik_sub <- perf_eval_out[["lppd_by_size"]][[k]]
       loo_sub[[k]][inds] <- apply(log_lik_sub + lw_sub, 2, log_sum_exp)
       if (refmodel$family$for_latent) {
@@ -1193,19 +1204,21 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
           verbose_txt_add = vtxt_obs_i, search_control = search_control,
           search_terms = search_terms, est_runtime = FALSE,
           # The evaluation uses the search fits only with `refit_prj = FALSE`:
-          return_outdmins = !refit_prj, search_screen = search_screen, ...
+          return_outdmins = !refit_prj, search_screen = search_screen,
+          skip_full = full_ref, ...
         )
       }
 
       # Run the performance evaluation for the submodels along the predictor
       # ranking:
+      check_fold_full(full_ref, search_path$predictor_ranking, search_terms)
       perf_eval_out <- perf_eval(
         search_path = search_path, refmodel = refmodel_fold,
         refit_prj = refit_prj, ndraws = ndraws_pred, nclusters = nclusters_pred,
         reweighting_args = list(cl_ref = cl_pred, wdraws_ref = exp(lw_i)),
         refmodel_fulldata = refmodel,
         indices_test = i, verbose = verbose_obs, verbose_line_length = 3,
-        verbose_txt_add = vtxt_obs_i, ...
+        verbose_txt_add = vtxt_obs_i, full_ref = full_ref, ce_full = FALSE, ...
       )
 
       return(nlist(predictor_ranking = search_path[["predictor_ranking"]],
@@ -1217,7 +1230,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
     # The parallel workers get one_obs() with its enclosing environment, so
     # keep only the objects that one_obs() uses:
     one_obs <- fun_with_objs(one_obs, c(
-      "cl_pred", "cl_sel", "inds", "method", "n", "nclusters",
+      "cl_pred", "cl_sel", "full_ref", "inds", "method", "n", "nclusters",
       "nclusters_pred", "ndraws", "ndraws_pred", "nloo", "nterms_max",
       "penalty", "perturb_alpha", "perturb_ll", "perturb_seed", "refit_prj",
       "refmodel", "search_control", "search_out_rks_was_null", "search_screen",
@@ -1286,6 +1299,10 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
         i_flx <- i
       }
       for (k in seq_along(summaries_sub)) {
+        if (is.null(summaries_sub[[k]])) {
+          # The submodel with all search terms (see perf_eval()):
+          next
+        }
         loo_sub[[k]][i] <- summaries_sub[[k]]$lppd
         mu_sub[[k]][i_flx] <- summaries_sub[[k]]$mu
         if (!is.null(summaries_sub[[k]]$oscale)) {
@@ -1440,6 +1457,12 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
     summ_ref$oscale <- list(lppd = lppd_ref_oscale, mu = mu_ref_oscale)
   }
 
+  if (full_ref) {
+    # The submodel with all search terms gives the results of the reference
+    # model (see full_size_ref_ok()):
+    summ_sub[prv_len_rk + 1L] <- list(summ_ref)
+  }
+
   # Combined submodel and reference model predictive performance:
   summaries <- list(sub = summ_sub, ref = summ_ref)
 
@@ -1490,7 +1513,8 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws, nclusters,
                          ndraws_pred, nclusters_pred, refit_prj, penalty,
                          verbose, search_control, K, cvfits, validate_search,
                          search_path_fulldata, search_terms, search_out_rks,
-                         parallel, search_screen = NULL, ...) {
+                         parallel, search_screen = NULL, full_ref = FALSE,
+                         ...) {
   # Fetch the K reference model fits (or fit them now if not already done) and
   # create objects of class `refmodel` from them (and also store the `omitted`
   # indices):
@@ -1576,18 +1600,20 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws, nclusters,
         verbose_txt_add = vtxt_fold_k, search_control = search_control,
         search_terms = search_terms, est_runtime = FALSE,
         # The evaluation uses the search fits only with `refit_prj = FALSE`:
-        return_outdmins = !refit_prj, search_screen = search_screen, ...
+        return_outdmins = !refit_prj, search_screen = search_screen,
+        skip_full = full_ref, ...
       )
     }
 
     # Run the performance evaluation for the submodels along the predictor
     # ranking:
+    check_fold_full(full_ref, search_path$predictor_ranking, search_terms)
     perf_eval_out <- perf_eval(
       search_path = search_path, refmodel = fold$refmodel,
       refit_prj = refit_prj, ndraws = ndraws_pred, nclusters = nclusters_pred,
       refmodel_fulldata = refmodel, indices_test = fold$omitted,
       verbose = verbose_fold, verbose_line_length = 3,
-      verbose_txt_add = vtxt_fold_k, ...
+      verbose_txt_add = vtxt_fold_k, full_ref = full_ref, ce_full = FALSE, ...
     )
 
     # Performance evaluation for the reference model of the current fold
@@ -1605,9 +1631,15 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws, nclusters,
       # link clamps `mu_test` (as in `loglik_forPSIS` of loo_varsel()):
       eta = if (!fold$refmodel$family$for_latent) fold$eta_test
     )
+    summaries_sub <- perf_eval_out[["sub_summaries"]]
+    if (full_ref) {
+      # The submodel with all search terms gives the results of the reference
+      # model of the fold (see full_size_ref_ok()):
+      summaries_sub[length(summaries_sub)] <- list(summaries_ref)
+    }
 
     return(nlist(predictor_ranking = search_path[["predictor_ranking"]],
-                 summaries_sub = perf_eval_out[["sub_summaries"]],
+                 summaries_sub,
                  summaries_ref, clust_used_eval = perf_eval_out[["clust_used"]],
                  nprjdraws_eval = perf_eval_out[["nprjdraws"]]))
   }
@@ -1615,7 +1647,8 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws, nclusters,
   # keep only the objects that one_fold() uses (in particular not `list_cv`;
   # each task gets only its folds):
   one_fold <- fun_with_objs(one_fold, c(
-    "K", "method", "nclusters", "nclusters_pred", "ndraws", "ndraws_pred",
+    "K", "full_ref", "method", "nclusters", "nclusters_pred", "ndraws",
+    "ndraws_pred",
     "nterms_max", "penalty", "refit_prj", "refmodel", "search_control",
     "search_out_rks_was_null", "search_path_fulldata", "search_screen",
     "search_terms", "validate_search", "verbose", "y_wobs_test"

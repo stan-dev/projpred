@@ -2183,8 +2183,8 @@ if (run_cvvs) {
 vsel_nms <- c(
   "refmodel", "nobs_train", "search_path", "predictor_ranking",
   "predictor_ranking_cv", "ce", "type_test", "y_wobs_test", "nobs_test",
-  "summaries", "summaries_fast", "nterms_all", "nterms_max", "method",
-  "cv_method", "nloo", "loo_inds", "K",
+  "summaries", "summaries_fast", "nterms_all", "nterms_max", "full_ref",
+  "method", "cv_method", "nloo", "loo_inds", "K",
   "validate_search", "loo_perturb_alpha", "cvfits", "args_search",
   "clust_used_search",
   "clust_used_eval", "nprjdraws_search", "nprjdraws_eval", "refit_prj",
