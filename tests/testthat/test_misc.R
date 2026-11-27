@@ -6,12 +6,12 @@ test_that(paste(
   "get_refdist(): `ndraws = NULL` and `nclusters = NULL` leads to",
   "`ndraws = S` (and `nclusters = NULL`)"
 ), {
-  skip_if_no_setups(refmods)
+  skip_if_no_setups(args_ref)
   withr::local_seed(seed2_tst)
-  for (tstsetup in names(refmods)) {
-    refdist <- get_refdist(refmods[[tstsetup]])
+  for (tstsetup in kept_tst("ref", names(args_ref))) {
+    refdist <- get_refdist(get_ref(tstsetup))
     if (args_ref[[tstsetup]]$prj_nm == "augdat") {
-      nobsv_fac <- length(refmods[[tstsetup]]$family$cats)
+      nobsv_fac <- length(get_ref(tstsetup)$family$cats)
     } else {
       nobsv_fac <- 1L
     }
@@ -23,7 +23,7 @@ test_that(paste(
       nobsv_expected = nobsv * nobsv_fac,
       nprjdraws_expected = nrefdraws,
       clust_expected = FALSE,
-      fam_expected = refmods[[tstsetup]]$family$family,
+      fam_expected = get_ref(tstsetup)$family$family,
       info_str = tstsetup
     )
   }
@@ -33,16 +33,16 @@ test_that(paste(
   "`ndraws` and/or `nclusters` too big causes them to be cut off at the number",
   "of posterior draws in the reference model"
 ), {
-  skip_if_no_setups(refmods)
+  skip_if_no_setups(args_ref)
   withr::local_seed(seed2_tst)
-  for (tstsetup in names(refmods)) {
+  for (tstsetup in kept_tst("ref", names(args_ref))) {
     for (ndraws_crr in list(nrefdraws + 1L)) {
       for (nclusters_crr in list(NULL, nrefdraws + 1L)) {
-        refdist <- get_refdist(refmods[[tstsetup]],
+        refdist <- get_refdist(get_ref(tstsetup),
                                ndraws = ndraws_crr,
                                nclusters = nclusters_crr)
         if (args_ref[[tstsetup]]$prj_nm == "augdat") {
-          nobsv_fac <- length(refmods[[tstsetup]]$family$cats)
+          nobsv_fac <- length(get_ref(tstsetup)$family$cats)
         } else {
           nobsv_fac <- 1L
         }
@@ -51,7 +51,7 @@ test_that(paste(
           nobsv_expected = nobsv * nobsv_fac,
           nprjdraws_expected = nrefdraws,
           clust_expected = FALSE,
-          fam_expected = refmods[[tstsetup]]$family$family,
+          fam_expected = get_ref(tstsetup)$family$family,
           info_str = paste(tstsetup, ndraws_crr, nclusters_crr, sep = "__")
         )
       }
@@ -121,14 +121,14 @@ test_that("rstanarm: special formulas work", {
   # Within projpred, arithmetic expressions on the left-hand side of a formula
   # are handled by get_refmodel() and init_refmodel(); arithmetic expressions on
   # the right-hand side of a formula are handled by the `div_minimizer`.
-  tstsetups <- grep("^rstanarm.*\\.spclformul", names(fits), value = TRUE)
+  tstsetups <- grep("^rstanarm.*\\.spclformul", names(args_fit), value = TRUE)
   # Compare the "special formula" fit with the corresponding "standard formula"
   # fit (which does not have the special formula elements):
   for (tstsetup in tstsetups) {
-    mf_spclformul <- fits[[tstsetup]]$model
+    mf_spclformul <- get_fit(tstsetup)$model
     if (grepl("\\.glmm\\.", tstsetup)) {
       expect_null(mf_spclformul, info = tstsetup)
-      mf_spclformul <- fits[[tstsetup]]$glmod$fr
+      mf_spclformul <- get_fit(tstsetup)$glmod$fr
     } else {
       expect_false(is.null(mf_spclformul), info = tstsetup)
     }
@@ -136,11 +136,11 @@ test_that("rstanarm: special formulas work", {
 
     tstsetup_stdformul <- sub("\\.spclformul", ".stdformul", tstsetup)
     stopifnot(tstsetup_stdformul != tstsetup)
-    if (tstsetup_stdformul %in% names(fits)) {
-      mf_stdformul <- fits[[tstsetup_stdformul]]$model
+    if (tstsetup_stdformul %in% names(args_fit)) {
+      mf_stdformul <- get_fit(tstsetup_stdformul)$model
       if (grepl("\\.glmm\\.", tstsetup_stdformul)) {
         expect_null(mf_stdformul, info = tstsetup_stdformul)
-        mf_stdformul <- fits[[tstsetup_stdformul]]$glmod$fr
+        mf_stdformul <- get_fit(tstsetup_stdformul)$glmod$fr
       } else {
         expect_false(is.null(mf_stdformul), info = tstsetup_stdformul)
       }

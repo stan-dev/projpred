@@ -1,7 +1,7 @@
 # Setup -------------------------------------------------------------------
 
 # Note: Since PR #351, offsets are not supported anymore for `datafit`s. Here,
-# we use the data as generated in `setup.R`, i.e., sometimes with offsets. So
+# we use the data of `helpers/data.R`, i.e., sometimes with offsets. So
 # far, this doesn't seem to cause problems in the submodel fitting routines, but
 # it might do in the future. Then, either the scenarios including offsets have
 # to be excluded or new data has to be generated without offsets.
@@ -34,7 +34,7 @@
 # model fit, it doesn't make a difference if rstanarm or brms is used as the
 # basis here for retrieving the formula, data, and family):
 args_datafit <- lapply(setNames(
-  nm = grep("^brms\\.", names(refmods), value = TRUE, invert = TRUE)
+  nm = grep("^brms\\.", names(args_ref), value = TRUE, invert = TRUE)
 ), function(tstsetup_ref) {
   tstsetup_fit <- args_ref[[tstsetup_ref]]$tstsetup_fit
   c(nlist(tstsetup_fit), only_nonargs(args_fit[[tstsetup_fit]]))
@@ -207,7 +207,7 @@ test_that("init_refmodel(): `object` of class `datafit` works", {
       is_datafit = TRUE,
       pkg_nm = args_datafit[[tstsetup]]$pkg_nm,
       fit_expected = NULL,
-      formul_expected = get_formul_from_fit(fits[[tstsetup_fit]]),
+      formul_expected = get_formul_from_fit(get_fit(tstsetup_fit)),
       with_spclformul = with_spclformul_crr,
       wobs_expected = wobs_expected_crr,
       offs_expected = rep(0, nobsv),

@@ -4,21 +4,21 @@
 
 test_that("pe: `object` of class `projection` works", {
   skip_if_not(run_prj)
-  for (tstsetup in names(prjs)) {
-    if (!is.null(refmods[[args_prj[[tstsetup]]$tstsetup_ref]]$family$cats)) {
+  for (tstsetup in kept_tst("pe", names(args_prj))) {
+    if (!is.null(get_ref(args_prj[[tstsetup]]$tstsetup_ref)$family$cats)) {
       ncats_nlats_expected_crr <- length(
-        refmods[[args_prj[[tstsetup]]$tstsetup_ref]]$family$cats
+        get_ref(args_prj[[tstsetup]]$tstsetup_ref)$family$cats
       )
     } else {
       ncats_nlats_expected_crr <- integer()
     }
     ndr_ncl <- ndr_ncl_dtls(args_prj[[tstsetup]])
-    if (!has_const_wdr_prj(prjs[[tstsetup]])) {
-      wdr_crr <- prjs[[tstsetup]][["wdraws_prj"]]
+    if (!has_const_wdr_prj(get_prj(tstsetup))) {
+      wdr_crr <- get_prj(tstsetup)[["wdraws_prj"]]
     } else {
       wdr_crr <- NULL
     }
-    pe_tester(pes[[tstsetup]],
+    pe_tester(get_pe(tstsetup),
               nprjdraws_expected = ndr_ncl$nprjdraws,
               wdraws_prj_expected = wdr_crr,
               ncats_nlats_expected = list(ncats_nlats_expected_crr),
@@ -30,33 +30,33 @@ test_that(paste(
   "pe: `object` of (informal) class `proj_list` (based on varsel()) works"
 ), {
   skip_if_not(run_vs)
-  for (tstsetup in names(prjs_vs)) {
+  for (tstsetup in kept_tst("pe_vs", names(args_prj_vs))) {
     tstsetup_vs <- args_prj_vs[[tstsetup]]$tstsetup_vsel
     nterms_crr <- args_prj_vs[[tstsetup]]$nterms
     if (is.null(nterms_crr)) {
-      nterms_crr <- suggest_size(vss[[tstsetup_vs]], warnings = FALSE)
+      nterms_crr <- suggest_size(get_vs(tstsetup_vs), warnings = FALSE)
     }
     if (!is.null(
-      refmods[[args_prj_vs[[tstsetup]]$tstsetup_ref]]$family$cats
+      get_ref(args_prj_vs[[tstsetup]]$tstsetup_ref)$family$cats
     )) {
       ncats_nlats_expected_crr <- length(
-        refmods[[args_prj_vs[[tstsetup]]$tstsetup_ref]]$family$cats
+        get_ref(args_prj_vs[[tstsetup]]$tstsetup_ref)$family$cats
       )
     } else {
       ncats_nlats_expected_crr <- integer()
     }
     ndr_ncl <- ndr_ncl_dtls(args_prj_vs[[tstsetup]])
-    if (!has_const_wdr_prj(prjs_vs[[tstsetup]])) {
+    if (!has_const_wdr_prj(get_prj_vs(tstsetup))) {
       if (length(nterms_crr) > 1) {
-        wdr_crr <- drop(unique(do.call(rbind, lapply(prjs_vs[[tstsetup]], "[[",
+        wdr_crr <- drop(unique(do.call(rbind, lapply(get_prj_vs(tstsetup), "[[",
                                                      "wdraws_prj"))))
       } else {
-        wdr_crr <- prjs_vs[[tstsetup]][["wdraws_prj"]]
+        wdr_crr <- get_prj_vs(tstsetup)[["wdraws_prj"]]
       }
     } else {
       wdr_crr <- NULL
     }
-    pe_tester(pes_vs[[tstsetup]],
+    pe_tester(get_pe_vs(tstsetup),
               len_expected = length(nterms_crr),
               nprjdraws_expected = ndr_ncl$nprjdraws,
               wdraws_prj_expected = wdr_crr,
@@ -71,33 +71,33 @@ test_that(paste(
   "pe: `object` of (informal) class `proj_list` (based on cv_varsel()) works"
 ), {
   skip_if_not(run_cvvs)
-  for (tstsetup in names(prjs_cvvs)) {
+  for (tstsetup in kept_tst("pe_cvvs", names(args_prj_cvvs))) {
     tstsetup_cvvs <- args_prj_cvvs[[tstsetup]]$tstsetup_vsel
     nterms_crr <- args_prj_cvvs[[tstsetup]]$nterms
     if (is.null(nterms_crr)) {
-      nterms_crr <- suggest_size(cvvss[[tstsetup_cvvs]], warnings = FALSE)
+      nterms_crr <- suggest_size(get_cvvs(tstsetup_cvvs), warnings = FALSE)
     }
     if (!is.null(
-      refmods[[args_prj_cvvs[[tstsetup]]$tstsetup_ref]]$family$cats
+      get_ref(args_prj_cvvs[[tstsetup]]$tstsetup_ref)$family$cats
     )) {
       ncats_nlats_expected_crr <- length(
-        refmods[[args_prj_cvvs[[tstsetup]]$tstsetup_ref]]$family$cats
+        get_ref(args_prj_cvvs[[tstsetup]]$tstsetup_ref)$family$cats
       )
     } else {
       ncats_nlats_expected_crr <- integer()
     }
     ndr_ncl <- ndr_ncl_dtls(args_prj_cvvs[[tstsetup]])
-    if (!has_const_wdr_prj(prjs_cvvs[[tstsetup]])) {
+    if (!has_const_wdr_prj(get_prj_cvvs(tstsetup))) {
       if (length(nterms_crr) > 1) {
-        wdr_crr <- drop(unique(do.call(rbind, lapply(prjs_cvvs[[tstsetup]],
+        wdr_crr <- drop(unique(do.call(rbind, lapply(get_prj_cvvs(tstsetup),
                                                      "[[", "wdraws_prj"))))
       } else {
-        wdr_crr <- prjs_cvvs[[tstsetup]][["wdraws_prj"]]
+        wdr_crr <- get_prj_cvvs(tstsetup)[["wdraws_prj"]]
       }
     } else {
       wdr_crr <- NULL
     }
-    pe_tester(pes_cvvs[[tstsetup]],
+    pe_tester(get_pe_cvvs(tstsetup),
               len_expected = length(nterms_crr),
               nprjdraws_expected = ndr_ncl$nprjdraws,
               wdraws_prj_expected = wdr_crr,
@@ -112,12 +112,12 @@ test_that(paste(
 
 test_that("pe: equivalent to proj_linpred(transform = TRUE)$pred", {
   skip_if_not(run_prj)
-  for (tstsetup in names(prjs)) {
+  for (tstsetup in kept_tst("prj", names(args_prj))) {
     ndr_ncl <- ndr_ncl_dtls(args_prj[[tstsetup]])
-    pl_true <- proj_linpred(prjs[[tstsetup]], transform = TRUE,
+    pl_true <- proj_linpred(get_prj(tstsetup), transform = TRUE,
                             allow_nonconst_wdraws_prj = ndr_ncl$clust_used_gt1,
                             .seed = seed2_tst)
-    pe_crr <- proj_epred(prjs[[tstsetup]],
+    pe_crr <- proj_epred(get_prj(tstsetup),
                          allow_nonconst_wdraws_prj = ndr_ncl$clust_used_gt1,
                          .seed = seed2_tst)
     expect_equal(pe_crr, pl_true$pred, info = tstsetup)
@@ -128,37 +128,37 @@ test_that("pe: equivalent to proj_linpred(transform = TRUE)$pred", {
 
 test_that("pe: `newdata` works", {
   skip_if_not(run_prj)
-  for (tstsetup in names(prjs)) {
+  for (tstsetup in kept_tst("prj", names(args_prj))) {
     ndr_ncl <- ndr_ncl_dtls(args_prj[[tstsetup]])
-    if (!has_const_wdr_prj(prjs[[tstsetup]])) {
-      wdr_crr <- prjs[[tstsetup]][["wdraws_prj"]]
+    if (!has_const_wdr_prj(get_prj(tstsetup))) {
+      wdr_crr <- get_prj(tstsetup)[["wdraws_prj"]]
     } else {
       wdr_crr <- NULL
     }
     dat_crr <- get_dat(tstsetup)
     for (nobsv_crr in nobsv_tst) {
       if (!is.null(
-        refmods[[args_prj[[tstsetup]]$tstsetup_ref]]$family$cats
+        get_ref(args_prj[[tstsetup]]$tstsetup_ref)$family$cats
       )) {
         ncats_nlats_expected_crr <- length(
-          refmods[[args_prj[[tstsetup]]$tstsetup_ref]]$family$cats
+          get_ref(args_prj[[tstsetup]]$tstsetup_ref)$family$cats
         )
       } else {
         ncats_nlats_expected_crr <- integer()
       }
       if (grepl("\\.with_wobs|\\.binom", tstsetup)) {
-        wobs_crr <- head(prjs[[tstsetup]]$refmodel$wobs, nobsv_crr)
+        wobs_crr <- head(get_prj(tstsetup)$refmodel$wobs, nobsv_crr)
       } else {
         wobs_crr <- NULL
       }
       if (grepl("\\.with_offs", tstsetup)) {
-        offs_crr <- head(prjs[[tstsetup]]$refmodel$offset, nobsv_crr)
+        offs_crr <- head(get_prj(tstsetup)$refmodel$offset, nobsv_crr)
       } else {
         offs_crr <- NULL
       }
       expect_warning_all(
         pe_crr <- proj_epred(
-          prjs[[tstsetup]],
+          get_prj(tstsetup),
           newdata = head(dat_crr, nobsv_crr),
           weightsnew = wobs_crr,
           offsetnew = offs_crr,
@@ -183,18 +183,18 @@ test_that("pe: `newdata` works", {
 
 test_that("pe: `integrated` works", {
   skip_if_not(run_prj)
-  for (tstsetup in names(prjs)) {
+  for (tstsetup in kept_tst("prj", names(args_prj))) {
     ndr_ncl <- ndr_ncl_dtls(args_prj[[tstsetup]])
     if (!is.null(
-      refmods[[args_prj[[tstsetup]]$tstsetup_ref]]$family$cats
+      get_ref(args_prj[[tstsetup]]$tstsetup_ref)$family$cats
     )) {
       ncats_nlats_expected_crr <- length(
-        refmods[[args_prj[[tstsetup]]$tstsetup_ref]]$family$cats
+        get_ref(args_prj[[tstsetup]]$tstsetup_ref)$family$cats
       )
     } else {
       ncats_nlats_expected_crr <- integer()
     }
-    pe_intgr <- proj_epred(prjs[[tstsetup]], integrated = TRUE,
+    pe_intgr <- proj_epred(get_prj(tstsetup), integrated = TRUE,
                            .seed = seed2_tst)
     pe_tester(pe_intgr,
               nprjdraws_expected = 1L,
@@ -209,15 +209,15 @@ test_that(paste(
   "pe: `return_draws_matrix` causes a conversion of the output type"
 ), {
   skip_if_not(run_prj)
-  for (tstsetup in names(prjs)) {
+  for (tstsetup in kept_tst("pe", names(args_prj))) {
     ndr_ncl <- ndr_ncl_dtls(args_prj[[tstsetup]])
-    pe_orig <- pes[[tstsetup]]
-    pe_dr <- proj_epred(prjs[[tstsetup]],
+    pe_orig <- get_pe(tstsetup)
+    pe_dr <- proj_epred(get_prj(tstsetup),
                         return_draws_matrix = TRUE,
                         .seed = seed2_tst)
     if (args_prj[[tstsetup]]$prj_nm == "augdat" ||
         (args_prj[[tstsetup]]$prj_nm == "latent" && !is.null(
-          refmods[[args_prj[[tstsetup]]$tstsetup_ref]]$family$cats
+          get_ref(args_prj[[tstsetup]]$tstsetup_ref)$family$cats
         ))) {
       pe_orig_flat <- do.call(rbind, apply(pe_orig, 1, as.vector,
                                            simplify = FALSE))
@@ -225,9 +225,9 @@ test_that(paste(
       pe_orig_flat <- pe_orig
     }
     pe_dr_repl <- posterior::as_draws_matrix(pe_orig_flat)
-    if (!has_const_wdr_prj(prjs[[tstsetup]])) {
+    if (!has_const_wdr_prj(get_prj(tstsetup))) {
       pe_dr_repl <- posterior::weight_draws(
-        pe_dr_repl, weights = prjs[[tstsetup]][["wdraws_prj"]]
+        pe_dr_repl, weights = get_prj(tstsetup)[["wdraws_prj"]]
       )
     }
     expect_equal(pe_dr, pe_dr_repl, info = tstsetup)

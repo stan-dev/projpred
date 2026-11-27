@@ -1,8 +1,8 @@
 # get_refmodel() ----------------------------------------------------------
 
 test_that("`object` of class `stanreg` or `brmsfit` works", {
-  skip_if_no_setups(refmods)
-  for (tstsetup in names(refmods)) {
+  skip_if_no_setups(args_ref)
+  for (tstsetup in kept_tst("ref", names(args_ref))) {
     tstsetup_fit <- args_ref[[tstsetup]]$tstsetup_fit
     with_spclformul_crr <- grepl("\\.spclformul", tstsetup)
     if (args_ref[[tstsetup]]$fam_nm == "binom" ||
@@ -29,9 +29,9 @@ test_that("`object` of class `stanreg` or `brmsfit` works", {
       fam_orig_expected <- get(paste0("f_", args_fit[[tstsetup_fit]]$fam_nm))
     }
     refmodel_tester(
-      refmods[[tstsetup]],
+      get_ref(tstsetup),
       pkg_nm = args_ref[[tstsetup]]$pkg_nm,
-      fit_expected = fits[[tstsetup_fit]],
+      fit_expected = get_fit(tstsetup_fit),
       with_spclformul = with_spclformul_crr,
       wobs_expected = wobs_expected_crr,
       offs_expected = offs_expected_crr,
@@ -94,7 +94,9 @@ test_that("reference models lacking an intercept work", {
                    "offset", "y_oscale")
   expect_equal(
     refmod_no_icpt[nms_compare],
-    refmods$rstanarm.glm.gauss.stdformul.with_wobs.with_offs[nms_compare],
+    get_ref(
+      "rstanarm.glm.gauss.stdformul.with_wobs.with_offs.trad"
+    )[nms_compare],
     tolerance = .Machine$double.eps,
     info = "rstanarm.glm.gauss.stdformul.with_wobs.with_offs"
   )
@@ -115,7 +117,7 @@ test_that("offsets specified via argument `offset` work", {
   refmod_offs_arg <- get_refmodel(fit_offs_arg)
   expect_equal(
     as.matrix(fit_offs_arg),
-    as.matrix(fits$rstanarm.glm.gauss.stdformul.with_wobs.with_offs),
+    as.matrix(get_fit("rstanarm.glm.gauss.stdformul.with_wobs.with_offs")),
     tolerance = 1e-12,
     info = "rstanarm.glm.gauss.stdformul.with_wobs.with_offs"
   )
@@ -123,7 +125,9 @@ test_that("offsets specified via argument `offset` work", {
                    "wdraws_ref", "offset", "y_oscale")
   expect_equal(
     refmod_offs_arg[nms_compare],
-    refmods$rstanarm.glm.gauss.stdformul.with_wobs.with_offs[nms_compare],
+    get_ref(
+      "rstanarm.glm.gauss.stdformul.with_wobs.with_offs.trad"
+    )[nms_compare],
     tolerance = .Machine$double.eps,
     info = "rstanarm.glm.gauss.stdformul.with_wobs.with_offs"
   )
@@ -144,10 +148,11 @@ test_that(paste(
     chains = chains_tst, seed = seed_fit, iter = iter_tst, QR = TRUE,
     refresh = 0
   ))
-  if ("rstanarm.glm.binom.stdformul.without_wobs.with_offs" %in% names(fits)) {
+  if ("rstanarm.glm.binom.stdformul.without_wobs.with_offs" %in%
+      names(args_fit)) {
     expect_equal(
       as.matrix(fit_binom_1col_wobs),
-      as.matrix(fits$rstanarm.glm.binom.stdformul.without_wobs.with_offs)
+      as.matrix(get_fit("rstanarm.glm.binom.stdformul.without_wobs.with_offs"))
     )
   }
   expect_error(get_refmodel(fit_binom_1col_wobs),
@@ -292,7 +297,7 @@ test_that("function calls in group terms fail", {
   tstsetup <- "brms.glmm.brnll.stdformul.without_wobs.without_offs"
   args_fit_i <- args_fit[[tstsetup]]
   skip_if_not(!is.null(args_fit_i))
-  fit_gr <- fits[[tstsetup]]
+  fit_gr <- get_fit(tstsetup)
   fit_gr$formula <- update(fit_gr$formula,
                            . ~ . - (xco.1 | z.1) + (xco.1 | gr(z.1)))
   expect_error(
@@ -310,14 +315,14 @@ test_that(paste(
   tstsetup <- "brms.glmm.brnll.stdformul.without_wobs.without_offs"
   args_fit_i <- args_fit[[tstsetup]]
   skip_if_not(!is.null(args_fit_i))
-  fit_id <- fits[[tstsetup]]
+  fit_id <- get_fit(tstsetup)
   fit_id$formula <- update(fit_id$formula,
                            . ~ . - (xco.1 | z.1) + (xco.1 |p| z.1))
   expect_message(refmod_id <- get_refmodel(fit_id),
                  "correlation ID(s) `p`", fixed = TRUE, info = tstsetup)
   expect_identical(extract_terms_response(refmod_id$formula)$group_terms,
                    "xco.1 | z.1", info = tstsetup)
-  fit_dbar <- fits[[tstsetup]]
+  fit_dbar <- get_fit(tstsetup)
   fit_dbar$formula <- update(fit_dbar$formula,
                              . ~ . - (xco.1 | z.1) + (xco.1 || z.1))
   expect_error(get_refmodel(fit_dbar),
@@ -357,12 +362,12 @@ test_that(paste(
   "the formula of an rstanarm GAMM reference model has no linear terms for",
   "the variables of the smooth terms, as for an rstanarm GAM"
 ), {
-  skip_if_no_setups(refmods)
+  skip_if_no_setups(args_ref)
   skip_if_not(run_additive)
-  tstsetups <- grep("^rstanarm\\.gam{1,2}\\.", names(refmods), value = TRUE)
+  tstsetups <- grep("^rstanarm\\.gam{1,2}\\.", names(args_ref), value = TRUE)
   expect_true(any(grepl("^rstanarm\\.gamm\\.", tstsetups)))
-  for (tstsetup in tstsetups) {
-    fml <- refmods[[tstsetup]]$formula
+  for (tstsetup in kept_tst("ref", tstsetups)) {
+    fml <- get_ref(tstsetup)$formula
     expect_identical(smooth_covered_terms(fml), character(0), info = tstsetup)
     expect_true(formula_contains_additive_terms(fml), info = tstsetup)
     if (grepl("^rstanarm\\.gamm\\.", tstsetup)) {
@@ -372,10 +377,10 @@ test_that(paste(
 })
 
 test_that("get_refmodel() is idempotent", {
-  skip_if_no_setups(refmods)
-  for (tstsetup in names(refmods)) {
-    expect_identical(get_refmodel(refmods[[tstsetup]]),
-                     refmods[[tstsetup]],
+  skip_if_no_setups(args_ref)
+  for (tstsetup in kept_tst("ref", names(args_ref))) {
+    expect_identical(get_refmodel(get_ref(tstsetup)),
+                     get_ref(tstsetup),
                      info = tstsetup)
   }
 })
@@ -384,11 +389,11 @@ test_that(paste(
   "the `cvrefbuilder` of get_refmodel.stanreg() takes the default `dis` from",
   "the fold-wise fit and passes a user-supplied `dis` unchanged"
 ), {
-  tstsetups <- grep("^rstanarm\\..*\\.gauss\\.", names(fits), value = TRUE)
+  tstsetups <- grep("^rstanarm\\..*\\.gauss\\.", names(args_fit), value = TRUE)
   skip_if_not(length(tstsetups) >= 2)
   # The second fit stands in for a fold refit:
-  fit_full <- fits[[tstsetups[1]]]
-  fit_fold <- fits[[tstsetups[2]]]
+  fit_full <- get_fit(tstsetups[1])
+  fit_fold <- get_fit(tstsetups[2])
   sigma_full <- data.frame(fit_full)[, "sigma"]
   sigma_fold <- data.frame(fit_fold)[, "sigma"]
   skip_if(isTRUE(all.equal(sigma_full, sigma_fold)))
@@ -406,9 +411,9 @@ test_that(paste(
   "get_refmodel.stanreg() uses user-supplied `cvfun` and `cvrefbuilder`",
   "functions in K-fold CV"
 ), {
-  tstsetups <- grep("^rstanarm\\..*\\.gauss\\.", names(fits), value = TRUE)
+  tstsetups <- grep("^rstanarm\\..*\\.gauss\\.", names(args_fit), value = TRUE)
   skip_if_not(length(tstsetups) >= 1)
-  fit <- fits[[tstsetups[1]]]
+  fit <- get_fit(tstsetups[1])
 
   # The user-supplied `cvfun` returns the full-data fit for each fold, so no
   # refit is needed:
@@ -447,11 +452,11 @@ test_that(paste(
   "the default of the other, and the default `cvrefbuilder` does not pass a",
   "user-supplied `cvfun` to the folds"
 ), {
-  tstsetups <- grep("^rstanarm\\..*\\.gauss\\.", names(fits), value = TRUE)
+  tstsetups <- grep("^rstanarm\\..*\\.gauss\\.", names(args_fit), value = TRUE)
   skip_if_not(length(tstsetups) >= 2)
   # The second fit stands in for a fold refit:
-  fit_full <- fits[[tstsetups[1]]]
-  fit_fold <- fits[[tstsetups[2]]]
+  fit_full <- get_fit(tstsetups[1])
+  fit_fold <- get_fit(tstsetups[2])
   sigma_fold <- data.frame(fit_fold)[, "sigma"]
   refmod_dflt <- get_refmodel(fit_full)
 
@@ -473,9 +478,9 @@ test_that(paste(
   "get_refmodel.stanreg() rejects a `cvfun` or `cvrefbuilder` that is not a",
   "function"
 ), {
-  tstsetups <- grep("^rstanarm\\.", names(fits), value = TRUE)
+  tstsetups <- grep("^rstanarm\\.", names(args_fit), value = TRUE)
   skip_if_not(length(tstsetups) >= 1)
-  fit <- fits[[tstsetups[1]]]
+  fit <- get_fit(tstsetups[1])
   expect_error(get_refmodel(fit, cvfun = "a"),
                "^Argument `cvfun` must be a function or `NULL`\\.$")
   expect_error(get_refmodel(fit, cvrefbuilder = 1),
@@ -485,14 +490,14 @@ test_that(paste(
 # predict.refmodel() ------------------------------------------------------
 
 test_that("invalid `type` fails", {
-  skip_if_not(length(fits) > 0)
-  expect_error(predict(refmods[[1]], dat, type = "zzz"),
+  skip_if_not(length(args_fit) > 0)
+  expect_error(predict(get_ref(names(args_ref)[1]), dat, type = "zzz"),
                "^type should be one of")
 })
 
 test_that("invalid `ynew` fails", {
-  skip_if_not(length(fits) > 0)
-  expect_error(predict(refmods[[1]], dat, ynew = dat),
+  skip_if_not(length(args_fit) > 0)
+  expect_error(predict(get_ref(names(args_ref)[1]), dat, ynew = dat),
                "^Argument `ynew` must be a numeric vector\\.$")
 })
 
@@ -500,8 +505,8 @@ test_that(paste(
   "`object` of class `refmodel` and arguments `newdata`, `ynew`, and `type`",
   "work"
 ), {
-  skip_if_no_setups(refmods)
-  for (tstsetup in names(refmods)) {
+  skip_if_no_setups(args_ref)
+  for (tstsetup in kept_tst("ref", names(args_ref))) {
     pkg_crr <- args_ref[[tstsetup]]$pkg_nm
     mod_crr <- args_ref[[tstsetup]]$mod_nm
     fam_crr <- args_ref[[tstsetup]]$fam_nm
@@ -524,9 +529,9 @@ test_that(paste(
       if (pkg_crr == "rstanarm" && grepl("\\.with_offs\\.", tstsetup)) {
         dat_crr$projpred_internal_offs_stanreg <- 0
       }
-      y_nm <- stdize_lhs(refmods[[tstsetup]]$formula)$y_nm
-      y_crr_link <- rowMeans(refmods[[tstsetup]]$ref_predfun(
-        fit = refmods[[tstsetup]]$fit, newdata = dat_crr, excl_offs = FALSE,
+      y_nm <- stdize_lhs(get_ref(tstsetup)$formula)$y_nm
+      y_crr_link <- rowMeans(get_ref(tstsetup)$ref_predfun(
+        fit = get_ref(tstsetup)$fit, newdata = dat_crr, excl_offs = FALSE,
         mlvl_allrandom = getOption("projpred.mlvl_proj_ref_new", FALSE)
       ))
     } else {
@@ -536,7 +541,7 @@ test_that(paste(
     # Without `ynew`:
     expect_warning_all(
       withCallingHandlers(
-        predref_resp <- predict(refmods[[tstsetup]], dat, weightsnew = wobs_crr,
+        predref_resp <- predict(get_ref(tstsetup), dat, weightsnew = wobs_crr,
                                 offsetnew = offs_crr, type = "response"),
         warning = function(w) {
           if (grepl("(nobars|subbars|findbars|mkReTrms).*reformulas", conditionMessage(w))) {
@@ -550,7 +555,7 @@ test_that(paste(
     )
 
     expect_warning_all(
-      predref_link <- predict(refmods[[tstsetup]], dat, weightsnew = wobs_crr,
+      predref_link <- predict(get_ref(tstsetup), dat, weightsnew = wobs_crr,
                               offsetnew = offs_crr, type = "link"),
       get_warn_wrhs_orhs(tstsetup, weightsnew = wobs_crr,
                          offsetnew = offs_crr),
@@ -559,7 +564,7 @@ test_that(paste(
 
     # With `ynew`:
     expect_warning_all(
-      predref_ynew_resp <- predict(refmods[[tstsetup]], dat,
+      predref_ynew_resp <- predict(get_ref(tstsetup), dat,
                                    weightsnew = wobs_crr, offsetnew = offs_crr,
                                    ynew = y_crr, type = "response"),
       get_warn_wrhs_orhs(tstsetup, weightsnew = wobs_crr,
@@ -567,7 +572,7 @@ test_that(paste(
       info = tstsetup
     )
     expect_warning_all(
-      predref_ynew_link <- predict(refmods[[tstsetup]], dat,
+      predref_ynew_link <- predict(get_ref(tstsetup), dat,
                                    weightsnew = wobs_crr, offsetnew = offs_crr,
                                    ynew = y_crr_link, type = "link"),
       get_warn_wrhs_orhs(tstsetup, weightsnew = wobs_crr,
@@ -577,9 +582,9 @@ test_that(paste(
 
     # Checks without `ynew`:
     if (prj_crr %in% c("latent", "augdat")) {
-      if (prj_crr == "augdat" || !is.null(refmods[[tstsetup]]$family$cats)) {
+      if (prj_crr == "augdat" || !is.null(get_ref(tstsetup)$family$cats)) {
         expect_identical(dim(predref_resp),
-                         c(nobsv, length(refmods[[tstsetup]]$family$cats)),
+                         c(nobsv, length(get_ref(tstsetup)$family$cats)),
                          info = tstsetup)
         expect_all_true_tst(predref_resp >= 0 & predref_resp <= 1,
                             info = tstsetup)
@@ -593,7 +598,7 @@ test_that(paste(
       }
       if (prj_crr == "augdat") {
         expect_identical(dim(predref_link),
-                         c(nobsv, length(refmods[[tstsetup]]$family$cats) - 1L),
+                         c(nobsv, length(get_ref(tstsetup)$family$cats) - 1L),
                          info = tstsetup)
       } else if (prj_crr == "latent") {
         expect_true(is.vector(predref_link, "double"), info = tstsetup)

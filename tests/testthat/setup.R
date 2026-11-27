@@ -22,55 +22,9 @@ withr::defer({
 
 options(warn = 1)
 
-# These switches may be set to `FALSE` to save time (e.g., when debugging
-# interactively):
-# Run more tests, at the downside of increased runtime?:
-run_more <- identical(Sys.getenv("RUN_MORE"), "true")
-# Run project()?:
-run_prj <- identical(Sys.getenv("NOT_CRAN"), "true")
-# Run varsel()?:
-run_vs <- identical(Sys.getenv("NOT_CRAN"), "true")
-# Run cv_varsel()?:
-run_cvvs <- run_vs
-# Run cv_varsel() with `validate_search = TRUE` always (`TRUE`) or just for L1
-# search (`FALSE`)?:
-run_valsearch_always <- FALSE
-# Run cv_varsel() with `validate_search = TRUE` also for the latent and the
-# augmented-data projection (and the corresponding traditional projection
-# settings which are used for comparison)? (Only relevant if
-# `run_valsearch_always = FALSE`.):
-run_valsearch_aug_lat <- FALSE
-# Run the `cvfits` test for all possible test setups (`TRUE`) or just for the
-# first one among the GLMMs (`FALSE`; note that if there is no GLMM available in
-# that test, the first test setup among those for K-fold CV is used)?:
-run_cvfits_all <- run_more
-# Run tests for `brmsfit`s?:
-run_brms <- identical(Sys.getenv("NOT_CRAN"), "true")
-# Run snapshot tests?:
-# Notes:
-#   * For general information about snapshot tests, see, e.g.,
-#   `?expect_snapshot` and `vignette("snapshotting", package = "testthat")`.
-#   * The snapshot tests are at least OS-dependent (perhaps even
-#   machine-dependent), so they only make sense locally. Therefore, we don't run
-#   the snapshot tests on CRAN or continuous integration (CI) systems. The
-#   detection of a CI system by the help of environment variable `CI` needs
-#   special care, see <https://github.com/r-lib/testthat/issues/825> and the
-#   source code of `testthat:::on_ci()`.
-#   * The last of the following conditions avoids that the snapshot tests are
-#   run by a local `R CMD check` (at least in RStudio). The reason for avoiding
-#   this is that in `R CMD check`, the previous snapshots are not available (at
-#   least as long as they are listed in the `.Rbuildignore` file), so they would
-#   be re-created, which would throw a lot of test warnings (which could obscure
-#   potentially important warnings).
-run_snaps <- Sys.getenv("RUN_SNAPS")
-if (identical(run_snaps, "")) {
-  run_snaps <- identical(Sys.getenv("NOT_CRAN"), "true") &&
-    !identical(toupper(Sys.getenv("CI")), "TRUE") &&
-    identical(Sys.getenv("_R_CHECK_FORCE_SUGGESTS_"), "")
-} else {
-  run_snaps <- as.logical(toupper(run_snaps))
-  stopifnot(isTRUE(run_snaps) || isFALSE(run_snaps))
-}
+source(testthat::test_path("helpers", "switches.R"), local = TRUE)
+# Turn off the tests that need a package or more than one core if these are
+# not available:
 if (run_snaps && !requireNamespace("rlang", quietly = TRUE)) {
   warning("Package 'rlang' is needed for snapshot testing, but could not be ",
           "found. Deactivating snapshot testing now.")
@@ -81,14 +35,6 @@ if (run_snaps && !requireNamespace("vdiffr", quietly = TRUE)) {
           "found. Deactivating snapshot testing now.")
   run_snaps <- FALSE
 }
-# Run the tests that need parallel workers (see test_parallel.R)?:
-# Notes:
-#   * We don't run these tests on CRAN or continuous integration (CI) systems
-#   because parallelization might require special care there.
-#   * The parallelization is not tested on Windows.
-run_prll <- identical(Sys.getenv("NOT_CRAN"), "true") &&
-  !identical(toupper(Sys.getenv("CI")), "TRUE") &&
-  !identical(.Platform$OS.type, "windows")
 if (run_prll) {
   if (parallel::detectCores(logical = FALSE) == 1) {
     warning("Deactivating the parallel tests because only a single worker ",
@@ -96,31 +42,19 @@ if (run_prll) {
     run_prll <- FALSE
   }
 }
-# Run all test scripts (following this setup script) in a completely random RNG
-# state? (The tests should still pass then, because in all situations where RNG
-# is used, a specific seed is supposed to be set.):
-run_randRNG <- identical(Sys.getenv("NOT_CRAN"), "true")
-# Run tests for additive models (GAMs and GAMMs)?:
-run_additive <- TRUE
 
-# Use a factor or an integer response for ordinal and categorical families?:
-use_fac <- TRUE
-
-# Use polym() instead of poly()?:
-use_polym <- FALSE
-
-source(testthat::test_path("helpers", "skips.R"), local = TRUE)
 # When the tests end, restore the state of the random number generator:
 withr::local_preserve_seed(.local_envir = testthat::teardown_env())
-source(testthat::test_path("helpers", "unlist_cust.R"), local = TRUE)
+# These helpers use objects of this file. When testthat loads the package from
+# source (devtools::test(), testthat::test_local()), it does not source the
+# helper-*.R files into this environment; they are then in the package
+# environment (where an object of the same name in the global environment
+# hides them) and cannot see the objects of this file. So this file sources
+# these helpers itself:
 source(testthat::test_path("helpers", "testers.R"), local = TRUE)
 source(testthat::test_path("helpers", "args.R"), local = TRUE)
 source(testthat::test_path("helpers", "getters.R"), local = TRUE)
-source(testthat::test_path("helpers", "formul_handlers.R"), local = TRUE)
-source(testthat::test_path("helpers", "predictor_handlers.R"), local = TRUE)
-source(testthat::test_path("helpers", "dummies.R"), local = TRUE)
-source(testthat::test_path("helpers", "creators.R"), local = TRUE)
-source(testthat::test_path("helpers", "expectors.R"), local = TRUE)
+source(testthat::test_path("helpers", "fixtures.R"), local = TRUE)
 
 # Note: The following `mod_nms` refer to *generalized* (linear/additive,
 # multilevel) models. This is due to history (when these tests were written,
@@ -174,9 +108,9 @@ is_gamm_backsolve_msg <- function(msg) {
     grepl("singular matrix in 'backsolve'", msg, fixed = TRUE)
 }
 
-# Drop a test setup below only after a known upstream error, and only for the
-# model types (`mod_nm`) with that error. Other errors stop setup.R. `kfold`
-# marks the K-fold refits of run_cvfun().
+# A getter (see helpers/fixtures.R) drops a test setup only after a known
+# upstream error, and only for the model types (`mod_nm`) with that error.
+# `kfold` marks the K-fold refits of run_cvfun().
 is_known_setup_err <- function(msg, mod_nm, kfold = FALSE) {
   if (!is.character(mod_nm) || length(mod_nm) != 1L) {
     return(FALSE)
@@ -194,260 +128,13 @@ is_known_setup_err <- function(msg, mod_nm, kfold = FALSE) {
   }
   return(FALSE)
 }
-# The dropped test setups, one element per stage (see test_setup.R):
-setup_drops <- list()
-add_setup_drops <- function(stage, tstsetups) {
-  if (length(tstsetups) == 0) {
-    return(invisible())
-  }
-  setup_drops[[stage]] <<- tstsetups
-  message("[", stage, "] dropped ", length(tstsetups), " test setup(s) after ",
-          "a known upstream error: ", paste(tstsetups, collapse = ", "))
-  return(invisible())
-}
 
 # Data --------------------------------------------------------------------
 
-## Setup ------------------------------------------------------------------
-
-# Number of observations:
-nobsv <- 39L
-# Values for testing:
-nobsv_tst <- c(1L, nobsv %/% 3L)
-
-# For ordinal models (but also used for categorical models):
-nthres <- 2L
-ncat <- nthres + 1L
-yunq_num <- seq_len(ncat)
-yunq_chr <- paste0("y", yunq_num)
-# The intercepts at centered predictors, also known as thresholds:
-thres <- qlogis(seq_len(nthres) / ncat)
-link_str <- "logit"
-
-# Seed:
+# The data have their own seed. The global random state does not change:
 seed_dat <- 8541351
-set.seed(seed_dat)
-
-## GLMs --------------------------------------------------------------------
-## Add population-level effects to the intercept-(and-offset-)only model
-
-nterms_cont <- 3L
-x_cont <- matrix(rnorm(nobsv * nterms_cont), nobsv, nterms_cont)
-b_cont <- runif(nterms_cont, min = -0.5, max = 0.5)
-
-nlvl_fix <- c(3L, 2L)
-nlvl_fix <- setNames(nlvl_fix, seq_along(nlvl_fix))
-if (length(nlvl_fix) <= 1) {
-  names(nlvl_fix) <- paste0("z.", names(nlvl_fix))
-}
-nterms_cate <- length(nlvl_fix)
-x_cate_list <- lapply(nlvl_fix, function(nlvl_fix_i) {
-  x_cate <- gl(n = nlvl_fix_i, k = floor(nobsv / nlvl_fix_i), length = nobsv,
-               labels = paste0("lvl", seq_len(nlvl_fix_i)))
-  b_cate <- runif(nlvl_fix_i, min = -0.5, max = 0.5)
-  ### Using a model.matrix() approach:
-  # x_cate_mat <- model.matrix(~ 0 + x_cate)
-  # eta_cate <- x_cate_mat %*% b_cate
-  ###
-  ### Using an indexing approach:
-  eta_cate <- b_cate[x_cate]
-  ###
-  return(nlist(x_cate, eta_cate, b_cate))
-})
-
-# Intercept and offsets (offsets are added later):
-icpt <- -0.42
-offs_tst <- rnorm(nobsv)
-
-eta_glm <- icpt +
-  x_cont %*% b_cont +
-  do.call("+", lapply(x_cate_list, "[[", "eta_cate"))
-
-nterms_glm <- nterms_cont + nterms_cate
-
-## GLMMs ------------------------------------------------------------------
-## Add group-level effects to the GLMs, yielding GLMMs
-
-nlvl_ran <- c(6L)
-nlvl_ran <- setNames(nlvl_ran, seq_along(nlvl_ran))
-if (length(nlvl_ran) <= 1) {
-  names(nlvl_ran) <- paste0("z.", names(nlvl_ran))
-}
-# Multiply by 2 because of the random intercept as well as the random slope (the
-# latter for `x_cont[, 1]`):
-nterms_z <- length(nlvl_ran) * 2L
-z_list <- lapply(nlvl_ran, function(nlvl_ran_i) {
-  z <- gl(n = nlvl_ran_i, k = floor(nobsv / nlvl_ran_i), length = nobsv,
-          labels = paste0("lvl", seq_len(nlvl_ran_i)))
-  r_icpts <- rnorm(nlvl_ran_i, sd = 0.4)
-  r_xco1 <- rnorm(nlvl_ran_i, sd = 0.4)
-  eta_z <- r_icpts[z] + r_xco1[z] * x_cont[, 1]
-  return(nlist(z, eta_z, r_icpts, r_xco1))
-})
-eta_glmm <- eta_glm + do.call("+", lapply(z_list, "[[", "eta_z"))
-
-nterms_glmm <- nterms_glm + nterms_z
-
-## GAMs -------------------------------------------------------------------
-## Add nonlinear (smoothed) effects to the GLMs
-
-# For simplicity, always use the same nonlinear function (could be extended in
-# the future):
-s_mat <- apply(x_cont[, 1, drop = FALSE], 2, function(x, b = 2, c = - pi / 4) {
-  b * sin(x - c)
-})
-s_sum <- rowSums(s_mat)
-nterms_s <- ncol(s_mat)
-eta_gam <- eta_glm + s_sum
-
-# Multiply by 2 because of the baseline linear term as well as the standard
-# deviation for the wiggliness around it:
-nterms_gam <- nterms_glm + 2L * nterms_s
-
-## GAMMs ------------------------------------------------------------------
-## Add nonlinear (smoothed) effects to the GLMMs
-
-eta_gamm <- eta_glmm + s_sum
-
-nterms_gamm <- nterms_glmm + 2L * nterms_s
-
-## Combined dataset -------------------------------------------------------
-
-f_gauss <- gaussian()
-f_binom <- f_brnll <- binomial()
-f_poiss <- poisson()
-dis_tst <- runif(1L, 1, 2)
-wobs_tst <- sample(1:4, nobsv, replace = TRUE)
-# For the "brnll" `fam_nm`, offsets are simply not added to have some
-# scenarios without offsets.
-# For GAMs, offsets are not added because of rstanarm issue #546 (see
-# also further below).
-# For GAMMs, offsets are not added because of rstanarm issue #253 (see
-# also further below).
-# (The brms "gam" and "gamm" cases are handled in the same way as the rstanarm
-# "gam" and "gamm" cases to avoid too many special cases.)
-# For the "categ" `fam_nm`, offsets are not added because they are currently not
-# supported for it.
-offs_expr <- expression(!(fam_nm %in% c("brnll", "categ") ||
-                            mod_nm %in% c("gam", "gamm")))
-cre_dat <- function(idxs_crr, offs_crr, wobs_crr, dis_crr) {
-  nobsv_crr <- length(idxs_crr)
-  dat_crr <- lapply(mod_nms, function(mod_nm) {
-    lapply(fam_nms, function(fam_nm) {
-      pred_link <- get(paste0("eta_", mod_nm))
-      pred_link <- pred_link[idxs_crr, , drop = FALSE]
-      if (eval(offs_expr)) {
-        pred_link <- pred_link + offs_crr
-      }
-      if (fam_nm %in% fam_nms_ordin) {
-        pred_link <- pred_link - icpt
-        if (eval(offs_expr)) {
-          # The equal-probability thresholds defined above refer to the state
-          # before offsets are added, so we need to subtract them here in the
-          # data-generating model:
-          pred_link <- pred_link - offs_crr
-        }
-        thres_eta <- sapply(thres, function(thres_k) {
-          thres_k - pred_link
-        })
-      } else if (fam_nm %in% fam_nms_categ) {
-        pred_link <- sapply(thres, function(thres_k) {
-          thres_k + pred_link
-        })
-      }
-      if (fam_nm == "cumul") {
-        pred_resp <- augdat_ilink_cumul(thres_eta, link = link_str)
-      } else if (fam_nm %in% fam_nms_ordin) {
-        if (fam_nm %in% c("crtio", "adcat")) {
-          thres_eta <- -thres_eta
-        }
-        ilink_crr <- get(paste0("inv_link_", get_fam_long(fam_nm)),
-                         asNamespace("brms"), mode = "function",
-                         inherits = FALSE)
-        pred_resp <- ilink_crr(thres_eta, link = link_str)
-      } else if (fam_nm %in% fam_nms_categ) {
-        ilink_crr <- get(paste0("inv_link_", get_fam_long(fam_nm)),
-                         asNamespace("brms"), mode = "function",
-                         inherits = FALSE)
-        pred_resp <- ilink_crr(pred_link)
-      } else {
-        pred_resp <- get(paste0("f_", fam_nm))$linkinv(pred_link)
-      }
-      if (fam_nm == "gauss") {
-        return(rnorm(nobsv_crr, mean = pred_resp, sd = dis_crr))
-      } else if (fam_nm == "brnll") {
-        return(rbinom(nobsv_crr, 1, pred_resp))
-      } else if (fam_nm == "binom") {
-        return(rbinom(nobsv_crr, wobs_crr, pred_resp))
-      } else if (fam_nm == "poiss") {
-        return(rpois(nobsv_crr, pred_resp))
-      } else if (fam_nm %in% fam_nms_aug) {
-        ryunq <- sapply(seq_len(nobsv_crr), function(i_obs) {
-          sample(yunq_num, size = 1L, prob = pred_resp[i_obs, ])
-        })
-        if (use_fac) {
-          ryunq <- factor(ryunq, levels = yunq_num, labels = yunq_chr,
-                          ordered = fam_nm %in% fam_nms_ordin)
-        }
-        return(ryunq)
-      } else {
-        stop("Unknown `fam_nm`.")
-      }
-    })
-  })
-  dat_crr <- unlist(dat_crr, recursive = FALSE)
-  names(dat_crr) <- paste("y", gsub("\\.", "_", names(dat_crr)), sep = "_")
-  return(dat_crr)
-}
-dat <- cre_dat(idxs_crr = seq_len(nobsv), offs_crr = offs_tst,
-               wobs_crr = wobs_tst, dis_crr = dis_tst)
-dat <- data.frame(
-  dat,
-  xco = x_cont, xca = lapply(x_cate_list, "[[", "x_cate"),
-  z = lapply(z_list, "[[", "z"),
-  s = s_mat,
-  wobs_col = wobs_tst, offs_col = offs_tst,
-  check.names = FALSE
-)
-if (ncol(s_mat) == 1) {
-  names(dat)[names(dat) == "s"] <- "s.1"
-}
-
-## Modified datasets ------------------------------------------------------
-
-dat_wobs_ones <- within(dat, {
-  wobs_col <- NULL
-  wobs_col_ones <- rep_len(1, length.out = nobsv)
-})
-dat_wobs_new <- within(dat, {
-  wobs_col <- NULL
-  wobs_col_new <- rep_len(2:5, length.out = nobsv)
-})
-
-dat_offs_zeros <- within(dat, {
-  offs_col <- NULL
-  offs_col_zeros <- rep_len(0, length.out = nobsv)
-})
-dat_offs_new <- within(dat, {
-  offs_col <- NULL
-  offs_col_new <- seq(-2, 2, length.out = nobsv)
-})
-
-nobsv_indep <- tail(nobsv_tst, 1)
-dis_indep <- runif(1L, 1, 2)
-offs_indep <- rnorm(nobsv_indep)
-wobs_indep <- sample(1:4, nobsv_indep, replace = TRUE)
-idxs_indep <- sample.int(nobsv, size = nobsv_indep, replace = TRUE)
-dat_indep <- cre_dat(idxs_crr = idxs_indep, offs_crr = offs_indep,
-                     wobs_crr = wobs_indep, dis_crr = dis_indep)
-dat_indep <- cbind(
-  as.data.frame(dat_indep),
-  dat[idxs_indep,
-      grep("^y_", names(dat), value = TRUE, invert = TRUE),
-      drop = FALSE]
-)
-dat_indep$wobs_col <- wobs_indep
-dat_indep$offs_col <- offs_indep
+withr::with_seed(seed_dat, source(testthat::test_path("helpers", "data.R"),
+                                  local = environment()))
 
 # Fits --------------------------------------------------------------------
 
@@ -835,9 +522,9 @@ if (!run_more && length(pkg_nms)) {
   }
 }
 
-## Run --------------------------------------------------------------------
+## Getter -----------------------------------------------------------------
 
-fits <- suppressWarnings(lapply(args_fit, function(args_fit_i) {
+fit_ref_tst <- function(args_fit_i) {
   fit_fun_nm <- get_fit_fun_nm(args_fit_i)
   if (args_fit_i$pkg_nm == "rstanarm" && args_fit_i$fam_nm == "cumul") {
     fit_fun_nm <- "stan_polr"
@@ -854,7 +541,15 @@ fits <- suppressWarnings(lapply(args_fit, function(args_fit_i) {
   do.call(get(fit_fun_nm, asNamespace(args_fit_i$pkg_nm)),
           excl_nonargs(args_fit_i))
   ###
-}))
+}
+
+# Build the reference model fit `tstsetup` (a name of `args_fit`). The tests
+# get the fits with get_fit() (see helpers/fixtures.R), which keeps them.
+build_fit_tst <- function(tstsetup) {
+  args_fit_i <- args_fit[[tstsetup]]
+  fit <- withr::with_preserve_seed(suppressWarnings(fit_ref_tst(args_fit_i)))
+  return(fit)
+}
 
 # projpred ----------------------------------------------------------------
 
@@ -863,6 +558,8 @@ fits <- suppressWarnings(lapply(args_fit, function(args_fit_i) {
 seed_tst <- 20411346
 seed2_tst <- 866028
 seed3_tst <- 1208499
+# The tests start from this random state (unless `run_randRNG` is `TRUE`):
+set.seed(seed_tst)
 
 nclusters_tst <- 2L
 nclusters_pred_tst <- 3L
@@ -924,6 +621,9 @@ options(projpred.warn_proj_drawwise = FALSE)
 options(projpred.check_convergence = FALSE)
 # Set default number of significant digits to be printed:
 options(projpred.digits = getOption("digits"))
+# The getters of helpers/fixtures.R build their objects with these options:
+opts_fixtures_tst <- c(options()[startsWith(names(options()), "projpred.")],
+                       options("contrasts", "na.action"))
 
 search_trms_tst <- list(
   default_search_trms = list(),
@@ -1049,7 +749,7 @@ rk_max_tst <- list(
 
 ## Reference model --------------------------------------------------------
 
-args_ref <- lapply(setNames(nm = names(fits)), function(tstsetup_fit) {
+args_ref <- lapply(setNames(nm = names(args_fit)), function(tstsetup_fit) {
   if (args_fit[[tstsetup_fit]]$pkg_nm == "brms" &&
       packageVersion("brms") >= "2.16.4") {
     pkg_args <- list(brms_seed = seed2_tst)
@@ -1094,13 +794,6 @@ args_ref <- lapply(setNames(nm = names(fits)), function(tstsetup_fit) {
 })
 args_ref <- unlist_cust(args_ref)
 
-refmods <- lapply(args_ref, function(args_ref_i) {
-  do.call(get_refmodel, c(
-    list(object = fits[[args_ref_i$tstsetup_fit]]),
-    excl_nonargs(args_ref_i)
-  ))
-})
-
 ## Variable selection -----------------------------------------------------
 
 ### varsel() --------------------------------------------------------------
@@ -1108,7 +801,7 @@ refmods <- lapply(args_ref, function(args_ref_i) {
 if (run_vs) {
   # Some families are not supported yet, apart from the creation of a `refmodel`
   # object:
-  tstsetups_vs_ref <- grep(fam_nms_unsupp_regex, names(refmods), value = TRUE,
+  tstsetups_vs_ref <- grep(fam_nms_unsupp_regex, names(args_ref), value = TRUE,
                            invert = TRUE)
   if (!run_more) {
     tstsetups_vs_ref <- grep(paste0("\\.glmm", fam_nms_aug_regex),
@@ -1168,26 +861,6 @@ if (run_vs) {
   stopifnot(sum(sapply(args_vs, function(args_vs_i) {
     !is.null(args_vs_i$search_terms)
   })) >= 1)
-
-  vss <- lapply(args_vs, function(args_vs_i) {
-    try(do.call(varsel, c(
-      list(object = refmods[[args_vs_i$tstsetup_ref]]),
-      excl_nonargs(args_vs_i)
-    )), silent = TRUE)
-  })
-  success_vs <- !sapply(vss, inherits, "try-error")
-  err_ok_vs <- vapply(names(vss)[!success_vs], function(tstsetup) {
-    is_known_setup_err(attr(vss[[tstsetup]], "condition")$message,
-                       mod_nm = args_vs[[tstsetup]]$mod_nm)
-  }, logical(1))
-  expect_true(
-    all(err_ok_vs),
-    info = paste("Unexpected error for",
-                 paste(names(vss)[!success_vs][!err_ok_vs], collapse = ", "))
-  )
-  add_setup_drops("vs", names(vss)[!success_vs])
-  vss <- vss[success_vs]
-  args_vs <- args_vs[success_vs]
 }
 
 ### cv_varsel() -----------------------------------------------------------
@@ -1311,64 +984,6 @@ if (run_cvvs) {
   tstsetups_ref_kfold <- setNames(nm = unique(unname(
     sapply(args_cvvs_kfold, "[[", "tstsetup_ref")
   )))
-  cvfitss <- lapply(tstsetups_ref_kfold, function(tstsetup_ref) {
-    # Due to rstanarm:::kfold.stanreg() failing sometimes, we have to wrap the
-    # call to run_cvfun() in try():
-    return(try(run_cvfun(object = refmods[[tstsetup_ref]], K = K_tst,
-                         seed = seed3_tst), silent = TRUE))
-  })
-  success_cvfits <- !sapply(cvfitss, inherits, "try-error")
-  err_ok_cvfits <- vapply(names(cvfitss)[!success_cvfits], function(tstsetup) {
-    is_known_setup_err(attr(cvfitss[[tstsetup]], "condition")$message,
-                       mod_nm = args_ref[[tstsetup]]$mod_nm, kfold = TRUE)
-  }, logical(1))
-  expect_true(
-    all(err_ok_cvfits),
-    info = paste("Unexpected error for",
-                 paste(names(cvfitss[!success_cvfits])[!err_ok_cvfits],
-                       collapse = ", "))
-  )
-  add_setup_drops("cvfits", names(cvfitss)[!success_cvfits])
-  args_cvvs_kfold <- args_cvvs_kfold[!sapply(
-    lapply(args_cvvs_kfold, "[[", "tstsetup_ref"),
-    `%in%`, names(cvfitss)[!success_cvfits]
-  )]
-  args_cvvs <- args_cvvs[!sapply(lapply(args_cvvs, "[[", "tstsetup_ref"),
-                                 `%in%`, names(cvfitss)[!success_cvfits])]
-
-  cvvss <- lapply(args_cvvs, function(args_cvvs_i) {
-    cvvs_expr <- expression(do.call(cv_varsel, c(
-      list(object = refmods[[args_cvvs_i$tstsetup_ref]],
-           cvfits = if (identical(args_cvvs_i$cv_method, "kfold")) {
-             cvfitss[[args_cvvs_i$tstsetup_ref]]
-           } else {
-             refmods[[args_cvvs_i$tstsetup_ref]]$cvfits # should be `NULL`
-           }),
-      excl_nonargs(args_cvvs_i)
-    )))
-    if (args_cvvs_i$mod_nm == "gamm" &&
-        !identical(args_cvvs_i$cv_method, "kfold")) {
-      # The gamm4 getVb() failure (see is_gamm_backsolve_msg()) can occur in
-      # the LOO CV, so wrap the call to cv_varsel() in try():
-      return(try(eval(cvvs_expr), silent = TRUE))
-    } else {
-      return(eval(cvvs_expr))
-    }
-  })
-  success_cvvs <- !sapply(cvvss, inherits, "try-error")
-  err_ok_cvvs <- vapply(names(cvvss)[!success_cvvs], function(tstsetup) {
-    is_known_setup_err(attr(cvvss[[tstsetup]], "condition")$message,
-                       mod_nm = args_cvvs[[tstsetup]]$mod_nm)
-  }, logical(1))
-  expect_true(
-    all(err_ok_cvvs),
-    info = paste("Unexpected error for",
-                 paste(names(cvvss[!success_cvvs])[!err_ok_cvvs],
-                       collapse = ", "))
-  )
-  add_setup_drops("cvvs", names(cvvss)[!success_cvvs])
-  cvvss <- cvvss[success_cvvs]
-  args_cvvs <- args_cvvs[success_cvvs]
 }
 
 ## Projection -------------------------------------------------------------
@@ -1378,8 +993,8 @@ if (run_cvvs) {
 if (run_prj) {
   # Some families are not supported yet, apart from the creation of a `refmodel`
   # object:
-  tstsetups_prj_ref <- grep(fam_nms_unsupp_regex, names(refmods), value = TRUE,
-                            invert = TRUE)
+  tstsetups_prj_ref <- grep(fam_nms_unsupp_regex, names(args_ref),
+                            value = TRUE, invert = TRUE)
   tstsetups_prj_ref <- setNames(nm = tstsetups_prj_ref)
   args_prj <- lapply(tstsetups_prj_ref, function(tstsetup_ref) {
     pkg_crr <- args_ref[[tstsetup_ref]]$pkg_nm
@@ -1464,57 +1079,12 @@ if (run_prj) {
     })
   })
   args_prj <- unlist_cust(args_prj)
-
-  prj_errors <- list()
-  prjs <- lapply(seq_along(args_prj), function(prj_idx) {
-    args_prj_i <- args_prj[[prj_idx]]
-    refmod_i <- refmods[[args_prj_i$tstsetup_ref]]
-    prj_info <- paste0("[prj ", prj_idx, "/", length(args_prj), "] ",
-                       args_prj_i$tstsetup_ref)
-    prj_res <- tryCatch(
-      do.call(project, c(
-        list(object = refmod_i),
-        excl_nonargs(args_prj_i)
-      )),
-      error = function(e) {
-        prj_errors[[length(prj_errors) + 1L]] <<- list(
-          idx = prj_idx,
-          info = prj_info,
-          message = conditionMessage(e)
-        )
-        NULL
-      }
-    )
-    return(prj_res)
-  })
-  names(prjs) <- names(args_prj)
-  if (length(prj_errors) > 0L) {
-    message("[prj] ", length(prj_errors), " of ", length(args_prj),
-            " project() call(s) failed:")
-    for (prj_err in prj_errors) {
-      message("  ", prj_err$info, ": ", prj_err$message)
-    }
-    err_ok_prj <- vapply(prj_errors, function(prj_err) {
-      is_known_setup_err(prj_err$message,
-                         mod_nm = args_prj[[prj_err$idx]]$mod_nm)
-    }, logical(1))
-    if (!all(err_ok_prj)) {
-      stop("Unexpected error in ", sum(!err_ok_prj), " project() call(s) ",
-           "during tests/testthat/setup.R (see messages above for the ",
-           "setups).",
-           call. = FALSE)
-    }
-    drop_idx <- unique(vapply(prj_errors[err_ok_prj], `[[`, integer(1), "idx"))
-    add_setup_drops("prj", names(args_prj)[drop_idx])
-    prjs <- prjs[-drop_idx]
-    args_prj <- args_prj[-drop_idx]
-  }
 }
 
 ### From `vsel` -----------------------------------------------------------
 
 # A helper function to create the argument list for project() for a given
-# character vector of test setups (referring to either `vss` or `cvvss`):
+# character vector of test setups (names of either `args_vs` or `args_cvvs`):
 cre_args_prj_vsel <- function(tstsetups_prj_vsel) {
   vsel_type <- deparse(substitute(tstsetups_prj_vsel))
   args_obj <- switch(vsel_type,
@@ -1556,11 +1126,11 @@ cre_args_prj_vsel <- function(tstsetups_prj_vsel) {
 
 if (run_vs) {
   tstsetups_prj_vs <- unlist(lapply(mod_nms, function(mod_nm) {
-    if (any(grepl(paste0("\\.", mod_nm, "\\.gauss\\."), names(vss)))) {
-      tstsetups_out <- grep(paste0("\\.", mod_nm, "\\.gauss\\."), names(vss),
-                            value = TRUE)
+    if (any(grepl(paste0("\\.", mod_nm, "\\.gauss\\."), names(args_vs)))) {
+      tstsetups_out <- grep(paste0("\\.", mod_nm, "\\.gauss\\."),
+                            names(args_vs), value = TRUE)
     } else {
-      tstsetups_out <- grep(paste0("\\.", mod_nm, "\\."), names(vss),
+      tstsetups_out <- grep(paste0("\\.", mod_nm, "\\."), names(args_vs),
                             value = TRUE)
     }
     if (any(grepl("\\.L1\\.", tstsetups_out))) {
@@ -1573,50 +1143,30 @@ if (run_vs) {
   }))
   tstsetups_prj_vs <- union(
     tstsetups_prj_vs,
-    grep("\\.default_search_trms", names(vss), value = TRUE, invert = TRUE)
+    grep("\\.default_search_trms", names(args_vs), value = TRUE,
+         invert = TRUE)
   )
   tstsetups_prj_vs <- union(
     tstsetups_prj_vs,
-    grep("\\.(latent|augdat)\\.", names(vss), value = TRUE)
+    grep("\\.(latent|augdat)\\.", names(args_vs), value = TRUE)
   )
   tstsetups_prj_vs <- setNames(nm = tstsetups_prj_vs)
   stopifnot(length(tstsetups_prj_vs) > 0)
   args_prj_vs <- cre_args_prj_vsel(tstsetups_prj_vs)
   args_prj_vs <- unlist_cust(args_prj_vs)
-
-  prjs_vs <- lapply(args_prj_vs, function(args_prj_vs_i) {
-    try(do.call(project, c(
-      list(object = vss[[args_prj_vs_i$tstsetup_vsel]]),
-      excl_nonargs(args_prj_vs_i)
-    )), silent = TRUE)
-  })
-  success_prj_vs <- !sapply(prjs_vs, inherits, "try-error")
-  err_ok_prj_vs <- vapply(names(prjs_vs)[!success_prj_vs], function(tstsetup) {
-    is_known_setup_err(attr(prjs_vs[[tstsetup]], "condition")$message,
-                       mod_nm = args_prj_vs[[tstsetup]]$mod_nm)
-  }, logical(1))
-  expect_true(
-    all(err_ok_prj_vs),
-    info = paste("Unexpected error for",
-                 paste(names(prjs_vs)[!success_prj_vs][!err_ok_prj_vs],
-                       collapse = ", "))
-  )
-  add_setup_drops("prj_vs", names(prjs_vs)[!success_prj_vs])
-  prjs_vs <- prjs_vs[success_prj_vs]
-  args_prj_vs <- args_prj_vs[success_prj_vs]
 }
 
 #### cv_varsel() ----------------------------------------------------------
 
 if (run_cvvs) {
   tstsetups_prj_cvvs <- unlist(lapply(mod_nms, function(mod_nm) {
-    if (any(grepl(paste0("\\.", mod_nm, "\\.gauss\\."), names(cvvss)))) {
+    if (any(grepl(paste0("\\.", mod_nm, "\\.gauss\\."), names(args_cvvs)))) {
       tstsetups_out <- grep(paste0("\\.", mod_nm,
                                    "\\.gauss\\..*\\.default_cvmeth"),
-                            names(cvvss), value = TRUE)
+                            names(args_cvvs), value = TRUE)
     } else {
       tstsetups_out <- grep(paste0("\\.", mod_nm, "\\..*\\.default_cvmeth"),
-                            names(cvvss), value = TRUE)
+                            names(args_cvvs), value = TRUE)
     }
     if (any(grepl("\\.L1\\.", tstsetups_out))) {
       tstsetups_out <- grep("\\.L1\\.", tstsetups_out, value = TRUE)
@@ -1628,75 +1178,17 @@ if (run_cvvs) {
   }))
   tstsetups_prj_cvvs <- union(
     tstsetups_prj_cvvs,
-    grep("\\.default_search_trms", names(cvvss), value = TRUE, invert = TRUE)
+    grep("\\.default_search_trms", names(args_cvvs), value = TRUE,
+         invert = TRUE)
   )
   tstsetups_prj_cvvs <- union(
     tstsetups_prj_cvvs,
-    grep("\\.(latent|augdat)\\.", names(cvvss), value = TRUE)
+    grep("\\.(latent|augdat)\\.", names(args_cvvs), value = TRUE)
   )
   tstsetups_prj_cvvs <- setNames(nm = tstsetups_prj_cvvs)
   stopifnot(length(tstsetups_prj_cvvs) > 0)
   args_prj_cvvs <- cre_args_prj_vsel(tstsetups_prj_cvvs)
   args_prj_cvvs <- unlist_cust(args_prj_cvvs)
-
-  prjs_cvvs <- lapply(args_prj_cvvs, function(args_prj_cvvs_i) {
-    try(do.call(project, c(
-      list(object = cvvss[[args_prj_cvvs_i$tstsetup_vsel]]),
-      excl_nonargs(args_prj_cvvs_i)
-    )), silent = TRUE)
-  })
-  success_prj_cvvs <- !sapply(prjs_cvvs, inherits, "try-error")
-  err_ok_prj_cvvs <- vapply(
-    names(prjs_cvvs)[!success_prj_cvvs],
-    function(tstsetup) {
-      is_known_setup_err(attr(prjs_cvvs[[tstsetup]], "condition")$message,
-                         mod_nm = args_prj_cvvs[[tstsetup]]$mod_nm)
-    },
-    logical(1)
-  )
-  expect_true(
-    all(err_ok_prj_cvvs),
-    info = paste("Unexpected error for",
-                 paste(names(prjs_cvvs)[!success_prj_cvvs][!err_ok_prj_cvvs],
-                       collapse = ", "))
-  )
-  add_setup_drops("prj_cvvs", names(prjs_cvvs)[!success_prj_cvvs])
-  prjs_cvvs <- prjs_cvvs[success_prj_cvvs]
-  args_prj_cvvs <- args_prj_cvvs[success_prj_cvvs]
-}
-
-## Prediction -------------------------------------------------------------
-
-### From `projection` -----------------------------------------------------
-
-if (run_prj) {
-  pls <- lapply(prjs, proj_linpred, allow_nonconst_wdraws_prj = TRUE,
-                .seed = seed2_tst)
-  pes <- lapply(prjs, proj_epred, allow_nonconst_wdraws_prj = TRUE,
-                .seed = seed2_tst)
-  pps <- lapply(prjs, proj_predict, .seed = seed2_tst)
-}
-
-### From `proj_list` ------------------------------------------------------
-
-#### varsel() -------------------------------------------------------------
-
-if (run_vs) {
-  pls_vs <- lapply(prjs_vs, proj_linpred, allow_nonconst_wdraws_prj = TRUE,
-                   .seed = seed2_tst)
-  pes_vs <- lapply(prjs_vs, proj_epred, allow_nonconst_wdraws_prj = TRUE,
-                   .seed = seed2_tst)
-  pps_vs <- lapply(prjs_vs, proj_predict, .seed = seed2_tst)
-}
-
-#### cv_varsel() ----------------------------------------------------------
-
-if (run_cvvs) {
-  pls_cvvs <- lapply(prjs_cvvs, proj_linpred, allow_nonconst_wdraws_prj = TRUE,
-                     .seed = seed2_tst)
-  pes_cvvs <- lapply(prjs_cvvs, proj_epred, allow_nonconst_wdraws_prj = TRUE,
-                     .seed = seed2_tst)
-  pps_cvvs <- lapply(prjs_cvvs, proj_predict, .seed = seed2_tst)
 }
 
 ## summary.vsel() ---------------------------------------------------------
@@ -1820,19 +1312,6 @@ if (run_vs) {
   args_smmry_vs <- rm_dummies(args_smmry_vs)
   has_zero_vs <- any(sapply(lapply(args_smmry_vs, "[[", "nterms_max"),
                             identical, 0L))
-
-  smmrys_vs <- lapply(args_smmry_vs, function(args_smmry_vs_i) {
-    if (any(c("auc") %in% args_smmry_vs_i$stats)) {
-      smmry_seed <- list(seed = seed3_tst)
-    } else {
-      smmry_seed <- list()
-    }
-    do.call(summary, c(
-      list(object = vss[[args_smmry_vs_i$tstsetup_vsel]]),
-      excl_nonargs(args_smmry_vs_i),
-      smmry_seed
-    ))
-  })
 }
 
 ### cv_varsel() -----------------------------------------------------------
@@ -1843,19 +1322,6 @@ if (run_cvvs) {
   args_smmry_cvvs <- rm_dummies(args_smmry_cvvs)
   has_zero_cvvs <- any(sapply(lapply(args_smmry_cvvs, "[[", "nterms_max"),
                               identical, 0L))
-
-  smmrys_cvvs <- lapply(args_smmry_cvvs, function(args_smmry_cvvs_i) {
-    if (any(c("auc") %in% args_smmry_cvvs_i$stats)) {
-      smmry_seed <- list(seed = seed3_tst)
-    } else {
-      smmry_seed <- list()
-    }
-    do.call(summary, c(
-      list(object = cvvss[[args_smmry_cvvs_i$tstsetup_vsel]]),
-      excl_nonargs(args_smmry_cvvs_i),
-      smmry_seed
-    ))
-  })
 }
 
 if (run_more) {
@@ -1877,7 +1343,7 @@ if (run_more) {
 
 if (run_vs) {
   args_perf_vs <- lapply(
-    setNames(nm = names(smmrys_vs)),
+    setNames(nm = names(args_smmry_vs)),
     function(tstsetup_smmry_vsel) {
       return(c(
         nlist(tstsetup_smmry_vsel),
@@ -1886,20 +1352,13 @@ if (run_vs) {
     }
   )
   args_perf_vs <- unlist_cust(args_perf_vs)
-
-  perfs_vs <- lapply(args_perf_vs, function(args_perf_vs_i) {
-    do.call(performances, c(
-      list(object = smmrys_vs[[args_perf_vs_i$tstsetup_smmry_vsel]]),
-      excl_nonargs(args_perf_vs_i)
-    ))
-  })
 }
 
 ### cv_varsel() -----------------------------------------------------------
 
 if (run_cvvs) {
   args_perf_cvvs <- lapply(
-    setNames(nm = names(smmrys_cvvs)),
+    setNames(nm = names(args_smmry_cvvs)),
     function(tstsetup_smmry_vsel) {
       return(c(
         nlist(tstsetup_smmry_vsel),
@@ -1908,13 +1367,6 @@ if (run_cvvs) {
     }
   )
   args_perf_cvvs <- unlist_cust(args_perf_cvvs)
-
-  perfs_cvvs <- lapply(args_perf_cvvs, function(args_perf_cvvs_i) {
-    do.call(performances, c(
-      list(object = smmrys_cvvs[[args_perf_cvvs_i$tstsetup_smmry_vsel]]),
-      excl_nonargs(args_perf_cvvs_i)
-    ))
-  })
 }
 
 ## plot.vsel() ------------------------------------------------------------
@@ -2020,26 +1472,12 @@ cre_args_plot_vsel <- function(args_obj) {
 
 if (run_vs) {
   args_plot_vs <- cre_args_plot_vsel(args_vs)
-
-  plots_vs <- lapply(args_plot_vs, function(args_plot_vs_i) {
-    do.call(plot, c(
-      list(x = vss[[args_plot_vs_i$tstsetup_vsel]]),
-      excl_nonargs(args_plot_vs_i)
-    ))
-  })
 }
 
 ### cv_varsel() -----------------------------------------------------------
 
 if (run_cvvs) {
   args_plot_cvvs <- cre_args_plot_vsel(args_cvvs)
-
-  plots_cvvs <- lapply(args_plot_cvvs, function(args_plot_cvvs_i) {
-    do.call(plot, c(
-      list(x = cvvss[[args_plot_cvvs_i$tstsetup_vsel]]),
-      excl_nonargs(args_plot_cvvs_i)
-    ))
-  })
 }
 
 ## ranking() --------------------------------------------------------------
@@ -2047,7 +1485,8 @@ if (run_cvvs) {
 ### varsel() --------------------------------------------------------------
 
 if (run_vs) {
-  args_rk_vs <- lapply(setNames(nm = names(vss)), function(tstsetup_vsel) {
+  tstsetups_rk_vs <- setNames(nm = names(args_vs))
+  args_rk_vs <- lapply(tstsetups_rk_vs, function(tstsetup_vsel) {
     lapply(nterms_max_rk, function(nterms_crr) {
       return(c(
         nlist(tstsetup_vsel), only_nonargs(args_vs[[tstsetup_vsel]]),
@@ -2056,19 +1495,13 @@ if (run_vs) {
     })
   })
   args_rk_vs <- unlist_cust(args_rk_vs)
-
-  rks_vs <- lapply(args_rk_vs, function(args_rk_vs_i) {
-    do.call(ranking, c(
-      list(object = vss[[args_rk_vs_i$tstsetup_vsel]]),
-      excl_nonargs(args_rk_vs_i)
-    ))
-  })
 }
 
 ### cv_varsel() -----------------------------------------------------------
 
 if (run_cvvs) {
-  args_rk_cvvs <- lapply(setNames(nm = names(cvvss)), function(tstsetup_vsel) {
+  tstsetups_rk_cvvs <- setNames(nm = names(args_cvvs))
+  args_rk_cvvs <- lapply(tstsetups_rk_cvvs, function(tstsetup_vsel) {
     lapply(nterms_max_rk, function(nterms_crr) {
       return(c(
         nlist(tstsetup_vsel), only_nonargs(args_cvvs[[tstsetup_vsel]]),
@@ -2077,13 +1510,6 @@ if (run_cvvs) {
     })
   })
   args_rk_cvvs <- unlist_cust(args_rk_cvvs)
-
-  rks_cvvs <- lapply(args_rk_cvvs, function(args_rk_cvvs_i) {
-    do.call(ranking, c(
-      list(object = cvvss[[args_rk_cvvs_i$tstsetup_vsel]]),
-      excl_nonargs(args_rk_cvvs_i)
-    ))
-  })
 }
 
 ## cv_proportions() -------------------------------------------------------
@@ -2093,34 +1519,21 @@ err_no_foldwise_rk <- "Could not find fold-wise predictor rankings"
 ### varsel() --------------------------------------------------------------
 
 if (run_vs) {
-  args_pr_vs <- lapply(setNames(nm = names(rks_vs)), function(tstsetup_rk) {
+  # cv_proportions() fails for all of these (see test_methods_vsel.R):
+  tstsetups_pr_vs <- setNames(nm = names(args_rk_vs))
+  args_pr_vs <- lapply(tstsetups_pr_vs, function(tstsetup_rk) {
     return(c(
       nlist(tstsetup_rk), only_nonargs(args_rk_vs[[tstsetup_rk]])
     ))
   })
   args_pr_vs <- unlist_cust(args_pr_vs)
-
-  prs_vs <- lapply(args_pr_vs, function(args_pr_vs_i) {
-    err_expected <- err_no_foldwise_rk
-    expect_error(
-      do.call(cv_proportions, c(
-        list(object = rks_vs[[args_pr_vs_i$tstsetup_rk]]),
-        excl_nonargs(args_pr_vs_i)
-      )),
-      err_expected,
-      info = args_pr_vs_i$tstsetup_rk
-    )
-    return(dummy_glob)
-  })
-  keep_prs_vs <- rm_dummies(prs_vs, return_logical = TRUE)
-  prs_vs <- prs_vs[keep_prs_vs]
-  args_pr_vs <- args_pr_vs[keep_prs_vs]
 }
 
 ### cv_varsel() -----------------------------------------------------------
 
 if (run_cvvs) {
-  args_pr_cvvs <- lapply(setNames(nm = names(rks_cvvs)), function(tstsetup_rk) {
+  tstsetups_pr_cvvs <- setNames(nm = names(args_rk_cvvs))
+  args_pr_cvvs <- lapply(tstsetups_pr_cvvs, function(tstsetup_rk) {
     lapply(cumulate_tst, function(cumulate_crr) {
       return(c(
         nlist(tstsetup_rk), only_nonargs(args_rk_cvvs[[tstsetup_rk]]),
@@ -2129,52 +1542,35 @@ if (run_cvvs) {
     })
   })
   args_pr_cvvs <- unlist_cust(args_pr_cvvs)
-
-  prs_cvvs <- lapply(args_pr_cvvs, function(args_pr_cvvs_i) {
+  # The expected error of cv_proportions() (`NA` for none):
+  err_pr_cvvs <- vapply(args_pr_cvvs, function(args_pr_cvvs_i) {
     if (isFALSE(args_cvvs[[args_pr_cvvs_i$tstsetup_vsel]]$validate_search)) {
-      err_expected <- err_no_foldwise_rk
+      return(err_no_foldwise_rk)
     } else if (isTRUE(
       args_rk_cvvs[[args_pr_cvvs_i$tstsetup_rk]]$nterms_max == 0
     )) {
-      err_expected <- "Needing `nterms_max >= 1`"
-    } else {
-      err_expected <- NA
+      return("Needing `nterms_max >= 1`")
     }
-    expect_error(
-      pr_out <- do.call(cv_proportions, c(
-        list(object = rks_cvvs[[args_pr_cvvs_i$tstsetup_rk]]),
-        excl_nonargs(args_pr_cvvs_i)
-      )),
-      err_expected,
-      info = args_pr_cvvs_i$tstsetup_rk
-    )
-    if (is.na(err_expected)) {
-      return(pr_out)
-    } else {
-      return(dummy_glob)
-    }
-  })
-  keep_prs_cvvs <- rm_dummies(prs_cvvs, return_logical = TRUE)
-  prs_cvvs <- prs_cvvs[keep_prs_cvvs]
-  args_pr_cvvs <- args_pr_cvvs[keep_prs_cvvs]
+    return(NA_character_)
+  }, character(1))
+  # The test setups with an expected error (see test_methods_vsel.R), and the
+  # others:
+  args_pr_cvvs_err <- args_pr_cvvs[!is.na(err_pr_cvvs)]
+  err_pr_cvvs <- err_pr_cvvs[!is.na(err_pr_cvvs)]
+  args_pr_cvvs <- args_pr_cvvs[setdiff(names(args_pr_cvvs),
+                                       names(args_pr_cvvs_err))]
 }
 
 ## plot.cv_proportions() --------------------------------------------------
 
 if (run_cvvs) {
-  args_plotpr <- lapply(setNames(nm = names(prs_cvvs)), function(tstsetup_pr) {
+  tstsetups_plotpr <- setNames(nm = names(args_pr_cvvs))
+  args_plotpr <- lapply(tstsetups_plotpr, function(tstsetup_pr) {
     return(c(
       nlist(tstsetup_pr), only_nonargs(args_pr_cvvs[[tstsetup_pr]])
     ))
   })
   args_plotpr <- unlist_cust(args_plotpr)
-
-  plotprs <- lapply(args_plotpr, function(args_plotpr_i) {
-    do.call(plot, c(
-      list(x = prs_cvvs[[args_plotpr_i$tstsetup_pr]]),
-      excl_nonargs(args_plotpr_i)
-    ))
-  })
 }
 
 ## Output names -----------------------------------------------------------

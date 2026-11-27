@@ -89,9 +89,10 @@ test_that(paste(
                  "does not support the brms family `multinomial()`",
                  fixed = TRUE, info = paste("latent:", latent))
   }
-  tstsetups <- grep("^brms\\.(glm|glmm)\\.categ\\.", names(fits), value = TRUE)
+  tstsetups <- grep("^brms\\.(glm|glmm)\\.categ\\.", names(args_fit),
+                    value = TRUE)
   for (tstsetup in tstsetups) {
-    expect_error(get_refmodel(fits[[tstsetup]], latent = TRUE), msg_categ,
+    expect_error(get_refmodel(get_fit(tstsetup), latent = TRUE), msg_categ,
                  fixed = TRUE, info = tstsetup)
   }
 })

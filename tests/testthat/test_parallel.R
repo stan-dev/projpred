@@ -78,21 +78,22 @@ local_par_workers <- function(backend, n = 2L, frame = parent.frame()) {
 }
 
 # A GLM with K-fold fits (in the setup, these are the reference models without
-# observation weights), preferably with the traditional projection (`NA` if
-# there is none). With `pkg`, a GLM of that package (e.g., "rstanarm"):
+# observation weights) and the traditional projection (`NA` if there is none;
+# the checks of the tests below hold only for the traditional projection).
+# With `pkg`, a GLM of that package (e.g., "rstanarm"):
 tstsetup_ref_par <- function(pkg = "[^.]*") {
-  tstsetups_ref <- names(cvfitss)[!sapply(cvfitss, inherits, "try-error")]
-  tstsetups_ref <- grep(paste0("^", pkg, "\\.glm\\."), tstsetups_ref,
-                        value = TRUE)
-  c(grep("\\.trad", tstsetups_ref, value = TRUE), tstsetups_ref,
-    NA_character_)[1]
+  tstsetups_ref <- grep(paste0("^", pkg, "\\.glm\\..*\\.trad(_compare)?$"),
+                        tstsetups_ref_kfold, value = TRUE)
+  tstsetups_ref <- setdiff(tstsetups_ref,
+                           dropped_tst("cvfits", tstsetups_ref))
+  c(tstsetups_ref, NA_character_)[1]
 }
 
 cvvs_par <- function(tstsetup_ref, cv_meth, parallel = TRUE) {
   # Use suppressWarnings() because of Pareto-k warnings of the small data:
   suppressWarnings(cv_varsel(
-    refmods[[tstsetup_ref]], cv_method = cv_meth,
-    cvfits = if (cv_meth == "kfold") cvfitss[[tstsetup_ref]],
+    get_ref(tstsetup_ref), cv_method = cv_meth,
+    cvfits = if (cv_meth == "kfold") get_cvfits(tstsetup_ref),
     validate_search = TRUE, nclusters = nclusters_tst,
     nclusters_pred = nclusters_pred_tst, nterms_max = nterms_max_tst,
     parallel = parallel, seed = seed_tst, verbose = FALSE
@@ -305,7 +306,7 @@ test_that("a parallel run without workers warns and runs in this R session", {
   warns <- character()
   cvvs <- withCallingHandlers(
     cv_varsel(
-      refmods[[tstsetup_ref]], cv_method = "LOO", validate_search = TRUE,
+      get_ref(tstsetup_ref), cv_method = "LOO", validate_search = TRUE,
       nclusters = nclusters_tst, nclusters_pred = nclusters_pred_tst,
       nterms_max = nterms_max_tst, parallel = TRUE, seed = seed_tst,
       verbose = FALSE
@@ -361,7 +362,7 @@ test_that(paste(
     get("divmin", envir = asNamespace("projpred"))(...)
   }
   environment(divmin_tst) <- globalenv()
-  refm <- refmods[[tstsetup_ref]]
+  refm <- get_ref(tstsetup_ref)
   refm$div_minimizer <- divmin_tst
   expect_true(any(vapply(projpred:::global_closures(list(refm)), identical,
                          logical(1), divmin_tst)))
@@ -399,13 +400,14 @@ test_that("project() in parallel gives the same results as sequentially", {
   skip_if_not(run_prj)
   skip_if(length(par_backends_tst) == 0)
   withr::local_options(list(projpred.parallel_proj_trigger = 0L))
-  tstsetups <- grep("\\.glm\\.", names(prjs), value = TRUE)
+  tstsetups <- kept_tst("prj",
+                        grep("\\.glm\\.", names(args_prj), value = TRUE))
   # Most GLM projections fit all draws in one call, so add multilevel
   # submodels (loop in divmin(); the Gaussian one normally uses the shared
   # lmer() setup, the non-Gaussian one calls glmer() for each draw) and an
   # augmented-data projection (loop in divmin_augdat()):
   first_prj <- function(cond) {
-    names(Filter(cond, args_prj[names(prjs)]))[1]
+    c(kept_tst("prj", names(Filter(cond, args_prj)), 1), NA_character_)[1]
   }
   is_glmm_trad <- function(args_prj_i) {
     args_prj_i$mod_nm == "glmm" &&
@@ -445,13 +447,13 @@ test_that("project() in parallel gives the same results as sequentially", {
   for (backend in par_backends_tst) {
     local({
       local_par_workers(backend)
-      for (tstsetup in tstsetups) {
+      for (tstsetup in kept_tst("prj", tstsetups)) {
         args_prj_i <- args_prj[[tstsetup]]
         n_par <<- 0L
         # Use suppressWarnings() because of convergence warnings of the
         # multilevel submodel:
         p_repr <- suppressWarnings(do.call(project, c(
-          list(object = refmods[[args_prj_i$tstsetup_ref]]),
+          list(object = get_ref(args_prj_i$tstsetup_ref)),
           excl_nonargs(args_prj_i)
         )))
         info_i <- paste(backend, tstsetup)
@@ -463,13 +465,13 @@ test_that("project() in parallel gives the same results as sequentially", {
           draws_of <- function(prj) {
             suppressWarnings(suppressMessages(as.matrix(prj)))
           }
-          expect_equal(draws_of(p_repr), draws_of(prjs[[tstsetup]]),
+          expect_equal(draws_of(p_repr), draws_of(get_prj(tstsetup)),
                        info = info_i)
           nms_other <- setdiff(names(p_repr), "outdmin")
-          expect_equal(p_repr[nms_other], prjs[[tstsetup]][nms_other],
+          expect_equal(p_repr[nms_other], get_prj(tstsetup)[nms_other],
                        info = info_i)
         } else {
-          expect_equal(drop_mer_ptrs(p_repr), drop_mer_ptrs(prjs[[tstsetup]]),
+          expect_equal(drop_mer_ptrs(p_repr), drop_mer_ptrs(get_prj(tstsetup)),
                        ignore_formula_env = TRUE, info = info_i)
         }
       }
@@ -484,17 +486,17 @@ test_that("varsel() in parallel gives the same results as sequentially", {
   skip_if_not(run_vs)
   skip_if(length(par_backends_tst) == 0)
   withr::local_options(list(projpred.parallel_proj_trigger = 0L))
-  tstsetups <- grep("\\.glm\\.", names(vss), value = TRUE)
+  tstsetups <- grep("\\.glm\\.", names(args_vs), value = TRUE)
   for (backend in par_backends_tst) {
     local({
       local_par_workers(backend)
-      for (tstsetup in tstsetups) {
+      for (tstsetup in kept_tst("vs", tstsetups)) {
         args_vs_i <- args_vs[[tstsetup]]
         vs_repr <- do.call(varsel, c(
-          list(object = refmods[[args_vs_i$tstsetup_ref]]),
+          list(object = get_ref(args_vs_i$tstsetup_ref)),
           excl_nonargs(args_vs_i)
         ))
-        expect_equal(drop_mer_ptrs(vs_repr), drop_mer_ptrs(vss[[tstsetup]]),
+        expect_equal(drop_mer_ptrs(vs_repr), drop_mer_ptrs(get_vs(tstsetup)),
                      ignore_formula_env = TRUE,
                      info = paste(backend, tstsetup))
       }
@@ -509,25 +511,26 @@ test_that("cv_varsel() in parallel gives the same results as sequentially", {
   skip_if_not(run_cvvs)
   skip_if(length(par_backends_tst) == 0)
   withr::local_options(list(projpred.parallel_proj_trigger = 0L))
-  tstsetups <- grep("\\.glm\\.", names(cvvss), value = TRUE)
+  tstsetups <- grep("\\.glm\\.", names(args_cvvs), value = TRUE)
   for (backend in par_backends_tst) {
     local({
       local_par_workers(backend)
-      for (tstsetup in tstsetups) {
+      for (tstsetup in kept_tst("cvvs", tstsetups)) {
         args_cvvs_i <- args_cvvs[[tstsetup]]
         # Use suppressWarnings() because test_that() somehow redirects
         # stderr() and so throws warnings that projpred wants to capture
         # internally:
         cvvs_repr <- suppressWarnings(do.call(cv_varsel, c(
-          list(object = refmods[[args_cvvs_i$tstsetup_ref]],
+          list(object = get_ref(args_cvvs_i$tstsetup_ref),
                cvfits = if (identical(args_cvvs_i$cv_method, "kfold")) {
-                 cvfitss[[args_cvvs_i$tstsetup_ref]]
+                 get_cvfits(args_cvvs_i$tstsetup_ref)
                } else {
-                 refmods[[args_cvvs_i$tstsetup_ref]]$cvfits # should be `NULL`
+                 get_ref(args_cvvs_i$tstsetup_ref)$cvfits # should be `NULL`
                }),
           excl_nonargs(args_cvvs_i)
         )))
-        expect_equal(drop_mer_ptrs(cvvs_repr), drop_mer_ptrs(cvvss[[tstsetup]]),
+        expect_equal(drop_mer_ptrs(cvvs_repr),
+                     drop_mer_ptrs(get_cvvs(tstsetup)),
                      ignore_formula_env = TRUE,
                      info = paste(backend, tstsetup))
       }
@@ -543,16 +546,17 @@ test_that(paste(
   skip_if_not(run_cvvs)
   skip_if(length(par_backends_tst) == 0)
   # A binomial or Poisson GLM (the score screen applies to these):
-  tstsetups_ref <- names(cvfitss)[!sapply(cvfitss, inherits, "try-error")]
   tstsetups_ref <- grep("^rstanarm\\.glm\\.(brnll|binom|poiss)\\.",
-                        tstsetups_ref, value = TRUE)
+                        tstsetups_ref_kfold, value = TRUE)
+  tstsetups_ref <- setdiff(tstsetups_ref,
+                           dropped_tst("cvfits", tstsetups_ref))
   skip_if(length(tstsetups_ref) == 0)
   tstsetup_ref <- tstsetups_ref[1]
   cvvs_scr <- function(cv_meth, parallel) {
     # Use suppressWarnings() because of Pareto-k warnings of the small data:
     suppressWarnings(cv_varsel(
-      refmods[[tstsetup_ref]], cv_method = cv_meth,
-      cvfits = if (cv_meth == "kfold") cvfitss[[tstsetup_ref]],
+      get_ref(tstsetup_ref), cv_method = cv_meth,
+      cvfits = if (cv_meth == "kfold") get_cvfits(tstsetup_ref),
       validate_search = TRUE, search_screen = 3, nclusters = nclusters_tst,
       nclusters_pred = nclusters_pred_tst, nterms_max = nterms_max_tst,
       parallel = parallel, seed = seed_tst, verbose = FALSE
@@ -712,7 +716,7 @@ test_that(paste(
   expect_false("list_cv" %in% calls_folds[[2]]$env_nms)
   # The folds get the reference models without their fits (see
   # refmodel_for_folds()), and each fold gets an RNG stream:
-  expect_false(is.null(refmods[[tstsetup_ref]]$fit))
+  expect_false(is.null(get_ref(tstsetup_ref)$fit))
   for (cl in calls_folds) {
     expect_true(cl$fit_null)
     expect_true(cl$folds_slim)
@@ -771,8 +775,7 @@ test_that(paste(
   # submodel (loop in divmin()) and an augmented-data projection (loop in
   # divmin_augdat()):
   first_prj <- function(cond) {
-    tstsetups_cond <- names(Filter(cond, args_prj[names(prjs)]))
-    c(tstsetups_cond, NA_character_)[1]
+    c(kept_tst("prj", names(Filter(cond, args_prj)), 1), NA_character_)[1]
   }
   tstsetups <- c(
     divmin = first_prj(function(args_prj_i) {
@@ -797,10 +800,10 @@ test_that(paste(
     args_prj_i <- args_prj[[tstsetup]]
     rec$calls <- list()
     prj_i <- suppressWarnings(do.call(project, c(
-      list(object = refmods[[args_prj_i$tstsetup_ref]]),
+      list(object = get_ref(args_prj_i$tstsetup_ref)),
       excl_nonargs(args_prj_i)
     )))
-    expect_equal(drop_mer_ptrs(prj_i), drop_mer_ptrs(prjs[[tstsetup]]),
+    expect_equal(drop_mer_ptrs(prj_i), drop_mer_ptrs(get_prj(tstsetup)),
                  info = tstsetup)
     expect_gt(length(rec$calls), 0)
     for (cl in rec$calls) {
@@ -884,7 +887,7 @@ test_that(paste(
   "objects that mu_fun() and fetch_data() use"
 ), {
   skip_if_not_installed("codetools")
-  skip_if(length(refmods) == 0)
+  skip_if(length(args_ref) == 0)
   # The objects of the environment of `fun` that `fun` uses:
   used_objs <- function(fun) {
     globs <- codetools::findGlobals(fun, merge = FALSE)
@@ -939,8 +942,8 @@ test_that(paste(
   }
   fit_cls <- c("stanreg", "brmsfit", "stanfit")
   pkgs_copied <- character()
-  for (tstsetup in names(refmods)) {
-    refm <- refmods[[tstsetup]]
+  for (tstsetup in kept_tst("ref", names(args_ref))) {
+    refm <- get_ref(tstsetup)
     refm_f <- projpred:::refmodel_for_folds(refm)
     # The copy has no copies of `mu` (also on the path for the latent and the
     # augmented-data projection), and the fold functions restore them (see
@@ -998,7 +1001,7 @@ test_that(paste(
     }
   }
   # At least one reference model of each package gets the copy:
-  pkgs_all <- intersect(sub("\\..*", "", names(refmods)),
+  pkgs_all <- intersect(sub("\\..*", "", names(args_ref)),
                         c("rstanarm", "brms"))
   expect_gt(length(pkgs_all), 0)
   expect_setequal(intersect(pkgs_copied, pkgs_all), pkgs_all)
@@ -1139,7 +1142,7 @@ test_that(paste(
   # environment that holds the fits:
   skip_if_not("rstanarm" %in% names(tstsetups_ref))
   tstsetup_ref <- tstsetups_ref[["rstanarm"]]
-  fit_expr <- refmods[[tstsetup_ref]]$fit
+  fit_expr <- get_ref(tstsetup_ref)$fit
   fit_expr$call$formula <- str2lang(paste(deparse(formula(fit_expr)),
                                           collapse = " "))
   refm_expr <- suppressWarnings(get_refmodel(fit_expr))

@@ -87,23 +87,23 @@ test_that(paste(
   # One test setup per combination of model type, family, projection type and
   # observation weights:
   case_key <- function(tstsetup) {
-    refm <- refmods[[tstsetup]]
+    refm <- get_ref(tstsetup)
     mod_nm <- sub("^[^.]+\\.([^.]+)\\..*$", "\\1", tstsetup)
     paste(mod_nm, refm$family$family, refm$family$for_latent,
           refm$family$for_augdat, any(refm$wobs != 1))
   }
   # The augmented-data projection supports only these families:
   is_projectable <- function(tstsetup) {
-    fam <- refmods[[tstsetup]]$family
+    fam <- get_ref(tstsetup)$family
     !fam$for_augdat ||
       fam$family %in% c("cumulative", "cumulative_rstanarm", "categorical")
   }
-  keys <- vapply(names(refmods), case_key, character(1))
-  tstsetups <- names(refmods)[!duplicated(keys)]
+  keys <- vapply(names(args_ref), case_key, character(1))
+  tstsetups <- names(args_ref)[!duplicated(keys)]
   tstsetups <- Filter(is_projectable, tstsetups)
   expect_gt(length(tstsetups), 5)
-  for (tstsetup in tstsetups) {
-    refm <- refmods[[tstsetup]]
+  for (tstsetup in kept_tst("ref", tstsetups)) {
+    refm <- get_ref(tstsetup)
     trms <- terms_case(refm)
     p_ref <- get_refdist(refm, ndraws = 3)
     p_ref_chg <- change_target(p_ref, refm, i = 1)

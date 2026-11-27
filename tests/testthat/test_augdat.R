@@ -214,15 +214,15 @@ test_that(paste(
 ), {
   skip_if_not(run_prj)
   withr::local_preserve_seed()
-  tstsetups <- grep("\\.brnll\\..*\\.augdat\\.", names(prjs), value = TRUE)
+  tstsetups <- grep("\\.brnll\\..*\\.augdat\\.", names(args_prj), value = TRUE)
   for (tstsetup in tstsetups) {
     tstsetup_trad <- sub("\\.augdat\\.", ".trad_compare.", tstsetup)
-    if (!tstsetup_trad %in% names(prjs)) next
+    if (!tstsetup_trad %in% names(args_prj)) next
 
     args_prj_i <- args_prj[[tstsetup]]
     args_prj_i_trad <- args_prj[[tstsetup_trad]]
-    refmod_crr <- refmods[[args_prj_i$tstsetup_ref]]
-    refmod_crr_trad <- refmods[[args_prj_i_trad$tstsetup_ref]]
+    refmod_crr <- get_ref(args_prj_i$tstsetup_ref)
+    refmod_crr_trad <- get_ref(args_prj_i_trad$tstsetup_ref)
     set.seed(args_prj_i$seed)
     pref_aug <- get_refdist(refmod_crr,
                             ndraws = args_prj_i$ndraws,
@@ -247,15 +247,16 @@ test_that(paste(
   "fit_glm_ridge_callback())"
 ), {
   skip_if_not(run_prj)
-  tstsetups <- grep("\\.brnll\\..*\\.augdat\\.", names(prjs), value = TRUE)
-  for (tstsetup in tstsetups) {
+  tstsetups <- grep("\\.brnll\\..*\\.augdat\\.", names(args_prj), value = TRUE)
+  for (tstsetup in kept_tst("prj", tstsetups)) {
     tstsetup_trad <- sub("\\.augdat\\.", ".trad_compare.", tstsetup)
-    if (!tstsetup_trad %in% names(prjs)) next
+    if (!tstsetup_trad %in% names(args_prj) ||
+        is_dropped_tst("prj", tstsetup_trad)) next
 
     cl_used_gt1 <- ndr_ncl_dtls(args_prj[[tstsetup]])$clust_used_gt1
-    prjmat <- as.matrix(prjs[[tstsetup]],
+    prjmat <- as.matrix(get_prj(tstsetup),
                         allow_nonconst_wdraws_prj = cl_used_gt1)
-    prjmat_trad <- as.matrix(prjs[[tstsetup_trad]],
+    prjmat_trad <- as.matrix(get_prj(tstsetup_trad),
                              allow_nonconst_wdraws_prj = cl_used_gt1)
 
     tol_coefs <- ifelse(
@@ -273,20 +274,20 @@ test_that(paste(
   "case of the `brnll` family)"
 ), {
   skip_if_not(run_prj)
-  tstsetups <- grep("\\.glm\\.brnll\\..*\\.augdat\\.", names(prjs),
+  tstsetups <- grep("\\.glm\\.brnll\\..*\\.augdat\\.", names(args_prj),
                     value = TRUE)
   for (tstsetup in tstsetups) {
     tstsetup_trad <- sub("\\.augdat\\.", ".trad_compare.", tstsetup)
-    if (!tstsetup_trad %in% names(prjs)) next
+    if (!tstsetup_trad %in% names(args_prj)) next
 
     args_prj_i <- args_prj[[tstsetup]]
     args_prj_i_trad <- args_prj[[tstsetup_trad]]
     prj <- do.call(project, c(
-      list(object = refmods[[args_prj_i$tstsetup_ref]], regul = 0),
+      list(object = get_ref(args_prj_i$tstsetup_ref), regul = 0),
       excl_nonargs(args_prj_i)
     ))
     prj_trad <- do.call(project, c(
-      list(object = refmods[[args_prj_i_trad$tstsetup_ref]], regul = 0),
+      list(object = get_ref(args_prj_i_trad$tstsetup_ref), regul = 0),
       excl_nonargs(args_prj_i_trad)
     ))
     cl_used_gt1 <- ndr_ncl_dtls(args_prj_i)$clust_used_gt1
@@ -306,12 +307,13 @@ test_that(paste(
   "`regul` for submodels fitted by fit_glm_ridge_callback())"
 ), {
   skip_if_not(run_prj)
-  tstsetups <- grep("\\.brnll\\..*\\.augdat\\.", names(pls), value = TRUE)
-  for (tstsetup in tstsetups) {
+  tstsetups <- grep("\\.brnll\\..*\\.augdat\\.", names(args_prj), value = TRUE)
+  for (tstsetup in kept_tst("pl", tstsetups)) {
     tstsetup_trad <- sub("\\.augdat\\.", ".trad_compare.", tstsetup)
-    if (!tstsetup_trad %in% names(pls)) next
+    if (!tstsetup_trad %in% names(args_prj) ||
+        is_dropped_tst("pl", tstsetup_trad)) next
 
-    pl <- pls[[tstsetup]]
+    pl <- get_pl(tstsetup)
     expect_length(dim(pl$pred), 3)
     expect_identical(dim(pl$pred)[3], 1L)
     pl$pred <- structure(matrix(pl$pred,
@@ -320,7 +322,7 @@ test_that(paste(
                          wdraws_prj = attr(pl$pred, "wdraws_prj"))
     dimnames(pl$pred) <- list(NULL, as.character(seq_len(ncol(pl$pred))))
     dimnames(pl$lpd) <- list(NULL, as.character(seq_len(ncol(pl$lpd))))
-    pl_trad <- pls[[tstsetup_trad]]
+    pl_trad <- get_pl(tstsetup_trad)
 
     tol_lpreds <- ifelse(
       args_prj[[tstsetup]]$mod_nm == "glmm" &&
@@ -339,13 +341,14 @@ test_that(paste(
   "submodels fitted by fit_glm_ridge_callback())"
 ), {
   skip_if_not(run_vs)
-  tstsetups <- grep("\\.brnll\\..*\\.augdat\\.", names(vss), value = TRUE)
-  for (tstsetup in tstsetups) {
+  tstsetups <- grep("\\.brnll\\..*\\.augdat\\.", names(args_vs), value = TRUE)
+  for (tstsetup in kept_tst("vs", tstsetups)) {
     tstsetup_trad <- sub("\\.augdat\\.", ".trad_compare.", tstsetup)
-    if (!tstsetup_trad %in% names(vss)) next
+    if (!tstsetup_trad %in% names(args_vs) ||
+        is_dropped_tst("vs", tstsetup_trad)) next
 
-    vs <- vss[[tstsetup]]
-    vs_trad <- vss[[tstsetup_trad]]
+    vs <- get_vs(tstsetup)
+    vs_trad <- get_vs(tstsetup_trad)
 
     summs_sub <- vs$summaries$sub
     summs_sub_mu <- do.call(cbind, lapply(summs_sub, "[[", "mu"))[
@@ -382,13 +385,15 @@ test_that(paste(
   "fit_glm_ridge_callback())"
 ), {
   skip_if_not(run_vs)
-  tstsetups <- grep("\\.brnll\\..*\\.augdat\\.", names(smmrys_vs), value = TRUE)
-  for (tstsetup in tstsetups) {
+  tstsetups <- grep("\\.brnll\\..*\\.augdat\\.", names(args_smmry_vs),
+                    value = TRUE)
+  for (tstsetup in kept_tst("smmry_vs", tstsetups)) {
     tstsetup_trad <- sub("\\.augdat\\.", ".trad_compare.", tstsetup)
-    if (!tstsetup_trad %in% names(smmrys_vs)) next
+    if (!tstsetup_trad %in% names(args_smmry_vs) ||
+        is_dropped_tst("smmry_vs", tstsetup_trad)) next
 
-    smmry_vs <- smmrys_vs[[tstsetup]]
-    smmry_vs_trad <- smmrys_vs[[tstsetup_trad]]
+    smmry_vs <- get_smmry_vs(tstsetup)
+    smmry_vs_trad <- get_smmry_vs(tstsetup_trad)
 
     expect_equal(
       smmry_vs[setdiff(names(smmry_vs), c("family", "perf_sub"))],
@@ -414,15 +419,16 @@ test_that(paste(
   "by fit_glm_ridge_callback())"
 ), {
   skip_if_not(run_vs)
-  tstsetups <- grep("\\.brnll\\..*\\.augdat_stats\\.", names(smmrys_vs),
+  tstsetups <- grep("\\.brnll\\..*\\.augdat_stats\\.", names(args_smmry_vs),
                     value = TRUE)
-  for (tstsetup in tstsetups) {
+  for (tstsetup in kept_tst("smmry_vs", tstsetups)) {
     tstsetup_trad <- sub("\\.augdat\\.", ".trad_compare.", tstsetup)
     tstsetup_trad <- sub("\\.augdat_stats\\.", ".binom_stats.", tstsetup_trad)
-    if (!tstsetup_trad %in% names(smmrys_vs)) next
+    if (!tstsetup_trad %in% names(args_smmry_vs) ||
+        is_dropped_tst("smmry_vs", tstsetup_trad)) next
 
-    smmry_vs <- smmrys_vs[[tstsetup]]
-    smmry_vs_trad <- smmrys_vs[[tstsetup_trad]]
+    smmry_vs <- get_smmry_vs(tstsetup)
+    smmry_vs_trad <- get_smmry_vs(tstsetup_trad)
 
     expect_equal(
       smmry_vs[setdiff(names(smmry_vs), c("family", "perf_sub", "perf_ref"))],
@@ -457,13 +463,14 @@ test_that(paste(
   "`regul` for submodels fitted by fit_glm_ridge_callback())"
 ), {
   skip_if_not(run_cvvs)
-  tstsetups <- grep("\\.brnll\\..*\\.augdat\\.", names(cvvss), value = TRUE)
-  for (tstsetup in tstsetups) {
+  tstsetups <- grep("\\.brnll\\..*\\.augdat\\.", names(args_cvvs), value = TRUE)
+  for (tstsetup in kept_tst("cvvs", tstsetups)) {
     tstsetup_trad <- sub("\\.augdat\\.", ".trad_compare.", tstsetup)
-    if (!tstsetup_trad %in% names(cvvss)) next
+    if (!tstsetup_trad %in% names(args_cvvs) ||
+        is_dropped_tst("cvvs", tstsetup_trad)) next
 
-    cvvs <- cvvss[[tstsetup]]
-    cvvs_trad <- cvvss[[tstsetup_trad]]
+    cvvs <- get_cvvs(tstsetup)
+    cvvs_trad <- get_cvvs(tstsetup_trad)
 
     is_kfold <- identical(args_cvvs[[tstsetup]]$cv_method, "kfold")
 
@@ -518,14 +525,15 @@ test_that(paste(
   "fit_glm_ridge_callback())"
 ), {
   skip_if_not(run_cvvs)
-  tstsetups <- grep("\\.brnll\\..*\\.augdat\\.", names(smmrys_cvvs),
+  tstsetups <- grep("\\.brnll\\..*\\.augdat\\.", names(args_smmry_cvvs),
                     value = TRUE)
-  for (tstsetup in tstsetups) {
+  for (tstsetup in kept_tst("smmry_cvvs", tstsetups)) {
     tstsetup_trad <- sub("\\.augdat\\.", ".trad_compare.", tstsetup)
-    if (!tstsetup_trad %in% names(smmrys_cvvs)) next
+    if (!tstsetup_trad %in% names(args_smmry_cvvs) ||
+        is_dropped_tst("smmry_cvvs", tstsetup_trad)) next
 
-    smmry_cvvs <- smmrys_cvvs[[tstsetup]]
-    smmry_cvvs_trad <- smmrys_cvvs[[tstsetup_trad]]
+    smmry_cvvs <- get_smmry_cvvs(tstsetup)
+    smmry_cvvs_trad <- get_smmry_cvvs(tstsetup_trad)
 
     expect_equal(
       smmry_cvvs[setdiff(names(smmry_cvvs), c("family", "perf_sub"))],
@@ -595,15 +603,16 @@ test_that(paste(
   "by fit_glm_ridge_callback())"
 ), {
   skip_if_not(run_cvvs)
-  tstsetups <- grep("\\.brnll\\..*\\.augdat_stats\\.", names(smmrys_cvvs),
+  tstsetups <- grep("\\.brnll\\..*\\.augdat_stats\\.", names(args_smmry_cvvs),
                     value = TRUE)
-  for (tstsetup in tstsetups) {
+  for (tstsetup in kept_tst("smmry_cvvs", tstsetups)) {
     tstsetup_trad <- sub("\\.augdat\\.", ".trad_compare.", tstsetup)
     tstsetup_trad <- sub("\\.augdat_stats\\.", ".binom_stats.", tstsetup_trad)
-    if (!tstsetup_trad %in% names(smmrys_cvvs)) next
+    if (!tstsetup_trad %in% names(args_smmry_cvvs) ||
+        is_dropped_tst("smmry_cvvs", tstsetup_trad)) next
 
-    smmry_cvvs <- smmrys_cvvs[[tstsetup]]
-    smmry_cvvs_trad <- smmrys_cvvs[[tstsetup_trad]]
+    smmry_cvvs <- get_smmry_cvvs(tstsetup)
+    smmry_cvvs_trad <- get_smmry_cvvs(tstsetup_trad)
 
     expect_equal(
       smmry_cvvs[setdiff(names(smmry_cvvs),

@@ -9,7 +9,7 @@ test_that("divmin() works", {
   # For comparison with the divmin_augdat() test:
   outdmin_brnll_tmp <- list()
 
-  for (tstsetup in grep(fam_nms_aug_regex, names(fits), value = TRUE,
+  for (tstsetup in grep(fam_nms_aug_regex, names(args_fit), value = TRUE,
                         invert = TRUE)) {
     args_fit_i <- args_fit[[tstsetup]]
     pkg_crr <- args_fit_i$pkg_nm
@@ -17,9 +17,9 @@ test_that("divmin() works", {
     fam_crr <- args_fit_i$fam_nm
 
     if (fam_crr == "gauss") {
-      mu_crr <- posterior_linpred(fits[[tstsetup]])
+      mu_crr <- posterior_linpred(get_fit(tstsetup))
       # Crude approximations for the predictive variances:
-      var_crr <- mean(as.matrix(fits[[tstsetup]])[, "sigma"]^2) +
+      var_crr <- mean(as.matrix(get_fit(tstsetup))[, "sigma"]^2) +
         (colMeans(mu_crr^2) - colMeans(mu_crr)^2)
     } else {
       var_crr <- rep(NA, nobsv)
@@ -98,14 +98,14 @@ test_that("divmin_augdat() works", {
   tstsetups_ref <- names(args_ref[sapply(args_ref, "[[", "prj_nm") == "augdat"])
   tstsetups_ref <- grep(fam_nms_unsupp_regex, tstsetups_ref, value = TRUE,
                         invert = TRUE)
-  for (tstsetup in tstsetups_ref) {
+  for (tstsetup in kept_tst("ref", tstsetups_ref)) {
     args_ref_i <- args_ref[[tstsetup]]
     args_fit_i <- args_fit[[args_ref_i$tstsetup_fit]]
     pkg_crr <- args_fit_i$pkg_nm
     mod_crr <- args_fit_i$mod_nm
     fam_crr <- args_fit_i$fam_nm
     y_nm <- as.character(args_fit_i$formula)[2]
-    y_unqs <- refmods[[tstsetup]]$family$cats
+    y_unqs <- get_ref(tstsetup)$family$cats
     ncats_crr <- length(y_unqs)
 
     # Augmented-data weights, here indicating the observed response category
@@ -138,7 +138,7 @@ test_that("divmin_augdat() works", {
     } else if (fam_crr == "cumul" && pkg_crr == "rstanarm") {
       args_fit_i$family <- structure(
         list(family = "cumulative_rstanarm",
-             link = refmods[[tstsetup]]$family$link,
+             link = get_ref(tstsetup)$family$link,
              cats = y_unqs),
         class = "family"
       )
