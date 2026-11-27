@@ -75,11 +75,21 @@
 #'   [project()] with `refit_prj = FALSE` then inherits this coarse clustering
 #'   or thinning.
 #'
+#'   If `object` is of class `vsel` and its results for the submodel with all
+#'   search terms are those of the reference model (see section "Submodel with
+#'   all terms of the reference model" in [projpred-package]), [project()]
+#'   returns `ndraws` thinned draws of the reference model for this submodel
+#'   size, not a projection, and gives a warning. With `nclusters`, the number
+#'   of these thinned draws is `nclusters`. `refit_prj` has no effect for this
+#'   size. To project onto this submodel, use argument `predictor_terms`.
+#'
 #' @return If the projection is performed onto a single submodel (i.e.,
 #'   `length(nterms) == 1 || !is.null(predictor_terms)`), an object of class
 #'   `projection` which is a `list` containing the following elements:
 #'   \describe{
-#'     \item{`dis`}{Projected draws for the dispersion parameter.}
+#'     \item{`dis`}{Projected draws for the dispersion parameter (for the
+#'     reference model draws of section "Details": the dispersion draws of the
+#'     reference model).}
 #'     \item{`ce`}{The cross-entropy part of the Kullback-Leibler (KL)
 #'     divergence from the reference model to the submodel. For some families,
 #'     this is not the actual cross-entropy, but a reduced one where terms which
@@ -94,7 +104,9 @@
 #'     `div_minimizer` function (see [init_refmodel()]), except if [project()]
 #'     was used with an `object` of class `vsel` based on an L1 search as well
 #'     as with `refit_prj = FALSE`, in which case this is the output from an
-#'     internal *L1-penalized* divergence minimizer.}
+#'     internal *L1-penalized* divergence minimizer. For the reference model
+#'     draws of section "Details", this is an object of class
+#'     `projpred_ref_draws` with the indices of these draws.}
 #'     \item{`cl_ref`}{A numeric vector of length equal to the number of
 #'     posterior draws in the reference model, containing the cluster indices of
 #'     these draws.}
@@ -166,6 +178,7 @@ project <- function(
             "`predictor_terms` instead.")
     predictor_terms <- solution_terms
   }
+  prd_trms_given <- !is.null(predictor_terms)
 
   verbose <- verbose_from_deprecated_options(verbose, with_cv = FALSE,
                                              proj_only = TRUE)
@@ -295,47 +308,88 @@ project <- function(
     nclusters <- 1
   }
 
+  ## Submodel with all terms of the reference model -------------------------
+
+  # For a `vsel` object whose results at the size of the submodel with all
+  # search terms are those of the reference model (see full_size_ref_ok()),
+  # project() gives the reference model draws at that size (see
+  # proj_full_ref()):
+  is_ref_size <- rep(FALSE, length(nterms))
+  if (!prd_trms_given && inherits(object, "vsel")) {
+    is_ref_size <- nterms %in% full_ref_size(object)
+  }
+  nterms_prj <- nterms[!is_ref_size]
+
   ## Warnings ---------------------------------------------------------------
 
-  nterms_max <- max(nterms)
-  # Message about the linear terms that proj_to_submodl() drops (a linear term
-  # next to a smooth term of the same variable).
-  fml_max <- make_formula(predictor_terms[seq_len(nterms_max)])
-  dups_smooth <- smooth_covered_terms(fml_max)
-  if (length(dups_smooth) > 0 &&
-      getOption("projpred.mssg_smooth_linear", TRUE)) {
-    smooths <- extract_terms_response(fml_max)$additive_terms
-    smooths <- smooths[vapply(smooths, function(smooth) {
-      any(smooth_args(smooth) %in% dups_smooth)
-    }, logical(1))]
-    message("The projection drops the linear term(s) `",
-            paste(dups_smooth, collapse = "`, `"), "` from a submodel that ",
-            "also has the smooth term(s) `", paste(smooths, collapse = "`, `"),
-            "`. The coefficient of such a linear term is not identifiable.")
-  }
-  prd_trms_max <- predictor_terms[seq_len(nterms_max)]
-  if (getOption("projpred.warn_instable_projections", TRUE) &&
-      (refmodel$family$family == "gaussian" || refmodel$family$for_latent) &&
-      formula_contains_group_terms(make_formula(prd_trms_max)) &&
-      is_full_projection(prd_trms_max, object = object, refmodel = refmodel)) {
-    warning(warn_instable_full_text())
+  if (length(nterms_prj) > 0) {
+    nterms_max <- max(nterms_prj)
+    # Message about the linear terms that proj_to_submodl() drops (a linear
+    # term next to a smooth term of the same variable).
+    fml_max <- make_formula(predictor_terms[seq_len(nterms_max)])
+    dups_smooth <- smooth_covered_terms(fml_max)
+    if (length(dups_smooth) > 0 &&
+        getOption("projpred.mssg_smooth_linear", TRUE)) {
+      smooths <- extract_terms_response(fml_max)$additive_terms
+      smooths <- smooths[vapply(smooths, function(smooth) {
+        any(smooth_args(smooth) %in% dups_smooth)
+      }, logical(1))]
+      message("The projection drops the linear term(s) `",
+              paste(dups_smooth, collapse = "`, `"), "` from a submodel that ",
+              "also has the smooth term(s) `",
+              paste(smooths, collapse = "`, `"), "`. The coefficient of such ",
+              "a linear term is not identifiable.")
+    }
+    prd_trms_max <- predictor_terms[seq_len(nterms_max)]
+    if (getOption("projpred.warn_instable_projections", TRUE) &&
+        (refmodel$family$family == "gaussian" ||
+         refmodel$family$for_latent) &&
+        formula_contains_group_terms(make_formula(prd_trms_max)) &&
+        is_full_projection(prd_trms_max, object = object,
+                           refmodel = refmodel)) {
+      warning(warn_instable_full_text())
+    }
   }
 
   # Projection --------------------------------------------------------------
 
-  if (refit_prj) {
-    # Unsupported cases of monotonic projections of mo() terms:
-    check_mo_monotone(refmodel,
-                      terms_ = utils::head(predictor_terms, nterms_max))
+  submodls <- vector("list", length(nterms))
+  if (length(nterms_prj) > 0) {
+    if (refit_prj) {
+      # Unsupported cases of monotonic projections of mo() terms:
+      check_mo_monotone(refmodel,
+                        terms_ = utils::head(predictor_terms, nterms_max))
+    }
+    submodls[!is_ref_size] <- perf_eval(
+      search_path = list(predictor_ranking = predictor_terms,
+                         p_sel = object$search_path$p_sel,
+                         outdmins = object$search_path$outdmins),
+      nterms = nterms_prj, refmodel = refmodel, refit_prj = refit_prj,
+      ndraws = ndraws, nclusters = nclusters, return_submodls = TRUE,
+      verbose = verbose + (1L * as.logical(verbose)), ...
+    )
   }
-  submodls <- perf_eval(
-    search_path = list(predictor_ranking = predictor_terms,
-                       p_sel = object$search_path$p_sel,
-                       outdmins = object$search_path$outdmins),
-    nterms = nterms, refmodel = refmodel, refit_prj = refit_prj,
-    ndraws = ndraws, nclusters = nclusters, return_submodls = TRUE,
-    verbose = verbose + (1L * as.logical(verbose)), ...
-  )
+  if (any(is_ref_size)) {
+    # Clusters of draws are not draws of the reference model, so `nclusters`
+    # gives the number of thinned draws:
+    sub_ref <- proj_full_ref(
+      refmodel, predictor_terms = predictor_terms,
+      ndraws = nclusters %||% ndraws,
+      throw_mssg_ndraws = is.null(nclusters) &&
+        getOption("projpred.mssg_ndraws", TRUE)
+    )
+    warning(
+      "For size ", full_ref_size(object), ", the submodel has all terms of ",
+      "the reference model, so project() returns ", sub_ref$nprjdraws,
+      " draws of the reference model, not a projection (see section ",
+      "\"Submodel with all terms of the reference model\" in `?projpred`).",
+      if (!is.null(nclusters)) {
+        paste0(" These are thinned draws: argument `nclusters` gives their ",
+               "number.")
+      }
+    )
+    submodls[is_ref_size] <- list(sub_ref)
+  }
 
   # Output ------------------------------------------------------------------
 
@@ -364,12 +418,106 @@ is_full_projection <- function(prd_trms, object, refmodel) {
                                       data = refmodel$fetch_data(),
                                       add_lower_terms = FALSE)
   }
-  trm_labels <- function(trms) {
-    fml <- flatten_formula(make_formula(trms), duplicates = FALSE)
-    return(norm_term_labels(labels(terms(fml))))
+  return(all(flat_term_labels(search_terms_all) %in%
+               flat_term_labels(prd_trms)))
+}
+
+# The term labels (see norm_term_labels()) of the submodel with the predictor
+# terms `trms`. A linear term next to a smooth term of the same variable does
+# not count, because the projection drops such a linear term.
+flat_term_labels <- function(trms) {
+  fml <- flatten_formula(make_formula(unique(split_plus(trms))),
+                         duplicates = FALSE)
+  return(norm_term_labels(labels(terms(fml))))
+}
+
+# The output of project() for the submodel with all terms of the reference
+# model (with the predictor terms `predictor_terms`) if its results are those of
+# the reference model (see full_size_ref_ok()): `ndraws` thinned draws of the
+# reference model, with the elements of an init_submodl() output. Element
+# `outdmin` has class `projpred_ref_draws` and holds the indices `draws` of the
+# reference model draws, from which proj_mu() predicts.
+# Element `dis` holds the dispersion draws of the reference model, and `ce` is
+# the cross-entropy of these draws with themselves (see ce_ref_self()).
+proj_full_ref <- function(refmodel, predictor_terms, ndraws,
+                          throw_mssg_ndraws = getOption("projpred.mssg_ndraws",
+                                                        TRUE)) {
+  p_ref <- get_refdist(refmodel, ndraws = ndraws, nclusters = NULL,
+                       throw_mssg_ndraws = throw_mssg_ndraws)
+  used <- which(!is.na(p_ref$cl))
+  draws <- integer(p_ref$nprjdraws)
+  draws[p_ref$cl[used]] <- used
+  outdmin <- structure(list(draws = draws), class = "projpred_ref_draws")
+  return(structure(
+    nlist(dis = p_ref$dis, ce = ce_ref_self(p_ref, refmodel),
+          wdraws_prj = p_ref$wdraws_prj,
+          const_wdraws_prj = p_ref$const_wdraws_prj, predictor_terms,
+          outdmin, cl_ref = p_ref$cl, wdraws_ref = p_ref$wdraws_orig,
+          clust_used = p_ref$clust_used, nprjdraws = p_ref$nprjdraws),
+    class = "submodl"
+  ))
+}
+
+# Whether the `projection` object `proj` holds reference model draws (see
+# proj_full_ref()).
+is_ref_draws <- function(proj) {
+  return(inherits(proj$outdmin, "projpred_ref_draws"))
+}
+
+# Stops in the function(s) `fun_txt` for a `projection` object `proj` with
+# reference model draws (see proj_full_ref()), which have no projected
+# parameters.
+stop_ref_draws <- function(proj, fun_txt) {
+  if (is_ref_draws(proj)) {
+    stop(fun_txt, " cannot be used for this `projection` object: it holds ",
+         "draws of the reference model, not projected draws, because the ",
+         "submodel has all terms of the reference model. Use the parameter ",
+         "draws of the reference model fit instead.")
   }
-  return(all(trm_labels(unique(split_plus(search_terms_all))) %in%
-               trm_labels(prd_trms)))
+  return(invisible(NULL))
+}
+
+# The predictions of the `projection` object `proj` for `newdata` (`NULL` for
+# the training data) with the offsets `offset`, as `proj$refmodel$mu_fun()`
+# gives them for submodel fits. For reference model draws (see
+# proj_full_ref()), these are the predictions of the reference model fit for
+# these draws. (mu_fun() itself cannot make them: its copy for the parallel CV
+# folds has no fit, see refmodel_for_folds().)
+proj_mu <- function(proj, newdata = NULL, offset, transform = TRUE) {
+  refm <- proj$refmodel
+  if (!is_ref_draws(proj)) {
+    return(refm$mu_fun(proj$outdmin, newdata = newdata, offset = offset,
+                       transform = transform))
+  }
+  sgn <- if (refm$family$family %in% fams_neg_linpred()) -1 else 1
+  if (is.null(newdata)) {
+    # The predictions include the offsets of the training data; replace them
+    # by `offset`:
+    pred <- refm$ref_predfun(refm$fit, excl_offs = FALSE)
+    pred <- pred[, proj$outdmin$draws, drop = FALSE] +
+      sgn * (offset - refm$offset)
+  } else {
+    newdata <- as.data.frame(newdata)
+    if ("projpred_internal_offs_stanreg" %in%
+        names(refm$fetch_data(obs = 1L))) {
+      # The offset column of an rstanarm fit (see get_refmodel.stanreg()):
+      newdata$projpred_internal_offs_stanreg <- offset
+    }
+    # The predictions include the offsets of `newdata`; replace them by
+    # `offset`. (With `wrhs`, extract_model_data() needs no observation
+    # weights in `newdata`.)
+    pred <- refm$ref_predfun(refm$fit, newdata = newdata, excl_offs = FALSE)
+    offs_new <- refm$extract_model_data(
+      refm$fit, newdata = newdata, wrhs = rep(1, nrow(newdata)),
+      extract_y = FALSE
+    )$offset
+    pred <- pred[, proj$outdmin$draws, drop = FALSE] +
+      sgn * (offset - offs_new)
+  }
+  if (transform) {
+    pred <- refm$family$linkinv(pred)
+  }
+  return(pred)
 }
 
 #' Print information about [project()] output
@@ -394,7 +542,13 @@ print.projection <- function(x, ...) {
   } else {
     clust_pretty <- ""
   }
-  cat("Number of projected draws: ", x$nprjdraws, clust_pretty, "\n", sep = "")
+  if (is_ref_draws(x)) {
+    cat("Number of reference model draws (the submodel has all terms of the ",
+        "reference model): ", x$nprjdraws, "\n", sep = "")
+  } else {
+    cat("Number of projected draws: ", x$nprjdraws, clust_pretty, "\n",
+        sep = "")
+  }
   cat("Predictor terms: ",
       paste(paste0("\"", predictor_terms(x), "\""), collapse = ", "),
       "\n", sep = "")

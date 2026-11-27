@@ -45,7 +45,11 @@
 #'   `D` is the number of terms in the reference model (or in `search_terms`, if
 #'   supplied). Note that `nterms_max` does not count the intercept, so use
 #'   `nterms_max = 0` for the intercept-only model. (Correspondingly, `D` above
-#'   does not count the intercept.)
+#'   does not count the intercept.) If the search reaches the submodel with all
+#'   search terms and these are all terms of the reference model, this submodel
+#'   gets the predictive performance of the reference model, without a
+#'   projection (see section "Submodel with all terms of the reference model" in
+#'   [projpred-package]).
 #' @param penalty Only relevant for L1 search. A numeric vector determining the
 #'   relative penalties or costs for the predictors. A value of `0` means that
 #'   those predictors have no cost and will therefore be selected first, whereas
@@ -387,6 +391,7 @@ varsel.refmodel <- function(
   search_screen <- args$search_screen
   nterms_all <- args$nterms_all
   verbose <- args$verbose
+  full_ref <- args$full_ref
 
   # Pre-process `d_test`:
   if (is.null(d_test)) {
@@ -465,9 +470,11 @@ varsel.refmodel <- function(
       verbose = verbose, search_control = search_control,
       search_terms = search_terms,
       search_terms_was_null = search_terms_was_null,
-      search_screen = search_screen, ...
+      search_screen = search_screen, skip_full = full_ref, ...
     )
   }
+  full_ref <- full_ref &&
+    ranking_is_full(search_path$predictor_ranking, nterms_all)
 
   # "Run" the performance evaluation for the submodels along the predictor
   # ranking (in fact, we only prepare the performance evaluation by computing
@@ -477,7 +484,8 @@ varsel.refmodel <- function(
     ndraws = ndraws_pred, nclusters = nclusters_pred, indices_test = NULL,
     newdata_test = d_test$data, offset_test = d_test$offset,
     wobs_test = d_test$weights, y_test = d_test$y,
-    y_oscale_test = d_test$y_oscale, verbose = verbose, ...
+    y_oscale_test = d_test$y_oscale, verbose = verbose, full_ref = full_ref,
+    ...
   )
 
   # Predictive performance of the reference model:
@@ -536,6 +544,12 @@ varsel.refmodel <- function(
       eta = eta_test
     )
   }
+  sub <- perf_eval_out[["sub_summaries"]]
+  if (full_ref) {
+    # The submodel with all search terms gives the results of the reference
+    # model (see full_size_ref_ok()):
+    sub[length(sub)] <- list(ref)
+  }
 
   # The object to be returned:
   vs <- nlist(refmodel,
@@ -547,10 +561,11 @@ varsel.refmodel <- function(
               type_test = d_test$type,
               y_wobs_test,
               nobs_test,
-              summaries = nlist(sub = perf_eval_out[["sub_summaries"]], ref),
+              summaries = nlist(sub, ref),
               summaries_fast = NULL,
               nterms_all,
               nterms_max,
+              full_ref,
               method,
               cv_method = NULL,
               nloo = NULL,
@@ -601,11 +616,16 @@ varsel.refmodel <- function(
 #   `outdmins` (the submodel fits along the predictor ranking, with the number
 #   of fits per model size being equal to the number of projected draws), and
 #   `p_sel` (the output from get_refdist() for the search).
+# @param skip_full A single logical value. `TRUE` means that the forward search
+#   does not project onto the submodel with all search terms (its element of
+#   `outdmins` is `NULL`). The caller sets this if `nterms_max` is the size of
+#   that submodel and the submodel gets the results of the reference model (see
+#   full_size_ref_ok()).
 .select <- function(refmodel, ndraws, nclusters, reweighting_args = NULL,
                     method, nterms_max, penalty, verbose,
                     verbose_line_length = 5, verbose_txt_add = "",
                     search_control, return_outdmins = TRUE,
-                    search_screen = NULL, ...) {
+                    search_screen = NULL, skip_full = FALSE, ...) {
   if (is.null(reweighting_args)) {
     if (!is.null(refmodel$draws_shift)) {
       # The shifted draws of perturb_refmodel(), which checked that they are
@@ -646,7 +666,8 @@ varsel.refmodel <- function(
     search_path <- search_forward(
       p_ref = p_sel, refmodel = refmodel, nterms_max = nterms_max,
       verbose = verbose, search_control = search_control,
-      return_outdmins = return_outdmins, search_screen = search_screen, ...
+      return_outdmins = return_outdmins, search_screen = search_screen,
+      skip_full = skip_full, ...
     )
   }
   verb_out(rep("-", verbose_line_length), verbose = verbose)
@@ -754,9 +775,15 @@ parse_args_varsel <- function(refmodel, method, refit_prj, nterms_max,
   }
   nterms_max <- min(nterms_all, nterms_max)
 
-  # The warning applies if the submodel with all search terms is reached and
-  # has group-level terms:
-  if (nterms_max == nterms_all &&
+  # Whether the submodel with all search terms gets the results of the
+  # reference model instead of a projection (see full_size_ref_ok()):
+  full_ref <- nterms_max == nterms_all &&
+    full_size_ref_ok(refmodel, search_terms = search_terms,
+                     search_terms_was_null = search_terms_was_null)
+
+  # The warning applies if the submodel with all search terms is reached, is
+  # projected and has group-level terms:
+  if (nterms_max == nterms_all && !full_ref &&
       formula_contains_group_terms(make_formula(search_terms)) &&
       getOption("projpred.warn_instable_projections", TRUE) &&
       (refmodel$family$family == "gaussian" || refmodel$family$for_latent)) {
@@ -773,7 +800,62 @@ parse_args_varsel <- function(refmodel, method, refit_prj, nterms_max,
 
   return(nlist(method, refit_prj, nterms_max, nclusters, search_terms,
                search_terms_was_null, nterms_all, verbose,
-               search_screen))
+               search_screen, full_ref))
+}
+
+# Whether the submodel with all of the search terms `search_terms` gets the
+# results of the reference model instead of a projection (global option
+# `projpred.full_size_ref`, default `TRUE`). If this submodel has all terms of
+# the reference model, its projection reproduces each projected reference draw
+# (in the limit of a converged fit), so the reference model gives the results
+# that this projection should give. The family and the link of the submodels
+# are those of the reference model. This function cannot check whether a custom
+# `ref_predfun` comes from `refmodel$formula`. A `datafit` has no reference
+# predictions. With global option `projpred.mlvl_proj_ref_new`, the projection
+# target has new group-level effects, which a submodel cannot reproduce.
+full_size_ref_ok <- function(refmodel, search_terms, search_terms_was_null) {
+  if (!isTRUE(getOption("projpred.full_size_ref", TRUE)) ||
+      inherits(refmodel, "datafit")) {
+    return(FALSE)
+  }
+  if (getOption("projpred.mlvl_proj_ref_new", FALSE) &&
+      formula_contains_group_terms(refmodel$formula)) {
+    return(FALSE)
+  }
+  if (search_terms_was_null) {
+    return(TRUE)
+  }
+  terms_ref <- split_formula(refmodel$formula, data = refmodel$fetch_data())
+  return(setequal(flat_term_labels(search_terms), flat_term_labels(terms_ref)))
+}
+
+# Whether the predictor ranking `ranking` gives the submodel with all search
+# terms (of size `nterms_all`, see nterms_search_all()).
+ranking_is_full <- function(ranking, nterms_all) {
+  return(count_terms_chosen(c("1", ranking)) - 1L == nterms_all)
+}
+
+# For a CV fold with `full_ref = TRUE` (see perf_eval()): checks that the
+# ranking of the fold ends with the submodel with all of the search terms
+# `search_terms`. The forward and the L1 search always reach it if
+# `nterms_max` is its size.
+check_fold_full <- function(full_ref, ranking, search_terms) {
+  if (full_ref &&
+      !ranking_is_full(ranking, nterms_search_all(search_terms))) {
+    stop("The predictor ranking of a CV fold does not reach the submodel ",
+         "with all search terms. Please notify the package maintainer.")
+  }
+  return(invisible(NULL))
+}
+
+# The cross-entropy `ce` of the projected reference draws `p_ref` with
+# themselves, as init_submodl() computes it for a submodel fit. It is the `ce` of
+# the submodel with all terms of the reference model (see full_size_ref_ok()).
+ce_ref_self <- function(p_ref, refmodel) {
+  p_ref$mu <- p_ref$mu_offs
+  ce <- refmodel$family$ce(p_ref, nlist(weights = refmodel$wobs),
+                           list(mu = p_ref$mu_offs, dis = p_ref$dis))
+  return(weighted.mean(ce, p_ref$wdraws_prj))
 }
 
 # The text of the warning about the projection onto the full Gaussian (or

@@ -204,8 +204,10 @@ test_that("the L1 search uses the contrasts of the reference model", {
   outdmin_full <- vs$search_path$outdmins[[4]][[1]]
   expect_setequal(rownames(outdmin_full$beta),
                   c("f1", "f2", "o_ge_mid", "o_ge_hi", "o_ge_top", "x"))
-  prj <- suppressWarnings(project(vs, nterms = 3, refit_prj = FALSE,
-                                  verbose = FALSE))
+  # The L1 submodel with all terms (`nterms = 3` would give the reference
+  # model draws, see test_full_size_ref.R):
+  prj <- suppressWarnings(project(vs, predictor_terms = vs$predictor_ranking,
+                                  refit_prj = FALSE, verbose = FALSE))
   pred_train <- proj_linpred(prj)$pred
   pred_new <- proj_linpred(prj, newdata = refm$fetch_data()[1:10, ])$pred
   expect_equal(unname(drop(pred_new)), unname(drop(pred_train)[1:10]),
