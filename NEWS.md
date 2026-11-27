@@ -15,7 +15,7 @@ If you read this from a place other than <https://mc-stan.org/projpred/news/inde
 
 * For submodels with smooth terms, `as.matrix()` and `as_draws_matrix()` give the smooth terms in the basis and with the parameter names of a **brms** or `rstanarm::stan_gamm4()` reference model fit, with the SDs of the penalized parts of the smooth terms. They now also support GAMM submodels. (GitHub: #131, #151, #152, #676)
 * New `formula()` method for `projection` objects. It gives the formula of the submodel in the form that projpred fits, for example to set up the submodel in another package. (GitHub: #678)
-* Tests: The tests build the shared test objects (reference model fits, `refmodel`, `vsel` and projection objects) when a test first needs them. A run of one test file no longer fits all reference models. (GitHub: #565, #N)
+* Tests: The tests build the shared test objects (reference model fits, `refmodel`, `vsel` and projection objects) when a test first needs them. A run of one test file no longer fits all reference models. (GitHub: #565, #688)
 * Tests: The test setup stops on an unexpected error, also when the error is known for another model type. A skipped test lists each dropped test setup. (GitHub: #565, #683)
 * Tests: Use edition 3 of testthat. Checks that all elements are `TRUE` now show the failing positions. (GitHub: #565, #682)
 * `Student_t()` is deprecated. Its projection has stopped with an error since projpred 2.1.0. For a Student-t reference model, use the latent projection; the latent-projection vignette has a new example. (GitHub: #3)
