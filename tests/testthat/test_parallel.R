@@ -45,7 +45,10 @@ local_par_workers <- function(backend, n = 2L, frame = parent.frame()) {
     withr::defer(parallel::stopCluster(cl), envir = frame)
     parallel::clusterCall(cl, init_wrk, libs = args_init$libs,
                           path = args_init$path)
-    plan_old <- future::plan(future::cluster, workers = cl)
+    # With plan `cluster`, future runs gc() on the worker before and after
+    # each future by default (unlike plan `multisession`). On a worker with
+    # the namespaces of projpred, this takes about half a second per future:
+    plan_old <- future::plan(future::cluster, workers = cl, gc = FALSE)
     withr::defer(future::plan(plan_old), envir = frame)
     ns_fun <- function() parallel::clusterCall(cl, loadedNamespaces)
   } else if (backend == "future.mirai") {
