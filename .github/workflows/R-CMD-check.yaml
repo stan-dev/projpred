@@ -73,7 +73,7 @@ jobs:
       - uses: actions/cache@v6
         with:
           path: ${{ runner.temp }}/bfits
-          key: ${{ steps.bfits.outputs.key }}-${{ hashFiles('tests/testthat/setup.R', 'tests/testthat/helpers/*.R') }}
+          key: ${{ steps.bfits.outputs.key }}-${{ hashFiles('tests/testthat/setup.R', 'tests/testthat/helpers/*.R', 'tests/testthat/helper*.R') }}
 
       - uses: r-lib/actions/check-r-package@v2
         with:
